@@ -1,0 +1,50 @@
+# --- Build Tool (Maven/Gradle) ---
+target/
+build/
+.gradle/
+.mvn/wrapper/maven-wrapper.jar
+bin/
+
+!**/src/main/**/target/
+!**/src/test/**/target/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+*.local
+.env
+.env.*
+
+src/main/resources/application-local.properties
+src/main/resources/application-local.yml
+
+### STS / Eclipse ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+# --- Hệ điều hành & Log ---
+log/
+*.log
+.DS_Store
+Thumbs.db
