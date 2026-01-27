@@ -28,7 +28,14 @@ const roomStore = useRoomsStore();
 const spaceStore = useSpaceStore();
 
 const { currentRoom } = storeToRefs(roomStore);
-const { currentSpace, chatSpaces, voiceSpaces } = storeToRefs(spaceStore);
+const {
+  currentSpace,
+  chatSpaces,
+  voiceSpaces,
+  calendarSpaces,
+  noteSpaces,
+  taskSpaces,
+} = storeToRefs(spaceStore);
 
 // Watch trực tiếp vào hàm getter của props
 watch(
@@ -49,7 +56,11 @@ const changeSpace = async (
 ) => {
   await spaceStore.changeSpace(index, type); // Assuming chatSpaces is used for CHAT type\
 
-  router.push(`/rooms/${currentRoom.value?.id}/${currentSpace.value?.id}`);
+  router.push(
+    `/rooms/${type.toLowerCase()}/${currentRoom.value?.id}/${
+      currentSpace.value?.id
+    }`
+  );
 };
 </script>
 
@@ -63,6 +74,7 @@ const changeSpace = async (
       </div>
     </SidebarHeader>
     <SidebarContent class="mt-5">
+      <!-- TASK -->
       <Collapsible as-child default-open class="group/collapsible">
         <SidebarGroup>
           <SidebarGroupLabel as-child>
@@ -70,7 +82,94 @@ const changeSpace = async (
               <ChevronRight
                 class="mr-2 h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
               />
-              KÊNH VĂN BẢN
+              KÊNH TASK
+            </CollapsibleTrigger>
+          </SidebarGroupLabel>
+          <CollapsibleContent>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem
+                  v-for="(item, index) in taskSpaces"
+                  :key="item.id"
+                >
+                  <SidebarMenuButton @click="changeSpace(index, 'TASK')">
+                    <Hash class="mr-2 h-4 w-4" />
+                    <span>{{ item.name }}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </CollapsibleContent>
+        </SidebarGroup>
+      </Collapsible>
+
+      <!-- NOTE -->
+      <Collapsible as-child default-open class="group/collapsible">
+        <SidebarGroup>
+          <SidebarGroupLabel as-child>
+            <CollapsibleTrigger>
+              <ChevronRight
+                class="mr-2 h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
+              />
+              KÊNH GHI CHÚ
+            </CollapsibleTrigger>
+          </SidebarGroupLabel>
+          <CollapsibleContent>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem
+                  v-for="(item, index) in noteSpaces"
+                  :key="item.id"
+                >
+                  <SidebarMenuButton @click="changeSpace(index, 'NOTE')">
+                    <Hash class="mr-2 h-4 w-4" />
+                    <span>{{ item.name }}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </CollapsibleContent>
+        </SidebarGroup>
+      </Collapsible>
+
+      <!-- CALENDAR -->
+      <Collapsible as-child default-open class="group/collapsible">
+        <SidebarGroup>
+          <SidebarGroupLabel as-child>
+            <CollapsibleTrigger>
+              <ChevronRight
+                class="mr-2 h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
+              />
+              KÊNH LỊCH TRÌNH
+            </CollapsibleTrigger>
+          </SidebarGroupLabel>
+          <CollapsibleContent>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem
+                  v-for="(item, index) in calendarSpaces"
+                  :key="item.id"
+                >
+                  <SidebarMenuButton @click="changeSpace(index, 'CALENDAR')">
+                    <Hash class="mr-2 h-4 w-4" />
+                    <span>{{ item.name }}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </CollapsibleContent>
+        </SidebarGroup>
+      </Collapsible>
+
+      <!-- CHAT -->
+      <Collapsible as-child default-open class="group/collapsible">
+        <SidebarGroup>
+          <SidebarGroupLabel as-child>
+            <CollapsibleTrigger>
+              <ChevronRight
+                class="mr-2 h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
+              />
+              KÊNH CHAT
             </CollapsibleTrigger>
           </SidebarGroupLabel>
           <CollapsibleContent>
@@ -91,6 +190,7 @@ const changeSpace = async (
         </SidebarGroup>
       </Collapsible>
 
+      <!-- VOICE -->
       <Collapsible as-child default-open class="group/collapsible">
         <SidebarGroup>
           <SidebarGroupLabel as-child>
@@ -104,8 +204,11 @@ const changeSpace = async (
           <CollapsibleContent>
             <SidebarGroupContent>
               <SidebarMenu>
-                <SidebarMenuItem v-for="item in voiceSpaces" :key="item.id">
-                  <SidebarMenuButton>
+                <SidebarMenuItem
+                  v-for="(item, index) in voiceSpaces"
+                  :key="item.id"
+                >
+                  <SidebarMenuButton @click="changeSpace(index, 'VOICE')">
                     <Volume2 class="mr-2 h-4 w-4" />
                     <span>{{ item.name }}</span>
                   </SidebarMenuButton>
