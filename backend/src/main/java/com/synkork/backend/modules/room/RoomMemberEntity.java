@@ -1,6 +1,5 @@
-package com.synkork.backend.modules.friend;
+package com.synkork.backend.modules.room;
 
-import com.synkork.backend.common.base.BaseEntity;
 import com.synkork.backend.modules.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -15,30 +14,29 @@ import java.util.UUID;
 
 @Entity
 @Table(
-        name = "friends",
+        name = "room_members",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"user_id", "friend_id"})
+                @UniqueConstraint(columnNames = {"room_id", "user_id"})
         }
 )
 @Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class FriendEntity  {
+public class RoomMemberEntity {
 
     @Id
     @UuidGenerator(style = UuidGenerator.Style.TIME)
-    @Column(name = "id", columnDefinition = "BINARY(16)")
+    @Column(columnDefinition = "BINARY(16)")
     private UUID id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_id", nullable = false)
+    private RoomEntity room;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "friend_id", nullable = false)
-    private UserEntity friend;
-
-    @CreationTimestamp
-    @Column(updatable = false)
-    private LocalDateTime createdAt;
+    private String role;
+    private LocalDateTime joinedAt;
 }
