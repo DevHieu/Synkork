@@ -29,4 +29,20 @@ public class MessageDTO {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    public MessageDTO(MessageProjection p) {
+        this.content = p.getContent();
+        this.deleted = p.getDeleted();
+        this.pinned = p.getPinned();
+        this.type = p.getType();
+        this.attachmentUrl = p.getAttachmentUrl();
+        this.createdAt = p.getCreatedAt();
+        this.updatedAt = p.getUpdatedAt();
+        this.sender = new SenderDto(
+                p.getSender().getUsername(),
+                p.getSender().getDisplayName(),
+                p.getSender().getAvatarUrl(),
+                p.getSender().getRole()
+        );
+    }
 }
