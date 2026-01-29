@@ -19,7 +19,7 @@ public class RoomController {
   RoomService roomService;
 
   @PostMapping
-  public ResponseEntity<RoomDto> createMessage(@NonNull @RequestBody RoomDto entity) {
+  public ResponseEntity<RoomDto> createRoom(@NonNull @RequestBody RoomDto entity) {
 
     RoomEntity roomEntity = roomService.createSpace(entity)
         .orElseThrow(() -> new RuntimeException("Room creation failed"));

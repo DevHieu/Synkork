@@ -27,10 +27,9 @@ public class SecurityConfig {
     http
         // 1. Kích hoạt cấu hình CORS
         .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-        // 2. Disable CSRF nếu bạn dùng JWT (thường là vậy)
         .csrf(csrf -> csrf.disable())
         .authorizeHttpRequests(auth -> auth
-            .anyRequest().permitAll());
+            .anyRequest().permitAll()); // Hiện tại th cho qua hết luôn, chưa có bảo mật
 
     return http.build();
   }
@@ -38,7 +37,7 @@ public class SecurityConfig {
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOrigins(Arrays.asList(frontendUrl));
+    configuration.setAllowedOrigins(Arrays.asList(frontendUrl)); //Bypass cho url frontend
     configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
     configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
     configuration.setAllowCredentials(true);

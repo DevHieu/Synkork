@@ -5,22 +5,38 @@ import LoginPage from "@/pages/LoginPage.vue";
 import RegisterPage from "@/pages/RegisterPage.vue";
 import MainPage from "@/pages/MainPage.vue";
 
-import ChatWindowLayout from "@/components/ChatWindowLayout.vue";
+import ChatWindowLayout from "@/components/windows/ChatWindowLayout.vue";
+import VoiceWindowLayout from "@/components/windows/VoiceWindowLayout.vue";
+import CalendarWindowLayout from "@/components/windows/CalendarWindowLayout.vue";
+import NoteWindowLayout from "@/components/windows/NoteWindowLayout.vue";
+import TaskWindowLayout from "@/components/windows/TaskWindowLayout.vue";
 
 const routes = [
-  // { path: "/", component: MainPage },
   { path: "/login", component: LoginPage },
   { path: "/register", component: RegisterPage },
-  // { path: "/call", component: MainView },
-  // { path: "/call2", component: VideoCall },
-
   {
     path: "/",
     component: MainPage,
     children: [
       {
-        path: "rooms/:roomId/:spaceId",
+        path: "rooms/chat/:roomId/:spaceId",
         component: ChatWindowLayout,
+      },
+      {
+        path: "rooms/voice/:roomId/:spaceId",
+        component: VoiceWindowLayout,
+      },
+      {
+        path: "rooms/calendar/:roomId/:spaceId",
+        component: CalendarWindowLayout,
+      },
+      {
+        path: "rooms/note/:roomId/:spaceId",
+        component: NoteWindowLayout,
+      },
+      {
+        path: "rooms/task/:roomId/:spaceId",
+        component: TaskWindowLayout,
       },
     ],
   },
