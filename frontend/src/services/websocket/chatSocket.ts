@@ -26,8 +26,6 @@ export function connectWebSocket(onConnected?: () => void) {
 }
 
 export function subscribeSpace(spaceId: string, onMessage: (msg: any) => void) {
-  console.log(spaceId);
-
   if (!stompClient?.connected) return;
 
   if (spaceSubscription) {

@@ -13,55 +13,50 @@ import { useSpaceStore } from "@/stores/spaceStore";
 import { storeToRefs } from "pinia";
 import dayjs from "dayjs";
 
+// Tạo interface để thanwgf Typescript bớt kêu lỗi. Nhờ AI làm cho lẹ
+interface Sender {
+  avatarUrl: string;
+  displayName: string;
+}
+
+interface Message {
+  id: string;
+  content: string;
+  createdAt: string;
+  sender: Sender;
+}
+
+// lấy route và lấy mấy cái trường cần thiết từ params
 const route = useRoute();
 const roomId = route.params.roomId;
 const spaceId = route.params.spaceId;
 
 const spaceStore = useSpaceStore();
-
 const { currentSpace } = storeToRefs(spaceStore);
 
-const isSocketConnected = ref(false); // Check xem webSocket đã sẵn sàng chưa
-
-const messages = ref([]);
+const messages = ref<Message[]>([]);
 const newMessage = ref("");
 const messageContainer = ref<HTMLElement | null>(null); // Ref đến container chứa tin nhắn (nhảy xuống đáy khi có tin nhắn mới)
-
 // Số lượng tin nhắn mỗi lần lấy
 const size = 50;
 const page = 0;
+
+const isSocketConnected = ref(false); // Check xem webSocket đã sẵn sàng chưa
 
 onMounted(() => {
   if (roomId && spaceId) {
     connectWebSocket(async () => {
       await addUserToSocketRoom(sessionStorage.getItem("userId")!);
-      isSocketConnected.value = true;
+      isSocketConnected.value = true; // Sẵn sàng gòi
     });
   }
 });
 
-const scrollToBottom = async () => {
-  await nextTick();
-  if (messageContainer.value) {
-    messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
-  }
-};
-
-const formatTime = (time: string) => {
-  return dayjs(time).format("HH:mm DD/MM/YYYY");
-};
-
-const fetchMessages = async (id: string) => {
-  const chatResponse = await getChatFromSpaceId(id as string, page, size);
-  messages.value = chatResponse.data.content.reverse();
-  scrollToBottom();
-};
-
-// Mỗi lần chuyển space, watch sẽ bắt và gọi hàm joinSpace để vào space và lấy tin nhắn
+// Mỗi lần currentSpace thay đổi hoặc isSocketConnected thay đổi, watch sẽ bắt và gọi hàm joinSpace để vào space và lấy tin nhắn
 watch(
   [currentSpace, isSocketConnected],
   ([space, connected]) => {
-    if (!space?.id || !connected) return;
+    if (!space?.id || !connected) return; // Check xem cái socket sẵn sàng chưa thì mới joinSpace
     joinSpace(space.id);
   },
   { immediate: true }
@@ -83,6 +78,12 @@ const joinSpace = (spaceId: string) => {
   });
 };
 
+const fetchMessages = async (id: string) => {
+  const chatResponse = await getChatFromSpaceId(id as string, page, size);
+  messages.value = chatResponse.data.content.reverse();
+  scrollToBottom();
+};
+
 const handleSendMessage = async () => {
   if (!newMessage.value.trim()) return;
 
@@ -94,6 +95,17 @@ const handleSendMessage = async () => {
   sendMessage(message); // Gửi tin nhắn lên server qua WebSocket
 
   newMessage.value = "";
+};
+
+const scrollToBottom = async () => {
+  await nextTick();
+  if (messageContainer.value) {
+    messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
+  }
+};
+
+const formatTime = (time: string) => {
+  return dayjs(time).format("HH:mm DD/MM/YYYY");
 };
 </script>
 
