@@ -10,16 +10,14 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Entity
 @Table(name = "users")
 @Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class UserEntity extends BaseEntity {
 
     @Column(nullable = false, unique = true, length = 50)
@@ -34,11 +32,19 @@ public class UserEntity extends BaseEntity {
     @Column(nullable = false)
     private String password;
 
+    @Column(nullable = true)
     private String avatarUrl;
-    private String avatarId;
-    private String provider;
 
-    private String role;
-    private String status;
+    @Column(nullable = true)
+    private String avatarId;
+
+    @Enumerated(EnumType.STRING)
+    private ProviderEnum provider = ProviderEnum.LOCAL;
+
+    @Enumerated(EnumType.STRING)
+    private RoleEnum role = RoleEnum.USER;
+
+    @Enumerated(EnumType.STRING)
+    private UserStatusEnum status = UserStatusEnum.ACTIVE;
 }
 

@@ -34,7 +34,7 @@ const submitLogin = async () => {
   errorMessage.value = null;
 
   const data: LoginData = {
-    email: loginForm.value.email,
+    username: loginForm.value.email,
     password: loginForm.value.password,
   };
 
@@ -42,10 +42,6 @@ const submitLogin = async () => {
     const response = await axios.post("/auth/login", data);
 
     console.log("Login successful:", response.data);
-
-    // save to session storage
-    sessionStorage.setItem("userId", response.data?.id);
-    sessionStorage.setItem("username", response.data?.username);
 
     router.push("/");
   } catch (error: any) {

@@ -1,5 +1,6 @@
 package com.synkork.backend.modules.auth;
 
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -35,26 +36,18 @@ public class AuthController {
    * client
    */
   @PostMapping("/login")
-  public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+  public ResponseEntity<String> login(@Valid @RequestBody LoginRequest request) {
 
-    try {
-      UserEntity user = authService.login(request);
-      return ResponseEntity.status(HttpStatus.ACCEPTED).body(user);
-    } catch (Exception e) {
-      return ResponseEntity
-          .status(HttpStatus.UNAUTHORIZED)
-          .body(e.getMessage());
-    }
+    String jwtToken = authService.login(request);
+    return ResponseEntity.status(HttpStatus.ACCEPTED).body(jwtToken);
 
-    // ResponseEntity.status() để tùy chỉnh mã trạng thái HTTP trả về chứ không chỉ
-    // có mỗi .ok()
-
+    // ResponseEntity.status() để tùy chỉnh mã trạng thái HTTP trả về chứ không  có mỗi .ok()
   }
 
   @PostMapping("/register")
-  public ResponseEntity<UserEntity> register(@RequestBody RegisterRequest request) {
-    UserEntity entity = authService.register(request);
-    return ResponseEntity.status(HttpStatus.ACCEPTED).body(entity);
+  public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
+    String jwtToken = authService.register(request);
+    return ResponseEntity.status(HttpStatus.CREATED).body(jwtToken);
   }
 
 }

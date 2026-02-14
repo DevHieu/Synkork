@@ -1,6 +1,12 @@
 package com.synkork.backend.modules.auth;
 
+import com.synkork.backend.security.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.synkork.backend.modules.auth.dto.LoginRequest;
@@ -15,26 +21,46 @@ public class AuthService {
   @Autowired
   UserRepository userRepository;
 
-  public UserEntity login(LoginRequest request) {
-    UserEntity user = userRepository.findByEmail(request.getEmail())
-        .orElseThrow(() -> new RuntimeException("Email không tồn tại!"));
+  @Autowired
+  private AuthenticationManager authManager;
 
-    if (!user.getPassword().equals(request.getPassword())) {
-      throw new RuntimeException("Mật khẩu không đúng!");
-    }
+  @Autowired
+  private JwtService jwtService;
 
-    return user;
+  private BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
+
+  public String login(LoginRequest request) {
+     Authentication authentication = authManager.authenticate(
+            new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+
+      if (!authentication.isAuthenticated()) {
+        throw new RuntimeException("Invalid username or password");
+      }
+
+    UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+
+    return jwtService.generateToken(userDetails.getUsername());
   }
 
-  public UserEntity register(RegisterRequest request) {
-    UserEntity newUser = new UserEntity();
+  public String register(RegisterRequest request) {
 
-    newUser.setDisplayName(request.getFirstName() + " " + request.getLastName());
-    newUser.setUsername(request.getUsername());
-    newUser.setEmail(request.getEmail());
-    newUser.setPassword(request.getPassword());
+    if (userRepository.existsByEmail(request.getEmail())) {
+      throw new RuntimeException("Email already exists");
+    }
+
+    if (userRepository.existsByUsername(request.getUsername())) {
+      throw new RuntimeException("Username already exists");
+    }
+
+    UserEntity newUser = UserEntity.builder()
+            .displayName(request.getFirstName() + " " + request.getLastName())
+            .username(request.getUsername())
+            .email(request.getEmail())
+            .password(encoder.encode(request.getPassword()))
+            .build();
 
     UserEntity entity = userRepository.save(newUser);
-    return entity;
+
+    return jwtService.generateToken(entity.getUsername());
   }
 }

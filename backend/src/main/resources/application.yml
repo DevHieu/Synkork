@@ -6,7 +6,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -22,3 +22,6 @@ server:
 frontend:
   client:
     url: ${FRONTEND_URL:http://localhost:5173}
+
+jwt:
+  secret: CFGSc60ez6n093BbLoqk1BdPFa02l26UBAjKvFGAw3Q

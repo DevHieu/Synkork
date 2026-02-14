@@ -42,7 +42,7 @@ const submitRegister = async () => {
   try {
     const response = await axios.post("/auth/register", data);
     console.log("Login successful:", response.data);
-    // Handle successful login (e.g., redirect, store token, etc.)
+    
   } catch (error) {
     console.error("Login failed:", error);
     // Handle login error (e.g., show error message)
