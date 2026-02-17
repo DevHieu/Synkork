@@ -3,6 +3,7 @@ package com.synkork.backend.modules.user;
 import java.util.List;
 import java.util.Optional;
 
+import com.synkork.backend.modules.user.dto.UserInfoDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
@@ -26,5 +27,11 @@ public class UserService {
   // @NonNull annotation giúp đảm bảo rằng user không được null, đỡ bị IDE báo
   public Optional<UserEntity> create(@NonNull UserEntity user) {
     return Optional.ofNullable(userRepository.save(user));
+  }
+
+  public UserInfoDto getUserInfo(String username) {
+    UserEntity user = userRepository.findByUsernameOrEmail(username, username).orElse(null);
+
+    return new UserInfoDto(user);
   }
 }
