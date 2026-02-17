@@ -11,13 +11,26 @@ import CalendarWindowLayout from "@/components/windows/CalendarWindowLayout.vue"
 import NoteWindowLayout from "@/components/windows/NoteWindowLayout.vue";
 import TaskWindowLayout from "@/components/windows/TaskWindowLayout.vue";
 
+import VueCookies from 'vue-cookies'
+
+import { useUserStore } from "@/stores/userStore";
+import { storeToRefs } from "pinia";
+import MePage from "@/pages/MePage.vue";
+
 const routes = [
   { path: "/login", component: LoginPage },
   { path: "/register", component: RegisterPage },
   {
     path: "/",
     component: MainPage,
+    meta: {
+      requiredAuth: true
+    },
     children: [
+      {
+        path: "me",
+        component: MePage,
+      },
       {
         path: "rooms/chat/:roomId/:spaceId",
         component: ChatWindowLayout,
@@ -47,12 +60,28 @@ const router = createRouter({
   routes,
 });
 
-// router.beforeEach(async (to, from) => {
-//   const isAuthenticated = sessionStorage.getItem("loggedIn") === "true";
-//   console.log(to);
-//   if (!isAuthenticated && (to.path === "/uploads" || to.path === "/profile")) {
-//     return { path: "/auth/login" };
-//   }
-// });
+router.beforeEach((to, from) => {
+  //Tạo sotre lấy thông tin user
+  const userStore = useUserStore();
+  const { user } = storeToRefs(userStore);
+
+  const cookies = VueCookies as any
+
+  const token = cookies.get("jwtToken")
+
+  if (!token && to.meta.requiredAuth) {
+    return { path: "/login" };
+  }
+
+  if (user.value === null && token) {
+    userStore.getUserInfo();
+
+    return;
+  }
+
+  if (token.path === "/") {
+    return { path: "/me" };
+  }
+})
 
 export default router;

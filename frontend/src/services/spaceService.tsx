@@ -1,6 +1,6 @@
-import axios from "axios";
+import axiosClient from "@/lib/axiosClient";
 
 export const getAllSpacesFromRoomId = async (roomId: string) => {
-  const res = await axios.get(`/rooms/${roomId}/spaces`);
+  const res = await axiosClient.get(`/api/rooms/${roomId}/spaces`);
   return res;
 };

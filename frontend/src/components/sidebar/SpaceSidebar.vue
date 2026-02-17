@@ -41,7 +41,7 @@ const {
 watch(
   currentRoom,
   async (newRoom) => {
-    if (!newRoom) return;
+    if (!newRoom || !newRoom.id) return;
 
     console.log("Room ID changed:", newRoom.id);
     await spaceStore.fetchSpacesByRoomId(newRoom.id);

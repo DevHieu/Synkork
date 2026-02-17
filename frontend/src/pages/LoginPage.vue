@@ -16,17 +16,21 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ref } from "vue";
 import axios from "axios";
 import { useRouter } from "vue-router";
+import { inject } from 'vue';
+import type { VueCookies } from 'vue-cookies';
+
+const $cookies = inject<VueCookies>('$cookies')!
 
 const router = useRouter();
 const errorMessage = ref<string | null>(null);
 
 interface LoginData {
-  email: string;
+  username: string;
   password: string;
 }
 
 const loginForm = ref({
-  email: "",
+  username: "",
   password: "",
 });
 
@@ -34,7 +38,7 @@ const submitLogin = async () => {
   errorMessage.value = null;
 
   const data: LoginData = {
-    username: loginForm.value.email,
+    username: loginForm.value.username,
     password: loginForm.value.password,
   };
 
@@ -42,7 +46,7 @@ const submitLogin = async () => {
     const response = await axios.post("/auth/login", data);
 
     console.log("Login successful:", response.data);
-
+    $cookies.set('jwtToken', response.data, '7d')
     router.push("/");
   } catch (error: any) {
     errorMessage.value =
@@ -73,7 +77,7 @@ const submitLogin = async () => {
             id="email"
             type="email"
             placeholder="m@example.com"
-            v-model="loginForm.email"
+            v-model="loginForm.username"
             required
           />
         </div>

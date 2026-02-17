@@ -1,10 +1,10 @@
-import axios from "axios";
+import axiosClient from "@/lib/axiosClient";
 
 export const getChatFromSpaceId = async (
   spaceId: string,
   page: number,
   size: number
 ) => {
-  const res = await axios.get(`/messages/${spaceId}?page=${page}&size=${size}`);
+  const res = await axiosClient.get(`/api/messages/${spaceId}?page=${page}&size=${size}`);
   return res;
 };

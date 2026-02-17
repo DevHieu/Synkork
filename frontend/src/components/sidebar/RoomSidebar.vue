@@ -18,25 +18,24 @@ import { Separator } from "@/components/ui/separator";
 import NavUser from "./NavUser.vue";
 
 import { useRouter } from "vue-router";
+import { useUserStore } from "@/stores/userStore";
 import { useRoomsStore } from "@/stores/roomStore";
 import { storeToRefs } from "pinia";
 
 const activeItem = ref<any>(null);
 
 const router = useRouter();
+const userStore = useUserStore();
+const { user } = storeToRefs(userStore);
 const roomStore = useRoomsStore();
 const { rooms } = storeToRefs(roomStore);
 
 onMounted(async () => {
-  const userId = sessionStorage.getItem("userId");
-
-  if (!userId) {
-    router.push("/login");
-    return;
-  }
-
+  const userId = user.value?.id;
   await roomStore.fetchRooms(userId);
-  selectRoom(rooms.value[0]);
+  if (rooms.value && rooms.value.length > 0) {
+    selectRoom(rooms.value[0]);
+  }
 });
 
 const selectRoom = (roomItem: any) => {
