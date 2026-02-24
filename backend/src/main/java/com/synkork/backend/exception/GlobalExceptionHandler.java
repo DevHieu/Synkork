@@ -1,5 +1,6 @@
 package com.synkork.backend.exception;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -36,5 +37,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body("Invalid username or password");
+    }
+
+    @ExceptionHandler(ExpiredJwtException.class)
+    public ResponseEntity<String> handleExpiredJwtToken() {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body("Access token has expired");
     }
 }

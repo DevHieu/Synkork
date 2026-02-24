@@ -1,6 +1,10 @@
 package com.synkork.backend.modules.auth;
 
+import com.synkork.backend.modules.auth.dto.JwtResponse;
+import com.synkork.backend.security.JwtService;
 import jakarta.validation.Valid;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,6 +26,8 @@ public class AuthController {
   @Autowired
   AuthService authService;
 
+  @Autowired
+  JwtService jwtService;
   /*
    * Ví dụ trường hợp cần 1 DTO
    *
@@ -36,18 +42,31 @@ public class AuthController {
    * client
    */
   @PostMapping("/login")
-  public ResponseEntity<String> login(@Valid @RequestBody LoginRequest request) {
+  public ResponseEntity<JwtResponse> login(@Valid @RequestBody LoginRequest request) {
 
-    String jwtToken = authService.login(request);
+    JwtResponse jwtToken = authService.login(request);
     return ResponseEntity.status(HttpStatus.ACCEPTED).body(jwtToken);
 
     // ResponseEntity.status() để tùy chỉnh mã trạng thái HTTP trả về chứ không  có mỗi .ok()
   }
 
   @PostMapping("/register")
-  public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
-    String jwtToken = authService.register(request);
+  public ResponseEntity<JwtResponse> register(@Valid @RequestBody RegisterRequest request) {
+    JwtResponse jwtToken = authService.register(request);
     return ResponseEntity.status(HttpStatus.CREATED).body(jwtToken);
   }
 
+  @PostMapping("/refresh")
+  public ResponseEntity<String> refreshToken(@Valid @RequestBody String refreshToken) {
+
+    String username = jwtService.extractUserName(refreshToken);
+
+    if (username != null && jwtService.validateRefreshToken(refreshToken)) {
+      String newAccessToken = jwtService.generateToken(username, "ACCESS");
+
+      return ResponseEntity.ok(newAccessToken);
+    }
+
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Refresh token is invalid or expired");
+  }
 }

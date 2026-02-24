@@ -3,6 +3,7 @@ package com.synkork.backend.security;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import javax.crypto.SecretKey;
@@ -22,14 +23,22 @@ public class JwtService {
     @Value("${jwt.secret}")
     private String secretkey = "";
 
-    public String generateToken(String username) {
+    public String generateToken(String username, String type) {
+        long duration = type.equals("ACCESS")
+                ? TimeUnit.SECONDS.toMillis(15) // Access key hết hạn sau 15p
+                : TimeUnit.DAYS.toMillis(7); // Refresh key thì 7 ngày
+
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + duration);
+
         Map<String, Object> claims = new HashMap<>();
+        claims.put("type", type);
         return Jwts.builder()
                 .claims()
                 .add(claims)
                 .subject(username)
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 7))
+                .issuedAt(now)
+                .expiration(expiryDate)
                 .and()
                 .signWith(getKey())
                 .compact();
@@ -45,7 +54,7 @@ public class JwtService {
         return extractClaim(token, Claims::getSubject);
     }
 
-    private <T> T extractClaim(String token, Function<Claims, T> claimResolver) {
+    public <T> T extractClaim(String token, Function<Claims, T> claimResolver) {
         final Claims claims = extractAllClaims(token);
         return claimResolver.apply(claims);
     }
@@ -71,4 +80,14 @@ public class JwtService {
         return extractClaim(token, Claims::getExpiration);
     }
 
+    public boolean validateRefreshToken(String token) {
+        try {
+            final Claims claims = extractAllClaims(token);
+            String type = claims.get("type", String.class);
+            // Kiểm tra: đúng loại REFRESH và chưa hết hạn
+            return "REFRESH".equals(type) && !isTokenExpired(token);
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }

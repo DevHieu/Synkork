@@ -14,20 +14,13 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { ref } from "vue";
-import axios from "axios";
 import { useRouter } from "vue-router";
-import { inject } from 'vue';
-import type { VueCookies } from 'vue-cookies';
+import { login } from "@/services/authService";
 
-const $cookies = inject<VueCookies>('$cookies')!
+import type { LoginData } from "@/types/LoginData";
 
 const router = useRouter();
 const errorMessage = ref<string | null>(null);
-
-interface LoginData {
-  username: string;
-  password: string;
-}
 
 const loginForm = ref({
   username: "",
@@ -43,10 +36,9 @@ const submitLogin = async () => {
   };
 
   try {
-    const response = await axios.post("/auth/login", data);
+    const response = await login(data);
 
     console.log("Login successful:", response.data);
-    $cookies.set('jwtToken', response.data, '7d')
     router.push("/");
   } catch (error: any) {
     errorMessage.value =
@@ -149,7 +141,7 @@ const submitLogin = async () => {
         <!-- Chuyển sang đăng ký -->
         <p class="text-sm text-center text-muted-foreground">
           Chưa có tài khoản?
-          <RouterLink to="/register" class="text-primary hover:underline ml-1">
+          <RouterLink to="/auth/register" class="text-primary hover:underline ml-1">
             Đăng ký
           </RouterLink>
         </p>

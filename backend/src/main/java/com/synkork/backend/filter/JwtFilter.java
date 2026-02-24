@@ -2,6 +2,7 @@ package com.synkork.backend.filter;
 
 import com.synkork.backend.security.JwtService;
 import com.synkork.backend.security.MyUserDetailService;
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -30,36 +31,36 @@ public class JwtFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-
-        //Request dạng OPTIONS thường là CORS gửi trước khi gửi request thật
-        // Nếu chặn các request này filter sẽ chặn -> Request thật bị chặn trước khi kiểm tra
+        // 1. Bỏ qua các request OPTIONS cho CORS
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String authHeader = request.getHeader("Authorization"); // ấy token được gửi ở header
+        String authHeader = request.getHeader("Authorization");
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
-            String username = jwtService.extractUserName(token);
+            try {
+                String username = jwtService.extractUserName(token);
+                String tokenType = jwtService.extractClaim(token, claims -> claims.get("type", String.class));
 
-            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    UserDetails userDetails = userDetailService.loadUserByUsername(username);
 
-                UserDetails userDetails = userDetailService.loadUserByUsername(username);
-
-                if (jwtService.validateToken(token, userDetails)) {
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails, null, userDetails.getAuthorities());
-
-                    authToken.setDetails(
-                            new WebAuthenticationDetailsSource().buildDetails(request));
-
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                    // CHỈ xác thực nếu là loại ACCESS
+                    if ("ACCESS".equals(tokenType) && jwtService.validateToken(token, userDetails)) {
+                        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                                userDetails, null, userDetails.getAuthorities());
+                        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(authToken);
+                    }
                 }
+            } catch (Exception e) {
+                logger.error("JWT validation failed: " + e.getMessage());
             }
         }
 
-        filterChain.doFilter(request, response);
+        filterChain.doFilter(request, response); // Luôn luôn phải gọi dòng này
     }
 }

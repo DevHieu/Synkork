@@ -2,6 +2,7 @@ package com.synkork.backend.security;
 
 import java.util.Arrays;
 
+import com.synkork.backend.exception.JwtAuthenticationEntryPoint;
 import com.synkork.backend.filter.JwtFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,6 +37,9 @@ public class SecurityConfig {
     @Autowired
     private MyUserDetailService userDetailsService;
 
+    @Autowired
+    JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -45,6 +49,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated())  // bắt authentication vơ mấ cái api bình thường
                 .httpBasic(customizer -> customizer.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

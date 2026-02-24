@@ -1,5 +1,6 @@
 package com.synkork.backend.modules.auth;
 
+import com.synkork.backend.modules.auth.dto.JwtResponse;
 import com.synkork.backend.security.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -29,7 +30,7 @@ public class AuthService {
 
   private BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
 
-  public String login(LoginRequest request) {
+  public JwtResponse login(LoginRequest request) {
      Authentication authentication = authManager.authenticate(
             new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
 
@@ -39,10 +40,10 @@ public class AuthService {
 
     UserDetails userDetails = (UserDetails) authentication.getPrincipal();
 
-    return jwtService.generateToken(userDetails.getUsername());
+    return this.generateJwtToken(userDetails.getUsername());
   }
 
-  public String register(RegisterRequest request) {
+  public JwtResponse register(RegisterRequest request) {
 
     if (userRepository.existsByEmail(request.getEmail())) {
       throw new RuntimeException("Email already exists");
@@ -61,6 +62,15 @@ public class AuthService {
 
     UserEntity entity = userRepository.save(newUser);
 
-    return jwtService.generateToken(entity.getUsername());
+    return this.generateJwtToken(entity.getUsername());
+  }
+
+  private JwtResponse generateJwtToken(String username) {
+    return JwtResponse.builder()
+            .accessToken(jwtService.generateToken(username, "ACCESS"))
+            .refreshToken(jwtService.generateToken(username, "REFRESH"))
+            .build();
   }
 }
+
+

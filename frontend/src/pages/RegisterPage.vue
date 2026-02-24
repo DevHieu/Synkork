@@ -12,15 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 
 import { ref } from "vue";
-import axios from "axios";
-
-interface LoginData {
-  firstName: string;
-  lastName: string;
-  username: string;
-  email: string;
-  password: string;
-}
+import type { RegisterData } from "@/types/RegisterData";
+import { register } from "@/services/authService";
 
 const registerForm = ref({
   firstName: "",
@@ -31,7 +24,7 @@ const registerForm = ref({
 });
 
 const submitRegister = async () => {
-  const data: LoginData = {
+  const data: RegisterData = {
     firstName: registerForm.value.firstName,
     lastName: registerForm.value.lastName,
     username: registerForm.value.username,
@@ -40,12 +33,12 @@ const submitRegister = async () => {
   };
 
   try {
-    const response = await axios.post("/auth/register", data);
-    console.log("Login successful:", response.data);
+    const response = await register(data);
+    console.log("Register successful:", response.data);
     
   } catch (error) {
-    console.error("Login failed:", error);
-    // Handle login error (e.g., show error message)
+    console.error("Register failed:", error);
+    // Handle register error (e.g., show error message)
   }
 
   console.log(data);
@@ -143,7 +136,7 @@ const submitRegister = async () => {
         <!-- Chuyển sang đăng ký -->
         <p class="text-sm text-center text-muted-foreground">
           Chưa có tài khoản?
-          <RouterLink to="/login" class="text-primary hover:underline ml-1">
+          <RouterLink to="/auth/login" class="text-primary hover:underline ml-1">
             Đăng nhập
           </RouterLink>
         </p>
