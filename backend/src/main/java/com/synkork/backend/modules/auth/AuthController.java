@@ -58,7 +58,6 @@ public class AuthController {
 
   @PostMapping("/refresh")
   public ResponseEntity<String> refreshToken(@Valid @RequestBody String refreshToken) {
-
     String username = jwtService.extractUserName(refreshToken);
 
     if (username != null && jwtService.validateRefreshToken(refreshToken)) {

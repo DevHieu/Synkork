@@ -25,7 +25,7 @@ public class JwtService {
 
     public String generateToken(String username, String type) {
         long duration = type.equals("ACCESS")
-                ? TimeUnit.SECONDS.toMillis(15) // Access key hết hạn sau 15p
+                ? TimeUnit.MINUTES.toMillis(15) // Access key hết hạn sau 15p
                 : TimeUnit.DAYS.toMillis(7); // Refresh key thì 7 ngày
 
         Date now = new Date();
@@ -81,10 +81,11 @@ public class JwtService {
     }
 
     public boolean validateRefreshToken(String token) {
+        System.out.println("Verifying refresh token...");
         try {
             final Claims claims = extractAllClaims(token);
             String type = claims.get("type", String.class);
-            // Kiểm tra: đúng loại REFRESH và chưa hết hạn
+            System.out.println(type);
             return "REFRESH".equals(type) && !isTokenExpired(token);
         } catch (Exception e) {
             return false;

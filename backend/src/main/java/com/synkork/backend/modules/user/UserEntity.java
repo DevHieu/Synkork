@@ -39,12 +39,15 @@ public class UserEntity extends BaseEntity {
     private String avatarId;
 
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     private ProviderEnum provider = ProviderEnum.LOCAL;
 
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     private RoleEnum role = RoleEnum.USER;
 
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     private UserStatusEnum status = UserStatusEnum.ACTIVE;
 }
 
