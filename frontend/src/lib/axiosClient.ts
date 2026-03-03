@@ -1,8 +1,8 @@
 import axios from "axios";
 import type { AxiosInstance, InternalAxiosRequestConfig } from "axios";
-import VueCookies from 'vue-cookies'
+import VueCookies from "vue-cookies";
 
-const cookies = VueCookies as any
+const cookies = VueCookies as any;
 
 const axiosClient: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL as string,
@@ -14,9 +14,7 @@ axiosClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = cookies.get("accessToken");
     const url = config.url ?? "";
-    if (
-      !url.startsWith("/login") && !url.startsWith("/register")
-    ) {
+    if (!url.startsWith("/login") && !url.startsWith("/register")) {
       if (token) {
         config.headers = config.headers ?? {};
         config.headers.Authorization = `Bearer ${token}`;
@@ -43,11 +41,13 @@ axiosClient.interceptors.response.use(
           return Promise.reject(error);
         }
 
-        const response = await axiosClient.post("auth/refresh", refreshToken);
-        const { accessToken } = response.data;
+        const response = await axiosClient.post(
+          "/api/auth/refresh",
+          refreshToken
+        );
+        const accessToken = response.data;
 
-        // Cập nhật token mới vào cookie
-        cookies.set("accessToken", accessToken, "10s");
+        cookies.set("accessToken", accessToken, "15m");
 
         // Chạy lại request gốc với token mới
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
@@ -61,6 +61,6 @@ axiosClient.interceptors.response.use(
       }
     }
   }
-)
+);
 
 export default axiosClient;
