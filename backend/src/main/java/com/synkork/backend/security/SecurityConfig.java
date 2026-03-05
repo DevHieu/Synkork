@@ -40,6 +40,9 @@ public class SecurityConfig {
     @Autowired
     JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
+    @Autowired
+    OAuth2SuccessHandler  oAuth2SuccessHandler;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -47,6 +50,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/public/**", "/auth/**").permitAll()
                         .anyRequest().authenticated())  // bắt authentication vơ mấ cái api bình thường
+                .oauth2Login(oauth -> oauth
+                        .successHandler(oAuth2SuccessHandler))
                 .httpBasic(customizer -> customizer.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))

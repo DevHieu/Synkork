@@ -8,7 +8,11 @@ import java.util.function.Function;
 
 import javax.crypto.SecretKey;
 
+import com.synkork.backend.modules.auth.dto.JwtResponse;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -90,5 +94,26 @@ public class JwtService {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    public String generateJwtToken(String username, HttpServletResponse response) {
+        String accessToken = this.generateToken(username, "ACCESS");
+        String refreshToken = this.generateToken(username, "REFRESH");
+
+        this.saveRefreshToken(refreshToken, response);
+
+        return accessToken;
+    }
+
+    public void saveRefreshToken(String refreshToken, HttpServletResponse response) {
+        ResponseCookie cookie = ResponseCookie.from("refresh_token", refreshToken)
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(7 * 24 * 60 * 60)
+                .sameSite("Lax")
+                .build();
+
+        response.addHeader("Set-Cookie", cookie.toString());
     }
 }

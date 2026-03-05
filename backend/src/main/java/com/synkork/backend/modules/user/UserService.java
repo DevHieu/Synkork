@@ -25,8 +25,8 @@ public class UserService {
   }
 
   // @NonNull annotation giúp đảm bảo rằng user không được null, đỡ bị IDE báo
-  public Optional<UserEntity> create(@NonNull UserEntity user) {
-    return Optional.ofNullable(userRepository.save(user));
+  public UserEntity create(@NonNull UserEntity user) {
+    return userRepository.save(user);
   }
 
   public UserInfoDto getUserInfo(String username) {
@@ -34,4 +34,12 @@ public class UserService {
 
     return new UserInfoDto(user);
   }
+
+    public UserEntity findByEmail(String email) {
+      return userRepository.findByEmail(email).orElse(null);
+    }
+
+    public UserEntity updateUser(UserEntity existedUser) {
+      return userRepository.save(existedUser);
+    }
 }
