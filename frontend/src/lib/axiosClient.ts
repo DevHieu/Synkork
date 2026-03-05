@@ -31,35 +31,33 @@ axiosClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Kiểm tra nếu lỗi 401 (Unauthorized)
+    if (originalRequest.url.includes("/auth/refresh")) {
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
-        const refreshToken = cookies.get("refreshToken");
-        if (!refreshToken) {
-          return Promise.reject(error);
-        }
-
         const response = await axiosClient.post(
           "/api/auth/refresh",
-          refreshToken
+          {},
+          { withCredentials: true }
         );
-        const accessToken = response.data;
 
+        const accessToken = response.data;
         cookies.set("accessToken", accessToken, "15m");
 
-        // Chạy lại request gốc với token mới
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-        return axios(originalRequest);
+        return axiosClient(originalRequest); // dùng axiosClient luôn
       } catch (refreshError) {
-        // Nếu refresh token cũng bị lỗi, xóa cookie và trả về lỗi
         cookies.remove("accessToken");
-        cookies.remove("refreshToken");
         window.location.href = "/auth/login";
         return Promise.reject(refreshError);
       }
     }
+
+    return Promise.reject(error);
   }
 );
 

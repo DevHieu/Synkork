@@ -45,6 +45,12 @@ const submitLogin = async () => {
       error.response?.data || "Đã xảy ra lỗi không xác định.";
   }
 };
+
+const handleGoogleLogin = () => {
+  window.location.href = `${
+    import.meta.env.VITE_BACKEND_URL
+  }/api/oauth2/authorization/google`;
+};
 </script>
 
 <template>
@@ -112,7 +118,11 @@ const submitLogin = async () => {
         </div>
 
         <!-- Google login -->
-        <Button variant="outline" class="w-full flex items-center gap-2">
+        <Button
+          variant="outline"
+          class="w-full flex items-center gap-2"
+          @click="handleGoogleLogin"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 48 48"
@@ -141,7 +151,10 @@ const submitLogin = async () => {
         <!-- Chuyển sang đăng ký -->
         <p class="text-sm text-center text-muted-foreground">
           Chưa có tài khoản?
-          <RouterLink to="/auth/register" class="text-primary hover:underline ml-1">
+          <RouterLink
+            to="/auth/register"
+            class="text-primary hover:underline ml-1"
+          >
             Đăng ký
           </RouterLink>
         </p>
