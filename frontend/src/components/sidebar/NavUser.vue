@@ -24,10 +24,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-import { inject } from 'vue';
-import type { VueCookies } from 'vue-cookies';
-
-const $cookies = inject<VueCookies>('$cookies')!
+import { logout } from "@/services/authService";
 
 const props = defineProps<{
   user: {
@@ -38,13 +35,6 @@ const props = defineProps<{
 }>();
 
 const { isMobile } = useSidebar();
-
-const handleLogout = () => {
-  // Implement your logout logic here
-  $cookies.remove('accessToken');
-  $cookies.remove('refreshToken');
-  window.location.href = '/auth/login';
-};
 </script>
 
 <template>
@@ -106,7 +96,7 @@ const handleLogout = () => {
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem @click="handleLogout">
+          <DropdownMenuItem @click="logout">
             <LogOut />
             Log out
           </DropdownMenuItem>

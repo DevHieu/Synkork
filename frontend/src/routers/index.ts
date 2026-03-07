@@ -1,10 +1,14 @@
 import { createRouter, createWebHistory } from "vue-router";
 // import VideoCall from "@/components/videoCall/VideoCall.vue";
 
-import LoginPage from "@/pages/LoginPage.vue";
-import RegisterPage from "@/pages/RegisterPage.vue";
 import MainPage from "@/pages/MainPage.vue";
-import OAuth2Redirect from "@/pages/OAuth2Redirect.vue";
+
+import LoginPage from "@/pages/auth/LoginPage.vue";
+import RegisterPage from "@/pages/auth/RegisterPage.vue";
+import ForgotPage from "@/pages/auth/ForgotPage.vue";
+import OAuth2Redirect from "@/pages/auth/OAuth2Redirect.vue";
+import VerifyPage from "@/pages/auth/VerifyPage.vue";
+import ResetPassword from "@/pages/auth/ResetPassword.vue";
 
 import ChatWindowLayout from "@/components/windows/ChatWindowLayout.vue";
 import VoiceWindowLayout from "@/components/windows/VoiceWindowLayout.vue";
@@ -12,9 +16,12 @@ import CalendarWindowLayout from "@/components/windows/CalendarWindowLayout.vue"
 import NoteWindowLayout from "@/components/windows/NoteWindowLayout.vue";
 import TaskWindowLayout from "@/components/windows/TaskWindowLayout.vue";
 
-import { useUserStore } from "@/stores/userStore";
-import { storeToRefs } from "pinia";
 import MePage from "@/pages/MePage.vue";
+
+import VueCookies from "vue-cookies";
+import axiosClient from "@/lib/axiosClient";
+
+const cookies = VueCookies as any;
 
 const routes = [
   {
@@ -22,6 +29,9 @@ const routes = [
     children: [
       { path: "login", component: LoginPage },
       { path: "register", component: RegisterPage },
+      { path: "forgot-password", component: ForgotPage },
+      { path: "verify", component: VerifyPage },
+      { path: "reset-password", component: ResetPassword },
     ],
   },
   {
@@ -68,22 +78,34 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, from) => {
-  //Tạo sotre lấy thông tin user
-  const userStore = useUserStore();
-  const { user } = storeToRefs(userStore);
+router.beforeEach(async (to, from) => {
+  const token = cookies.get("accessToken");
 
-  if (user.value === null && !to.path.includes("/auth")) {
-    userStore.getUserInfo();
+  // Bỏ qua oauth2 redirect
+  if (to.path.includes("/oauth2")) return;
 
-    return;
+  // Nếu không có accessToken, thử refresh
+  if (!token && !to.path.includes("/auth")) {
+    try {
+      const response = await axiosClient.post(
+        "/api/auth/refresh",
+        {},
+        { withCredentials: true }
+      );
+      const newToken = response.data;
+      cookies.set("accessToken", newToken, "15m");
+      return;
+    } catch {
+      return { path: "/auth/login" };
+    }
   }
 
-  if (to.path === "/") {
+  // Đã login rồi mà vào auth pages
+  if (token && to.path.includes("/auth")) {
     return { path: "/me" };
   }
 
-  if (to.path.includes("/auth") && user.value !== null) {
+  if (to.path === "/") {
     return { path: "/me" };
   }
 });

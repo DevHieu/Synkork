@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { onMounted, watch } from "vue";
 import { Command } from "lucide-vue-next";
 import { h, ref } from "vue";
 import {
@@ -17,26 +17,33 @@ import {
 import { Separator } from "@/components/ui/separator";
 import NavUser from "./NavUser.vue";
 
-import { useRouter } from "vue-router";
 import { useUserStore } from "@/stores/userStore";
 import { useRoomsStore } from "@/stores/roomStore";
 import { storeToRefs } from "pinia";
 
 const activeItem = ref<any>(null);
 
-const router = useRouter();
 const userStore = useUserStore();
 const { user } = storeToRefs(userStore);
 const roomStore = useRoomsStore();
 const { rooms } = storeToRefs(roomStore);
 
-onMounted(async () => {
-  const userId = user.value?.id;
-  await roomStore.fetchRooms(userId);
-  if (rooms.value && rooms.value.length > 0) {
-    selectRoom(rooms.value[0]);
-  }
-});
+watch(
+  () => user.value?.id,
+  async (userId) => {
+    console.log("User ID changed:", userId);
+
+    if (!userId) return;
+
+    await roomStore.fetchRooms(userId);
+    console.log("Rooms fetched:", rooms.value);
+
+    if (rooms.value && rooms.value.length > 0) {
+      selectRoom(rooms.value[0]);
+    }
+  },
+  { immediate: true }
+);
 
 const selectRoom = (roomItem: any) => {
   activeItem.value = roomItem;
@@ -91,7 +98,7 @@ const { setOpen } = useSidebar();
                 <div
                   class="w-full h-full flex items-center justify-center text-white"
                 >
-                  {{ item.name.charAt(0).toUpperCase() }}
+                  {{ item?.name?.charAt(0).toUpperCase() }}
                 </div>
               </SidebarMenuButton>
             </SidebarMenuItem>

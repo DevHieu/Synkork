@@ -4,10 +4,18 @@ import SockJS from "sockjs-client";
 let stompClient: Client;
 let spaceSubscription: any = null;
 
+import VueCookies from "vue-cookies";
+
+const cookies = VueCookies as any;
+
 export function connectWebSocket(onConnected?: () => void) {
   stompClient = new Client({
     webSocketFactory: () =>
       new SockJS(`${import.meta.env.VITE_BACKEND_URL}/api/ws`),
+
+    connectHeaders: {
+      Authorization: `Bearer ${cookies.get("accessToken")}`,
+    },
 
     reconnectDelay: 5000,
     debug: (str) => console.log(str),

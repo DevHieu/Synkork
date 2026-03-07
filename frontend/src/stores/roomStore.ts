@@ -1,4 +1,4 @@
-import axios from "axios";
+import { getUserRooms } from "@/services/roomService";
 import { defineStore } from "pinia";
 
 export const useRoomsStore = defineStore("rooms", {
@@ -12,9 +12,9 @@ export const useRoomsStore = defineStore("rooms", {
     async fetchRooms(userId: string) {
       this.loading = true;
       try {
-        const res = await axios.get(`/rooms/${userId}`);
+        console.log(`Fetching rooms for userId: ${userId}`);
 
-        this.rooms = res.data;
+        this.rooms = await getUserRooms(userId);
       } finally {
         this.loading = false;
       }

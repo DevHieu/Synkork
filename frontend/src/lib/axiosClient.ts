@@ -14,7 +14,7 @@ axiosClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = cookies.get("accessToken");
     const url = config.url ?? "";
-    if (!url.startsWith("/login") && !url.startsWith("/register")) {
+    if (!url.includes("/auth/")) {
       if (token) {
         config.headers = config.headers ?? {};
         config.headers.Authorization = `Bearer ${token}`;
@@ -35,7 +35,11 @@ axiosClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (
+      error.response?.status === 401 &&
+      !originalRequest.url.includes("/auth/") &&
+      !originalRequest._retry
+    ) {
       originalRequest._retry = true;
 
       try {
@@ -49,8 +53,13 @@ axiosClient.interceptors.response.use(
         cookies.set("accessToken", accessToken, "15m");
 
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-        return axiosClient(originalRequest); // dùng axiosClient luôn
-      } catch (refreshError) {
+        return axiosClient(originalRequest);
+      } catch (refreshError: any) {
+        console.log(
+          "Refresh failed:",
+          refreshError.response?.status,
+          refreshError.response?.data
+        );
         cookies.remove("accessToken");
         window.location.href = "/auth/login";
         return Promise.reject(refreshError);
