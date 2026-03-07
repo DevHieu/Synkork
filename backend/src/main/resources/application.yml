@@ -29,6 +29,8 @@ spring:
             token-uri: https://oauth2.googleapis.com/token
             user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
             user-name-attribute: sub
+  config:
+    import: optional:file:.env[.properties]
 
 server:
   port: 8080
@@ -42,3 +44,7 @@ frontend:
 
 jwt:
   secret: CFGSc60ez6n093BbLoqk1BdPFa02l26UBAjKvFGAw3Q
+
+gmail:
+  username: ${GMAIL_USERNAME}
+  password: ${GMAIL_PASSWORD}

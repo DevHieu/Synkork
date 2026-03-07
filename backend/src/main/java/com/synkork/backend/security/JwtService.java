@@ -106,7 +106,7 @@ public class JwtService {
     }
 
     public void saveRefreshToken(String refreshToken, HttpServletResponse response) {
-        ResponseCookie cookie = ResponseCookie.from("refresh_token", refreshToken)
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
                 .httpOnly(true)
                 .secure(true)
                 .path("/")
