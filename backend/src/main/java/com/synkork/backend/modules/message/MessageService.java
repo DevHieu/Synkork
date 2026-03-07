@@ -31,7 +31,7 @@ public class MessageService {
 
 //   @NonNull annotation giúp đảm bảo rằng entity không được null, đỡ bị IDE báo
   public Optional<MessageEntity> createMessage(@NonNull MessageEntity entity) {
-    return Optional.ofNullable(messageRepository.save(entity));
+    return Optional.of(messageRepository.save(entity));
   }
 
     public MessageDTO saveMessage(MessageDTO dto, String senderId) {
@@ -47,7 +47,7 @@ public class MessageService {
 
         messageRepository.save(entity);
 
-        SenderDto senderDto = new SenderDto(sender.getUsername(), sender.getDisplayName(), sender.getAvatarUrl(), RoleEnum.valueOf(sender.getRole()));
+        SenderDto senderDto = new SenderDto(sender.getUsername(), sender.getDisplayName(), sender.getAvatarUrl(), sender.getRole());
 
         dto.setSender(senderDto);
         dto.setCreatedAt(entity.getCreatedAt());

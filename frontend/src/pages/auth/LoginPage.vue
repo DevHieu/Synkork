@@ -11,65 +11,110 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { ref } from "vue";
-import axios from "axios";
 import { useRouter } from "vue-router";
+import { login } from "@/services/authService";
+import type { LoginData } from "@/types/LoginData";
 
 const router = useRouter();
-const errorMessage = ref<string | null>(null);
 
-interface LoginData {
-  email: string;
-  password: string;
-}
+const highlightGoogle = ref(false);
+const serverError = ref("");
 
 const loginForm = ref({
-  email: "",
+  username: "",
   password: "",
 });
 
+const errors = ref({
+  username: "",
+  password: "",
+});
+
+const validate = () => {
+  let valid = true;
+  errors.value = { username: "", password: "" };
+
+  if (!loginForm.value.username.trim()) {
+    errors.value.username = "Vui lòng nhập email";
+    valid = false;
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginForm.value.username)) {
+    errors.value.username = "Email không hợp lệ";
+    valid = false;
+  }
+
+  if (!loginForm.value.password) {
+    errors.value.password = "Vui lòng nhập mật khẩu";
+    valid = false;
+  }
+
+  return valid;
+};
+
 const submitLogin = async () => {
-  errorMessage.value = null;
+  serverError.value = "";
+  highlightGoogle.value = false;
+  if (!validate()) return;
 
   const data: LoginData = {
-    email: loginForm.value.email,
+    username: loginForm.value.username,
     password: loginForm.value.password,
   };
 
   try {
-    const response = await axios.post("/auth/login", data);
-
-    console.log("Login successful:", response.data);
-
-    // save to session storage
-    sessionStorage.setItem("userId", response.data?.id);
-    sessionStorage.setItem("username", response.data?.username);
-
+    await login(data);
     router.push("/");
   } catch (error: any) {
-    errorMessage.value =
-      error.response?.data || "Đã xảy ra lỗi không xác định.";
+    const status = error.response?.status;
+    const message = error.response?.data;
+
+    if (status === 403) {
+      serverError.value = message;
+      highlightGoogle.value = true; // highlight nút Google
+    } else {
+      serverError.value = message || "Sai email hoặc mật khẩu";
+    }
   }
+};
+
+const handleGoogleLogin = () => {
+  window.location.href = `${
+    import.meta.env.VITE_BACKEND_URL
+  }/api/oauth2/authorization/google`;
 };
 </script>
 
 <template>
   <div
-    className="flex min-h-svh w-full items-center justify-center p-6 md:p-10 background"
+    class="flex min-h-svh w-full items-center justify-center p-6 md:p-10 background"
   >
     <Card class="w-full max-w-md">
       <CardHeader>
         <CardTitle class="text-2xl text-center">Chào mừng trở lại!</CardTitle>
-        <CardDescription></CardDescription>
-        <Alert v-if="errorMessage" variant="destructive">
-          <AlertTitle>Đăng nhập thất bại</AlertTitle>
-          <AlertDescription>
-            {{ errorMessage }}
-          </AlertDescription>
-        </Alert>
+        <CardDescription />
+
+        <!-- Server error -->
+        <div
+          v-if="serverError"
+          class="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive mt-2"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4 shrink-0"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          {{ serverError }}
+        </div>
       </CardHeader>
+
       <CardContent class="grid gap-4">
         <div class="grid gap-2">
           <Label for="email">Email</Label>
@@ -77,20 +122,28 @@ const submitLogin = async () => {
             id="email"
             type="email"
             placeholder="m@example.com"
-            v-model="loginForm.email"
-            required
+            v-model="loginForm.username"
+            :class="errors.username ? 'border-destructive' : ''"
           />
+          <p v-if="errors.username" class="text-xs text-destructive">
+            {{ errors.username }}
+          </p>
         </div>
+
         <div class="grid gap-2">
           <Label for="password">Mật khẩu</Label>
           <Input
             id="password"
             type="password"
             v-model="loginForm.password"
-            required
+            :class="errors.password ? 'border-destructive' : ''"
           />
+          <p v-if="errors.password" class="text-xs text-destructive">
+            {{ errors.password }}
+          </p>
         </div>
       </CardContent>
+
       <CardFooter class="flex flex-col gap-4">
         <Button
           variant="secondary"
@@ -101,15 +154,13 @@ const submitLogin = async () => {
           Đăng nhập
         </Button>
 
-        <!-- Quên mật khẩu -->
         <RouterLink
-          to="/forgot-password"
+          to="/auth/forgot-password"
           class="text-sm text-muted-foreground hover:underline text-center"
         >
           Quên mật khẩu?
         </RouterLink>
 
-        <!-- Separator -->
         <div class="relative w-full">
           <Separator />
           <span
@@ -119,8 +170,12 @@ const submitLogin = async () => {
           </span>
         </div>
 
-        <!-- Google login -->
-        <Button variant="outline" class="w-full flex items-center gap-2">
+        <Button
+          variant="outline"
+          class="w-full flex items-center gap-2 transition-all"
+          :class="highlightGoogle ? 'border-primary ring-2 ring-primary' : ''"
+          @click="handleGoogleLogin"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 48 48"
@@ -146,10 +201,12 @@ const submitLogin = async () => {
           Đăng nhập với Google
         </Button>
 
-        <!-- Chuyển sang đăng ký -->
         <p class="text-sm text-center text-muted-foreground">
           Chưa có tài khoản?
-          <RouterLink to="/register" class="text-primary hover:underline ml-1">
+          <RouterLink
+            to="/auth/register"
+            class="text-primary hover:underline ml-1"
+          >
             Đăng ký
           </RouterLink>
         </p>
