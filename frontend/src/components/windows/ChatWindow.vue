@@ -110,9 +110,9 @@ const formatTime = (time: string) => {
 </script>
 
 <template>
-  <div class="flex flex-col h-screen bg-transparent overflow-hidden">
+  <div class="flex flex-col h-screen overflow-hidden background">
     <!-- Header -->
-    <div class="flex items-center justify-between px-4 py-3 border-b">
+    <div class="flex items-center justify-between px-4 py-3.5 border-b">
       <div class="flex items-center gap-2">
         <SidebarTrigger class="-ml-1" />
         <span class="font-semibold text-lg"># {{ currentSpace?.name }}</span>

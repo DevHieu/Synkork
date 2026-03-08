@@ -49,8 +49,9 @@ public class AuthService {
     private BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
 
     public String login(LoginRequest request, HttpServletResponse response) {
-        UserEntity user = userRepository.findByUsernameOrEmail(request.getUsername(), request.getUsername())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Username hoặc Email không tồn tại!"));
+        UserEntity user = userRepository.findByEmail(request.getUsername())
+                .orElseGet(() -> userRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Username hoặc Email không tồn tại!")));
 
         if (user.getProvider() == ProviderEnum.GOOGLE && user.getPassword() == null) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tài khoản này đăng nhập bằng Google, vui lòng sử dụng nút 'Đăng nhập với Google'");
@@ -69,19 +70,21 @@ public class AuthService {
     }
 
     public void register(RegisterRequest request) {
-        Optional<UserEntity> existingUser = userRepository.findByEmail(request.getEmail());
-        if (existingUser.isPresent()) {
-            if (existingUser.get().getStatus() == UserStatusEnum.INACTIVE) {
-                // User đã đăng ký nhưng chưa verify → gửi lại email
+        Optional<UserEntity> existingByUsername = userRepository.findByUsernameOrEmail(request.getUsername(), request.getUsername());
+        if (existingByUsername.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Tên người dùng đã được sử dụng");
+        }
+
+        Optional<UserEntity> existingByEmail = userRepository.findByEmail(request.getEmail());
+        if (existingByEmail.isPresent()) {
+            UserEntity existing = existingByEmail.get();
+            if (existing.getStatus() == UserStatusEnum.INACTIVE) {
+                // Chưa verify → gửi lại email verify
                 VerificationEntity verify = verificationService.createVerify(request.getEmail(), VerifyTypeEnum.REGISTER);
                 emailService.sendVerificationEmail(request.getEmail(), verify.getId().toString());
                 return;
             }
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email đã tồn tại");
-        }
-
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Tên người dùng đã được sử dụng");
         }
 
         UserEntity newUser = UserEntity.builder()

@@ -10,13 +10,16 @@ import OAuth2Redirect from "@/pages/auth/OAuth2Redirect.vue";
 import VerifyPage from "@/pages/auth/VerifyPage.vue";
 import ResetPassword from "@/pages/auth/ResetPassword.vue";
 
-import ChatWindowLayout from "@/components/windows/ChatWindowLayout.vue";
-import VoiceWindowLayout from "@/components/windows/VoiceWindowLayout.vue";
+import ChatWindow from "@/components/windows/ChatWindow.vue";
+import VoiceWindow from "@/components/windows/VoiceWindow.vue";
+import NoteWindow from "@/components/windows/NoteWindow.vue";
+import TaskWindow from "@/components/windows/TaskWindow.vue";
 import CalendarWindowLayout from "@/components/windows/CalendarWindowLayout.vue";
-import NoteWindowLayout from "@/components/windows/NoteWindowLayout.vue";
-import TaskWindowLayout from "@/components/windows/TaskWindowLayout.vue";
 
 import MePage from "@/pages/MePage.vue";
+
+import PersonLayout from "@/layouts/PersonLayout.vue";
+import RoomLayout from "@/layouts/RoomLayout.vue";
 
 import VueCookies from "vue-cookies";
 import axiosClient from "@/lib/axiosClient";
@@ -47,27 +50,44 @@ const routes = [
       },
       {
         path: "me",
-        component: MePage,
+        component: PersonLayout,
+        children: [
+          {
+            path: "",
+            component: MePage,
+          },
+        ],
       },
       {
-        path: "rooms/chat/:roomId/:spaceId",
-        component: ChatWindowLayout,
-      },
-      {
-        path: "rooms/voice/:roomId/:spaceId",
-        component: VoiceWindowLayout,
-      },
-      {
-        path: "rooms/calendar/:roomId/:spaceId",
-        component: CalendarWindowLayout,
-      },
-      {
-        path: "rooms/note/:roomId/:spaceId",
-        component: NoteWindowLayout,
-      },
-      {
-        path: "rooms/task/:roomId/:spaceId",
-        component: TaskWindowLayout,
+        path: "rooms",
+        component: RoomLayout,
+        children: [
+          {
+            path: "chat/:roomId/:spaceId",
+            component: ChatWindow,
+            meta: { spaceType: "CHAT" },
+          },
+          {
+            path: "voice/:roomId/:spaceId",
+            component: VoiceWindow,
+            meta: { spaceType: "VOICE" },
+          },
+          {
+            path: "calendar/:roomId/:spaceId",
+            component: CalendarWindowLayout,
+            meta: { spaceType: "CALENDAR" },
+          },
+          {
+            path: "note/:roomId/:spaceId",
+            component: NoteWindow,
+            meta: { spaceType: "NOTE" },
+          },
+          {
+            path: "task/:roomId/:spaceId",
+            component: TaskWindow,
+            meta: { spaceType: "TASK" },
+          },
+        ],
       },
     ],
   },

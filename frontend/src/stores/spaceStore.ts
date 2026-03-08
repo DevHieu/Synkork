@@ -68,5 +68,33 @@ export const useSpaceStore = defineStore("spaces", {
 
       console.log("Current Space:", this.currentSpace);
     },
+
+    // Hàm này dùng để đổi space khi đã có spaceId (ví dụ khi đổi room mà URL đã có spaceId)
+    async changeSpaceById(spaceId: string, spaceType: string) {
+      switch (spaceType.toUpperCase()) {
+        case "CHAT":
+          this.currentSpace =
+            this.chatSpaces.find((space) => space.id === spaceId) || null;
+          break;
+        case "VOICE":
+          this.currentSpace =
+            this.voiceSpaces.find((space) => space.id === spaceId) || null;
+          break;
+        case "NOTE":
+          this.currentSpace =
+            this.noteSpaces.find((space) => space.id === spaceId) || null;
+          break;
+        case "CALENDAR":
+          this.currentSpace =
+            this.calendarSpaces.find((space) => space.id === spaceId) || null;
+          break;
+        case "TASK":
+          this.currentSpace =
+            this.taskSpaces.find((space) => space.id === spaceId) || null;
+          break;
+        default:
+          this.currentSpace = null;
+      }
+    },
   },
 });

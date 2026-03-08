@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch } from "vue";
+// import { watch } from "vue";
 import {
   Sidebar,
   SidebarContent,
@@ -37,24 +37,11 @@ const {
   taskSpaces,
 } = storeToRefs(spaceStore);
 
-// Watch trực tiếp vào hàm getter của props
-watch(
-  currentRoom,
-  async (newRoom) => {
-    if (!newRoom || !newRoom.id) return;
-
-    console.log("Room ID changed:", newRoom.id);
-    await spaceStore.fetchSpacesByRoomId(newRoom.id);
-    changeSpace(0, "CHAT");
-  },
-  { immediate: true }
-);
-
 const changeSpace = async (
   index: number,
   type: "CHAT" | "VOICE" | "NOTE" | "CALENDAR" | "TASK"
 ) => {
-  await spaceStore.changeSpace(index, type); // Assuming chatSpaces is used for CHAT type\
+  await spaceStore.changeSpace(index, type);
 
   router.push(
     `/rooms/${type.toLowerCase()}/${currentRoom.value?.id}/${
@@ -92,7 +79,10 @@ const changeSpace = async (
                   v-for="(item, index) in taskSpaces"
                   :key="item.id"
                 >
-                  <SidebarMenuButton @click="changeSpace(index, 'TASK')">
+                  <SidebarMenuButton
+                    @click="changeSpace(index, 'TASK')"
+                    :isActive="currentSpace?.id === item.id"
+                  >
                     <Hash class="mr-2 h-4 w-4" />
                     <span>{{ item.name }}</span>
                   </SidebarMenuButton>
@@ -121,7 +111,10 @@ const changeSpace = async (
                   v-for="(item, index) in noteSpaces"
                   :key="item.id"
                 >
-                  <SidebarMenuButton @click="changeSpace(index, 'NOTE')">
+                  <SidebarMenuButton
+                    @click="changeSpace(index, 'NOTE')"
+                    :isActive="currentSpace?.id === item.id"
+                  >
                     <Hash class="mr-2 h-4 w-4" />
                     <span>{{ item.name }}</span>
                   </SidebarMenuButton>
@@ -150,7 +143,10 @@ const changeSpace = async (
                   v-for="(item, index) in calendarSpaces"
                   :key="item.id"
                 >
-                  <SidebarMenuButton @click="changeSpace(index, 'CALENDAR')">
+                  <SidebarMenuButton
+                    @click="changeSpace(index, 'CALENDAR')"
+                    :isActive="currentSpace?.id === item.id"
+                  >
                     <Hash class="mr-2 h-4 w-4" />
                     <span>{{ item.name }}</span>
                   </SidebarMenuButton>
@@ -179,7 +175,10 @@ const changeSpace = async (
                   v-for="(item, index) in chatSpaces"
                   :key="item.id"
                 >
-                  <SidebarMenuButton @click="changeSpace(index, 'CHAT')">
+                  <SidebarMenuButton
+                    @click="changeSpace(index, 'CHAT')"
+                    :isActive="currentSpace?.id === item.id"
+                  >
                     <Hash class="mr-2 h-4 w-4" />
                     <span>{{ item.name }}</span>
                   </SidebarMenuButton>
@@ -208,7 +207,10 @@ const changeSpace = async (
                   v-for="(item, index) in voiceSpaces"
                   :key="item.id"
                 >
-                  <SidebarMenuButton @click="changeSpace(index, 'VOICE')">
+                  <SidebarMenuButton
+                    @click="changeSpace(index, 'VOICE')"
+                    :isActive="currentSpace?.id === item.id"
+                  >
                     <Volume2 class="mr-2 h-4 w-4" />
                     <span>{{ item.name }}</span>
                   </SidebarMenuButton>

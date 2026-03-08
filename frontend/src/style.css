@@ -1,10 +1,31 @@
-@import url("https://fonts.googleapis.com/css2?family=Fjalla+One&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Google+Sans+Code:ital,wght@0,300..800;1,300..800&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 
+.background {
+  position: relative;
+}
+
+.background::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top left, var(--primary), transparent 55%),
+    linear-gradient(210deg, var(--secondary), transparent 50%),
+    linear-gradient(to right, var(--sidebar), var(--background));
+  filter: blur(80px);
+  z-index: 0;
+}
+
+/* Đảm bảo content nằm trên blur layer */
+.background > * {
+  position: relative;
+  z-index: 1;
+}
+
 @custom-variant dark (&:is(.dark *));
 
-@theme inline {
+/* @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -40,9 +61,9 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-}
+} */
 
-:root {
+/* :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -51,7 +72,7 @@
   --popover-foreground: oklch(0.145 0 0);
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
+  --secondary: oklch(0.5416 0.0924 194.7689);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
@@ -103,10 +124,7 @@
   --tracking-normal: 0em;
   --spacing: 0.25rem;
 
-  /* font */
-  font-family: "Fjalla One", sans-serif;
-  font-weight: 400;
-  font-style: normal;
+  
 }
 
 .dark {
@@ -220,7 +238,7 @@
   --shadow-lg: var(--shadow-lg);
   --shadow-xl: var(--shadow-xl);
   --shadow-2xl: var(--shadow-2xl);
-}
+} */
 
 @layer base {
   * {
@@ -232,6 +250,11 @@
 }
 
 :root {
+  font-family: "Google Sans Code", monospace;
+  font-optical-sizing: auto;
+  font-weight: 600;
+  font-style: normal;
+
   --background: oklch(0.98 0.01 93.48);
   --foreground: oklch(0.34 0.03 94.42);
   --card: oklch(0.98 0.01 93.48);
@@ -240,8 +263,8 @@
   --popover-foreground: oklch(0.27 0.02 99.7);
   --primary: oklch(0.62 0.14 39.15);
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.92 0.01 87.42);
-  --secondary-foreground: oklch(0.43 0.02 99.33);
+  --secondary: oklch(0.5416 0.0924 194.7689);
+  --secondary-foreground: oklch(1 0 0);
   --muted: oklch(0.93 0.02 91.55);
   --muted-foreground: oklch(0.61 0.01 91.49);
   --accent: oklch(0.92 0.01 87.42);
@@ -258,21 +281,11 @@
   --sidebar: oklch(0.97 0.01 93.49);
   --sidebar-foreground: oklch(0.36 0.01 106.85);
   --sidebar-primary: oklch(0.62 0.14 39.15);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.92 0.01 87.42);
+  --sidebar-primary-foreground: oklch(0.33 0 0);
+  --sidebar-accent: oklch(0.62 0.14 39.15);
   --sidebar-accent-foreground: oklch(0.33 0 0);
   --sidebar-border: oklch(0.94 0 0);
   --sidebar-ring: oklch(0.77 0 0);
-
-  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui,
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
-    Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
-    "Segoe UI Symbol", "Noto Color Emoji";
-  --font-serif: "Geist", "Geist Fallback", ui-serif, Georgia, Cambria,
-    "Times New Roman", Times, serif;
-  --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, SFMono-Regular,
-    Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-
   --radius: 0.5rem;
 
   --shadow-2xs: 0 1px 3px 0px oklch(0 0 0 / 0.05);
@@ -315,9 +328,9 @@
   --chart-5: oklch(0.56 0.13 41.94);
   --sidebar: oklch(0.17 0.02 195.18);
   --sidebar-foreground: oklch(0.81 0.01 93.53);
-  --sidebar-primary: oklch(0.33 0 0);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.17 0 0);
+  --sidebar-primary: oklch(0.56 0.17 36.15);
+  --sidebar-primary-foreground: oklch(0.81 0.01 93.53);
+  --sidebar-accent: oklch(0.56 0.17 36.15);
   --sidebar-accent-foreground: oklch(0.81 0.01 93.53);
   --sidebar-border: oklch(0.94 0 0);
   --sidebar-ring: oklch(0.77 0 0);

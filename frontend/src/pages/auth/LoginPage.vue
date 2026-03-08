@@ -37,10 +37,7 @@ const validate = () => {
   errors.value = { username: "", password: "" };
 
   if (!loginForm.value.username.trim()) {
-    errors.value.username = "Vui lòng nhập email";
-    valid = false;
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginForm.value.username)) {
-    errors.value.username = "Email không hợp lệ";
+    errors.value.username = "Vui lòng nhập username hoặc email";
     valid = false;
   }
 
@@ -117,7 +114,7 @@ const handleGoogleLogin = () => {
 
       <CardContent class="grid gap-4">
         <div class="grid gap-2">
-          <Label for="email">Email</Label>
+          <Label for="email">Username hoặc Email</Label>
           <Input
             id="email"
             type="email"

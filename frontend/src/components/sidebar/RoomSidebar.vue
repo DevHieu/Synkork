@@ -17,9 +17,12 @@ import {
 import { Separator } from "@/components/ui/separator";
 import NavUser from "./NavUser.vue";
 
+import { RouterLink, useRoute } from "vue-router";
 import { useUserStore } from "@/stores/userStore";
 import { useRoomsStore } from "@/stores/roomStore";
 import { storeToRefs } from "pinia";
+
+const route = useRoute();
 
 const activeItem = ref<any>(null);
 
@@ -31,27 +34,31 @@ const { rooms } = storeToRefs(roomStore);
 watch(
   () => user.value?.id,
   async (userId) => {
-    console.log("User ID changed:", userId);
-
     if (!userId) return;
-
     await roomStore.fetchRooms(userId);
-    console.log("Rooms fetched:", rooms.value);
-
-    if (rooms.value && rooms.value.length > 0) {
-      selectRoom(rooms.value[0]);
-    }
+    await initCurrentRoom();
   },
   { immediate: true }
 );
 
-const selectRoom = (roomItem: any) => {
-  activeItem.value = roomItem;
-  setOpen(true);
-  roomStore.changeRoom(roomItem);
+// Hàm này dùng check xem là cái url hiện tại có phải đang trong 1 room và space ko
+const initCurrentRoom = async () => {
+  if (!route.fullPath.includes("/rooms/")) return; // Không phải thì chim cúc
+
+  const roomId = route.params.roomId as string;
+  const roomItem = rooms.value.find((room: any) => room.id === roomId);
+  if (!roomItem) return;
+
+  const spaceId = route.params.spaceId as string;
+  await selectRoom(roomItem, spaceId);
 };
 
-// const mails = ref(data.mails);
+const selectRoom = async (roomItem: any, spaceId?: string) => {
+  activeItem.value = roomItem;
+  setOpen(true);
+  await roomStore.changeRoom(roomItem, spaceId);
+};
+
 const { setOpen } = useSidebar();
 </script>
 
@@ -64,13 +71,13 @@ const { setOpen } = useSidebar();
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton size="lg" as-child class="md:h-10 md:p-0">
-            <a href="#" class="px-0 flex justify-center items-center">
+            <RouterLink to="/me" class="px-0 flex justify-center items-center">
               <div
                 class="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg"
               >
                 <Command class="size-6" />
               </div>
-            </a>
+            </RouterLink>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
@@ -89,15 +96,11 @@ const { setOpen } = useSidebar();
                   activeItem?.name === item.name ? 'page' : undefined
                 "
                 :class="
-                  activeItem?.name === item.name
-                    ? 'bg-primary!'
-                    : 'bg-transparent'
+                  activeItem?.name === item.name ? 'bg-primary!' : 'bg-muted'
                 "
                 @click="selectRoom(item)"
               >
-                <div
-                  class="w-full h-full flex items-center justify-center text-white"
-                >
+                <div class="w-full h-full flex items-center justify-center">
                   {{ item?.name?.charAt(0).toUpperCase() }}
                 </div>
               </SidebarMenuButton>
@@ -108,7 +111,9 @@ const { setOpen } = useSidebar();
     </SidebarContent>
 
     <SidebarFooter>
-      <NavUser :user="{ name: 'Hiếu', email: 'hàasf', avatar: 'hello' }" />
+      <SidebarMenuItem
+        ><NavUser :user="{ name: 'Hiếu', email: 'hàasf', avatar: 'hello' }"
+      /></SidebarMenuItem>
     </SidebarFooter>
   </Sidebar>
 </template>
