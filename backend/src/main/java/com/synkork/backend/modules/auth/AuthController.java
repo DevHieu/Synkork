@@ -72,12 +72,12 @@ public class AuthController {
     public ResponseEntity<String> refreshToken(@CookieValue("refreshToken") String refreshToken,
                                                HttpServletResponse response) {
         String username = jwtService.extractUserName(refreshToken);
-        System.out.println("Refresh Token: " + username);
+        String userId = jwtService.extractClaim(refreshToken, claims -> claims.get("userId", String.class));
         if (username != null && jwtService.validateRefreshToken(refreshToken)) {
             System.out.println("generating");
-            String newAccessToken = jwtService.generateToken(username, "ACCESS");
+            String newAccessToken = jwtService.generateToken(userId, username, "ACCESS");
 
-            String newRefreshToken = jwtService.generateToken(username, "REFRESH");
+            String newRefreshToken = jwtService.generateToken(userId, username, "REFRESH");
 
             jwtService.saveRefreshToken(newRefreshToken, response);
 

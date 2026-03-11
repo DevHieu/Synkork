@@ -62,7 +62,7 @@ public class AuthService {
                     new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
 
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-            return jwtService.generateJwtToken(userDetails.getUsername(), response);
+            return jwtService.generateJwtToken(user.getId().toString(), userDetails.getUsername(), response);
 
         } catch (BadCredentialsException e) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Mật khẩu sai. Vui lòng nhập lại!");
