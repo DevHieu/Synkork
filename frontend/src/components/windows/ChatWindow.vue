@@ -3,7 +3,6 @@ import { ref, nextTick, watch, onMounted } from "vue";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   connectWebSocket,
-  addUserToSocketRoom,
   subscribeSpace,
   sendMessage,
 } from "@/services/websocket/chatSocket";
@@ -46,7 +45,6 @@ const isSocketConnected = ref(false); // Check xem webSocket đã sẵn sàng ch
 onMounted(() => {
   if (roomId && spaceId) {
     connectWebSocket(async () => {
-      await addUserToSocketRoom(sessionStorage.getItem("userId")!);
       isSocketConnected.value = true; // Sẵn sàng gòi
     });
   }

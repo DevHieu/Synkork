@@ -84,7 +84,7 @@ const handleGoogleLogin = () => {
 
 <template>
   <div
-    class="flex min-h-svh w-full items-center justify-center p-6 md:p-10 background"
+    class="flex min-h-svh w-full items-center justify-center p-6 md:p-10 auth_background"
   >
     <Card class="w-full max-w-md">
       <CardHeader>
@@ -213,7 +213,7 @@ const handleGoogleLogin = () => {
 </template>
 
 <style scoped>
-.background {
+.auth_background {
   background: radial-gradient(
     circle,
     rgba(197, 69, 32, 1) 0%,

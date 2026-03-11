@@ -88,7 +88,9 @@ const submitReset = async () => {
 </script>
 
 <template>
-  <div class="flex min-h-svh w-full items-center justify-center background">
+  <div
+    class="flex min-h-svh w-full items-center justify-center auth_background"
+  >
     <!-- Success -->
     <Card v-if="status === 'success'" class="w-full max-w-md text-center">
       <CardHeader>
@@ -300,7 +302,7 @@ const submitReset = async () => {
 </template>
 
 <style scoped>
-.background {
+.auth_background {
   background: radial-gradient(
     ellipse at top left,
     rgba(99, 57, 199, 1) 0%,

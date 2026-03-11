@@ -59,12 +59,3 @@ export function sendMessage(message: { content: string; spaceId: string }) {
     body: JSON.stringify(message),
   });
 }
-
-export function addUserToSocketRoom(userId: string) {
-  if (!stompClient?.connected) return;
-
-  stompClient.publish({
-    destination: "/app/chat.addUser",
-    body: userId,
-  });
-}
