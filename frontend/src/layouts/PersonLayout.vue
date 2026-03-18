@@ -1,15 +1,22 @@
 <script setup lang="ts">
 import BaseLayout from "./BaseLayout.vue";
 import RoomSidebar from "@/components/sidebar/RoomSidebar.vue";
+import FriendSidebar from "@/components/sidebar/FriendSidebar.vue";
+import { inject, onMounted } from "vue";
+
+const setSpaceOpen = inject<(val: boolean) => void>("setSpaceOpen");
+onMounted(() => {
+  setSpaceOpen?.(true);
+});
 </script>
 
 <template>
   <BaseLayout>
-    <template #sidebar>
+    <template #room-sidebar>
       <RoomSidebar />
-      <h1 class="text-2xl font-bold text-center mt-4">Person Layout</h1>
+    </template>
+    <template #space-sidebar>
+      <FriendSidebar />
     </template>
   </BaseLayout>
 </template>
-
-<style scoped></style>

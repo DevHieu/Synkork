@@ -1,3 +1,4 @@
+import { getFreshToken } from "@/utils/auth";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 
@@ -25,8 +26,30 @@ export function connectWebSocket(onConnected?: () => void) {
       onConnected?.();
     },
 
-    onStompError: (frame) => {
-      console.error("Broker error:", frame.headers["message"]);
+    onStompError: async (frame) => {
+      const message: string = frame.headers["message"] ?? "";
+      console.error("Broker error:", message);
+
+      if (message.toLowerCase().includes("jwt expired")) {
+        console.log("Access token expired — refreshing and reconnecting...");
+
+        // Force-clear the stale token so getFreshToken hits the refresh endpoint
+        cookies.remove("accessToken");
+
+        try {
+          const freshToken = await getFreshToken();
+
+          if (stompClient) {
+            stompClient.connectHeaders = {
+              Authorization: `Bearer ${freshToken}`,
+            };
+            stompClient.deactivate().then(() => stompClient?.activate());
+          }
+        } catch {
+          cookies.remove("accessToken");
+          window.location.href = "/auth/login";
+        }
+      }
     },
   });
 

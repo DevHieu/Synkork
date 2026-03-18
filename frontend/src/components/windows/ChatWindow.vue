@@ -146,15 +146,17 @@ const formatTime = (time: string) => {
     </div>
 
     <!-- Input -->
-    <div class="border-t px-4 py-3">
+    <div
+      class="border-t border-white/10 px-4 py-3 bg-zinc-950/70 backdrop-blur-md"
+    >
       <form @submit.prevent="handleSendMessage" class="flex gap-2">
         <input
           v-model="newMessage"
           placeholder="Nhắn tin..."
-          class="flex-1 border px-3 py-2 rounded focus:outline-none focus:ring"
+          class="flex-1 bg-white/5 border border-white/10 px-3 py-2 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-teal-500"
         />
         <button
-          class="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700"
+          class="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-500 transition-colors font-medium"
         >
           Gửi
         </button>

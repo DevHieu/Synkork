@@ -6,11 +6,11 @@ import SpaceSidebar from "@/components/sidebar/SpaceSidebar.vue";
 
 <template>
   <BaseLayout>
-    <template #sidebar>
+    <template #room-sidebar>
       <RoomSidebar />
+    </template>
+    <template #space-sidebar>
       <SpaceSidebar />
     </template>
   </BaseLayout>
 </template>
-
-<style scoped></style>

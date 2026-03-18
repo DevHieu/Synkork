@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
-import { getAllSpacesFromRoomId } from "@/services/spaceService";
+import { createSpace, getAllSpacesFromRoomId } from "@/services/spaceService";
+import router from "@/routers";
 
 export const useSpaceStore = defineStore("spaces", {
   state: () => ({
@@ -95,6 +96,47 @@ export const useSpaceStore = defineStore("spaces", {
         default:
           this.currentSpace = null;
       }
+
+      console.log(this.currentSpace);
+
+      if (this.currentSpace === null) {
+        this.currentSpace = this.chatSpaces[0] || null;
+        router.push(
+          `/rooms/chat/${router.currentRoute.value.params.roomId}/${
+            this.chatSpaces[0]?.id || ""
+          }`
+        );
+      }
+    },
+
+    async createSpace(name: string, type: string, roomId: string) {
+      const spaceData = {
+        name,
+        type,
+      };
+      const newSpace = await createSpace(roomId, spaceData);
+
+      switch (type.toUpperCase()) {
+        case "CHAT":
+          this.chatSpaces.unshift(newSpace);
+          break;
+        case "VOICE":
+          this.voiceSpaces.unshift(newSpace);
+          break;
+        case "NOTE":
+          this.noteSpaces.unshift(newSpace);
+          break;
+        case "CALENDAR":
+          this.calendarSpaces.unshift(newSpace);
+          break;
+        case "TASK":
+          this.taskSpaces.unshift(newSpace);
+          break;
+      }
+
+      await this.changeSpaceById(newSpace.id, type);
+
+      return newSpace.id;
     },
   },
 });
