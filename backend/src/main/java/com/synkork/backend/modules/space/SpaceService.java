@@ -2,6 +2,7 @@ package com.synkork.backend.modules.space;
 
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.RoomRepository;
+import com.synkork.backend.modules.space.dto.CreateSpaceDto;
 import com.synkork.backend.modules.space.dto.SpaceDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,10 +19,12 @@ public class SpaceService {
     @Autowired
     private RoomRepository roomRepository;
 
-    public Optional<SpaceEntity> createSpace(SpaceEntity space, UUID roomId) {
+    public Optional<SpaceEntity> createSpace(CreateSpaceDto space, UUID roomId) {
         RoomEntity roomEntity = roomRepository.getReferenceById(roomId);
-        space.setRoom(roomEntity);
-        return Optional.of(spaceRepository.save(space));
+
+        SpaceEntity spaceEntity = new SpaceEntity(space.name(), SpaceTypeEnum.valueOf(space.type()), roomEntity);
+
+        return Optional.of(spaceRepository.save(spaceEntity));
     }
 
     public List<SpaceDto> getAllSpaceByRoomId(UUID roomId) {

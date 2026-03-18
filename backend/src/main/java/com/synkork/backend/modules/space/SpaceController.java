@@ -1,6 +1,6 @@
 package com.synkork.backend.modules.space;
 
-import com.synkork.backend.modules.room.dto.RoomDto;
+import com.synkork.backend.modules.space.dto.CreateSpaceDto;
 import com.synkork.backend.modules.space.dto.SpaceDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,10 +17,12 @@ public class SpaceController {
     private SpaceService spaceService;
 
     @PostMapping
-    public ResponseEntity<SpaceEntity> createSpace(@PathVariable UUID roomId, @RequestBody SpaceEntity space) {
+    public ResponseEntity<SpaceDto> createSpace(@PathVariable UUID roomId, @RequestBody CreateSpaceDto space) {
+        System.out.println("space: " + space);
         return spaceService.createSpace(space, roomId)
+                .map(s -> new SpaceDto(s.getId(), s.getName(), s.getType()))
                 .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.badRequest().body(null));
+                .orElseGet(() -> ResponseEntity.badRequest().build());
     }
 
     @GetMapping

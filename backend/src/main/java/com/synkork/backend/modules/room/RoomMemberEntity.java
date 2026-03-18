@@ -37,6 +37,6 @@ public class RoomMemberEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
-    private String role;
-    private LocalDateTime joinedAt;
+    private RoomMemberRoleEnum role = RoomMemberRoleEnum.MEMBER;
+    private LocalDateTime joinedAt =  LocalDateTime.now();
 }

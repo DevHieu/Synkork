@@ -48,3 +48,8 @@ jwt:
 gmail:
   username: ${GMAIL_USERNAME}
   password: ${GMAIL_PASSWORD}
+
+cloudinary:
+  name: ${CLOUDINARY_CLOUD_NAME}
+  key: ${CLOUDINARY_API_KEY}
+  secret: ${CLOUDINARY_API_SECRET}
