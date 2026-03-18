@@ -51,7 +51,9 @@ const submitForgotPassword = async () => {
 </script>
 
 <template>
-  <div class="flex min-h-svh w-full items-center justify-center background">
+  <div
+    class="flex min-h-svh w-full items-center justify-center auth_background"
+  >
     <!-- Success box -->
     <Card v-if="successEmail" class="w-full max-w-md text-center">
       <CardHeader>
@@ -197,7 +199,7 @@ const submitForgotPassword = async () => {
 </template>
 
 <style scoped>
-.background {
+.auth_background {
   background: radial-gradient(
     ellipse at top left,
     rgba(99, 57, 199, 1) 0%,

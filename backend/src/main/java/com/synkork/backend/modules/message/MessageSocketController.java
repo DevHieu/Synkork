@@ -25,17 +25,8 @@ public class MessageSocketController {
 
       MessageDTO message = messageService.saveMessage(dto, senderId);
 
-    // TODO: lưu DB
     messagingTemplate.convertAndSend(
         "/topic/space/" + message.getSpaceId() + "/messages",
             message);
-  }
-
-  @MessageMapping("/chat.addUser")
-  public void addUser(
-      @Payload String userId,
-      SimpMessageHeaderAccessor headerAccessor) {
-    headerAccessor.getSessionAttributes()
-        .put("userId", userId.replace("\"", ""));
   }
 }

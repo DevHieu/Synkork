@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
-import { getAllSpacesFromRoomId } from "@/services/spaceService";
+import { createSpace, getAllSpacesFromRoomId } from "@/services/spaceService";
+import router from "@/routers";
 
 export const useSpaceStore = defineStore("spaces", {
   state: () => ({
@@ -67,6 +68,75 @@ export const useSpaceStore = defineStore("spaces", {
       }
 
       console.log("Current Space:", this.currentSpace);
+    },
+
+    // Hàm này dùng để đổi space khi đã có spaceId (ví dụ khi đổi room mà URL đã có spaceId)
+    async changeSpaceById(spaceId: string, spaceType: string) {
+      switch (spaceType.toUpperCase()) {
+        case "CHAT":
+          this.currentSpace =
+            this.chatSpaces.find((space) => space.id === spaceId) || null;
+          break;
+        case "VOICE":
+          this.currentSpace =
+            this.voiceSpaces.find((space) => space.id === spaceId) || null;
+          break;
+        case "NOTE":
+          this.currentSpace =
+            this.noteSpaces.find((space) => space.id === spaceId) || null;
+          break;
+        case "CALENDAR":
+          this.currentSpace =
+            this.calendarSpaces.find((space) => space.id === spaceId) || null;
+          break;
+        case "TASK":
+          this.currentSpace =
+            this.taskSpaces.find((space) => space.id === spaceId) || null;
+          break;
+        default:
+          this.currentSpace = null;
+      }
+
+      console.log(this.currentSpace);
+
+      if (this.currentSpace === null) {
+        this.currentSpace = this.chatSpaces[0] || null;
+        router.push(
+          `/rooms/chat/${router.currentRoute.value.params.roomId}/${
+            this.chatSpaces[0]?.id || ""
+          }`
+        );
+      }
+    },
+
+    async createSpace(name: string, type: string, roomId: string) {
+      const spaceData = {
+        name,
+        type,
+      };
+      const newSpace = await createSpace(roomId, spaceData);
+
+      switch (type.toUpperCase()) {
+        case "CHAT":
+          this.chatSpaces.unshift(newSpace);
+          break;
+        case "VOICE":
+          this.voiceSpaces.unshift(newSpace);
+          break;
+        case "NOTE":
+          this.noteSpaces.unshift(newSpace);
+          break;
+        case "CALENDAR":
+          this.calendarSpaces.unshift(newSpace);
+          break;
+        case "TASK":
+          this.taskSpaces.unshift(newSpace);
+          break;
+      }
+
+      await this.changeSpaceById(newSpace.id, type);
+
+      return newSpace.id;
     },
   },
 });

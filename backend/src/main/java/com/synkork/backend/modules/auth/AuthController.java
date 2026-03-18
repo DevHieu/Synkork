@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.auth;
 
 import com.synkork.backend.common.utils.EmailService;
+import com.synkork.backend.common.utils.ImageService;
 import com.synkork.backend.modules.auth.dto.JwtResponse;
 import com.synkork.backend.modules.auth.dto.LoginRequest;
 import com.synkork.backend.modules.auth.dto.RegisterRequest;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
@@ -45,6 +47,7 @@ public class AuthController {
      * Nên ta sẽ tạo 1 DTO LoginRequest chỉ gồm email và password để nhận dữ liệu từ
      * client
      */
+
     @PostMapping("/login")
     public ResponseEntity<String> login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
 
@@ -72,12 +75,12 @@ public class AuthController {
     public ResponseEntity<String> refreshToken(@CookieValue("refreshToken") String refreshToken,
                                                HttpServletResponse response) {
         String username = jwtService.extractUserName(refreshToken);
-        System.out.println("Refresh Token: " + username);
+        String userId = jwtService.extractClaim(refreshToken, claims -> claims.get("userId", String.class));
         if (username != null && jwtService.validateRefreshToken(refreshToken)) {
             System.out.println("generating");
-            String newAccessToken = jwtService.generateToken(username, "ACCESS");
+            String newAccessToken = jwtService.generateToken(userId, username, "ACCESS");
 
-            String newRefreshToken = jwtService.generateToken(username, "REFRESH");
+            String newRefreshToken = jwtService.generateToken(userId, username, "REFRESH");
 
             jwtService.saveRefreshToken(newRefreshToken, response);
 

@@ -19,10 +19,15 @@ import java.util.List;
 @AllArgsConstructor
 public class RoomEntity extends BaseEntity {
     private String name;
-    private String roomAvatar;
+
+    @Column(nullable = true)
+    private String avatarUrl;
+
+    @Column(nullable = true)
+    private String avatarId;
 
     @Enumerated(EnumType.STRING)
-    private RoomTypeEnum type; // GROUP | DM
+    private RoomTypeEnum type = RoomTypeEnum.GROUP; // GROUP | DM
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", columnDefinition = "BINARY(16)")

@@ -126,7 +126,9 @@ const sendBack = () => {
 </script>
 
 <template>
-  <div class="flex min-h-svh w-full items-center justify-center background">
+  <div
+    class="flex min-h-svh w-full items-center justify-center auth_background"
+  >
     <Card v-if="!successMessage" class="w-full max-w-md">
       <CardHeader>
         <CardTitle class="text-2xl text-center">Tạo tài khoản</CardTitle>
@@ -337,7 +339,7 @@ const sendBack = () => {
 </template>
 
 <style scoped>
-.background {
+.auth_background {
   background: radial-gradient(
     circle,
     rgba(2, 60, 61, 1) 0%,

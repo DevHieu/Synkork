@@ -42,13 +42,13 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
             UserEntity newUser = new UserEntity();
             newUser.setEmail(email);
             newUser.setProvider(ProviderEnum.GOOGLE);
-            userService.create(newUser);
+            existedUser = userService.create(newUser);
         }
 
-        String refreshToken = jwtService.generateToken(email, "REFRESH");
+        String refreshToken = jwtService.generateToken(existedUser.getId().toString(), email, "REFRESH");
         jwtService.saveRefreshToken(refreshToken, response);
 
-        String accessToken = jwtService.generateToken(email, "ACCESS");
+        String accessToken = jwtService.generateToken(existedUser.getId().toString(), email, "ACCESS");
         response.sendRedirect(frontendUrl + "/oauth2/redirect?token=" + accessToken);
     }
 }

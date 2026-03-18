@@ -30,7 +30,9 @@ public class UserService {
   }
 
   public UserInfoDto getUserInfo(String username) {
-    UserEntity user = userRepository.findByUsernameOrEmail(username, username).orElse(null);
+      UserEntity user = userRepository.findByEmail(username)
+              .orElseGet(() -> userRepository.findByUsername(username)
+                      .orElse(null));
 
     return new UserInfoDto(user);
   }

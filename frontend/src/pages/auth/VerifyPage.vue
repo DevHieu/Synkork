@@ -38,7 +38,9 @@ onMounted(() => verify());
 </script>
 
 <template>
-  <div class="flex min-h-svh w-full items-center justify-center background">
+  <div
+    class="flex min-h-svh w-full items-center justify-center auth_background"
+  >
     <Card class="w-full max-w-md text-center">
       <!-- Loading -->
       <template v-if="status === 'loading'">
@@ -189,7 +191,7 @@ onMounted(() => verify());
 </template>
 
 <style scoped>
-.background {
+.auth_background {
   background: radial-gradient(
     circle,
     rgba(2, 60, 61, 1) 0%,

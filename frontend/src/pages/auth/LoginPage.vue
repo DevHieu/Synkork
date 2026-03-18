@@ -37,10 +37,7 @@ const validate = () => {
   errors.value = { username: "", password: "" };
 
   if (!loginForm.value.username.trim()) {
-    errors.value.username = "Vui lòng nhập email";
-    valid = false;
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginForm.value.username)) {
-    errors.value.username = "Email không hợp lệ";
+    errors.value.username = "Vui lòng nhập username hoặc email";
     valid = false;
   }
 
@@ -87,7 +84,7 @@ const handleGoogleLogin = () => {
 
 <template>
   <div
-    class="flex min-h-svh w-full items-center justify-center p-6 md:p-10 background"
+    class="flex min-h-svh w-full items-center justify-center p-6 md:p-10 auth_background"
   >
     <Card class="w-full max-w-md">
       <CardHeader>
@@ -117,7 +114,7 @@ const handleGoogleLogin = () => {
 
       <CardContent class="grid gap-4">
         <div class="grid gap-2">
-          <Label for="email">Email</Label>
+          <Label for="email">Username hoặc Email</Label>
           <Input
             id="email"
             type="email"
@@ -216,7 +213,7 @@ const handleGoogleLogin = () => {
 </template>
 
 <style scoped>
-.background {
+.auth_background {
   background: radial-gradient(
     circle,
     rgba(197, 69, 32, 1) 0%,

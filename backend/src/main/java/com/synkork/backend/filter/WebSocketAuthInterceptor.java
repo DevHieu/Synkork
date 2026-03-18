@@ -9,6 +9,7 @@ import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
+import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -26,35 +27,49 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
-        StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
+        StompHeaderAccessor accessor =
+                MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-        if (StompCommand.CONNECT.equals(accessor.getCommand())) {
-            String authHeader = accessor.getFirstNativeHeader("Authorization");
+        if (accessor == null || !StompCommand.CONNECT.equals(accessor.getCommand())) {
+            return message;
+        }
 
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                throw new MessagingException("Unauthorized");
+        String authHeader = accessor.getFirstNativeHeader("Authorization");
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new MessagingException("Unauthorized");
+        }
+
+        String token = authHeader.substring(7);
+        try {
+            String username = jwtService.extractUserName(token);
+            String tokenType = jwtService.extractClaim(token,
+                    claims -> claims.get("type", String.class));
+
+            if (username == null) {
+                throw new MessagingException("Unauthorized: missing username in token");
             }
 
-            String token = authHeader.substring(7);
-            try {
-                String username = jwtService.extractUserName(token);
-                String tokenType = jwtService.extractClaim(token, claims -> claims.get("type", String.class));
+            UserDetails userDetails = userDetailService.loadUserByUsername(username);
 
-                if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    UserDetails userDetails = userDetailService.loadUserByUsername(username);
-
-                    // CHỈ xác thực nếu là loại ACCESS
-                    if ("ACCESS".equals(tokenType) && jwtService.validateToken(token, userDetails)) {
-                        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                                userDetails, null, userDetails.getAuthorities());
-                        accessor.setUser(authToken);
-                    } else {
-                        throw new MessagingException("Unauthorized: invalid token type or token expired");
-                    }
-                }
-            } catch (Exception e) {
-                throw new MessagingException("JWT validation failed: " + e.getMessage());
+            if (!"ACCESS".equals(tokenType) || !jwtService.validateToken(token, userDetails)) {
+                throw new MessagingException("Unauthorized: invalid token type or expired");
             }
+
+            UsernamePasswordAuthenticationToken authToken =
+                    new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
+
+            accessor.setUser(authToken);
+
+            String userId = jwtService.extractClaim(token, claims -> claims.get("userId", String.class));
+            accessor.getSessionAttributes().put("userId", userId);
+            System.out.println("userId = " + userId);
+
+        } catch (MessagingException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new MessagingException("JWT validation failed: " + e.getMessage());
         }
 
         return message;
