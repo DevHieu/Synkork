@@ -1,81 +1,91 @@
-import { ref, computed, onUnmounted, nextTick } from "vue";
 import { ZegoExpressEngine } from "zego-express-engine-webrtc";
+import type { Participant } from "@/types/VoiceSpaceParticipant";
+import type { Ref } from "vue";
 import { useUserStore } from "@/stores/userStore";
-import { storeToRefs } from "pinia";
-import { getZegoToken } from "@/services/spaceService";
 
-export interface Participant {
-  userID: string;
-  userName: string;
-  videoStreamID?: string;
-  videoOn: boolean;
-  isLocal: boolean;
+interface ZegoState {
+  zg: ZegoExpressEngine | null;
+  localAudioStream: any;
+  localAudioStreamID: string;
+  localVideoStream: any;
+  localVideoStreamID: string;
 }
 
-export function zegoFunctions(spaceId: string) {
+interface ZegoServiceOptions {
+  state: ZegoState;
+  appID: number;
+  server: string;
+  participants: Ref<Map<string, Participant>>;
+  remoteStreams: Map<string, any>;
+  videoOn: Ref<boolean>;
+}
+
+export function zegoFunctions({
+  state,
+  appID,
+  server,
+  participants,
+  remoteStreams,
+  videoOn,
+}: ZegoServiceOptions) {
+  // ─── Helpers ────────────────────────────────────────────────
   const isVideoStream = (streamID: string) => streamID.startsWith("video_");
-  const appID = Number(import.meta.env.VITE_ZEGO_APP_ID);
-  const server = import.meta.env.VITE_ZEGO_SERVER_URL as string;
 
-  const { user } = storeToRefs(useUserStore());
-
-  let zg: ZegoExpressEngine;
-
-  let localVideoStream: any = null;
-  let localVideoStreamID = "";
-  let localAudioStream: any = null;
-  let localAudioStreamID = "";
-
-  // streamID -> MediaStream
-  const remoteStreams = new Map<string, any>();
-
-  const participants = ref<Map<string, Participant>>(new Map());
-  const videoOn = ref(false);
-  const micOn = ref(true);
-  const audioOn = ref(true);
-
-  const participantList = computed(() =>
-    Array.from(participants.value.values()),
-  );
-
-  // ─── Engine setup ──────────────────────────────────────────────
+  // ─── Engine ─────────────────────────────────────────────────
   const initEngine = () => {
-    zg = new ZegoExpressEngine(appID, server);
-    zg.setLogConfig({ logLevel: "error", remoteLogLevel: "error" });
+    if (state.zg) return;
+    state.zg = new ZegoExpressEngine(appID, server);
+    state.zg.setLogConfig({ logLevel: "error", remoteLogLevel: "error" });
   };
 
-  // ─── Local streams ─────────────────────────────────────────────
+  const destroyEngine = () => {
+    if (!state.zg) return;
+    state.zg.destroyEngine();
+    state.zg = null;
+  };
+
+  // ─── Local streams ───────────────────────────────────────────
   const publishAudioStream = async () => {
-    localAudioStream = await zg.createZegoStream({
+    if (!state.zg) return;
+    state.localAudioStream = await state.zg.createZegoStream({
       camera: { audio: true, video: false },
     });
-    localAudioStreamID = "audio_" + Date.now();
-    zg.startPublishingStream(localAudioStreamID, localAudioStream);
+    state.localAudioStreamID = "audio_" + Date.now();
+    state.zg.startPublishingStream(
+      state.localAudioStreamID,
+      state.localAudioStream,
+    );
   };
 
   const publishVideoStream = async () => {
+    if (!state.zg) return;
     try {
-      localVideoStream = await zg.createZegoStream({
+      state.localVideoStream = await state.zg.createZegoStream({
         camera: { audio: false, video: true },
       });
-      localVideoStreamID = "video_" + Date.now();
-      zg.startPublishingStream(localVideoStreamID, localVideoStream);
+      state.localVideoStreamID = "video_" + Date.now();
+      state.zg.startPublishingStream(
+        state.localVideoStreamID,
+        state.localVideoStream,
+      );
 
-      const me = participants.value.get(user.value?.id ?? "");
+      await new Promise((r) => setTimeout(r, 100));
+      const container = document.getElementById("local-video-container"); // Gắn stream vào trong thẻ có id là "local-video-container"
+      if (container) {
+        state.zg
+          .createLocalStreamView(state.localVideoStream)
+          .play("local-video-container");
+      }
+
+      const userStore = useUserStore();
+      const me = participants.value.get(userStore.user?.id ?? "");
       if (me) {
         me.videoOn = true;
-        me.videoStreamID = localVideoStreamID;
-      }
-      participants.value = new Map(participants.value); // trigger reactivity
-
-      // Mount local video ngay tại đây, sau khi DOM cập nhật
-      await nextTick();
-      const container = document.getElementById("local-video-container");
-      if (container) {
-        zg.createLocalStreamView(localVideoStream).play(container);
+        me.videoStreamID = state.localVideoStreamID;
+        participants.value = new Map(participants.value);
       }
 
-      return localVideoStream;
+      return state.localVideoStream;
     } catch (e) {
       console.warn("Không mở được cam:", e);
       videoOn.value = false;
@@ -84,22 +94,33 @@ export function zegoFunctions(spaceId: string) {
   };
 
   const stopVideoStream = () => {
-    if (!localVideoStream) return;
-    zg.stopPublishingStream(localVideoStreamID);
-    zg.destroyStream(localVideoStream);
-    localVideoStream = null;
-    localVideoStreamID = "";
+    if (!state.zg || !state.localVideoStream) return;
+    state.zg.stopPublishingStream(state.localVideoStreamID);
+    state.zg.destroyStream(state.localVideoStream);
+    state.localVideoStream = null;
+    state.localVideoStreamID = "";
 
-    const me = participants.value.get(user.value?.id ?? "");
+    const userStore = useUserStore();
+    const me = participants.value.get(userStore.user?.id ?? "");
     if (me) {
       me.videoOn = false;
       me.videoStreamID = undefined;
+      participants.value = new Map(participants.value);
     }
   };
 
-  // ─── Remote streams ────────────────────────────────────────────
+  const stopAudioStream = () => {
+    if (!state.zg || !state.localAudioStream) return;
+    state.zg.stopPublishingStream(state.localAudioStreamID);
+    state.zg.destroyStream(state.localAudioStream);
+    state.localAudioStream = null;
+    state.localAudioStreamID = "";
+  };
+
+  // ─── Remote streams ──────────────────────────────────────────
   const playRemoteVideoStream = async (streamID: string, userID: string) => {
-    const remoteStream = await zg.startPlayingStream(streamID);
+    if (!state.zg) return;
+    const remoteStream = await state.zg.startPlayingStream(streamID);
     remoteStreams.set(streamID, remoteStream);
 
     const participant = participants.value.get(userID);
@@ -113,19 +134,22 @@ export function zegoFunctions(spaceId: string) {
 
     const container = document.getElementById(`remote-video-${userID}`);
     if (container) {
-      zg.createRemoteStreamView(remoteStream).play(`remote-video-${userID}`);
+      state.zg
+        .createRemoteStreamView(remoteStream)
+        .play(`remote-video-${userID}`);
     }
   };
 
   const playRemoteAudioStream = async (streamID: string) => {
-    const remoteStream = await zg.startPlayingStream(streamID);
+    if (!state.zg) return;
+    const remoteStream = await state.zg.startPlayingStream(streamID);
     remoteStreams.set(streamID, remoteStream);
 
     await new Promise((r) => setTimeout(r, 100));
 
     const audioContainer = document.getElementById("audio-players");
     if (audioContainer) {
-      zg.createRemoteStreamView(remoteStream).play("audio-players", {
+      state.zg.createRemoteStreamView(remoteStream).play("audio-players", {
         audio: true,
         video: false,
       });
@@ -133,7 +157,8 @@ export function zegoFunctions(spaceId: string) {
   };
 
   const stopRemoteStream = (streamID: string) => {
-    zg.stopPlayingStream(streamID);
+    if (!state.zg) return;
+    state.zg.stopPlayingStream(streamID);
     remoteStreams.delete(streamID);
 
     if (isVideoStream(streamID)) {
@@ -147,13 +172,15 @@ export function zegoFunctions(spaceId: string) {
     }
   };
 
-  // ─── Room callbacks ────────────────────────────────────────────
+  // ─── Callbacks ───────────────────────────────────────────────
   const registerCallbacks = () => {
-    zg.on("roomStateChanged", (_roomID, reason) => {
+    if (!state.zg) return;
+
+    state.zg.on("roomStateChanged", (_roomID, reason) => {
       console.log("[Room]", reason);
     });
 
-    zg.on("roomUserUpdate", (_roomID, updateType, userList) => {
+    state.zg.on("roomUserUpdate", (_roomID, updateType, userList) => {
       for (const u of userList) {
         if (updateType === "ADD") {
           if (!participants.value.has(u.userID)) {
@@ -171,7 +198,7 @@ export function zegoFunctions(spaceId: string) {
       participants.value = new Map(participants.value);
     });
 
-    zg.on("roomStreamUpdate", async (_roomID, updateType, streamList) => {
+    state.zg.on("roomStreamUpdate", async (_roomID, updateType, streamList) => {
       for (const stream of streamList) {
         if (updateType === "ADD") {
           const userID = stream.user?.userID ?? "";
@@ -187,84 +214,31 @@ export function zegoFunctions(spaceId: string) {
     });
   };
 
-  // ─── Login ─────────────────────────────────────────────────────
-  const login = async () => {
-    const userID = user.value?.id!;
-    const userName = user.value?.username ?? userID;
-    const token = await getZegoToken(userID);
-
-    participants.value.set(userID, {
-      userID,
-      userName,
-      videoOn: false,
-      isLocal: true,
-    });
-
-    const result = await zg.loginRoom(
-      spaceId,
-      token,
-      { userID, userName },
-      { userUpdate: true },
-    );
-
-    if (result) {
-      console.log("[Room] login success");
-      await publishAudioStream();
-    }
+  // ─── Mic / Audio controls ────────────────────────────────────
+  const muteMicrophone = (mute: boolean) => {
+    if (!state.zg) return;
+    state.zg.muteMicrophone(mute);
   };
 
-  // ─── Actions ───────────────────────────────────────────────────
-  const toggleVideo = async () => {
-    videoOn.value = !videoOn.value;
-    if (videoOn.value) {
-      await publishVideoStream();
-    } else {
-      stopVideoStream();
-    }
-  };
-
-  const toggleMic = () => {
-    micOn.value = !micOn.value;
-    zg.muteMicrophone(!micOn.value);
-  };
-
-  const toggleAudio = () => {
-    audioOn.value = !audioOn.value;
+  const muteAllRemoteAudio = (mute: boolean) => {
+    if (!state.zg) return;
     for (const [streamID] of remoteStreams) {
-      zg.mutePlayStreamAudio(streamID, !audioOn.value);
+      state.zg.mutePlayStreamAudio(streamID, mute);
     }
   };
-
-  // ─── Lifecycle ─────────────────────────────────────────────────
-  const setup = async () => {
-    initEngine();
-    await zg.checkSystemRequirements();
-    registerCallbacks();
-    await login();
-  };
-
-  const cleanup = () => {
-    stopVideoStream();
-    if (zg) {
-      zg.logoutRoom(spaceId);
-      zg.destroyEngine();
-    }
-  };
-
-  onUnmounted(cleanup);
 
   return {
-    // State
-    user,
-    participants,
-    participantList,
-    videoOn,
-    micOn,
-    audioOn,
-    // Actions
-    setup,
-    toggleVideo,
-    toggleMic,
-    toggleAudio,
+    initEngine,
+    destroyEngine,
+    publishAudioStream,
+    publishVideoStream,
+    stopVideoStream,
+    stopAudioStream,
+    playRemoteVideoStream,
+    playRemoteAudioStream,
+    stopRemoteStream,
+    registerCallbacks,
+    muteMicrophone,
+    muteAllRemoteAudio,
   };
 }

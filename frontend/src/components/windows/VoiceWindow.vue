@@ -1,24 +1,29 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from "vue";
+import { computed, onMounted, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
-import { zegoFunctions } from "@/lib/zegoFunctions";
+import { useVoiceSpaceStore } from "@/stores/voiceSpaceStore";
+import { useUserStore } from "@/stores/userStore";
+import { storeToRefs } from "pinia";
 
 const route = useRoute();
 const spaceId = route.params.spaceId as string;
 
-const {
-  user,
-  participantList,
-  videoOn,
-  micOn,
-  audioOn,
-  setup,
-  toggleVideo,
-  toggleMic,
-  toggleAudio,
-} = zegoFunctions(spaceId);
+const voiceSpaceStore = useVoiceSpaceStore();
 
-onMounted(setup);
+const { participantList, videoOn, micOn, audioOn } =
+  storeToRefs(voiceSpaceStore);
+
+const { toggleVideo, toggleAudio, toggleMic } = voiceSpaceStore;
+
+const { user } = storeToRefs(useUserStore());
+
+onMounted(async () => {
+  await voiceSpaceStore.joinRoom(spaceId);
+});
+
+onUnmounted(async () => {
+  await voiceSpaceStore.leaveRoom();
+});
 
 const getInitials = (name: string) =>
   name
