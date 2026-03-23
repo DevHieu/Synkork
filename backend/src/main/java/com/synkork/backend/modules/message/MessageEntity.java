@@ -2,8 +2,8 @@ package com.synkork.backend.modules.message;
 
 import com.synkork.backend.common.base.BaseEntity;
 
+import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.space.SpaceEntity;
-import com.synkork.backend.modules.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -23,7 +23,7 @@ public class MessageEntity extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sender_id", nullable = false)
-    private UserEntity sender;
+    private RoomMemberEntity sender;
 
     @Column(columnDefinition = "TEXT")
     private String content;
@@ -36,4 +36,8 @@ public class MessageEntity extends BaseEntity {
 
     @Column(name = "attachment_url")
     private String attachmentUrl;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reply_to_id")
+    private MessageEntity replyTo;
 }

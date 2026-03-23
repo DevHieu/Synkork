@@ -2,6 +2,7 @@ package com.synkork.backend.modules.room;
 
 import com.synkork.backend.common.base.BaseEntity;
 import com.synkork.backend.modules.room.enums.RoomTypeEnum;
+import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
