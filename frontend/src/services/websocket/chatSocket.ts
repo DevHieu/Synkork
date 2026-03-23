@@ -1,3 +1,4 @@
+import type { Message } from "@/types/Message";
 import { getFreshToken } from "@/utils/auth";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
@@ -56,7 +57,23 @@ export function connectWebSocket(onConnected?: () => void) {
   stompClient.activate();
 }
 
-export function subscribeSpace(spaceId: string, onMessage: (msg: any) => void) {
+// Ở đây sẽ có 2 phần chính cho mỗi chức năng
+
+// 1. publish: thực hiện chức năng. (VD: đây là thực hienej gửi message đi)
+export function sendMessage(message: { content: string; spaceId: string }) {
+  if (!stompClient?.connected) return;
+
+  stompClient.publish({
+    destination: "/app/chat.sendMessage",
+    body: JSON.stringify(message),
+  });
+}
+
+// 2. subscribe: Lắng nghe. Khi có thay đổi thì hàm này thực hiện (VD: message có thì hàm này đc gọi để nhận message mới)
+export function subscribeGetMessage(
+  spaceId: string,
+  onMessage: (msg: any) => void,
+) {
   if (!stompClient?.connected) return;
 
   if (spaceSubscription) {
@@ -70,15 +87,50 @@ export function subscribeSpace(spaceId: string, onMessage: (msg: any) => void) {
       console.log("subscribeComplete");
 
       onMessage(JSON.parse(message.body));
-    }
+    },
   );
 }
 
-export function sendMessage(message: { content: string; spaceId: string }) {
+export const deleteMessage = (message: Message) => {
   if (!stompClient?.connected) return;
 
   stompClient.publish({
-    destination: "/app/chat.sendMessage",
+    destination: "/app/chat.deleteMessage",
     body: JSON.stringify(message),
   });
-}
+};
+
+export const subscribeDelete = (
+  spaceId: string,
+  callback: (messageId: string) => void, // callback hàm mình sẽ truyền ở chỗ mình gọi cái subcribe này
+) => {
+  stompClient.subscribe(
+    `/topic/space/${spaceId}/messages/delete`,
+    (message) => {
+      const messageId = JSON.parse(message.body); // server trả về json nên phải parse về string
+      callback(messageId);
+    },
+  );
+};
+
+export const updateMessage = (message: Message) => {
+  if (!stompClient?.connected) return;
+
+  stompClient.publish({
+    destination: "/app/chat.updateMessage",
+    body: JSON.stringify(message),
+  });
+};
+
+export const subscribeUpdate = (
+  spaceId: string,
+  callback: (updatedMessage: Message) => void,
+) => {
+  stompClient.subscribe(
+    `/topic/space/${spaceId}/messages/update`,
+    (message) => {
+      const updatedMessage = JSON.parse(message.body) as Message;
+      callback(updatedMessage);
+    },
+  );
+};
