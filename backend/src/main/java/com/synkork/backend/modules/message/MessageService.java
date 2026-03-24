@@ -1,54 +1,54 @@
 package com.synkork.backend.modules.message;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
 import com.synkork.backend.modules.message.dto.MessageDTO;
-import com.synkork.backend.modules.message.dto.MessageProjection;
+import com.synkork.backend.modules.roomMember.RoomMemberEntity;
+import com.synkork.backend.modules.roomMember.RoomMemberRepository;
+import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
 import com.synkork.backend.modules.space.SpaceRepository;
-import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
-import com.synkork.backend.modules.user.dto.SenderDto;
-import com.synkork.backend.modules.user.enums.RoleEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PathVariable;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class MessageService {
-  @Autowired
-  MessageRepository messageRepository;
+    @Autowired
+    MessageRepository messageRepository;
 
-  @Autowired
-  UserRepository userRepository;
+    @Autowired
+    UserRepository userRepository;
 
     @Autowired
     SpaceRepository spaceRepository;
 
-//   @NonNull annotation giúp đảm bảo rằng entity không được null, đỡ bị IDE báo
-  public Optional<MessageEntity> createMessage(@NonNull MessageEntity entity) {
-    return Optional.ofNullable(messageRepository.save(entity));
-  }
+    @Autowired
+    private RoomMemberRepository roomMemberRepository;
+
+    //   @NonNull annotation giúp đảm bảo rằng entity không được null, đỡ bị IDE báo
+    public Optional<MessageEntity> createMessage(@NonNull MessageEntity entity) {
+        return Optional.of(messageRepository.save(entity));
+    }
 
     public MessageDTO saveMessage(MessageDTO dto, String senderId) {
-      MessageEntity entity = new MessageEntity();
-        System.out.println("userId = [" + senderId + "]");
+        MessageEntity entity = new MessageEntity();
         UUID userId = UUID.fromString(senderId);
 
-      UserEntity sender = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
+        RoomMemberEntity sender = roomMemberRepository.findByUserId(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-      entity.setSender(sender);
-      entity.setSpace(spaceRepository.getReferenceById(UUID.fromString(dto.getSpaceId())));
-      entity.setContent(dto.getContent());
+        entity.setSender(sender);
+        entity.setSpace(spaceRepository.getReferenceById(UUID.fromString(dto.getSpaceId())));
+        entity.setContent(dto.getContent());
 
-        messageRepository.save(entity);
+        MessageEntity newMessage = messageRepository.save(entity);
+        dto.setId(newMessage.getId());
 
-        SenderDto senderDto = new SenderDto(sender.getUsername(), sender.getDisplayName(), sender.getAvatarUrl(), RoleEnum.valueOf(sender.getRole()));
-
+        RoomMemberDto senderDto = new RoomMemberDto(sender);
         dto.setSender(senderDto);
         dto.setCreatedAt(entity.getCreatedAt());
         dto.setUpdatedAt(entity.getUpdatedAt());
@@ -57,8 +57,24 @@ public class MessageService {
     }
 
     public Page<MessageDTO> getMessagesBySpaceId(UUID spaceId, Pageable pageable) {
-      Page<MessageProjection> messageProjections = messageRepository.findBySpace_Id(spaceId, pageable);
-        System.out.println(messageProjections.getTotalElements());
-      return messageProjections.map(MessageDTO::new);
+        return messageRepository.findMessagesBySpaceId(spaceId, pageable);
+    }
+
+    public void deleteMessage(UUID messageId) {
+        MessageEntity message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new IllegalArgumentException("Message not found"));
+
+        message.setDeleted(true);
+        messageRepository.save(message);
+    }
+
+    public MessageDTO updateMessage(MessageDTO dto) {
+        MessageEntity  entity = messageRepository.findById(dto.getId()).orElseThrow(() -> new IllegalArgumentException("Message not found"));
+        entity.setContent(dto.getContent());
+        MessageEntity newMessage = messageRepository.save(entity);
+
+        dto.setUpdatedAt(newMessage.getUpdatedAt());
+
+        return dto;
     }
 }

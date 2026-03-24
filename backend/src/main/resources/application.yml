@@ -7,12 +7,31 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.MySQL8Dialect
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - email
+              - profile
+        provider:
+          google:
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+            token-uri: https://oauth2.googleapis.com/token
+            user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
+            user-name-attribute: sub
+  config:
+    import: optional:file:.env[.properties]
 
 server:
   port: 8080
@@ -23,3 +42,19 @@ server:
 frontend:
   client:
     url: ${FRONTEND_URL:http://localhost:5173}
+
+jwt:
+  secret: CFGSc60ez6n093BbLoqk1BdPFa02l26UBAjKvFGAw3Q
+
+gmail:
+  username: ${GMAIL_USERNAME}
+  password: ${GMAIL_PASSWORD}
+
+cloudinary:
+  name: ${CLOUDINARY_CLOUD_NAME}
+  key: ${CLOUDINARY_API_KEY}
+  secret: ${CLOUDINARY_API_SECRET}
+
+zego:
+  appId: ${ZEGO_APPID}
+  secret: ${ZEGO_SERVER_SECRET}

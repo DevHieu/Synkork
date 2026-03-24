@@ -4,11 +4,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.synkork.backend.common.dtos.ImageCreated;
+import com.synkork.backend.common.utils.ImageService;
+import com.synkork.backend.modules.room.dto.CreateRoomDto;
+import com.synkork.backend.modules.roomMember.RoomMemberEntity;
+import com.synkork.backend.modules.roomMember.RoomMemberRepository;
+import com.synkork.backend.modules.user.UserEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
-import com.synkork.backend.modules.room.dto.RoomDto;
 import com.synkork.backend.modules.user.UserRepository;
 
 @Service
@@ -20,13 +25,27 @@ public class RoomService {
   @Autowired
   UserRepository userRepository;
 
-  public Optional<RoomEntity> createSpace(@NonNull RoomDto room) {
+  @Autowired
+  ImageService imageService;
+
+  public Optional<RoomEntity> createRoom(CreateRoomDto roomData) {
     RoomEntity roomEntity = new RoomEntity();
 
-    roomEntity.setName(room.name());
-    roomEntity.setRoomAvatar(room.roomAvatar());
+    roomEntity.setName(roomData.name());
 
-    UUID ownerId = room.ownerId();
+    if (roomData.imageFile() != null) {
+        ImageCreated avatar = imageService.uploadImage(roomData.imageFile(), "roomAvatar");
+
+        roomEntity.setAvatarUrl(avatar.imageUrl());
+        roomEntity.setAvatarId(avatar.imagePublicId());
+    }
+
+      UUID ownerId = null;
+      if (roomData.ownerId() != null) {
+          ownerId = UUID.fromString(roomData.ownerId());
+          roomEntity.setOwner(userRepository.getReferenceById(ownerId));
+      }
+
     if (ownerId != null) {
       roomEntity.setOwner(userRepository.getReferenceById(ownerId));
     }
@@ -37,4 +56,6 @@ public class RoomService {
   public List<RoomEntity> findRoomUserJoined(@NonNull UUID userId) {
     return roomRepository.findRoomMembersJoined(userId);
   }
+
+
 }

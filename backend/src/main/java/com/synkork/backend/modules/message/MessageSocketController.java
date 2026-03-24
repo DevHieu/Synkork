@@ -8,6 +8,8 @@ import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
+import java.util.UUID;
+
 @Controller
 public class MessageSocketController {
   @Autowired
@@ -25,17 +27,28 @@ public class MessageSocketController {
 
       MessageDTO message = messageService.saveMessage(dto, senderId);
 
-    // TODO: lưu DB
     messagingTemplate.convertAndSend(
         "/topic/space/" + message.getSpaceId() + "/messages",
             message);
   }
 
-  @MessageMapping("/chat.addUser")
-  public void addUser(
-      @Payload String userId,
-      SimpMessageHeaderAccessor headerAccessor) {
-    headerAccessor.getSessionAttributes()
-        .put("userId", userId.replace("\"", ""));
-  }
+    @MessageMapping("/chat.deleteMessage")
+    public void deleteMessage(@Payload MessageDTO dto) {
+        messageService.deleteMessage(dto.getId());
+
+        messagingTemplate.convertAndSend(
+                "/topic/space/" + dto.getSpaceId() + "/messages/delete",
+                dto.getId()
+        );
+    }
+
+    @MessageMapping("/chat.updateMessage")
+    public void updateMessage(@Payload MessageDTO dto) {
+        MessageDTO newMessage = messageService.updateMessage(dto);
+
+        messagingTemplate.convertAndSend(
+                "/topic/space/" + dto.getSpaceId() + "/messages/update",
+                newMessage
+        );
+    }
 }

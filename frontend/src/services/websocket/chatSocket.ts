@@ -1,75 +1,19 @@
-import { Client } from "@stomp/stompjs";
-import SockJS from "sockjs-client";
+import { socketService } from "./socketService";
+import type { Message } from "@/types/Message";
 
-let stompClient: Client;
-let spaceSubscription: any = null;
+export const chatSocket = {
+  // Gửi tin nhắn
+  sendMessage: (msg: { content: string; spaceId: string }) =>
+    socketService.send("/app/chat.sendMessage", msg),
 
-export function getStompClient(): Client {
-  return stompClient;
-}
+  // Lắng nghe tin nhắn mới
+  subscribeMessages: (spaceId: string, callback: (msg: Message) => void) =>
+    socketService.subscribe(`/topic/space/${spaceId}/messages`, callback),
 
-export function isWebSocketConnected(): boolean {
-  return stompClient?.connected ?? false;
-}
+  // Xóa tin nhắn
+  deleteMessage: (message: Message) =>
+    socketService.send("/app/chat.deleteMessage", message),
 
-export function connectWebSocket(onConnected?: () => void) {
-  if (stompClient?.connected) {
-    onConnected?.();
-    return;
-  }
-
-  stompClient = new Client({
-    webSocketFactory: () =>
-      new SockJS(`${import.meta.env.VITE_BACKEND_URL}/api/ws`),
-
-    reconnectDelay: 5000,
-    debug: (str) => console.log(str),
-
-    onConnect: () => {
-      console.log("WebSocket connected");
-      onConnected?.();
-    },
-
-    onStompError: (frame) => {
-      console.error("Broker error:", frame.headers["message"]);
-    },
-  });
-
-  stompClient.activate();
-}
-
-export function subscribeSpace(spaceId: string, onMessage: (msg: any) => void) {
-  if (!stompClient?.connected) return;
-
-  if (spaceSubscription) {
-    spaceSubscription.unsubscribe();
-    spaceSubscription = null;
-  }
-
-  spaceSubscription = stompClient.subscribe(
-    `/topic/space/${spaceId}/messages`,
-    (message) => {
-      console.log("subscribeComplete");
-
-      onMessage(JSON.parse(message.body));
-    }
-  );
-}
-
-export function sendMessage(message: { content: string; spaceId: string }) {
-  if (!stompClient?.connected) return;
-
-  stompClient.publish({
-    destination: "/app/chat.sendMessage",
-    body: JSON.stringify(message),
-  });
-}
-
-export function addUserToSocketRoom(userId: string) {
-  if (!stompClient?.connected) return;
-
-  stompClient.publish({
-    destination: "/app/chat.addUser",
-    body: userId,
-  });
-}
+  subscribeDelete: (spaceId: string, callback: (id: string) => void) =>
+    socketService.subscribe(`/topic/space/${spaceId}/messages/delete`, callback),
+};

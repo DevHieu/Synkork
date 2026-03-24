@@ -1,5 +1,7 @@
 package com.synkork.backend.modules.user;
 
+import com.synkork.backend.modules.user.dto.UserInfoDto;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -37,6 +39,14 @@ public class UserController {
     return ResponseEntity.ok(userService.findAll());
   }
 
+  @GetMapping("/me")
+  public ResponseEntity<UserInfoDto> getUserInfo(Authentication auth) {
+    String username = auth.getName();
+    System.out.println(username);
+    UserInfoDto user = userService.getUserInfo(username);
+
+    return ResponseEntity.ok(user);
+  }
   // Như cái dưới đây thì đường dẫn đầy đủ sẽ là:
   // http:localhost:8080/api/users/{userId}
   @GetMapping("/{userId}")
