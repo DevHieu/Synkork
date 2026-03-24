@@ -4,7 +4,20 @@ import SockJS from "sockjs-client";
 let stompClient: Client;
 let spaceSubscription: any = null;
 
+export function getStompClient(): Client {
+  return stompClient;
+}
+
+export function isWebSocketConnected(): boolean {
+  return stompClient?.connected ?? false;
+}
+
 export function connectWebSocket(onConnected?: () => void) {
+  if (stompClient?.connected) {
+    onConnected?.();
+    return;
+  }
+
   stompClient = new Client({
     webSocketFactory: () =>
       new SockJS(`${import.meta.env.VITE_BACKEND_URL}/api/ws`),
