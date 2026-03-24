@@ -1,12 +1,13 @@
-package com.synkork.backend.modules.room;
+package com.synkork.backend.modules.roomMember;
 
+import com.synkork.backend.modules.room.RoomEntity;
+import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
 import com.synkork.backend.modules.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
@@ -37,6 +38,8 @@ public class RoomMemberEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
+    @Enumerated(EnumType.STRING)
     private RoomMemberRoleEnum role = RoomMemberRoleEnum.MEMBER;
+
     private LocalDateTime joinedAt =  LocalDateTime.now();
 }

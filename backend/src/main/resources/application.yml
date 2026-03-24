@@ -53,3 +53,7 @@ cloudinary:
   name: ${CLOUDINARY_CLOUD_NAME}
   key: ${CLOUDINARY_API_KEY}
   secret: ${CLOUDINARY_API_SECRET}
+
+zego:
+  appId: ${ZEGO_APPID}
+  secret: ${ZEGO_SERVER_SECRET}

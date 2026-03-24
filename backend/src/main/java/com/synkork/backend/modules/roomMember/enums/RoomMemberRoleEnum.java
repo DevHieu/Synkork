@@ -1,4 +1,4 @@
-package com.synkork.backend.modules.room;
+package com.synkork.backend.modules.roomMember.enums;
 
 public enum RoomMemberRoleEnum {
     OWNER,

@@ -10,6 +10,8 @@ export const useSpaceStore = defineStore("spaces", {
     noteSpaces: [] as any[],
     calendarSpaces: [] as any[],
     taskSpaces: [] as any[],
+
+    currentVoiceSpace: null as any | null,
     loading: false,
   }),
 
@@ -104,9 +106,14 @@ export const useSpaceStore = defineStore("spaces", {
         router.push(
           `/rooms/chat/${router.currentRoute.value.params.roomId}/${
             this.chatSpaces[0]?.id || ""
-          }`
+          }`,
         );
       }
+    },
+
+    async joinVoiceSpace(spaceId: string) {
+      this.currentVoiceSpace =
+        this.voiceSpaces.find((space) => space.id === spaceId) || null;
     },
 
     async createSpace(name: string, type: string, roomId: string) {

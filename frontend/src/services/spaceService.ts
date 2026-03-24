@@ -9,3 +9,10 @@ export const createSpace = async (roomId: string, spaceData: {}) => {
   const res = await axiosClient.post(`/api/rooms/${roomId}/spaces`, spaceData);
   return res.data;
 };
+
+export const getZegoToken = async (userId: string) => {
+  const res = await axiosClient.get(`/api/zego/token/${userId}`);
+  console.log("token: " + res.data);
+
+  return res.data;
+};

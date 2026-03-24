@@ -31,7 +31,7 @@ public class VerificationEntity {
 
     @Column(nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
-    private VerifyTypeEnum type;
+    private VerifyTypeEnum type = VerifyTypeEnum.REGISTER;
 
     @PrePersist
     public void prePersist() {
