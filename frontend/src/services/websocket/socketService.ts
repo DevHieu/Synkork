@@ -6,56 +6,77 @@ import VueCookies from "vue-cookies";
 const cookies = VueCookies as any;
 let stompClient: Client | null = null;
 
+const createStompClient = (token: string, onConnected?: () => void): Client => {
+  const client = new Client({
+    webSocketFactory: () =>
+      new SockJS(`${import.meta.env.VITE_BACKEND_URL}/api/ws`),
+    connectHeaders: {
+      Authorization: `Bearer ${token}`,
+    },
+    reconnectDelay: 0,
+    onConnect: () => {
+      onConnected?.();
+    },
+    onWebSocketClose: async (event) => {
+      //bắt 401 và refresh token
+      console.warn(`[Socket] Closed — code: ${event.code}`);
+
+      const isUnauthorized =
+        event.code === 4001 ||
+        (event.reason ?? "").toLowerCase().includes("unauthorized");
+
+      if (isUnauthorized) {
+        cookies.remove("accessToken");
+        try {
+          const freshToken = await getFreshToken();
+
+          stompClient = createStompClient(freshToken, onConnected);
+          stompClient.activate();
+        } catch {
+          window.location.href = "/auth/login";
+        }
+      }
+    },
+    onStompError: (frame) => {
+      console.error("[STOMP Error]", frame.headers["message"]);
+    },
+  });
+
+  return client;
+};
+
 export const socketService = {
-  // Khởi tạo kết nối
-  connect(onConnected?: () => void) {
+  async connect(onConnected?: () => void) {
+    // Check xem có token chưa
     if (stompClient?.connected) return;
 
-    stompClient = new Client({
-      webSocketFactory: () => new SockJS(`${import.meta.env.VITE_BACKEND_URL}/api/ws`),
-      connectHeaders: {
-        Authorization: `Bearer ${cookies.get("accessToken")}`,
-      },
-      reconnectDelay: 5000,
-      onConnect: () => {
-        console.log("🚀 [Socket] Connected");
-        onConnected?.();
-      },
-      onStompError: async (frame) => {
-        const message = frame.headers["message"] ?? "";
-        if (message.toLowerCase().includes("jwt expired")) {
-          console.warn(" [Socket] Token expired, refreshing...");
-          cookies.remove("accessToken");
-          try {
-            const freshToken = await getFreshToken();
-            if (stompClient) {
-              stompClient.connectHeaders = { Authorization: `Bearer ${freshToken}` };
-              stompClient.deactivate().then(() => stompClient?.activate());
-            }
-          } catch {
-            window.location.href = "/auth/login";
-          }
-        }
-      },
-    });
+    let token = cookies.get("accessToken");
+    if (!token) {
+      try {
+        token = await getFreshToken();
+      } catch {
+        window.location.href = "/auth/login";
+        return;
+      }
+    }
 
+    stompClient = createStompClient(token, onConnected);
     stompClient.activate();
   },
 
-  // Getter để các file khác lấy client
   getClient() {
     return stompClient;
   },
 
-  // Kiểm tra trạng thái
   isConnected() {
     return stompClient?.connected ?? false;
   },
 
-  // Hàm hỗ trợ Subscribe an toàn (Quan trọng)
   subscribe(destination: string, callback: (payload: any) => void) {
     if (!this.isConnected()) {
-      console.error(` [Socket] Cannot subscribe to ${destination}. Not connected.`);
+      console.error(
+        `[Socket] Cannot subscribe to ${destination}. Not connected.`,
+      );
       return null;
     }
     return stompClient!.subscribe(destination, (msg) => {
@@ -63,12 +84,11 @@ export const socketService = {
     });
   },
 
-  // Hàm hỗ trợ Publish (Gửi dữ liệu)
   publish(destination: string, body: any) {
     if (!this.isConnected()) return;
     stompClient!.publish({
       destination,
       body: JSON.stringify(body),
     });
-  }
+  },
 };

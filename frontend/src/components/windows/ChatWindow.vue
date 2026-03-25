@@ -1,12 +1,8 @@
 <script setup lang="ts">
 import { ref, nextTick, watch, onMounted } from "vue";
-import {
-  connectWebSocket,
-  subscribeGetMessage,
-  sendMessage,
-  subscribeDelete,
-  subscribeUpdate,
-} from "@/services/websocket/chatSocket";
+import { socketService } from "@/services/websocket/socketService";
+import { chatSocket } from "@/services/websocket/chatSocket";
+
 import { getChatFromSpaceId } from "@/services/chatService";
 import { useRoute } from "vue-router";
 import { useSpaceStore } from "@/stores/spaceStore";
@@ -32,14 +28,13 @@ const page = 0;
 
 const isSocketConnected = ref(false);
 
-// Callback ref để truyền vào MessageList
 const setContainerRef = (el: HTMLElement | null) => {
   messageContainer.value = el;
 };
 
 onMounted(() => {
   if (spaceId) {
-    connectWebSocket(async () => {
+    socketService.connect(() => {
       isSocketConnected.value = true;
     });
   }
@@ -56,33 +51,29 @@ watch(
 
 const joinSpace = (spaceId: string) => {
   if (!spaceId) return;
-
   messages.value = [];
-
   fetchMessages(spaceId);
   subscribeToChat(spaceId);
 };
 
-// Hàm này sẽ đăng ký các callback để lắng nghe sự kiện từ server khi có message mới, message bị xóa hoặc cập nhật
 const subscribeToChat = (spaceId: string) => {
-  subscribeGetMessage(spaceId, (msg: Message) => {
-    console.log("WS message:", msg);
+  chatSocket.subscribeMessages(spaceId, (msg: Message) => {
+    messages.value.push(msg);
     scrollToBottom();
   });
 
-  subscribeDelete(spaceId, (messageId: string) => {
+  chatSocket.subscribeDelete(spaceId, (messageId: string) => {
     const index = messages.value.findIndex((m) => m.id === messageId);
     if (index !== -1)
       messages.value[index] = { ...messages.value[index], deleted: true };
   });
 
-  subscribeUpdate(spaceId, (updatedMsg: Message) => {
+  chatSocket.subscribeUpdate(spaceId, (updatedMsg: Message) => {
     const index = messages.value.findIndex((m) => m.id === updatedMsg.id);
     if (index !== -1) messages.value[index] = updatedMsg;
   });
 };
 
-// uhhhh, laays chat cũ để hiển thị khi vào phòng chat
 const fetchMessages = async (id: string) => {
   const chatResponse = await getChatFromSpaceId(id, page, size);
   messages.value = chatResponse.data.content.reverse();
@@ -92,7 +83,7 @@ const fetchMessages = async (id: string) => {
 const handleSendMessage = () => {
   if (!newMessage.value.trim()) return;
 
-  sendMessage({
+  chatSocket.sendMessage({
     content: newMessage.value,
     spaceId: currentSpace.value.id,
   });
@@ -100,7 +91,6 @@ const handleSendMessage = () => {
   newMessage.value = "";
 };
 
-// Như cái tên
 const scrollToBottom = async () => {
   await nextTick();
   if (messageContainer.value) {
@@ -118,5 +108,3 @@ const scrollToBottom = async () => {
     <MessageInput v-model="newMessage" @send="handleSendMessage" />
   </div>
 </template>
-
-<style scoped></style>

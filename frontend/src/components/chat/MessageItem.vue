@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import dayjs from "dayjs";
 import MessageActions from "./MessageActions.vue";
 import type { Message } from "@/types/Message";
-// Import chatSocket thay vì import lẻ từng hàm
+
 import { chatSocket } from "@/services/websocket/chatSocket";
 import { computed, ref } from "vue";
 import { useUserStore } from "@/stores/userStore";
@@ -18,20 +18,22 @@ const props = defineProps<{
 const userStore = useUserStore();
 const { user } = storeToRefs(userStore);
 
-// --- LOGIC GIAO DIỆN ---
+// hard code tạm màu của owner, admin với member thường khi nhắn tin
 const senderNameColor = computed(() => {
   switch (props.message.sender?.role) {
-    case "OWNER": return "text-yellow-400";
-    case "ADMIN": return "text-red-400";
-    default: return "text-foreground";
+    case "OWNER":
+      return "text-yellow-400";
+    case "ADMIN":
+      return "text-red-400";
+    default:
+      return "text-foreground";
   }
 });
 
 const isFullAction = computed(
-  () => props.message.sender?.username === user.value?.username
+  () => props.message.sender?.username === user.value?.username,
 );
 
-// --- LOGIC EDIT TIN NHẮN ---
 const isEditing = ref(false);
 const editContent = ref(""); // Chỉ cần lưu nội dung text để edit
 
@@ -51,7 +53,7 @@ const handleSaveEdit = () => {
   // Tạo object message mới dựa trên dữ liệu cũ nhưng thay content
   const updatedMessage: Message = {
     ...props.message,
-    content: trimmed
+    content: trimmed,
   };
 
   chatSocket.updateMessage(updatedMessage);
@@ -62,7 +64,6 @@ const handleCancelEdit = () => {
   isEditing.value = false;
 };
 
-// --- LOGIC ACTIONS ---
 const handleDelete = () => {
   if (confirm("Bạn có chắc chắn muốn xóa tin nhắn này?")) {
     chatSocket.deleteMessage(props.message);
@@ -76,7 +77,9 @@ const handlePin = () => console.log("Pin message:", props.message.id);
 <template>
   <div v-if="isDifferentDay" class="flex items-center gap-3 my-4 px-4">
     <div class="flex-1 h-px bg-border/50"></div>
-    <span class="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+    <span
+      class="text-[10px] uppercase font-bold text-muted-foreground tracking-wider"
+    >
       {{ dayjs(props.message.createdAt).format("DD MMMM, YYYY") }}
     </span>
     <div class="flex-1 h-px bg-border/50"></div>
@@ -89,11 +92,14 @@ const handlePin = () => console.log("Pin message:", props.message.id);
     <div class="w-10 shrink-0">
       <Avatar v-if="!isGrouped" class="h-10 w-10">
         <AvatarImage :src="props.message.sender?.avatarUrl" />
-        <AvatarFallback :class="senderNameColor">
+        <AvatarFallback class="bg-primary">
           {{ props.message.sender?.displayName?.charAt(0).toUpperCase() }}
         </AvatarFallback>
       </Avatar>
-      <span v-else class="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 flex justify-center items-center h-full">
+      <span
+        v-else
+        class="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 flex justify-center items-center h-full"
+      >
         {{ dayjs(props.message.createdAt).format("HH:mm") }}
       </span>
     </div>
@@ -117,25 +123,42 @@ const handlePin = () => console.log("Pin message:", props.message.id);
           @keydown.esc="handleCancelEdit"
         />
         <div class="flex gap-2 mt-1 text-[11px]">
-          <button @click="handleSaveEdit" class="text-primary hover:underline font-medium">Lưu thay đổi</button>
-          <button @click="handleCancelEdit" class="text-muted-foreground hover:underline">Hủy</button>
+          <button
+            @click="handleSaveEdit"
+            class="text-primary hover:underline font-medium"
+          >
+            Lưu thay đổi
+          </button>
+          <button
+            @click="handleCancelEdit"
+            class="text-muted-foreground hover:underline"
+          >
+            Hủy
+          </button>
         </div>
       </div>
 
       <div v-else class="text-sm leading-relaxed break-words">
         <template v-if="props.message.deleted">
-          <span class="text-muted-foreground italic text-xs">Tin nhắn đã bị xóa</span>
+          <span class="text-muted-foreground italic text-xs"
+            >Tin nhắn đã bị xóa</span
+          >
         </template>
         <template v-else>
           <span class="text-foreground/90">{{ props.message.content }}</span>
-          <span v-if="props.message.updatedAt !== props.message.createdAt" class="text-[10px] text-muted-foreground ml-1">
+          <span
+            v-if="props.message.updatedAt !== props.message.createdAt"
+            class="text-[10px] text-muted-foreground ml-1"
+          >
             (đã chỉnh sửa)
           </span>
         </template>
       </div>
     </div>
 
-    <div class="absolute right-4 -top-4 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+    <div
+      class="absolute right-4 -top-4 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+    >
       <MessageActions
         v-if="!isEditing && !props.message.deleted"
         :isSender="isFullAction"
