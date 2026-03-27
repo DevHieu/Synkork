@@ -4,6 +4,7 @@ import com.synkork.backend.modules.message.dto.MessageDTO;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
 import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
+import com.synkork.backend.modules.space.SpaceEntity;
 import com.synkork.backend.modules.space.SpaceRepository;
 import com.synkork.backend.modules.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,11 +39,16 @@ public class MessageService {
     public MessageDTO saveMessage(MessageDTO dto, String senderId) {
         MessageEntity entity = new MessageEntity();
         UUID userId = UUID.fromString(senderId);
+        UUID spaceId = UUID.fromString(dto.getSpaceId());
 
-        RoomMemberEntity sender = roomMemberRepository.findByUserId(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
+        SpaceEntity space = spaceRepository.findById(spaceId)
+                .orElseThrow(() -> new IllegalArgumentException("Space not found"));
+
+        RoomMemberEntity sender = roomMemberRepository.findByUserIdAndRoom_Id(userId, space.getRoom().getId())
+                .orElseThrow(() -> new IllegalArgumentException("User is not a member of this room"));
 
         entity.setSender(sender);
-        entity.setSpace(spaceRepository.getReferenceById(UUID.fromString(dto.getSpaceId())));
+        entity.setSpace(space);
         entity.setContent(dto.getContent());
 
         MessageEntity newMessage = messageRepository.save(entity);

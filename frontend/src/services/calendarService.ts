@@ -1,8 +1,8 @@
-import axios from "axios";
+import axiosClient from "@/lib/axiosClient";
 
 // Lấy tất cả event theo spaceId
 export const getEventsBySpaceId = async (spaceId: string) => {
-  const res = await axios.get(`/calendar-events/${spaceId}`);
+  const res = await axiosClient.get(`/api/calendar-events/${spaceId}`);
   return res;
 };
 
@@ -12,34 +12,34 @@ export const getEventsByDateRange = async (
   start: string,
   end: string
 ) => {
-  const res = await axios.get(
-    `/calendar-events/${spaceId}/range?start=${start}&end=${end}`
+  const res = await axiosClient.get(
+    `/api/calendar-events/${spaceId}/range?start=${start}&end=${end}`
   );
   return res;
 };
 
 // Lấy event theo ngày cụ thể
 export const getEventsByDate = async (spaceId: string, date: string) => {
-  const res = await axios.get(`/calendar-events/${spaceId}/date?date=${date}`);
+  const res = await axiosClient.get(`/api/calendar-events/${spaceId}/date?date=${date}`);
   return res;
 };
 
 // Tạo event mới
 export const createEvent = async (data: any) => {
-  const res = await axios.post(`/calendar-events`, data);
+  const res = await axiosClient.post(`/api/calendar-events`, data);
   return res;
 };
 
 // Cập nhật event
 export const updateEvent = async (eventId: string, data: any) => {
-  const res = await axios.put(`/calendar-events/${eventId}`, data);
+  const res = await axiosClient.put(`/api/calendar-events/${eventId}`, data);
   return res;
 };
 
 // Xóa event
 export const deleteEvent = async (eventId: string, userId: string) => {
-  const res = await axios.delete(
-    `/calendar-events/${eventId}?userId=${userId}`
+  const res = await axiosClient.delete(
+    `/api/calendar-events/${eventId}?userId=${userId}`
   );
   return res;
 };
@@ -52,9 +52,8 @@ export const checkConflicts = async (
   endTime: string,
   excludeId?: string
 ) => {
-  let url = `/calendar-events/${spaceId}/conflicts?date=${date}&startTime=${startTime}&endTime=${endTime}`;
+  let url = `/api/calendar-events/${spaceId}/conflicts?date=${date}&startTime=${startTime}&endTime=${endTime}`;
   if (excludeId) url += `&excludeId=${excludeId}`;
-  const res = await axios.get(url);
+  const res = await axiosClient.get(url);
   return res;
 };
-

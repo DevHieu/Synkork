@@ -3,7 +3,8 @@ import { ref, computed } from "vue";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useSpaceStore } from "@/stores/spaceStore";
 import { storeToRefs } from "pinia";
-import { useCalendar, type CalendarEvent } from "@/composables/useCalendar";
+import { useCalendar } from "@/composables/useCalendar";
+import type { CalendarEvent } from "@/types/CalendarEvent";
 
 import CalendarMonthView from "@/components/calendar/CalendarMonthView.vue";
 import CalendarWeekView from "@/components/calendar/CalendarWeekView.vue";

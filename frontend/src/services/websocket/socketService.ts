@@ -48,7 +48,10 @@ const createStompClient = (token: string, onConnected?: () => void): Client => {
 export const socketService = {
   async connect(onConnected?: () => void) {
     // Check xem có token chưa
-    if (stompClient?.connected) return;
+    if (stompClient?.connected) {
+      onConnected?.();
+      return;
+    }
 
     let token = cookies.get("accessToken");
     if (!token) {
