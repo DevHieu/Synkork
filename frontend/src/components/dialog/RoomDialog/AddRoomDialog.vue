@@ -6,7 +6,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Users, Plus } from "lucide-vue-next";
 import CreateRoomDialog from "./CreateRoomDialog.vue";
 import JoinRoomDialog from "./JoinRoomDialog.vue";
