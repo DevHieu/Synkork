@@ -4,7 +4,7 @@ import { ZegoExpressEngine } from "zego-express-engine-webrtc";
 import type { Participant } from "@/types/VoiceSpaceParticipant";
 import { useUserStore } from "@/stores/userStore";
 import { getZegoToken } from "@/services/spaceService";
-import { zegoFunctions } from "@/lib/zegoFunctions";
+import { useZego } from "@/composables/useZego";
 
 export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
   const appID = Number(import.meta.env.VITE_ZEGO_APP_ID);
@@ -32,7 +32,7 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
   );
 
   // các hàm xử lí của ZegoCloud
-  const zego = zegoFunctions({
+  const zego = useZego({
     state: zegoState,
     appID,
     server,
