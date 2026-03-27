@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import dayjs from "dayjs";
-import type { CalendarEvent } from "@/composables/useCalendar";
+import type { CalendarEvent } from "@/types/CalendarEvent";
 
 const props = defineProps<{
   currentDate: dayjs.Dayjs;

@@ -3,7 +3,7 @@ import type { Message } from "@/types/Message";
 
 export const chatSocket = {
   sendMessage(msg: { content: string; spaceId: string }) {
-    socketService.publish("/app/chat.publishMessage", msg);
+    socketService.publish("/app/chat.sendMessage", msg);
   },
 
   subscribeMessages(spaceId: string, callback: (msg: Message) => void) {
