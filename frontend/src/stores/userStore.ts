@@ -14,9 +14,9 @@ export const useUserStore = defineStore("users", {
       this.loading = true;
       try {
         const response = await getUserInfo();
-        console.log("user: " + response.data);
 
         this.user = response.data;
+        console.log("user: " + JSON.stringify(this.user));
       } catch (error) {
         console.error("Error fetching user info:", error);
       } finally {

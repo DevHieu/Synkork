@@ -2,9 +2,9 @@ package com.synkork.backend.modules.room;
 
 import com.synkork.backend.modules.room.dto.CreateRoomDto;
 import com.synkork.backend.modules.room.dto.RoomDto;
-import com.synkork.backend.modules.space.SpaceEntity;
+import com.synkork.backend.modules.roomMember.RoomMemberEntity;
+import com.synkork.backend.modules.roomMember.RoomMemberService;
 import com.synkork.backend.modules.space.SpaceService;
-import com.synkork.backend.modules.space.SpaceTypeEnum;
 import com.synkork.backend.modules.space.dto.CreateSpaceDto;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.transaction.Transactional;
@@ -29,6 +29,9 @@ public class RoomController {
     @Autowired
     SpaceService spaceService;
 
+    @Autowired
+    RoomMemberService roomMemberService;
+
     @Transactional
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> createRoom(
@@ -39,7 +42,7 @@ public class RoomController {
             RoomEntity roomEntity = roomService.createRoom(roomData)
                     .orElseThrow(() -> new RuntimeException("Room creation failed"));
 
-            roomService.addRoomMembers(
+            roomMemberService.addRoomMembers(
                     roomData.ownerId(),
                     roomEntity.getId().toString(),
                     "OWNER"
@@ -63,10 +66,7 @@ public class RoomController {
         }
     }
 
-    @PostMapping("/{roomId}/members/{userId}")
-    public ResponseEntity<RoomMemberEntity> addRoomMembers(@PathVariable String roomId, @PathVariable String userId, @RequestParam String role) {
-        return ResponseEntity.ok(roomService.addRoomMembers(userId, roomId, role));
-    }
+
 
     @GetMapping("/{userId}")
     public ResponseEntity<List<RoomDto>> findAllByUserId(@NonNull @PathVariable UUID userId) {
@@ -80,4 +80,5 @@ public class RoomController {
 
         return ResponseEntity.ok(roomDtos);
     }
+
 }
