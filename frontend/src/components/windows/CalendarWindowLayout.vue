@@ -2,6 +2,7 @@
 import { ref, computed } from "vue";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useSpaceStore } from "@/stores/spaceStore";
+import { useUserStore } from "@/stores/userStore";
 import { storeToRefs } from "pinia";
 import { useCalendar } from "@/composables/useCalendar";
 import type { CalendarEvent } from "@/types/CalendarEvent";
@@ -13,8 +14,11 @@ import CalendarEventDialog from "@/components/calendar/CalendarEventDialog.vue";
 
 // ===== Store =====
 const spaceStore = useSpaceStore();
+const userStore = useUserStore();
 const { currentSpace } = storeToRefs(spaceStore);
-const currentUserId = sessionStorage.getItem("userId") || "";
+const { user } = storeToRefs(userStore);
+
+const currentUserId = computed(() => (user.value as any)?.id || "");
 
 // ===== Composable =====
 const spaceIdRef = computed(() => currentSpace.value?.id);
@@ -125,7 +129,7 @@ const executeDelete = async () => {
       <div class="flex items-center gap-3">
         <SidebarTrigger class="-ml-1" />
         <span class="font-semibold text-lg flex items-center gap-2">
-          <font-awesome-icon icon="calendar-alt" class="text-teal-400" />
+          <i class="pi pi-calendar text-teal-400"></i>
           {{ currentSpace?.name }}
         </span>
       </div>
@@ -133,31 +137,22 @@ const executeDelete = async () => {
       <div class="flex items-center gap-2">
         <!-- View Mode Buttons -->
         <div class="flex rounded-lg overflow-hidden border border-white/20">
-          <button
-            @click="viewMode = 'week'"
-            :class="[
-              'px-3 py-1.5 text-sm font-medium transition-all duration-200',
-              viewMode === 'week' ? 'bg-teal-600 text-white' : 'hover:bg-white/10 text-gray-300',
-            ]"
-          >
+          <button @click="viewMode = 'week'" :class="[
+            'px-3 py-1.5 text-sm font-medium transition-all duration-200',
+            viewMode === 'week' ? 'bg-teal-600 text-white' : 'hover:bg-white/10 text-gray-300',
+          ]">
             Tuần
           </button>
-          <button
-            @click="viewMode = 'month'"
-            :class="[
-              'px-3 py-1.5 text-sm font-medium transition-all duration-200',
-              viewMode === 'month' ? 'bg-teal-600 text-white' : 'hover:bg-white/10 text-gray-300',
-            ]"
-          >
+          <button @click="viewMode = 'month'" :class="[
+            'px-3 py-1.5 text-sm font-medium transition-all duration-200',
+            viewMode === 'month' ? 'bg-teal-600 text-white' : 'hover:bg-white/10 text-gray-300',
+          ]">
             Tháng
           </button>
-          <button
-            @click="viewMode = 'year'"
-            :class="[
-              'px-3 py-1.5 text-sm font-medium transition-all duration-200',
-              viewMode === 'year' ? 'bg-teal-600 text-white' : 'hover:bg-white/10 text-gray-300',
-            ]"
-          >
+          <button @click="viewMode = 'year'" :class="[
+            'px-3 py-1.5 text-sm font-medium transition-all duration-200',
+            viewMode === 'year' ? 'bg-teal-600 text-white' : 'hover:bg-white/10 text-gray-300',
+          ]">
             Năm
           </button>
         </div>
@@ -167,31 +162,23 @@ const executeDelete = async () => {
     <!-- Navigation Bar -->
     <div class="flex items-center justify-between px-4 py-2 border-b border-white/10">
       <div class="flex items-center gap-2">
-        <button
-          @click="goPrev"
-          class="p-2 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors text-gray-300"
-        >
-          <font-awesome-icon icon="chevron-left" />
+        <button @click="goPrev"
+          class="p-2 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors text-gray-300">
+          <i class="pi pi-chevron-left"></i>
         </button>
-        <button
-          @click="goToday"
-          class="px-3 py-1.5 text-sm rounded-lg bg-teal-600/20 text-teal-400 hover:bg-teal-600/30 transition-colors font-medium min-w-[90px]"
-        >
+        <button @click="goToday"
+          class="px-3 py-1.5 text-sm rounded-lg bg-teal-600/20 text-teal-400 hover:bg-teal-600/30 transition-colors font-medium min-w-[90px]">
           {{ relativeTimeText }}
         </button>
-        <button
-          @click="goNext"
-          class="p-2 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors text-gray-300"
-        >
-          <font-awesome-icon icon="chevron-right" />
+        <button @click="goNext"
+          class="p-2 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors text-gray-300">
+          <i class="pi pi-chevron-right"></i>
         </button>
       </div>
       <span class="text-lg font-semibold text-white">{{ headerTitle }}</span>
-      <button
-        @click="openCreateDialog"
-        class="px-4 py-1.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium flex items-center gap-1.5"
-      >
-        <font-awesome-icon icon="plus" />
+      <button @click="openCreateDialog"
+        class="px-4 py-1.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium flex items-center gap-1.5">
+        <i class="pi pi-plus"></i>
         Thêm sự kiện
       </button>
     </div>
@@ -202,77 +189,51 @@ const executeDelete = async () => {
         <div class="w-8 h-8 rounded-full border-4 border-teal-500/30 border-t-teal-500 animate-spin"></div>
       </div>
 
-      <CalendarMonthView
-        v-if="viewMode === 'month'"
-        :current-date="currentDate"
-        :selected-date="selectedDate"
-        :events="events"
-        :current-user-id="currentUserId"
-        @select-date="selectDate"
-        @edit-event="openEditDialog"
-        @delete-event="handleDeleteEvent"
-      />
+      <CalendarMonthView v-if="viewMode === 'month'" :current-date="currentDate" :selected-date="selectedDate"
+        :events="events" :current-user-id="currentUserId" @select-date="selectDate" @edit-event="openEditDialog"
+        @delete-event="handleDeleteEvent" />
 
-      <CalendarWeekView
-        v-if="viewMode === 'week'"
-        :current-date="currentDate"
-        :selected-date="selectedDate"
-        :events="events"
-        @select-date="selectDate"
-        @edit-event="openEditDialog"
-      />
+      <CalendarWeekView v-if="viewMode === 'week'" :current-date="currentDate" :selected-date="selectedDate"
+        :events="events" @select-date="selectDate" @edit-event="openEditDialog" />
 
-      <CalendarYearView
-        v-if="viewMode === 'year'"
-        :current-date="currentDate"
-        :events="events"
-        @click-year-month="setYearMonth"
-      />
+      <CalendarYearView v-if="viewMode === 'year'" :current-date="currentDate" :events="events"
+        @click-year-month="setYearMonth" />
     </div>
 
     <!-- Event Dialog -->
-    <CalendarEventDialog
-      v-model:show="showDialog"
-      :is-editing="isEditing"
-      :initial-data="initialFormData"
-      :check-conflicts="checkConflicts"
-      :editing-event-id="editingEventId"
-      @save="handleSaveEvent"
-    />
+    <CalendarEventDialog v-model:show="showDialog" :is-editing="isEditing" :initial-data="initialFormData"
+      :check-conflicts="checkConflicts" :editing-event-id="editingEventId" @save="handleSaveEvent" />
 
     <!-- Modal Xóa Sự Kiện -->
     <Teleport to="body">
       <div v-if="showDeleteEventDialog" class="fixed inset-0 z-50 flex items-center justify-center">
         <!-- Overlay -->
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showDeleteEventDialog = false"></div>
-        
+
         <!-- Content -->
         <div class="relative bg-zinc-900 rounded-xl border border-red-500/20 w-full max-w-sm mx-4 p-5 shadow-2xl">
           <h3 class="text-lg font-semibold text-white mb-2 flex items-center gap-2">
-            <span class="text-red-500"><font-awesome-icon icon="trash" /></span> 
+            <span class="text-red-500"><i class="pi pi-trash"></i></span>
             Xóa Sự Kiện
           </h3>
-          
+
           <p class="text-sm text-gray-400 mb-6">
-            Bạn có chắc chắn muốn xóa sự kiện "<span class="text-gray-200 font-medium">{{ eventToDelete?.title }}</span>" không? 
+            Bạn có chắc chắn muốn xóa sự kiện "<span class="text-gray-200 font-medium">{{ eventToDelete?.title
+              }}</span>" không?
             Hành động này không thể hoàn tác.
           </p>
-          
+
           <div class="flex justify-end gap-2">
-            <button 
-              type="button" 
-              @click="showDeleteEventDialog = false"
+            <button type="button" @click="showDeleteEventDialog = false"
               class="px-4 py-2 rounded-lg text-sm text-gray-300 hover:bg-white/10 transition-colors"
-              :disabled="isDeletingEvent"
-            >
+              :disabled="isDeletingEvent">
               Hủy
             </button>
-            <button 
-              @click="executeDelete"
+            <button @click="executeDelete"
               class="px-4 py-2 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-              :disabled="isDeletingEvent"
-            >
-              <span v-if="isDeletingEvent" class="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></span>
+              :disabled="isDeletingEvent">
+              <span v-if="isDeletingEvent"
+                class="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></span>
               Xoá sự kiện
             </button>
           </div>

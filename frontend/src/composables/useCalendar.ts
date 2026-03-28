@@ -5,7 +5,7 @@ import type { CalendarEvent } from "@/types/CalendarEvent";
 
 export type { CalendarEvent };
 
-export function useCalendar(spaceIdRef: any, currentUserId: string) {
+export function useCalendar(spaceIdRef: any, currentUserId: any) {
   // 1. Date & Navigation Logic
   const calendarDate = useCalendarDate();
 

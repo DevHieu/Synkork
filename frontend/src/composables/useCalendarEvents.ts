@@ -1,4 +1,4 @@
-import { ref, watch } from "vue";
+import { ref, watch, unref } from "vue";
 import {
   getEventsByDateRange,
   createEvent as apiCreateEvent,
@@ -12,7 +12,7 @@ import type dayjs from "dayjs";
 
 export function useCalendarEvents(
   spaceIdRef: Ref<string | undefined>,
-  currentUserId: string,
+  currentUserId: any,
   currentDate: Ref<dayjs.Dayjs>,
   viewMode: Ref<"week" | "month" | "year">
 ) {
@@ -21,37 +21,66 @@ export function useCalendarEvents(
 
   const fetchEvents = async () => {
     if (!spaceIdRef.value) return;
+
+    const { start, end } = calculateDateRange(currentDate.value, viewMode.value);
+    
     loading.value = true;
-    let start: string, end: string;
-
-    if (viewMode.value === "week") {
-      start = currentDate.value.startOf("week").format("YYYY-MM-DD");
-      end = currentDate.value.endOf("week").format("YYYY-MM-DD");
-    } else if (viewMode.value === "year") {
-      start = currentDate.value.startOf("year").format("YYYY-MM-DD");
-      end = currentDate.value.endOf("year").format("YYYY-MM-DD");
-    } else {
-      start = currentDate.value.startOf("month").subtract(7, "day").format("YYYY-MM-DD");
-      end = currentDate.value.endOf("month").add(7, "day").format("YYYY-MM-DD");
-    }
-
     try {
-      const res = await getEventsByDateRange(spaceIdRef.value, start, end);
-      events.value = res.data;
-    } catch (err) {
-      console.error("Error fetching events:", err);
+      const response = await getEventsByDateRange(spaceIdRef.value, start, end);
+      events.value = response.data;
+    } catch (error) {
+      console.error("Failed to fetch calendar events:", error);
     } finally {
       loading.value = false;
     }
   };
 
+  const calculateDateRange = (date: dayjs.Dayjs, mode: string) => {
+    if (mode === "week") {
+      return {
+        start: date.startOf("week").format("YYYY-MM-DD"),
+        end: date.endOf("week").format("YYYY-MM-DD")
+      };
+    }
+    
+    if (mode === "year") {
+      return {
+        start: date.startOf("year").format("YYYY-MM-DD"),
+        end: date.endOf("year").format("YYYY-MM-DD")
+      };
+    }
+
+    // Default: Month view with 7-day padding for smooth transitions
+    return {
+      start: date.startOf("month").subtract(7, "day").format("YYYY-MM-DD"),
+      end: date.endOf("month").add(7, "day").format("YYYY-MM-DD")
+    };
+  };
+
+  const formatPayload = (data: any, id?: string) => {
+    const payload = {
+      ...data,
+      startTime: data.startTime.length === 5 ? `${data.startTime}:00` : data.startTime,
+      endTime: data.endTime.length === 5 ? `${data.endTime}:00` : data.endTime,
+      spaceId: spaceIdRef.value,
+      createdById: unref(currentUserId)
+    };
+    if (id) payload.id = id;
+    if (payload.recurrenceType === 'NONE') {
+      delete payload.recurrenceEndDate;
+    } else if (!payload.recurrenceEndDate) {
+      delete payload.recurrenceEndDate;
+    }
+    return payload;
+  };
+
   const createEvent = async (data: any) => {
-    await apiCreateEvent({ ...data, spaceId: spaceIdRef.value, createdById: currentUserId });
+    await apiCreateEvent(formatPayload(data));
     await fetchEvents();
   };
 
   const updateEvent = async (id: string, data: any) => {
-    await apiUpdateEvent(id, { ...data, spaceId: spaceIdRef.value, createdById: currentUserId });
+    await apiUpdateEvent(id, formatPayload(data, id));
     await fetchEvents();
   };
 

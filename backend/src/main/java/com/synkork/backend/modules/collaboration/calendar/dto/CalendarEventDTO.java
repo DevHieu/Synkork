@@ -21,6 +21,8 @@ public class CalendarEventDTO {
     private LocalDate eventDate;
     private LocalTime startTime;
     private LocalTime endTime;
+    private String recurrenceType;
+    private LocalDate recurrenceEndDate;
     private boolean allowEditAll;
 
     private String createdById;
@@ -39,6 +41,8 @@ public class CalendarEventDTO {
         this.eventDate = entity.getEventDate();
         this.startTime = entity.getStartTime();
         this.endTime = entity.getEndTime();
+        this.recurrenceType = entity.getRecurrenceType();
+        this.recurrenceEndDate = entity.getRecurrenceEndDate();
         this.allowEditAll = entity.isAllowEditAll();
         this.createdById = entity.getCreatedBy().getId().toString();
         this.createdByUsername = entity.getCreatedBy().getUsername();

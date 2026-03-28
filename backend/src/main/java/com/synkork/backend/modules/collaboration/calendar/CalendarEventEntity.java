@@ -32,6 +32,9 @@ public class CalendarEventEntity extends BaseEntity {
     private LocalTime startTime;
     private LocalTime endTime;
 
+    private String recurrenceType; // NONE, DAILY, WEEKLY
+    private LocalDate recurrenceEndDate;
+
     private boolean allowEditAll;
 
     @ManyToOne(fetch = FetchType.LAZY)

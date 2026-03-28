@@ -136,46 +136,72 @@ const canDelete = (event: CalendarEvent) => {
         <div
           v-for="event in selectedDateEvents"
           :key="event.id"
-          class="group bg-white/5 rounded-lg p-3 hover:bg-white/10 transition-colors border border-white/5"
+          class="group bg-zinc-800/50 rounded-xl p-4 hover:bg-zinc-800/80 transition-all duration-300 border border-white/5 hover:border-teal-500/30 shadow-lg"
         >
-          <div class="flex items-start justify-between">
-            <div class="flex-1 min-w-0">
-              <h4 class="font-medium text-white text-sm truncate">
-                {{ event.title }}
-              </h4>
-              <p class="text-xs text-teal-400 mt-1 flex items-center gap-1.5">
-                <font-awesome-icon icon="clock" />
-                {{ event.startTime.substring(0, 5) }} -
-                {{ event.endTime.substring(0, 5) }}
-              </p>
-              <p
-                v-if="event.description"
-                class="text-xs text-gray-400 mt-1 line-clamp-2"
-              >
-                {{ event.description }}
-              </p>
-              <p class="text-xs text-gray-500 mt-1 flex items-center gap-1.5">
-                <font-awesome-icon icon="user" />
-                {{ event.createdByDisplayName }}
-              </p>
-            </div>
-            <div class="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity ml-2">
-              <button
-                v-if="canEdit(event)"
-                @click.stop="emit('editEvent', event)"
-                class="p-1 w-6 h-6 flex items-center justify-center rounded hover:bg-white/20 text-gray-300 text-xs"
-                title="Chỉnh sửa"
-              >
-                <font-awesome-icon icon="edit" />
-              </button>
-              <button
-                v-if="canDelete(event)"
-                @click.stop="emit('deleteEvent', event)"
-                class="p-1 w-6 h-6 flex items-center justify-center rounded hover:bg-red-500/20 text-gray-300 text-xs hover:text-red-400 transition-colors"
-                title="Xóa"
-              >
-                <font-awesome-icon icon="trash" />
-              </button>
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex-1 min-w-0 space-y-3">
+              <!-- Title -->
+              <div>
+                <div class="flex items-center gap-2 mb-1">
+                  <div class="w-1.5 h-1.5 rounded-full bg-teal-500"></div>
+                  <span class="text-[10px] font-bold text-teal-500/80 uppercase tracking-widest">Tiêu đề</span>
+                </div>
+                <h4 class="font-semibold text-white text-sm leading-tight wrap-break-word">
+                  {{ event.title }}
+                </h4>
+              </div>
+
+              <!-- Time -->
+              <div class="flex items-center gap-4">
+                <div class="flex flex-col">
+                  <span class="text-[10px] font-medium text-gray-500 uppercase">Thời gian</span>
+                  <div class="flex items-center gap-1.5 text-xs text-teal-400 font-medium mt-0.5">
+                    <i class="pi pi-clock text-[10px]"></i>
+                    {{ event.startTime.substring(0, 5) }} - {{ event.endTime.substring(0, 5) }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Description -->
+              <div v-if="event.description">
+                <span class="text-[10px] font-medium text-gray-500 uppercase">Mô tả</span>
+                <p class="text-xs text-gray-300 mt-1 leading-relaxed line-clamp-3 bg-white/5 p-2 rounded-lg border border-white/5 italic">
+                  {{ event.description }}
+                </p>
+              </div>
+
+              <!-- Creator -->
+              <div class="pt-2 border-t border-white/5 flex items-center justify-between">
+                <div class="flex flex-col">
+                  <span class="text-[10px] font-medium text-gray-500 uppercase">Người tạo</span>
+                  <div class="flex items-center gap-1.5 text-[11px] text-gray-400 mt-1">
+                    <div class="w-5 h-5 rounded-full bg-teal-600/20 flex items-center justify-center border border-teal-500/20">
+                      <i class="pi pi-user text-[10px] text-teal-500"></i>
+                    </div>
+                    <span class="truncate max-w-[120px]">{{ event.createdByDisplayName }}</span>
+                  </div>
+                </div>
+
+                <!-- Actions (Desktop Hover) -->
+                <div class="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300">
+                  <button
+                    v-if="canEdit(event)"
+                    @click.stop="emit('editEvent', event)"
+                    class="p-2 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-teal-500/20 text-gray-400 hover:text-teal-400 transition-colors"
+                    title="Chỉnh sửa"
+                  >
+                    <i class="pi pi-pencil text-xs"></i>
+                  </button>
+                  <button
+                    v-if="canDelete(event)"
+                    @click.stop="emit('deleteEvent', event)"
+                    class="p-2 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors shadow-inner"
+                    title="Xóa"
+                  >
+                    <i class="pi pi-trash text-xs"></i>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -195,6 +221,7 @@ const canDelete = (event: CalendarEvent) => {
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
