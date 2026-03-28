@@ -15,12 +15,16 @@ public interface RoomMemberRepository extends JpaRepository<RoomMemberEntity, UU
     @Query("SELECT rm FROM RoomMemberEntity rm JOIN FETCH rm.user WHERE rm.user.id = :userId")
     Optional<RoomMemberEntity> findByUserId(@Param("userId") UUID userId);
 
-    Optional<RoomMemberEntity> findByUserIdAndRoom_Id(UUID userId, UUID roomId);
+    @Query("SELECT rm FROM RoomMemberEntity rm JOIN FETCH rm.user WHERE rm.user.id = :userId AND rm.room.id = :roomId")
+    Optional<RoomMemberEntity> findByUserIdAndRoom_IdWithUser(
+            @Param("userId") UUID userId,
+            @Param("roomId") UUID roomId
+    );
 
     List<RoomMemberEntity> findByRoom_Id(UUID roomId);
-
 
     Long countByRoom_Id(UUID id);
 
     boolean existsByRoom_IdAndUser_Id(UUID id, UUID userId);
+
 }
