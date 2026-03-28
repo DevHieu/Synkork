@@ -18,5 +18,7 @@ onMounted(() => {
     <template #space-sidebar>
       <FriendSidebar />
     </template>
+
+    <router-view />
   </BaseLayout>
 </template>
