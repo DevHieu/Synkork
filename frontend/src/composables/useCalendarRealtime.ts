@@ -11,27 +11,31 @@ export function useCalendarRealtime(
   const isSocketReady = ref(false);
   let sub: { unsubscribe: () => void } | null = null;
 
+  // Hủy đăng ký lắng nghe hiện tại
   const unsubscribeCurrent = () => {
     if (sub) {
       try {
         sub.unsubscribe();
       } catch (err) {
-        console.warn("[Calendar] Unsubscribe error:", err);
+        console.warn("[Lịch] Lỗi khi hủy đăng ký:", err);
       }
       sub = null;
     }
   };
 
   onMounted(() => {
+    // Kết nối WebSocket khi linh kiện được gắn
     socketService.connect(() => {
       isSocketReady.value = true;
     });
   });
 
   onUnmounted(() => {
+    // Hủy đăng ký khi linh kiện bị hủy
     unsubscribeCurrent();
   });
 
+  // Theo dõi ID không gian và trạng thái Socket để đăng ký nhận thông báo
   watch(
     [spaceIdRef, isSocketReady],
     ([spaceId, ready]) => {
@@ -42,6 +46,7 @@ export function useCalendarRealtime(
 
       unsubscribeCurrent();
 
+      // Đăng ký nhận thông báo về sự kiện lịch (Tạo/Sửa/Xóa)
       sub = subscribeCalendarSpace(spaceId, (payload: any) => {
         const { action, event } = payload;
         if (action === "CREATED") {

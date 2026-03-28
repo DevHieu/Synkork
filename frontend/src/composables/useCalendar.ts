@@ -6,10 +6,10 @@ import type { CalendarEvent } from "@/types/CalendarEvent";
 export type { CalendarEvent };
 
 export function useCalendar(spaceIdRef: any, currentUserId: any) {
-  // 1. Date & Navigation Logic
+  // 1. Logic về Ngày & Điều hướng
   const calendarDate = useCalendarDate();
 
-  // 2. Events & CRUD Logic
+  // 2. Logic về Sự kiện (CRUD)
   const calendarEvents = useCalendarEvents(
     spaceIdRef,
     currentUserId,
@@ -17,10 +17,10 @@ export function useCalendar(spaceIdRef: any, currentUserId: any) {
     calendarDate.viewMode
   );
 
-  // 3. Real-time Synchronization
+  // 3. Đồng bộ hóa thời gian thực (WebSocket)
   useCalendarRealtime(spaceIdRef, calendarEvents.events);
 
-  // Return the combined API (Facade)
+  // Trả về API tổng hợp (Facade)
   return {
     ...calendarDate,
     ...calendarEvents,

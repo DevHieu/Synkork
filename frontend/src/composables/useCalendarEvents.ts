@@ -19,6 +19,7 @@ export function useCalendarEvents(
   const events = ref<CalendarEvent[]>([]);
   const loading = ref(false);
 
+  // Tải danh sách sự kiện từ API
   const fetchEvents = async () => {
     if (!spaceIdRef.value) return;
 
@@ -29,12 +30,13 @@ export function useCalendarEvents(
       const response = await getEventsByDateRange(spaceIdRef.value, start, end);
       events.value = response.data;
     } catch (error) {
-      console.error("Failed to fetch calendar events:", error);
+      console.error("Không thể tải sự kiện:", error);
     } finally {
       loading.value = false;
     }
   };
 
+  // Tính toán khoảng ngày cần tải dữ liệu
   const calculateDateRange = (date: dayjs.Dayjs, mode: string) => {
     if (mode === "week") {
       return {
@@ -50,13 +52,14 @@ export function useCalendarEvents(
       };
     }
 
-    // Default: Month view with 7-day padding for smooth transitions
+    // Mặc định: Chế độ tháng (lấy thêm 7 ngày trước/sau để chuyển đổi mượt)
     return {
       start: date.startOf("month").subtract(7, "day").format("YYYY-MM-DD"),
       end: date.endOf("month").add(7, "day").format("YYYY-MM-DD")
     };
   };
 
+  // Chuẩn hóa dữ liệu trước khi gửi lên API
   const formatPayload = (data: any, id?: string) => {
     const payload = {
       ...data,
@@ -74,21 +77,25 @@ export function useCalendarEvents(
     return payload;
   };
 
+  // Tạo sự kiện mới
   const createEvent = async (data: any) => {
     await apiCreateEvent(formatPayload(data));
     await fetchEvents();
   };
 
+  // Cập nhật sự kiện
   const updateEvent = async (id: string, data: any) => {
     await apiUpdateEvent(id, formatPayload(data, id));
     await fetchEvents();
   };
 
+  // Xóa sự kiện
   const deleteEvent = async (id: string) => {
     await apiDeleteEvent(id, currentUserId);
     await fetchEvents();
   };
 
+  // Kiểm tra trùng lịch
   const checkConflicts = async (date: string, start: string, end: string, excludeId?: string) => {
     if (!spaceIdRef.value) return [];
     try {
@@ -99,7 +106,7 @@ export function useCalendarEvents(
     }
   };
 
-  // Watchers for fetching
+  // Theo dõi thay đổi để tải lại dữ liệu
   watch(spaceIdRef, () => fetchEvents(), { immediate: true });
   watch([currentDate, viewMode], () => fetchEvents());
 

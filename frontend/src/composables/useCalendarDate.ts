@@ -6,32 +6,38 @@ export function useCalendarDate() {
   const currentDate = ref(dayjs());
   const selectedDate = ref(dayjs());
 
+  // Chuyển sang trang tiếp theo (Tuần/Tháng/Năm)
   const goNext = () => {
     if (viewMode.value === "week") currentDate.value = currentDate.value.add(1, "week");
     else if (viewMode.value === "month") currentDate.value = currentDate.value.add(1, "month");
     else currentDate.value = currentDate.value.add(1, "year");
   };
 
+  // Quay lại trang trước (Tuần/Tháng/Năm)
   const goPrev = () => {
     if (viewMode.value === "week") currentDate.value = currentDate.value.subtract(1, "week");
     else if (viewMode.value === "month") currentDate.value = currentDate.value.subtract(1, "month");
     else currentDate.value = currentDate.value.subtract(1, "year");
   };
 
+  // Về ngày hiện tại
   const goToday = () => {
     currentDate.value = dayjs();
     selectedDate.value = dayjs();
   };
 
+  // Chọn một ngày cụ thể
   const selectDate = (date: dayjs.Dayjs) => {
     selectedDate.value = date;
   };
 
+  // Chuyển sang tháng cụ thể (từ màn hình xem Năm)
   const setYearMonth = (monthIndex: number) => {
     currentDate.value = currentDate.value.month(monthIndex);
     viewMode.value = "month";
   };
 
+  // Tiêu đề hiển thị trên thanh điều hướng
   const headerTitle = computed(() => {
     if (viewMode.value === "week") {
       const start = currentDate.value.startOf("week");
@@ -43,6 +49,7 @@ export function useCalendarDate() {
     return currentDate.value.format("MMMM YYYY");
   });
 
+  // Văn bản thời gian tương đối (Hôm nay/Tuần này/Tháng này...)
   const relativeTimeText = computed(() => {
     const now = dayjs();
     if (viewMode.value === "week") {

@@ -6,6 +6,9 @@ import "dayjs/locale/vi";
 
 dayjs.locale("vi");
 
+// Khởi tạo phông chữ tiếng Việt cho dayjs
+dayjs.locale("vi");
+
 const props = defineProps<{
   show: boolean;
   isEditing: boolean;
@@ -34,7 +37,7 @@ const isCheckingConflict = ref(false);
 
 let conflictDebounce: ReturnType<typeof setTimeout> | null = null;
 
-// Reset form data when dialog opens
+// Reset dữ liệu khi mở dialog
 watch(
   () => props.show,
   (newVal) => {
@@ -45,7 +48,7 @@ watch(
   }
 );
 
-// Check conflicts when date/time changes
+// Tự động kiểm tra trùng lịch khi thay đổi thời gian
 watch(
   () => [formData.value.eventDate, formData.value.startTime, formData.value.endTime],
   ([date, start, end]) => {
@@ -77,6 +80,7 @@ const handleSubmit = () => {
   emit("save", formData.value);
 };
 
+// Tạo văn bản mô tả chế độ lặp lại
 const recurrenceSummary = computed(() => {
   const type = formData.value.recurrenceType;
   if (!type || type === "NONE") return "";

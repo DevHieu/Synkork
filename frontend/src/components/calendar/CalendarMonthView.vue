@@ -16,50 +16,61 @@ const emit = defineEmits<{
   (e: "deleteEvent", event: CalendarEvent): void;
 }>();
 
+// Tên các thứ trong tuần
 const dayNames = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
+// Tính toán các ngày hiển thị trong tháng (bao gồm cả ngày đệm từ tháng trước/sau)
 const monthDays = computed(() => {
   const startOfMonth = props.currentDate.startOf("month");
   const endOfMonth = props.currentDate.endOf("month");
   const startDay = startOfMonth.day();
   const days: dayjs.Dayjs[] = [];
 
+  // Thêm các ngày của tháng trước
   for (let i = startDay - 1; i >= 0; i--) {
     days.push(startOfMonth.subtract(i + 1, "day"));
   }
+  // Thêm các ngày của tháng hiện tại
   for (let d = startOfMonth; d.isBefore(endOfMonth) || d.isSame(endOfMonth, "day"); d = d.add(1, "day")) {
     days.push(d);
   }
+  // Thêm các ngày của tháng sau để đủ 42 ô (6 tuần)
   while (days.length < 42) {
     days.push(endOfMonth.add(days.length - endOfMonth.date() - startDay + 1, "day"));
   }
   return days;
 });
 
+// Lấy danh sách sự kiện của ngày đang chọn
 const selectedDateEvents = computed(() => {
   return props.events
     .filter((e) => e.eventDate === props.selectedDate.format("YYYY-MM-DD"))
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
 });
 
+// Kiểm tra xem ngày có sự kiện không
 const hasEvent = (date: dayjs.Dayjs) => {
   return props.events.some((e) => e.eventDate === date.format("YYYY-MM-DD"));
 };
 
+// Lấy danh sách sự kiện cho một ngày cụ thể
 const getEventsForDate = (date: dayjs.Dayjs) => {
   return props.events
     .filter((e) => e.eventDate === date.format("YYYY-MM-DD"))
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
 };
 
+// Các hàm kiểm tra trạng thái ngày
 const isToday = (date: dayjs.Dayjs) => date.isSame(dayjs(), "day");
 const isSelected = (date: dayjs.Dayjs) => date.isSame(props.selectedDate, "day");
 const isCurrentMonth = (date: dayjs.Dayjs) => date.month() === props.currentDate.month();
 
+// Kiểm tra quyền chỉnh sửa
 const canEdit = (event: CalendarEvent) => {
   return event.createdById === props.currentUserId || event.allowEditAll;
 };
 
+// Kiểm tra quyền xóa (chỉ người tạo)
 const canDelete = (event: CalendarEvent) => {
   return event.createdById === props.currentUserId;
 };
@@ -67,9 +78,9 @@ const canDelete = (event: CalendarEvent) => {
 
 <template>
   <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
-    <!-- Calendar Grid -->
+    <!-- Lưới lịch -->
     <div class="flex-1 flex flex-col overflow-hidden p-3">
-      <!-- Day Headers -->
+      <!-- Tiêu đề các thứ -->
       <div class="grid grid-cols-7 gap-1 mb-1">
         <div
           v-for="day in dayNames"
@@ -80,7 +91,7 @@ const canDelete = (event: CalendarEvent) => {
         </div>
       </div>
 
-      <!-- Days Grid -->
+      <!-- Lưới các ngày -->
       <div class="grid grid-cols-7 gap-1 flex-1">
         <div
           v-for="(date, idx) in monthDays"
@@ -104,7 +115,7 @@ const canDelete = (event: CalendarEvent) => {
           >
             {{ date.date() }}
           </span>
-          <!-- Event Indicator Dots -->
+          <!-- Chấm chỉ báo sự kiện -->
           <div v-if="hasEvent(date)" class="flex gap-0.5 mt-0.5">
             <span
               v-for="n in Math.min(getEventsForDate(date).length, 3)"
@@ -116,7 +127,7 @@ const canDelete = (event: CalendarEvent) => {
       </div>
     </div>
 
-    <!-- Selected Day Event List (Right Panel) -->
+    <!-- Danh sách sự kiện ngày đã chọn (Bên phải) -->
     <div class="w-full md:w-80 border-t md:border-t-0 md:border-l border-white/10 flex flex-col overflow-hidden">
       <div class="px-4 py-3 border-b border-white/10">
         <h3 class="font-semibold text-white">
@@ -140,7 +151,7 @@ const canDelete = (event: CalendarEvent) => {
         >
           <div class="flex items-start justify-between gap-3">
             <div class="flex-1 min-w-0 space-y-3">
-              <!-- Title -->
+              <!-- Tiêu đề -->
               <div>
                 <div class="flex items-center gap-2 mb-1">
                   <div class="w-1.5 h-1.5 rounded-full bg-teal-500"></div>
@@ -151,7 +162,7 @@ const canDelete = (event: CalendarEvent) => {
                 </h4>
               </div>
 
-              <!-- Time -->
+              <!-- Thời gian -->
               <div class="flex items-center gap-4">
                 <div class="flex flex-col">
                   <span class="text-[10px] font-medium text-gray-500 uppercase">Thời gian</span>
@@ -162,7 +173,7 @@ const canDelete = (event: CalendarEvent) => {
                 </div>
               </div>
 
-              <!-- Description -->
+              <!-- Mô tả -->
               <div v-if="event.description">
                 <span class="text-[10px] font-medium text-gray-500 uppercase">Mô tả</span>
                 <p class="text-xs text-gray-300 mt-1 leading-relaxed line-clamp-3 bg-white/5 p-2 rounded-lg border border-white/5 italic">
@@ -170,7 +181,7 @@ const canDelete = (event: CalendarEvent) => {
                 </p>
               </div>
 
-              <!-- Creator -->
+              <!-- Người tạo -->
               <div class="pt-2 border-t border-white/5 flex items-center justify-between">
                 <div class="flex flex-col">
                   <span class="text-[10px] font-medium text-gray-500 uppercase">Người tạo</span>
@@ -182,7 +193,7 @@ const canDelete = (event: CalendarEvent) => {
                   </div>
                 </div>
 
-                <!-- Actions (Desktop Hover) -->
+                <!-- Hành động (Hiện khi hover trên Desktop) -->
                 <div class="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300">
                   <button
                     v-if="canEdit(event)"

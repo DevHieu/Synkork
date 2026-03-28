@@ -14,8 +14,10 @@ const emit = defineEmits<{
   (e: "editEvent", event: CalendarEvent): void;
 }>();
 
+// Tên các thứ trong tuần
 const dayNames = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
+// Tính toán các ngày trong tuần hiện tại
 const weekDays = computed(() => {
   const start = props.currentDate.startOf("week");
   const days: dayjs.Dayjs[] = [];
@@ -25,12 +27,14 @@ const weekDays = computed(() => {
   return days;
 });
 
+// Lấy danh sách sự kiện của một ngày
 const getEventsForDate = (date: dayjs.Dayjs) => {
   return props.events
     .filter((e) => e.eventDate === date.format("YYYY-MM-DD"))
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
 };
 
+// Các hàm kiểm tra trạng thái ngày
 const isToday = (date: dayjs.Dayjs) => date.isSame(dayjs(), "day");
 const isSelected = (date: dayjs.Dayjs) => date.isSame(props.selectedDate, "day");
 </script>
