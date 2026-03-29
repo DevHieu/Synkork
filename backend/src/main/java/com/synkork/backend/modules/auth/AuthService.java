@@ -51,7 +51,7 @@ public class AuthService {
     public String login(LoginRequest request, HttpServletResponse response) {
         UserEntity user = userRepository.findByEmail(request.getUsername())
                 .orElseGet(() -> userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Username hoặc Email không tồn tại!")));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Username hoặc Email không tồn tại!")));
 
         if (user.getProvider() == ProviderEnum.GOOGLE && user.getPassword() == null) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tài khoản này đăng nhập bằng Google, vui lòng sử dụng nút 'Đăng nhập với Google'");

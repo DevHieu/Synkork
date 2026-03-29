@@ -16,7 +16,14 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronRight, Hash, Volume2, Plus } from "lucide-vue-next";
+import {
+  ChevronRight,
+  Hash,
+  Volume2,
+  Plus,
+  UserRoundPlus,
+  Settings,
+} from "lucide-vue-next";
 
 import { useRouter } from "vue-router";
 import { useRoomsStore } from "@/stores/roomStore";
@@ -24,10 +31,15 @@ import { useSpaceStore } from "@/stores/spaceStore";
 import { storeToRefs } from "pinia";
 import CreateSpaceDialog from "../dialog/CreateSpaceDialog.vue";
 import { ref } from "vue";
+import RoomSettingDialog from "@/components/dialog/RoomSettingDialog/index.vue";
+import InviteDialog from "@/components/dialog/InviteMemberDialog.vue";
 
 const router = useRouter();
 const roomStore = useRoomsStore();
 const spaceStore = useSpaceStore();
+
+const showRoomSettingDialog = ref(false);
+const showInviteDialog = ref(false);
 
 const showAddSpaceDialog = ref(false);
 const selectedSpaceType = ref<string>("CHAT");
@@ -44,14 +56,14 @@ const {
 
 const changeSpace = async (
   index: number,
-  type: "CHAT" | "VOICE" | "NOTE" | "CALENDAR" | "TASK"
+  type: "CHAT" | "VOICE" | "NOTE" | "CALENDAR" | "TASK",
 ) => {
   await spaceStore.changeSpace(index, type);
 
   router.push(
     `/rooms/${type.toLowerCase()}/${currentRoom.value?.id}/${
       currentSpace.value?.id
-    }`
+    }`,
   );
 };
 
@@ -60,15 +72,19 @@ const openAddSpaceDialog = (type: string) => {
   showAddSpaceDialog.value = true;
 };
 
+const openRoomSettingDialog = () => {
+  showRoomSettingDialog.value = true;
+};
+
 const handleCreateSpace = async (name: string, type: string) => {
   const spaceId = await spaceStore.createSpace(
     name,
     type,
-    currentRoom.value?.id || ""
+    currentRoom.value?.id || "",
   );
 
   router.push(
-    `/rooms/${type.toLowerCase()}/${spaceId}/${currentSpace.value?.id}`
+    `/rooms/${type.toLowerCase()}/${spaceId}/${currentSpace.value?.id}`,
   );
 };
 </script>
@@ -79,6 +95,20 @@ const handleCreateSpace = async (name: string, type: string) => {
       <div class="flex w-full items-center justify-between">
         <div class="text-base font-medium text-foreground">
           {{ currentRoom?.name }}
+        </div>
+        <div class="flex gap-3.5">
+          <button
+            @click.stop="openRoomSettingDialog()"
+            class="transition duration-150 hover:text-foreground"
+          >
+            <Settings class="h-5 w-5" />
+          </button>
+          <button
+            @click="showInviteDialog = true"
+            class="p-1.5 rounded-lg hover:bg-muted transition text-muted-foreground hover:text-foreground"
+          >
+            <UserRoundPlus class="h-5 w-5" />
+          </button>
         </div>
       </div>
     </SidebarHeader>
@@ -300,6 +330,9 @@ const handleCreateSpace = async (name: string, type: string) => {
     :type="selectedSpaceType"
     @created="({ name, type }) => handleCreateSpace(name, type)"
   />
+
+  <RoomSettingDialog v-model:open="showRoomSettingDialog" />
+  <InviteDialog v-model:open="showInviteDialog" />
 </template>
 
 <style scoped></style>
