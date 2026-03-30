@@ -33,7 +33,7 @@ const createStompClient = (token: string, onConnected?: () => void): Client => {
           stompClient = createStompClient(freshToken, onConnected);
           stompClient.activate();
         } catch {
-          window.location.href = "/auth/login";
+          window.location.href = "/auth";
         }
       }
     },
@@ -58,7 +58,7 @@ export const socketService = {
       try {
         token = await getFreshToken();
       } catch {
-        window.location.href = "/auth/login";
+        window.location.href = "/auth";
         return;
       }
     }
