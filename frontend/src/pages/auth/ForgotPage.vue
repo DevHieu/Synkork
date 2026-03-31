@@ -104,7 +104,7 @@ const submitForgotPassword = async () => {
         </p>
         <button
           class="text-xs text-muted-foreground hover:underline"
-          @click="router.push('/auth/login')"
+          @click="router.push('/auth')"
         >
           ← Quay lại đăng nhập
         </button>
@@ -189,7 +189,7 @@ const submitForgotPassword = async () => {
 
         <button
           class="text-sm text-muted-foreground hover:underline"
-          @click="router.push('/auth/login')"
+          @click="router.push('/auth')"
         >
           Quay lại đăng nhập
         </button>

@@ -1,0 +1,195 @@
+.form-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--foreground);
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.social-row {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.sbtn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in oklch, var(--foreground) 15%, transparent);
+  background: color-mix(in oklch, var(--foreground) 8%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+.sbtn:hover {
+  border-color: color-mix(in oklch, var(--foreground) 35%, transparent);
+  background: color-mix(in oklch, var(--foreground) 14%, transparent);
+}
+
+.or-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  margin-bottom: 10px;
+}
+.or-divider::before,
+.or-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--muted-foreground);
+}
+
+.field {
+  margin-bottom: 7px;
+}
+.field-label {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin-bottom: 4px;
+  display: block;
+}
+
+.nrow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.input-wrap {
+  position: relative;
+}
+.fi-icon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted-foreground);
+  pointer-events: none;
+  z-index: 1;
+}
+.eye-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted-foreground);
+  display: flex;
+  align-items: center;
+  padding: 0;
+  transition: color 0.15s;
+}
+.eye-btn:hover {
+  color: var(--foreground);
+}
+
+.fi {
+  width: 100% !important;
+  height: 38px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  padding: 0 12px 0 34px !important;
+  font-size: 12.5px !important;
+  color: var(--foreground) !important;
+  background: color-mix(in oklch, var(--foreground) 7%, transparent) !important;
+  outline: none !important;
+  backdrop-filter: blur(4px);
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    box-shadow 0.2s !important;
+}
+/* inputs without icon wrapper get normal left padding */
+.fi:not(.input-wrap .fi) {
+  padding-left: 12px !important;
+}
+.fi--padded {
+  padding-right: 34px !important;
+}
+.fi::placeholder {
+  color: var(--muted-foreground) !important;
+}
+.fi:focus {
+  border-color: var(--primary) !important;
+  background: color-mix(
+    in oklch,
+    var(--foreground) 11%,
+    transparent
+  ) !important;
+  box-shadow: 0 0 0 2px var(--clr-p) !important;
+}
+.fi--error {
+  border-color: var(--destructive) !important;
+}
+
+.err-msg {
+  font-size: 11px;
+  color: var(--destructive);
+  margin-top: 3px;
+}
+
+.server-error {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: color-mix(in oklch, var(--destructive) 12%, transparent);
+  border: 1px solid color-mix(in oklch, var(--destructive) 3%, transparent);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--destructive);
+  margin-bottom: 10px;
+}
+
+.forgot-link {
+  display: block;
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+  margin: 4px 0 12px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.forgot-link:hover {
+  color: var(--primary) !important;
+}
+
+.submit-btn {
+  width: 100% !important;
+  height: 40px !important;
+  border: none !important;
+  border-radius: 24px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.7px !important;
+  text-transform: uppercase !important;
+  color: var(--primary-foreground) !important;
+  cursor: pointer !important;
+  transition:
+    opacity 0.2s,
+    transform 0.15s !important;
+  margin-top: 4px;
+}
+.submit-btn:hover {
+  opacity: 0.87 !important;
+}
+.submit-btn:active {
+  transform: scale(0.98) !important;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--clr-p), var(--clr-p2)) !important;
+}
+.btn-secondary {
+  background: linear-gradient(135deg, var(--clr-s), var(--clr-s2)) !important;
+}

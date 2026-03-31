@@ -10,8 +10,9 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top left, var(--primary), transparent 55%),
-    linear-gradient(210deg, var(--secondary), transparent 50%),
+  background:
+    linear-gradient(to top left, var(--primary), transparent 55%),
+    linear-gradient(210deg, var(--secondary), transparent 60%),
     linear-gradient(to right, var(--sidebar), var(--background));
   filter: blur(80px);
   z-index: 0;
@@ -31,6 +32,26 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  select:-webkit-autofill,
+  select:-webkit-autofill:hover,
+  select:-webkit-autofill:focus {
+    /*
+     * Use a box-shadow to override the browser's default background color.
+     * The color should match your input's background color (e.g., using a CSS variable).
+     * The transition duration is set to a very long time to prevent a flash of the
+     * original autofill background color during the transition.
+     */
+    -webkit-text-fill-color: var(--foreground) !important;
+    transition: background-color 5000s ease-in-out 0s !important;
+    font-size: 12.5px !important;
+  }
 }
 
 :root {
@@ -38,6 +59,20 @@
   font-optical-sizing: auto;
   font-weight: 600;
   font-style: normal;
+
+  /* Auth page */
+  --auth-background: #f8fafc;
+  --auth-login-background: #f5ebe4;
+  --auth-register-background: #e6f8f4;
+  --auth-half-opacity: rgba(255, 255, 255, 0.06);
+
+  --clr-p: oklch(0.56 0.17 36.15);
+  --clr-p2: oklch(0.64 0.15 40);
+  --clr-s: oklch(0.32 0.05 196.69);
+  --clr-s2: oklch(0.42 0.07 196);
+  --dur: 0.65s;
+  --ease: cubic-bezier(0.68, -0.02, 0.26, 1.02);
+  /*  */
 
   --background: oklch(0.98 0.01 93.48);
   --foreground: oklch(0.34 0.03 94.42);
@@ -66,7 +101,7 @@
   --sidebar-foreground: oklch(0.36 0.01 106.85);
   --sidebar-primary: oklch(0.62 0.14 39.15);
   --sidebar-primary-foreground: oklch(0.33 0 0);
-  --sidebar-accent: oklch(0.62 0.14 39.15);
+  --sidebar-accent: rgb(203, 100, 65);
   --sidebar-accent-foreground: oklch(0.33 0 0);
   --sidebar-border: oklch(0.94 0 0);
   --sidebar-ring: oklch(0.77 0 0);
@@ -74,19 +109,24 @@
 
   --shadow-2xs: 0 1px 3px 0px oklch(0 0 0 / 0.05);
   --shadow-xs: 0 1px 3px 0px oklch(0 0 0 / 0.05);
-  --shadow-sm: 0 1px 3px 0px oklch(0 0 0 / 0.1),
-    0 1px 2px -1px oklch(0 0 0 / 0.1);
+  --shadow-sm:
+    0 1px 3px 0px oklch(0 0 0 / 0.1), 0 1px 2px -1px oklch(0 0 0 / 0.1);
   --shadow: 0 1px 3px 0px oklch(0 0 0 / 0.1), 0 1px 2px -1px oklch(0 0 0 / 0.1);
-  --shadow-md: 0 1px 3px 0px oklch(0 0 0 / 0.1),
-    0 2px 4px -1px oklch(0 0 0 / 0.1);
-  --shadow-lg: 0 1px 3px 0px oklch(0 0 0 / 0.1),
-    0 4px 6px -1px oklch(0 0 0 / 0.1);
-  --shadow-xl: 0 1px 3px 0px oklch(0 0 0 / 0.1),
-    0 8px 10px -1px oklch(0 0 0 / 0.1);
+  --shadow-md:
+    0 1px 3px 0px oklch(0 0 0 / 0.1), 0 2px 4px -1px oklch(0 0 0 / 0.1);
+  --shadow-lg:
+    0 1px 3px 0px oklch(0 0 0 / 0.1), 0 4px 6px -1px oklch(0 0 0 / 0.1);
+  --shadow-xl:
+    0 1px 3px 0px oklch(0 0 0 / 0.1), 0 8px 10px -1px oklch(0 0 0 / 0.1);
   --shadow-2xl: 0 1px 3px 0px oklch(0 0 0 / 0.25);
 }
 
 .dark {
+  --auth-background: #0b1120;
+  --auth-login-background: #110d08;
+  --auth-register-background: #071210;
+  --auth-half-opacity: rgba(15, 10, 6, 0.3);
+
   --background: oklch(0.12 0.02 195.16);
   --foreground: oklch(0.99 0 0);
   --card: oklch(0.14 0 0);
@@ -121,15 +161,15 @@
 
   --shadow-2xs: 0 1px 3px 0px oklch(0 0 0 / 0.05);
   --shadow-xs: 0 1px 3px 0px oklch(0 0 0 / 0.05);
-  --shadow-sm: 0 1px 3px 0px oklch(0 0 0 / 0.1),
-    0 1px 2px -1px oklch(0 0 0 / 0.1);
+  --shadow-sm:
+    0 1px 3px 0px oklch(0 0 0 / 0.1), 0 1px 2px -1px oklch(0 0 0 / 0.1);
   --shadow: 0 1px 3px 0px oklch(0 0 0 / 0.1), 0 1px 2px -1px oklch(0 0 0 / 0.1);
-  --shadow-md: 0 1px 3px 0px oklch(0 0 0 / 0.1),
-    0 2px 4px -1px oklch(0 0 0 / 0.1);
-  --shadow-lg: 0 1px 3px 0px oklch(0 0 0 / 0.1),
-    0 4px 6px -1px oklch(0 0 0 / 0.1);
-  --shadow-xl: 0 1px 3px 0px oklch(0 0 0 / 0.1),
-    0 8px 10px -1px oklch(0 0 0 / 0.1);
+  --shadow-md:
+    0 1px 3px 0px oklch(0 0 0 / 0.1), 0 2px 4px -1px oklch(0 0 0 / 0.1);
+  --shadow-lg:
+    0 1px 3px 0px oklch(0 0 0 / 0.1), 0 4px 6px -1px oklch(0 0 0 / 0.1);
+  --shadow-xl:
+    0 1px 3px 0px oklch(0 0 0 / 0.1), 0 8px 10px -1px oklch(0 0 0 / 0.1);
   --shadow-2xl: 0 1px 3px 0px oklch(0 0 0 / 0.25);
 }
 

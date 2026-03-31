@@ -5,7 +5,7 @@ import type { RegisterData } from "@/types/RegisterData";
 
 export const login = async (loginData: LoginData) => {
   try {
-    const res = await axiosClient.post("/api/auth/login", loginData);
+    const res = await axiosClient.post("/api/auth", loginData);
     VueCookies.set("accessToken", res.data, "15m");
     return res.data;
   } catch (error: any) {
@@ -29,7 +29,7 @@ export const logout = async () => {
     console.error("Error during logout:", error);
   } finally {
     VueCookies.remove("accessToken");
-    window.location.href = "/auth/login";
+    window.location.href = "/auth";
   }
 };
 
