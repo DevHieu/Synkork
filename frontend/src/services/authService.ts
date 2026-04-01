@@ -5,7 +5,7 @@ import type { RegisterData } from "@/types/RegisterData";
 
 export const login = async (loginData: LoginData) => {
   try {
-    const res = await axiosClient.post("/api/auth", loginData);
+    const res = await axiosClient.post("/api/auth/login", loginData);
     VueCookies.set("accessToken", res.data, "15m");
     return res.data;
   } catch (error: any) {

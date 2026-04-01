@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import NavUser from "@/components/sidebar/NavUser.vue";
+import VoiceControlBar from "@/components/sidebar/VoiceControlBar.vue";
 import {
   SidebarInset,
   SidebarProvider,
@@ -33,10 +34,11 @@ provide("setSpaceOpen", (val: boolean) => {
           <slot name="room-sidebar" />
         </SidebarContent>
         <SidebarFooter v-if="!spaceOpen" class="p-0 border-t">
+          <VoiceControlBar :collapsed="!spaceOpen" />
           <NavUser
             :user="{
-              name: user?.username,
-              email: user?.email,
+              name: user?.username ?? 'Unknown',
+              email: user?.email ?? '',
               avatar: user?.avatarUrl,
             }"
             :collapsed="true"
@@ -66,10 +68,11 @@ provide("setSpaceOpen", (val: boolean) => {
         <Sidebar collapsible="none" class="h-full w-full">
           <slot name="space-sidebar" />
           <SidebarFooter v-if="spaceOpen" class="p-0 border-t">
+            <VoiceControlBar :collapsed="!spaceOpen" />
             <NavUser
               :user="{
-                name: user?.username,
-                email: user?.email,
+                name: user?.username ?? 'Unknown',
+                email: user?.email ?? '',
                 avatar: user?.avatarUrl,
               }"
               :collapsed="false"
