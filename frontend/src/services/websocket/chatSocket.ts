@@ -2,6 +2,17 @@ import { socketService } from "./socketService";
 import type { Message } from "@/types/Message";
 
 export const chatSocket = {
+  // hủy subscription khi rời khỏi space để tránh nhận tin nhắn mấy phòng trước đó vào
+  leaveSpace(spaceId: string) {
+    socketService.unsubscribeByDestination(`/topic/space/${spaceId}/messages`);
+    socketService.unsubscribeByDestination(
+      `/topic/space/${spaceId}/messages/delete`,
+    );
+    socketService.unsubscribeByDestination(
+      `/topic/space/${spaceId}/messages/update`,
+    );
+  },
+
   sendMessage(msg: { content: string; spaceId: string }) {
     socketService.publish("/app/chat.sendMessage", msg);
   },

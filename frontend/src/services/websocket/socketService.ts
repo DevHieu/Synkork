@@ -1,10 +1,11 @@
-import { Client } from "@stomp/stompjs";
+import { Client, type StompSubscription } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import { getFreshToken } from "@/utils/auth";
 import VueCookies from "vue-cookies";
 
 const cookies = VueCookies as any;
 let stompClient: Client | null = null;
+const subscriptions = new Map<string, StompSubscription>();
 
 const createStompClient = (token: string, onConnected?: () => void): Client => {
   const client = new Client({
@@ -82,9 +83,31 @@ export const socketService = {
       );
       return null;
     }
-    return stompClient!.subscribe(destination, (msg) => {
+
+    // Unsubscribe cái cũ nếu đã subscribe destination này rồi
+    if (subscriptions.has(destination)) {
+      subscriptions.get(destination)!.unsubscribe();
+      subscriptions.delete(destination);
+    }
+
+    const sub = stompClient!.subscribe(destination, (msg) => {
       callback(JSON.parse(msg.body));
     });
+
+    subscriptions.set(destination, sub);
+    return sub;
+  },
+
+  unsubscribeAll() {
+    subscriptions.forEach((sub) => sub.unsubscribe());
+    subscriptions.clear();
+  },
+
+  unsubscribeByDestination(destination: string) {
+    if (subscriptions.has(destination)) {
+      subscriptions.get(destination)!.unsubscribe();
+      subscriptions.delete(destination);
+    }
   },
 
   publish(destination: string, body: any) {

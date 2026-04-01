@@ -47,7 +47,7 @@ export const useSpaceStore = defineStore("spaces", {
     },
 
     async changeSpace(index: number, type: string) {
-      console.log("spaceStore changinf");
+      console.log("changeigin: " + type);
 
       switch (type) {
         case "CHAT":
@@ -69,7 +69,11 @@ export const useSpaceStore = defineStore("spaces", {
           this.currentSpace = null;
       }
 
-      console.log("Current Space:", this.currentSpace);
+      router.push(
+        `/rooms/${type.toLowerCase()}/${router.currentRoute.value.params.roomId}/${
+          this.currentSpace.value?.id
+        }`,
+      );
     },
 
     // Hàm này dùng để đổi space khi đã có spaceId (ví dụ khi đổi room mà URL đã có spaceId)
@@ -99,8 +103,6 @@ export const useSpaceStore = defineStore("spaces", {
           this.currentSpace = null;
       }
 
-      console.log(this.currentSpace);
-
       if (this.currentSpace === null) {
         this.currentSpace = this.chatSpaces[0] || null;
         router.push(
@@ -109,11 +111,6 @@ export const useSpaceStore = defineStore("spaces", {
           }`,
         );
       }
-    },
-
-    async joinVoiceSpace(spaceId: string) {
-      this.currentVoiceSpace =
-        this.voiceSpaces.find((space) => space.id === spaceId) || null;
     },
 
     async createSpace(name: string, type: string, roomId: string) {
