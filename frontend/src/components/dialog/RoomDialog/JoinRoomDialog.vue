@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { useRoomsStore } from "@/stores/roomStore";
+
 import {
   Dialog,
   DialogContent,
@@ -10,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft } from "lucide-vue-next";
+import { ArrowLeft, AlertCircle } from "lucide-vue-next";
 
 defineProps<{ open: boolean }>();
 const emit = defineEmits<{
@@ -19,16 +21,26 @@ const emit = defineEmits<{
   done: [];
 }>();
 
-const inviteCode = ref("");
+const roomStore = useRoomsStore();
+
+const inviteUrl = ref("");
 const loading = ref(false);
+const errorMsg = ref("");
 
 const handleJoin = async () => {
-  if (!inviteCode.value.trim()) return;
+  if (!inviteUrl.value.trim()) return;
+
   loading.value = true;
+  errorMsg.value = "";
   try {
-    // TODO: gọi API tham gia phòng
-    console.log("Tham gia phòng:", inviteCode.value);
+    let inviteCode = inviteUrl.value.includes("/invite/")
+      ? inviteUrl.value.split("/invite/")[1]
+      : inviteUrl.value.trim();
+
+    await roomStore.joinRoom(inviteCode);
     emit("done");
+  } catch (err: any) {
+    errorMsg.value = err.response?.data || "Đã có lỗi xảy ra, thử lại sau.";
   } finally {
     loading.value = false;
   }
@@ -52,22 +64,33 @@ const handleJoin = async () => {
 
       <div class="flex flex-col gap-4 py-4">
         <div class="flex flex-col gap-2">
-          <Label for="invite-code">Mã mời</Label>
+          <Label for="invite-code">Liên kết mời</Label>
           <Input
             id="invite-code"
-            v-model="inviteCode"
-            placeholder="Nhập mã mời..."
+            v-model="inviteUrl"
+            :class="
+              errorMsg
+                ? 'border-destructive focus-visible:ring-destructive'
+                : ''
+            "
+            placeholder="Liên kết mời..."
             @keyup.enter="handleJoin"
+            @input="errorMsg = ''"
           />
-          <p class="text-xs text-muted-foreground">
-            Mã mời thường có dạng: ABC123
-          </p>
+          <!-- Error message -->
+          <div
+            v-if="errorMsg"
+            class="flex items-center gap-1.5 text-destructive text-xs"
+          >
+            <AlertCircle class="h-3.5 w-3.5 shrink-0" />
+            <span>{{ errorMsg }}</span>
+          </div>
         </div>
       </div>
 
       <DialogFooter>
         <Button variant="outline" @click="emit('back')">Quay lại</Button>
-        <Button :disabled="!inviteCode.trim() || loading" @click="handleJoin">
+        <Button :disabled="!inviteUrl.trim() || loading" @click="handleJoin">
           {{ loading ? "Đang tham gia..." : "Tham gia" }}
         </Button>
       </DialogFooter>

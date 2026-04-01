@@ -24,7 +24,7 @@ import {
   TooltipTrigger,
 } from "../ui/tooltip";
 
-import AddRoomDialog from "@/components/dialog/AddRoomDialog.vue";
+import AddRoomDialog from "@/components/dialog/RoomDialog/AddRoomDialog.vue";
 
 const dialogOpen = ref(false);
 
@@ -44,13 +44,11 @@ const { rooms } = storeToRefs(roomStore);
 watch(
   () => user.value?.id,
   async (userId) => {
-    console.log(user.value);
-
     if (!userId) return;
-    await roomStore.fetchRooms(userId);
+    await roomStore.fetchRooms();
     await initCurrentRoom();
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 // Hàm này dùng check xem là cái url hiện tại có phải đang trong 1 room và space ko

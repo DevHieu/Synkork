@@ -120,7 +120,7 @@ const submitReset = async () => {
         </p>
       </CardContent>
       <CardFooter class="flex justify-center">
-        <Button class="w-full" @click="router.push('/auth/login')">
+        <Button class="w-full" @click="router.push('/auth')">
           Đăng nhập
         </Button>
       </CardFooter>
@@ -292,7 +292,7 @@ const submitReset = async () => {
 
         <button
           class="text-sm text-muted-foreground hover:underline"
-          @click="router.push('/auth/login')"
+          @click="router.push('/auth')"
         >
           ← Quay lại đăng nhập
         </button>

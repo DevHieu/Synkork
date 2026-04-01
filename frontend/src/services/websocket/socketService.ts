@@ -33,7 +33,7 @@ const createStompClient = (token: string, onConnected?: () => void): Client => {
           stompClient = createStompClient(freshToken, onConnected);
           stompClient.activate();
         } catch {
-          window.location.href = "/auth/login";
+          window.location.href = "/auth";
         }
       }
     },
@@ -48,14 +48,17 @@ const createStompClient = (token: string, onConnected?: () => void): Client => {
 export const socketService = {
   async connect(onConnected?: () => void) {
     // Check xem có token chưa
-    if (stompClient?.connected) return;
+    if (stompClient?.connected) {
+      onConnected?.();
+      return;
+    }
 
     let token = cookies.get("accessToken");
     if (!token) {
       try {
         token = await getFreshToken();
       } catch {
-        window.location.href = "/auth/login";
+        window.location.href = "/auth";
         return;
       }
     }

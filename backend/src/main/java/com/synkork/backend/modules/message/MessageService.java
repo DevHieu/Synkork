@@ -4,15 +4,14 @@ import com.synkork.backend.modules.message.dto.MessageDTO;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
 import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
+import com.synkork.backend.modules.space.SpaceEntity;
 import com.synkork.backend.modules.space.SpaceRepository;
-import com.synkork.backend.modules.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -20,9 +19,6 @@ import java.util.UUID;
 public class MessageService {
     @Autowired
     MessageRepository messageRepository;
-
-    @Autowired
-    UserRepository userRepository;
 
     @Autowired
     SpaceRepository spaceRepository;
@@ -38,20 +34,27 @@ public class MessageService {
     public MessageDTO saveMessage(MessageDTO dto, String senderId) {
         MessageEntity entity = new MessageEntity();
         UUID userId = UUID.fromString(senderId);
+        UUID spaceId = UUID.fromString(dto.getSpaceId());
 
-        RoomMemberEntity sender = roomMemberRepository.findByUserId(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
+        SpaceEntity space = spaceRepository.findById(spaceId)
+                .orElseThrow(() -> new IllegalArgumentException("Space not found"));
+
+        RoomMemberEntity sender = roomMemberRepository
+                .findByUserIdAndRoom_IdWithUser(userId, space.getRoom().getId())
+                .orElseThrow(() -> new IllegalArgumentException("User is not a member of this room"));
 
         entity.setSender(sender);
-        entity.setSpace(spaceRepository.getReferenceById(UUID.fromString(dto.getSpaceId())));
+        entity.setSpace(space);
         entity.setContent(dto.getContent());
 
         MessageEntity newMessage = messageRepository.save(entity);
+        System.out.println("createdAt after save: " + newMessage.getCreatedAt());
         dto.setId(newMessage.getId());
+        dto.setCreatedAt(newMessage.getCreatedAt());
+        dto.setUpdatedAt(newMessage.getUpdatedAt());
 
         RoomMemberDto senderDto = new RoomMemberDto(sender);
         dto.setSender(senderDto);
-        dto.setCreatedAt(entity.getCreatedAt());
-        dto.setUpdatedAt(entity.getUpdatedAt());
 
         return dto;
     }

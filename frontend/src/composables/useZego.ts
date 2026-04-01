@@ -20,7 +20,7 @@ interface ZegoServiceOptions {
   videoOn: Ref<boolean>;
 }
 
-export function zegoFunctions({
+export function useZego({
   state,
   appID,
   server,

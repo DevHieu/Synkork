@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.room;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,4 +15,6 @@ public interface RoomRepository extends JpaRepository<RoomEntity, UUID> {
 
     @Query("SELECT r FROM RoomEntity r JOIN r.roomMembers roomMembers WHERE roomMembers.user.id = :userId ORDER BY roomMembers.joinedAt DESC")
     List<RoomEntity> findRoomMembersJoined(@Param("userId") UUID userId);
+
+    Optional<RoomEntity> findByInviteCode(String inviteCode);
 }

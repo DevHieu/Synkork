@@ -27,8 +27,14 @@ public class RoomEntity extends BaseEntity {
     @Column(nullable = true)
     private String avatarId;
 
+    @Column(nullable = true)
+    private String description;
+
     @Enumerated(EnumType.STRING)
     private RoomTypeEnum type = RoomTypeEnum.GROUP; // GROUP | DM
+
+    @Column(unique = true, nullable = true)
+    private String inviteCode;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", columnDefinition = "BINARY(16)")
@@ -36,4 +42,5 @@ public class RoomEntity extends BaseEntity {
 
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL)
     private List<RoomMemberEntity> roomMembers;
+
 }
