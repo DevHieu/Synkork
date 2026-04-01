@@ -24,12 +24,12 @@ public class CardEntity extends BaseEntity {
     private String description;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assignee_id")
+    @JoinColumn(name = "assignee_id", columnDefinition = "BINARY(16)")
     private UserEntity assignee;
 
     private int position;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by", nullable = false)
+    @JoinColumn(name = "created_by", nullable = false, columnDefinition = "BINARY(16)")
     private UserEntity createdBy;
 }
