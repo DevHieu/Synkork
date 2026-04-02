@@ -4,8 +4,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import com.synkork.backend.security.UserPrinciple;
 
-import java.nio.file.attribute.UserPrincipal;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -36,10 +36,10 @@ public class NoteController {
 
     @PostMapping
     public ResponseEntity<NoteResponse> createNote(@PathVariable String spaceId, @RequestBody NoteRequest request) {
-        UserPrincipal userPrincipal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserPrinciple user = (UserPrinciple) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         
-        UUID userId = UUID.fromString(userPrincipal.getId());
+        UUID userId = user.getId();
 
-        return ResponseEntity.ok(noteService.createNote(spaceId, userId, request));
+        return ResponseEntity.ok(noteService.createNote(UUID.fromString(spaceId), userId, request));
     }
 }
