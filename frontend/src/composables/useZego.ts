@@ -1,7 +1,7 @@
 import { ZegoExpressEngine } from "zego-express-engine-webrtc";
 import type { Participant } from "@/types/VoiceSpaceParticipant";
-import type { Ref } from "vue";
 import { useUserStore } from "@/stores/userStore";
+import type { Ref } from "vue";
 
 interface ZegoState {
   zg: ZegoExpressEngine | null;
@@ -18,6 +18,8 @@ interface ZegoServiceOptions {
   participants: Ref<Map<string, Participant>>;
   remoteStreams: Map<string, any>;
   videoOn: Ref<boolean>;
+  micOn: Ref<boolean>;
+  audioOn: Ref<boolean>;
 }
 
 export function useZego({
@@ -27,9 +29,22 @@ export function useZego({
   participants,
   remoteStreams,
   videoOn,
+  micOn,
+  audioOn,
 }: ZegoServiceOptions) {
+  let isFirstLoad = true;
+
   // ─── Helpers ────────────────────────────────────────────────
   const isVideoStream = (streamID: string) => streamID.startsWith("video_");
+
+  const playNotificationSound = (type: "join" | "leave") => {
+    const audio = new Audio(`/assets/sounds/${type}Sound.mp3`);
+    audio.volume = 0.5;
+    audio.play().catch((err) => {
+      // Trình duyệt thường chặn tự động phát âm thanh nếu user chưa tương tác với trang
+      console.warn("Audio play blocked:", err);
+    });
+  };
 
   // ─── Engine ─────────────────────────────────────────────────
   const initEngine = () => {
@@ -40,6 +55,7 @@ export function useZego({
 
   const destroyEngine = () => {
     if (!state.zg) return;
+    isFirstLoad = true;
     state.zg.destroyEngine();
     state.zg = null;
   };
@@ -55,6 +71,8 @@ export function useZego({
       state.localAudioStreamID,
       state.localAudioStream,
     );
+
+    state.zg.muteMicrophone(!micOn.value);
   };
 
   const publishVideoStream = async () => {
@@ -152,7 +170,7 @@ export function useZego({
       state.zg.createRemoteStreamView(remoteStream).play("audio-players", {
         audio: true,
         video: false,
-      });
+      } as any);
     }
   };
 
@@ -172,6 +190,35 @@ export function useZego({
     }
   };
 
+  // ─── Mic / Audio controls ────────────────────────────────────
+  const muteMicrophone = (mute: boolean) => {
+    if (!state.zg) return;
+    state.zg.muteMicrophone(mute);
+  };
+
+  const muteAllRemoteAudio = (mute: boolean) => {
+    if (!state.zg) return;
+    for (const [streamID] of remoteStreams) {
+      state.zg.mutePlayStreamAudio(streamID, mute);
+    }
+  };
+
+  const broadcastMediaState = (roomID: string) => {
+    if (!state.zg) return;
+    const payload = JSON.stringify({
+      type: "media_state",
+      micOn: micOn.value,
+      audioOn: audioOn.value,
+    });
+    state.zg.sendCustomCommand(roomID, payload, []); // [] = gửi tất cả
+  };
+
+  const requestMediaStates = (roomID: string) => {
+    if (!state.zg) return;
+    const payload = JSON.stringify({ type: "request_state" });
+    state.zg.sendCustomCommand(roomID, payload, []);
+  };
+
   // ─── Callbacks ───────────────────────────────────────────────
   const registerCallbacks = () => {
     if (!state.zg) return;
@@ -181,20 +228,34 @@ export function useZego({
     });
 
     state.zg.on("roomUserUpdate", (_roomID, updateType, userList) => {
-      for (const u of userList) {
-        if (updateType === "ADD") {
+      if (updateType === "ADD") {
+        userList.forEach((u) => {
           if (!participants.value.has(u.userID)) {
             participants.value.set(u.userID, {
               userID: u.userID,
               userName: u.userName || u.userID,
               videoOn: false,
+              micOn: true,
+              audioOn: true,
               isLocal: false,
             });
+
+            if (!isFirstLoad) {
+              playNotificationSound("join");
+            }
+
+            broadcastMediaState(_roomID);
           }
-        } else {
-          participants.value.delete(u.userID);
+        });
+
+        isFirstLoad = false;
+      } else if (updateType === "DELETE") {
+        if (userList.length > 0) {
+          playNotificationSound("leave");
         }
+        userList.forEach((u) => participants.value.delete(u.userID));
       }
+
       participants.value = new Map(participants.value);
     });
 
@@ -212,19 +273,27 @@ export function useZego({
         }
       }
     });
-  };
 
-  // ─── Mic / Audio controls ────────────────────────────────────
-  const muteMicrophone = (mute: boolean) => {
-    if (!state.zg) return;
-    state.zg.muteMicrophone(mute);
-  };
+    // Nhân custom command để cập nhật trạng thái mic/audio của người khác
+    state.zg.on("IMRecvCustomCommand", (_roomID, fromUser, command) => {
+      try {
+        const data = JSON.parse(command);
 
-  const muteAllRemoteAudio = (mute: boolean) => {
-    if (!state.zg) return;
-    for (const [streamID] of remoteStreams) {
-      state.zg.mutePlayStreamAudio(streamID, mute);
-    }
+        if (data.type === "media_state") {
+          const p = participants.value.get(fromUser.userID);
+          if (p) {
+            p.micOn = data.micOn;
+            p.audioOn = data.audioOn;
+            participants.value = new Map(participants.value);
+          }
+        }
+
+        // khi reload trang hoặc mới join vào thì sẽ gửi request để lấy trang thái mic/audio của user khác
+        if (data.type === "request_state") {
+          broadcastMediaState(_roomID);
+        }
+      } catch {}
+    });
   };
 
   return {
@@ -240,5 +309,8 @@ export function useZego({
     registerCallbacks,
     muteMicrophone,
     muteAllRemoteAudio,
+    broadcastMediaState,
+    requestMediaStates,
+    playNotificationSound,
   };
 }

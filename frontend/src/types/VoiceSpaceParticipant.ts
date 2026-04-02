@@ -3,5 +3,7 @@ export interface Participant {
   userName: string;
   videoStreamID?: string;
   videoOn: boolean;
+  micOn: boolean;
+  audioOn: boolean;
   isLocal: boolean;
 }

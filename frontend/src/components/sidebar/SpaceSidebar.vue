@@ -23,11 +23,14 @@ import {
   Plus,
   UserRoundPlus,
   Settings,
+  MicOff,
+  VolumeX,
 } from "lucide-vue-next";
 
 import { useRouter } from "vue-router";
 import { useRoomsStore } from "@/stores/roomStore";
 import { useSpaceStore } from "@/stores/spaceStore";
+import { useVoiceSpaceStore } from "@/stores/voiceSpaceStore";
 import { storeToRefs } from "pinia";
 import CreateSpaceDialog from "../dialog/CreateSpaceDialog.vue";
 import { ref } from "vue";
@@ -37,6 +40,7 @@ import InviteDialog from "@/components/dialog/InviteMemberDialog.vue";
 const router = useRouter();
 const roomStore = useRoomsStore();
 const spaceStore = useSpaceStore();
+const voiceSpaceStore = useVoiceSpaceStore();
 
 const showRoomSettingDialog = ref(false);
 const showInviteDialog = ref(false);
@@ -59,12 +63,10 @@ const changeSpace = async (
   type: "CHAT" | "VOICE" | "NOTE" | "CALENDAR" | "TASK",
 ) => {
   await spaceStore.changeSpace(index, type);
+};
 
-  router.push(
-    `/rooms/${type.toLowerCase()}/${currentRoom.value?.id}/${
-      currentSpace.value?.id
-    }`,
-  );
+const joinVoiceSpace = async (spaceId: string) => {
+  await voiceSpaceStore.joinRoom(spaceId);
 };
 
 const openAddSpaceDialog = (type: string) => {
@@ -86,6 +88,16 @@ const handleCreateSpace = async (name: string, type: string) => {
   router.push(
     `/rooms/${type.toLowerCase()}/${spaceId}/${currentSpace.value?.id}`,
   );
+};
+
+const getInitials = (name: string) => {
+  if (!name) return "?";
+  return name
+    .split(/[\s_-]/)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 };
 </script>
 
@@ -309,13 +321,66 @@ const handleCreateSpace = async (name: string, type: string) => {
                   v-for="(item, index) in voiceSpaces"
                   :key="item.id"
                 >
+                  <!-- Channel row -->
                   <SidebarMenuButton
-                    @click="changeSpace(index, 'VOICE')"
+                    @click="joinVoiceSpace(item.id)"
                     :isActive="currentSpace?.id === item.id"
+                    class="group/voice"
                   >
-                    <Volume2 class="mr-2 h-4 w-4" />
+                    <Volume2 class="mr-2 h-4 w-4 shrink-0" />
                     <span>{{ item.name }}</span>
                   </SidebarMenuButton>
+
+                  <!-- Participants list (Discord style) -->
+                  <div
+                    v-if="
+                      voiceSpaceStore.getParticipantsForSpace(item.id)?.length
+                    "
+                    class="ml-4 mt-0.5 mb-1 space-y-0.5"
+                  >
+                    <div
+                      v-for="participant in voiceSpaceStore.getParticipantsForSpace(
+                        item.id,
+                      )"
+                      :key="participant.userID"
+                      class="flex items-center gap-2 px-2 py-0.5 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-default"
+                    >
+                      <!-- Avatar -->
+                      <div class="relative shrink-0">
+                        <img
+                          v-if="participant.avatarUrl"
+                          :src="participant.avatarUrl"
+                          class="w-5 h-5 rounded-full object-cover"
+                        />
+                        <div
+                          v-else
+                          class="w-5 h-5 rounded-full bg-primary/80 flex items-center justify-center text-[9px] font-bold text-primary-foreground"
+                        >
+                          {{ getInitials(participant.userName) }}
+                        </div>
+                      </div>
+
+                      <!-- Tên -->
+                      <span class="truncate flex-1">
+                        {{ participant.userName }}
+                        <span v-if="participant.isLocal" class="opacity-50"
+                          >(Bạn)</span
+                        >
+                      </span>
+
+                      <!-- Trạng thái mic + audio -->
+                      <div class="flex items-center gap-1 shrink-0">
+                        <MicOff
+                          v-if="!participant.micOn"
+                          class="h-3.5 w-3.5 text-red-500"
+                        />
+                        <VolumeX
+                          v-if="!participant.audioOn"
+                          class="h-3.5 w-3.5 text-red-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>

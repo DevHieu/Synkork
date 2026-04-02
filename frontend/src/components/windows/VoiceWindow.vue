@@ -1,59 +1,115 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from "vue";
+import { computed, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useVoiceSpaceStore } from "@/stores/voiceSpaceStore";
 import { useUserStore } from "@/stores/userStore";
 import { storeToRefs } from "pinia";
+import {
+  MicOff,
+  VolumeX,
+  Mic,
+  Volume2,
+  Video,
+  VideoOff,
+  MonitorUp,
+  PhoneOff,
+  FileText,
+} from "lucide-vue-next";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 const route = useRoute();
 const spaceId = route.params.spaceId as string;
 
 const voiceSpaceStore = useVoiceSpaceStore();
-
 const { participantList, videoOn, micOn, audioOn } =
   storeToRefs(voiceSpaceStore);
-
 const { toggleVideo, toggleAudio, toggleMic } = voiceSpaceStore;
-
 const { user } = storeToRefs(useUserStore());
 
 onMounted(async () => {
+  if (voiceSpaceStore.isInRoom && voiceSpaceStore.currentSpaceId === spaceId)
+    return;
   await voiceSpaceStore.joinRoom(spaceId);
 });
 
-onUnmounted(async () => {
-  await voiceSpaceStore.leaveRoom();
-});
+watch(
+  user,
+  async (newUser) => {
+    if (newUser && !voiceSpaceStore.isInRoom) {
+      await voiceSpaceStore.joinRoom(spaceId);
+    }
+  },
+  { immediate: false },
+);
 
-const getInitials = (name: string) =>
-  name
+const getInitials = (name: string) => {
+  if (!name) return "?";
+  return name
     .split(/[\s_-]/)
     .map((w) => w[0])
     .join("")
     .toUpperCase()
     .slice(0, 2);
+};
 
 const gridCols = computed(() => {
   const n = participantList.value.length;
   if (n <= 1) return 1;
-  if (n <= 4) return 2;
-  if (n <= 9) return 3;
-  return 4;
+  if (n === 2) return 2;
+  if (n === 3) return 3; // Cho 3 người dàn hàng ngang sẽ đẹp hơn trên desktop
+  if (n === 4) return 2; // 2x2
+  return 3; // 5-9 người thì 3 cột
 });
+
+const handleLeave = () => {
+  voiceSpaceStore.leaveRoom();
+};
+
+const handleSummary = () => {
+  // TODO: meeting summary
+};
+
+const handleShareScreen = () => {
+  // TODO: share screen
+};
 </script>
 
 <template>
-  <div class="flex flex-col h-full bg-[#1a1b1e] text-white select-none">
-    <!-- ── Video Grid ──────────────────────────────────────────── -->
-    <div class="flex-1 flex items-center justify-center p-4 overflow-hidden">
+  <div class="flex flex-col h-full bg-background text-foreground select-none">
+    <!-- ── Top Bar ── -->
+    <div
+      class="flex items-center justify-between px-4 py-3 border-b border-border shrink-0"
+    >
+      <div class="flex items-center gap-2">
+        <SidebarTrigger class="-ml-1" />
+        <span class="font-semibold text-base"
+          >🔊 {{ route.params.spaceName ?? "Voice" }}</span
+        >
+      </div>
+      <button
+        @click="handleSummary"
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors border border-border"
+      >
+        <FileText class="h-3.5 w-3.5" />
+        Tóm tắt cuộc họp
+      </button>
+    </div>
+
+    <!-- ── Video Grid ── -->
+    <div
+      class="flex-1 overflow-hidden p-3 min-h-0 flex items-center justify-center"
+    >
       <div
-        class="grid gap-2 w-full h-full"
-        :style="{ gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }"
+        class="grid gap-3 w-full max-h-full mx-auto justify-center"
+        :style="{
+          gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
+          maxWidth: participantList.length <= 1 ? '800px' : '100%',
+        }"
       >
         <div
           v-for="p in participantList"
           :key="p.userID"
-          class="relative rounded-xl overflow-hidden bg-[#2b2d31] aspect-video flex items-center justify-center"
+          class="relative rounded-xl overflow-hidden bg-muted flex items-center justify-center ring-1 ring-border aspect-video w-full"
         >
           <!-- Local video -->
           <div
@@ -71,161 +127,110 @@ const gridCols = computed(() => {
             class="absolute inset-0 [&>video]:w-full [&>video]:h-full [&>video]:object-cover"
           />
 
-          <!-- Avatar (cam off) -->
           <div v-if="!p.videoOn" class="flex flex-col items-center gap-3">
-            <!-- Có avatar -->
             <img
               v-if="p.isLocal && user?.avatarUrl"
               :src="user.avatarUrl"
               alt="Avatar"
-              class="w-16 h-16 rounded-full object-cover shadow-lg"
+              class="w-16 h-16 rounded-full object-cover ring-2 ring-primary/30"
             />
-            <!-- Không có avatar → initials -->
             <div
               v-else
-              class="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-xl font-bold shadow-lg"
+              class="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-xl font-bold text-primary-foreground"
             >
               {{ getInitials(p.userName) }}
             </div>
-
-            <span class="text-sm text-zinc-300 font-medium tracking-wide">
-              {{ p.userName }}
+            <span class="text-sm text-muted-foreground font-medium">
+              {{ p.userName
+              }}<span v-if="p.isLocal" class="text-muted-foreground/60">
+                (Bạn)</span
+              >
             </span>
           </div>
 
-          <!-- Name tag (cam on) -->
           <div
             v-if="p.videoOn"
-            class="absolute bottom-2 left-2 bg-black/50 backdrop-blur-sm text-xs px-2 py-1 rounded-md text-zinc-200 font-medium"
+            class="absolute bottom-2 left-2 bg-background/70 backdrop-blur-sm text-xs px-2 py-1 rounded-md text-foreground font-medium"
           >
-            {{ p.userName }}
-            <span v-if="p.isLocal" class="text-zinc-400"> (Bạn)</span>
+            {{ p.userName
+            }}<span v-if="p.isLocal" class="text-muted-foreground"> (Bạn)</span>
           </div>
 
-          <!-- Mic muted badge -->
-          <div
-            v-if="p.isLocal && !micOn"
-            class="absolute top-2 right-2 bg-red-500/80 rounded-full p-1"
-          >
-            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-              <path
-                d="M19 11a7 7 0 0 1-14 0H3a9 9 0 0 0 8 8.94V22h2v-2.06A9 9 0 0 0 21 11h-2zm-7 6a5 5 0 0 1-5-5V6a5 5 0 0 1 10 0v6a5 5 0 0 1-5 5z"
-              />
-              <line
-                x1="2"
-                y1="2"
-                x2="22"
-                y2="22"
-                stroke="white"
-                stroke-width="2"
-              />
-            </svg>
+          <div class="flex gap-1 absolute top-2 right-2">
+            <div v-if="!p.micOn" class="bg-destructive/80 rounded-full p-1">
+              <MicOff class="h-3 w-3 text-destructive-foreground" />
+            </div>
+            <div v-if="!p.audioOn" class="bg-destructive/80 rounded-full p-1">
+              <VolumeX class="h-3 w-3 text-destructive-foreground" />
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ── Control Bar ─────────────────────────────────────────── -->
+    <!-- ── Control Bar ── -->
     <div
-      class="flex items-center justify-center gap-3 py-4 border-t border-white/5 bg-[#111214]"
+      class="shrink-0 flex items-center justify-center gap-2 px-4 py-3 border-t border-border bg-card"
     >
-      <!-- Mic -->
       <button
         @click="toggleMic"
         :class="[
-          'flex flex-col items-center gap-1 px-5 py-2.5 rounded-xl text-xs font-medium transition-all duration-150',
+          'flex flex-col items-center gap-1 px-4 py-2.5 rounded-xl text-xs font-medium transition-all',
           micOn
-            ? 'bg-[#2b2d31] hover:bg-[#35373c] text-white'
-            : 'bg-red-500/20 hover:bg-red-500/30 text-red-400',
+            ? 'bg-muted hover:bg-accent text-foreground'
+            : 'bg-destructive/15 hover:bg-destructive/25 text-destructive',
         ]"
       >
-        <svg
-          class="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          viewBox="0 0 24 24"
-        >
-          <template v-if="micOn">
-            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" />
-          </template>
-          <template v-else>
-            <line x1="1" y1="1" x2="23" y2="23" />
-            <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" />
-            <path
-              d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23M12 19v4M8 23h8"
-            />
-          </template>
-        </svg>
+        <Mic v-if="micOn" class="h-5 w-5" />
+        <MicOff v-else class="h-5 w-5" />
         {{ micOn ? "Mic" : "Mic off" }}
       </button>
 
-      <!-- Cam -->
       <button
         @click="toggleVideo"
         :class="[
-          'flex flex-col items-center gap-1 px-5 py-2.5 rounded-xl text-xs font-medium transition-all duration-150',
+          'flex flex-col items-center gap-1 px-4 py-2.5 rounded-xl text-xs font-medium transition-all',
           videoOn
-            ? 'bg-[#2b2d31] hover:bg-[#35373c] text-white'
-            : 'bg-red-500/20 hover:bg-red-500/30 text-red-400',
+            ? 'bg-muted hover:bg-accent text-foreground'
+            : 'bg-destructive/15 hover:bg-destructive/25 text-destructive',
         ]"
       >
-        <svg
-          class="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          viewBox="0 0 24 24"
-        >
-          <template v-if="videoOn">
-            <polygon points="23 7 16 12 23 17 23 7" />
-            <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-          </template>
-          <template v-else>
-            <path
-              d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10"
-            />
-            <line x1="1" y1="1" x2="23" y2="23" />
-          </template>
-        </svg>
+        <Video v-if="videoOn" class="h-5 w-5" />
+        <VideoOff v-else class="h-5 w-5" />
         {{ videoOn ? "Cam" : "Cam off" }}
       </button>
 
-      <!-- Audio -->
       <button
         @click="toggleAudio"
         :class="[
-          'flex flex-col items-center gap-1 px-5 py-2.5 rounded-xl text-xs font-medium transition-all duration-150',
+          'flex flex-col items-center gap-1 px-4 py-2.5 rounded-xl text-xs font-medium transition-all',
           audioOn
-            ? 'bg-[#2b2d31] hover:bg-[#35373c] text-white'
-            : 'bg-red-500/20 hover:bg-red-500/30 text-red-400',
+            ? 'bg-muted hover:bg-accent text-foreground'
+            : 'bg-destructive/15 hover:bg-destructive/25 text-destructive',
         ]"
       >
-        <svg
-          class="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          viewBox="0 0 24 24"
-        >
-          <template v-if="audioOn">
-            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-            <path
-              d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"
-            />
-          </template>
-          <template v-else>
-            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-            <line x1="23" y1="9" x2="17" y2="15" />
-            <line x1="17" y1="9" x2="23" y2="15" />
-          </template>
-        </svg>
+        <Volume2 v-if="audioOn" class="h-5 w-5" />
+        <VolumeX v-else class="h-5 w-5" />
         {{ audioOn ? "Âm thanh" : "Tắt tiếng" }}
       </button>
-    </div>
 
-    <!-- Hidden audio output container -->
-    <div id="audio-players" class="hidden" />
+      <button
+        @click="handleShareScreen"
+        class="flex flex-col items-center gap-1 px-4 py-2.5 rounded-xl text-xs font-medium transition-all bg-muted hover:bg-accent text-foreground"
+      >
+        <MonitorUp class="h-5 w-5" />
+        Chia sẻ
+      </button>
+
+      <div class="w-px h-10 bg-border mx-1" />
+
+      <button
+        @click="handleLeave"
+        class="flex flex-col items-center gap-1 px-4 py-2.5 rounded-xl text-xs font-medium transition-all bg-destructive/15 hover:bg-destructive/30 text-destructive"
+      >
+        <PhoneOff class="h-5 w-5" />
+        Rời phòng
+      </button>
+    </div>
   </div>
 </template>

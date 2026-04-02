@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, watch, onMounted } from "vue";
+import { ref, nextTick, watch, onMounted, onUnmounted } from "vue";
 import { socketService } from "@/services/websocket/socketService";
 import { chatSocket } from "@/services/websocket/chatSocket";
 
@@ -14,7 +14,7 @@ import MessageInput from "@/components/chat/MessageInput.vue";
 import type { Message } from "@/types/Message";
 
 const route = useRoute();
-const spaceId = route.params.spaceId;
+const spaceId = route.params.spaceId as string;
 
 const spaceStore = useSpaceStore();
 const { currentSpace } = storeToRefs(spaceStore);
@@ -38,6 +38,11 @@ onMounted(() => {
       isSocketConnected.value = true;
     });
   }
+});
+
+// Xóa subscription khi rời khỏi space
+onUnmounted(() => {
+  chatSocket.leaveSpace(spaceId);
 });
 
 watch(
