@@ -1,4 +1,4 @@
-package com.synkork.backend.modules.space;
+package com.synkork.backend.modules.space.enums;
 
 public enum SpaceTypeEnum {
   CHAT,

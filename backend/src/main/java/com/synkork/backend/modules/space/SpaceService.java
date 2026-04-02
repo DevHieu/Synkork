@@ -4,6 +4,7 @@ import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.RoomRepository;
 import com.synkork.backend.modules.space.dto.SpaceDto;
 import com.synkork.backend.modules.space.dto.CreateSpaceDto;
+import com.synkork.backend.modules.space.enums.SpaceTypeEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
