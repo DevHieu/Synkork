@@ -5,6 +5,9 @@ import type { Participant } from "@/types/VoiceSpaceParticipant";
 import { useUserStore } from "@/stores/userStore";
 import { getZegoToken } from "@/services/spaceService";
 import { useZego } from "@/composables/useZego";
+import router from "@/routers";
+import { useLocalStorage } from "@vueuse/core";
+import { useSpaceStore } from "@/stores/spaceStore";
 
 export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
   const appID = Number(import.meta.env.VITE_ZEGO_APP_ID);
@@ -24,9 +27,11 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
   const currentSpaceId = ref<string | null>(null);
   const participants = ref<Map<string, Participant>>(new Map());
   const videoOn = ref(false);
-  const micOn = ref(true);
+  const micOn = useLocalStorage("voice-mic-on", false);
   const audioOn = ref(true);
+  const isJoining = ref(false);
   const isInRoom = ref(false);
+  const isExpanded = ref(false);
   const participantList = computed(() =>
     Array.from(participants.value.values()),
   );
@@ -44,24 +49,34 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
   });
 
   const joinRoom = async (spaceId: string) => {
-    if (isInRoom.value && currentSpaceId.value === spaceId) return;
-    if (isInRoom.value) await leaveRoom();
+    isJoining.value = true;
+    if (isInRoom.value && currentSpaceId.value === spaceId) {
+      isExpanded.value = true;
+      router.push(
+        `/rooms/voice/${router.currentRoute.value.params.roomId}/${spaceId}`,
+      );
+      return;
+    }
+
+    if (isInRoom.value) {
+      await leaveRoom();
+    }
 
     const userStore = useUserStore();
+
     const userID = userStore.user?.id!;
     const userName = userStore.user?.username ?? userID;
+
+    if (!userID || !userName) {
+      console.warn("[Room] user chưa load xong, thử lại sau...");
+      return;
+    }
+
     const token = await getZegoToken(userID);
 
-    zego.initEngine();
+    await zego.initEngine();
     await zegoState.zg!.checkSystemRequirements();
-    zego.registerCallbacks();
-
-    participants.value.set(userID, {
-      userID,
-      userName,
-      videoOn: false,
-      isLocal: true,
-    });
+    await zego.registerCallbacks();
 
     const result = await zegoState.zg!.loginRoom(
       spaceId,
@@ -73,12 +88,25 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     if (result) {
       currentSpaceId.value = spaceId;
       isInRoom.value = true;
-      console.log("[Room] joined:", spaceId);
+      isJoining.value = false;
+
+      participants.value.set(userID, {
+        userID,
+        userName,
+        videoOn: false,
+        micOn: micOn.value,
+        audioOn: true,
+        isLocal: true,
+      });
+
       await zego.publishAudioStream();
+      zego.playNotificationSound("join");
+      zego.requestMediaStates(spaceId);
     }
   };
 
   const leaveRoom = async () => {
+    isJoining.value = false;
     if (!zegoState.zg || !isInRoom.value) return;
 
     zego.stopVideoStream();
@@ -92,10 +120,13 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     currentSpaceId.value = null;
     isInRoom.value = false;
     videoOn.value = false;
-    micOn.value = true;
     audioOn.value = true;
 
-    console.log("[Room] left");
+    zego.playNotificationSound("leave");
+
+    if (router.currentRoute.value.path.includes("/rooms/voice")) {
+      await useSpaceStore().changeSpace(0, "CHAT");
+    }
   };
 
   const toggleVideo = async () => {
@@ -111,16 +142,38 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     if (!zegoState.zg) return;
     micOn.value = !micOn.value;
     zego.muteMicrophone(!micOn.value);
+
+    // Cập nhật trạng thái mic của chính mình trong participants để UI tự động cập nhật
+    const userStore = useUserStore();
+    const me = participants.value.get(userStore.user?.id!);
+    if (me) me.micOn = micOn.value;
+
+    zego.broadcastMediaState(currentSpaceId.value!);
   };
 
   const toggleAudio = () => {
     if (!zegoState.zg) return;
     audioOn.value = !audioOn.value;
     zego.muteAllRemoteAudio(!audioOn.value);
+
+    // Cập nhật trạng thái mic của chính mình trong participants để UI tự động cập nhật
+    const userStore = useUserStore();
+    const me = participants.value.get(userStore.user?.id!);
+    if (me) me.audioOn = audioOn.value;
+
+    zego.broadcastMediaState(currentSpaceId.value!);
+  };
+
+  const getParticipantsForSpace = (spaceId: string): Participant[] => {
+    if (currentSpaceId.value !== spaceId) return [];
+    participants.value.forEach((p, key) => {
+      console.log(key, p);
+    });
+
+    return Array.from(participants.value.values());
   };
 
   return {
-    // State
     currentSpaceId,
     participants,
     participantList,
@@ -128,11 +181,13 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     micOn,
     audioOn,
     isInRoom,
-    // Actions
+    isJoining,
+
     joinRoom,
     leaveRoom,
     toggleVideo,
     toggleMic,
     toggleAudio,
+    getParticipantsForSpace,
   };
 });

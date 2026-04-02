@@ -15,7 +15,7 @@ axiosClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = cookies.get("accessToken");
     const url = config.url ?? "";
-    if (!url.includes("/auth/")) {
+    if (!url.includes("/auth")) {
       if (token) {
         config.headers = config.headers ?? {};
         config.headers.Authorization = `Bearer ${token}`;

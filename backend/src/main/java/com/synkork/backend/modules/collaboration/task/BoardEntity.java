@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
 
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -23,8 +24,13 @@ public class BoardEntity {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "space_id", nullable = false)
+    @JoinColumn(name = "space_id", nullable = false, columnDefinition = "BINARY(16)")
     private SpaceEntity space;
 
+    @Column(nullable = false)
     private String name;
+
+    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL)
+    @OrderBy("position ASC")
+    private List<ColumnEntity> columns;
 }
