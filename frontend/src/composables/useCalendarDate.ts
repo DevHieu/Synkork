@@ -6,18 +6,19 @@ export function useCalendarDate() {
   const currentDate = ref(dayjs());
   const selectedDate = ref(dayjs());
 
+  // Nhảy thời gian linh hoạt
+  const jumpDate = (amount: number, unit: "week" | "month" | "year") => {
+    currentDate.value = currentDate.value.add(amount, unit);
+  };
+
   // Chuyển sang trang tiếp theo (Tuần/Tháng/Năm)
   const goNext = () => {
-    if (viewMode.value === "week") currentDate.value = currentDate.value.add(1, "week");
-    else if (viewMode.value === "month") currentDate.value = currentDate.value.add(1, "month");
-    else currentDate.value = currentDate.value.add(1, "year");
+    jumpDate(1, viewMode.value);
   };
 
   // Quay lại trang trước (Tuần/Tháng/Năm)
   const goPrev = () => {
-    if (viewMode.value === "week") currentDate.value = currentDate.value.subtract(1, "week");
-    else if (viewMode.value === "month") currentDate.value = currentDate.value.subtract(1, "month");
-    else currentDate.value = currentDate.value.subtract(1, "year");
+    jumpDate(-1, viewMode.value);
   };
 
   // Về ngày hiện tại
@@ -84,6 +85,7 @@ export function useCalendarDate() {
     goNext,
     goPrev,
     goToday,
+    jumpDate,
     selectDate,
     setYearMonth,
   };

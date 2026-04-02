@@ -34,6 +34,7 @@ const {
   goNext,
   goPrev,
   goToday,
+  jumpDate,
   selectDate,
   setYearMonth,
   createEvent,
@@ -126,6 +127,7 @@ const executeDelete = async () => {
     isDeletingEvent.value = false;
   }
 };
+const quickJumpBtnClass = "px-2.5 py-1 text-xs font-medium rounded-md bg-white/5 text-gray-400 hover:bg-teal-600/20 hover:text-teal-400 transition-all border border-transparent hover:border-teal-500/30 whitespace-nowrap cursor-pointer";
 </script>
 
 <template>
@@ -189,6 +191,37 @@ const executeDelete = async () => {
       </button>
     </div>
 
+    <!-- Quick Navigation Bar -->
+    <div class="flex items-center gap-4 px-4 py-2 border-b border-white/10 bg-black/10 overflow-x-auto no-scrollbar scroll-smooth">
+      <!-- Week Group -->
+      <div class="flex items-center gap-1.5 shrink-0 px-2 py-1 rounded-lg bg-teal-500/5 border border-teal-500/10">
+        <span class="text-[10px] font-bold text-teal-500/70 uppercase tracking-widest mr-1">Tuần</span>
+        <div class="flex items-center gap-1">
+          <button @click="jumpDate(-1, 'week')" :class="quickJumpBtnClass">Tuần trước</button>
+          <button @click="jumpDate(1, 'week')" :class="quickJumpBtnClass">Tuần sau</button>
+          <button @click="jumpDate(2, 'week')" :class="quickJumpBtnClass">2 tuần sau</button>
+        </div>
+      </div>
+
+      <!-- Month Group -->
+      <div class="flex items-center gap-1.5 shrink-0 px-2 py-1 rounded-lg bg-teal-500/5 border border-teal-500/10">
+        <span class="text-[10px] font-bold text-teal-500/70 uppercase tracking-widest mr-1">Tháng</span>
+        <div class="flex items-center gap-1">
+          <button @click="jumpDate(-1, 'month')" :class="quickJumpBtnClass">Tháng trước</button>
+          <button @click="jumpDate(1, 'month')" :class="quickJumpBtnClass">Tháng sau</button>
+        </div>
+      </div>
+
+      <!-- Year Group -->
+      <div class="flex items-center gap-1.5 shrink-0 px-2 py-1 rounded-lg bg-teal-500/5 border border-teal-500/10">
+        <span class="text-[10px] font-bold text-teal-500/70 uppercase tracking-widest mr-1">Năm</span>
+        <div class="flex items-center gap-1">
+          <button @click="jumpDate(-1, 'year')" :class="quickJumpBtnClass">Năm trước</button>
+          <button @click="jumpDate(1, 'year')" :class="quickJumpBtnClass">Năm sau</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Main Content -->
     <div class="flex-1 overflow-hidden flex relative">
       <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-black/20 z-10 backdrop-blur-sm">
@@ -250,5 +283,12 @@ const executeDelete = async () => {
 </template>
 
 <style scoped>
-/* Reset some styles if needed */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
 </style>
