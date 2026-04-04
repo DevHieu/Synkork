@@ -20,6 +20,7 @@ export const useSpaceStore = defineStore("spaces", {
       this.loading = true;
       try {
         const res = await getAllSpacesFromRoomId(roomId);
+
         await this.filterSpacesByType(res.data);
       } finally {
         this.loading = false;
@@ -71,7 +72,7 @@ export const useSpaceStore = defineStore("spaces", {
 
       router.push(
         `/rooms/${type.toLowerCase()}/${router.currentRoute.value.params.roomId}/${
-          this.currentSpace.value?.id
+          this.currentSpace?.id
         }`,
       );
     },
