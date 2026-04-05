@@ -91,7 +91,11 @@ export const socketService = {
     }
 
     const sub = stompClient!.subscribe(destination, (msg) => {
-      callback(JSON.parse(msg.body));
+      try {
+        callback(JSON.parse(msg.body));
+      } catch {
+        callback(msg.body); // plain string
+      }
     });
 
     subscriptions.set(destination, sub);

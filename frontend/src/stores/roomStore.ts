@@ -1,5 +1,6 @@
 import { createRoom, getUserRooms, joinRoom } from "@/services/roomService";
 import { defineStore } from "pinia";
+import { useRoomMemberStore } from "./roomMemberStore";
 import { useSpaceStore } from "./spaceStore";
 import { useUserStore } from "./userStore";
 import { storeToRefs } from "pinia";
@@ -31,6 +32,13 @@ export const useRoomsStore = defineStore("rooms", {
       const spaceStore = useSpaceStore();
       await spaceStore.fetchSpacesByRoomId(room.id);
 
+      const { user } = storeToRefs(useUserStore());
+
+      useRoomMemberStore().fetchMembers(
+        room.id,
+        user.value?.username as string,
+      );
+
       // Nếu không có spaceId, mặc định redirect đến CHAT space đầu tiên của room mới
       if (spaceId === undefined) {
         await spaceStore.changeSpace(0, "CHAT");
@@ -44,7 +52,7 @@ export const useRoomsStore = defineStore("rooms", {
 
     async createRoom(roomData: {
       name: string;
-      ownerId?: string;
+      ownerId: string;
       imageFile?: File;
     }) {
       try {
@@ -72,6 +80,13 @@ export const useRoomsStore = defineStore("rooms", {
 
       await this.fetchRooms();
       await this.changeRoom(roomInvited);
+    },
+
+    async leaveRoom(roomId: string) {
+      this.rooms = this.rooms.filter((room) => room.id !== roomId);
+
+      this.currentRoom = null;
+      router.push("/me");
     },
   },
 });

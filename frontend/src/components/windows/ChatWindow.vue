@@ -12,12 +12,16 @@ import ChatHeader from "@/components/chat/ChatHeader.vue";
 import MessageList from "@/components/chat/MessageList.vue";
 import MessageInput from "@/components/chat/MessageInput.vue";
 import type { Message } from "@/types/Message";
+import MemberSidebar from "../sidebar/MemberSidebar.vue";
 
 const route = useRoute();
 const spaceId = route.params.spaceId as string;
 
 const spaceStore = useSpaceStore();
 const { currentSpace } = storeToRefs(spaceStore);
+
+const memberOpen = ref(true);
+const toggleMembers = () => (memberOpen.value = !memberOpen.value);
 
 const messages = ref<Message[]>([]);
 const newMessage = ref("");
@@ -105,11 +109,42 @@ const scrollToBottom = async () => {
 </script>
 
 <template>
-  <div class="flex flex-col h-screen overflow-hidden background">
-    <ChatHeader :space-name="currentSpace?.name ?? ''" />
+  <div class="flex flex-col h-screen overflow-hidden">
+    <ChatHeader
+      :space-name="currentSpace?.name ?? ''"
+      :member-open="memberOpen"
+      @toggle-members="toggleMembers"
+      @search="(q) => console.log('search:', q)"
+    />
 
-    <MessageList :messages="messages" :container-ref="setContainerRef" />
+    <div class="flex flex-1 min-w-0 overflow-hidden">
+      <div class="flex flex-col flex-1 min-w-0 overflow-hidden">
+        <MessageList :messages="messages" :container-ref="setContainerRef" />
+        <MessageInput v-model="newMessage" @send="handleSendMessage" />
+      </div>
 
-    <MessageInput v-model="newMessage" @send="handleSendMessage" />
+      <!-- Member Sidebar -->
+      <div
+        class="flex-none border-l h-full overflow-hidden transition-all duration-300 ease-in-out"
+        :style="{
+          width: memberOpen ? '250px' : '0px',
+          opacity: memberOpen ? 1 : 0,
+          borderColor: 'var(--border)',
+          background: 'transparent',
+        }"
+      >
+        <div
+          class="flex-none border-l h-full overflow-hidden transition-all duration-300 ease-in-out"
+          :style="{
+            width: memberOpen ? '250px' : '0px',
+            opacity: memberOpen ? 1 : 0,
+            borderColor: 'var(--border)',
+            background: 'transparent',
+          }"
+        >
+          <MemberSidebar />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
