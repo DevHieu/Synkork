@@ -7,11 +7,13 @@ import com.synkork.backend.modules.room.dto.RoomDto;
 import com.synkork.backend.modules.room.dto.RoomReviewResponse;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
+import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
 import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
@@ -33,6 +35,9 @@ public class RoomService {
 
     @Autowired
     ImageService imageService;
+
+    @Autowired
+    SimpMessagingTemplate messagingTemplate;
 
     private String generateInviteCode() {
         String chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -104,7 +109,10 @@ public class RoomService {
                 .role(RoomMemberRoleEnum.MEMBER)
                 .build();
 
-        roomMemberRepository.save(member);
+        // Vừa save vừa convert sang dto luôn
+        RoomMemberDto dto = new  RoomMemberDto(roomMemberRepository.save(member));
+
+        messagingTemplate.convertAndSend("/topic/room/" + room.getId() + "/members/joined", dto);
 
         return new RoomDto(
                 room.getId(),
