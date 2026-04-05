@@ -5,15 +5,19 @@ import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Data
 @NoArgsConstructor
 public class RoomMemberDto {
+    private UUID memberId;
     private String displayName;
     private String username;
     private String avatarUrl;
     private RoomMemberRoleEnum role;
 
     public RoomMemberDto(RoomMemberEntity entity) {
+        this.memberId = entity.getId();
         this.displayName = entity.getUser().getDisplayName();
         this.username = entity.getUser().getUsername();
         this.avatarUrl = entity.getUser().getAvatarUrl();
