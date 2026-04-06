@@ -91,7 +91,10 @@ const handlePin = () => console.log("Pin message:", props.message.id);
   >
     <div class="w-10 shrink-0">
       <Avatar v-if="!isGrouped" class="h-10 w-10">
-        <AvatarImage :src="props.message.sender?.avatarUrl" />
+        <AvatarImage
+          v-if="props.message.sender?.avatarUrl"
+          :src="props.message.sender.avatarUrl"
+        />
         <AvatarFallback class="bg-primary">
           {{ props.message.sender?.displayName?.charAt(0).toUpperCase() }}
         </AvatarFallback>
