@@ -6,6 +6,7 @@ import VueCookies from "vue-cookies";
 const cookies = VueCookies as any;
 let stompClient: Client | null = null;
 const subscriptions = new Map<string, StompSubscription>();
+let connectingPromise: Promise<void> | null = null;
 
 const createStompClient = (token: string, onConnected?: () => void): Client => {
   const client = new Client({
@@ -24,6 +25,7 @@ const createStompClient = (token: string, onConnected?: () => void): Client => {
 
       const isUnauthorized =
         event.code === 4001 ||
+        event.code === 1002 ||
         (event.reason ?? "").toLowerCase().includes("unauthorized");
 
       if (isUnauthorized) {
@@ -47,25 +49,32 @@ const createStompClient = (token: string, onConnected?: () => void): Client => {
 };
 
 export const socketService = {
-  async connect(onConnected?: () => void) {
-    // Check xem có token chưa
-    if (stompClient?.connected) {
-      onConnected?.();
-      return;
-    }
+  async connect(): Promise<void> {
+    if (stompClient?.connected) return;
 
-    let token = cookies.get("accessToken");
-    if (!token) {
-      try {
-        token = await getFreshToken();
-      } catch {
-        window.location.href = "/auth";
-        return;
+    // Nếu đang connecting rồi thì chờ cái đó, không tạo mới
+    if (connectingPromise) return connectingPromise;
+
+    connectingPromise = new Promise<void>(async (resolve, reject) => {
+      let token = cookies.get("accessToken");
+      if (!token) {
+        try {
+          token = await getFreshToken();
+        } catch {
+          window.location.href = "/auth";
+          reject();
+          return;
+        }
       }
-    }
 
-    stompClient = createStompClient(token, onConnected);
-    stompClient.activate();
+      stompClient = createStompClient(token, () => {
+        connectingPromise = null;
+        resolve();
+      });
+      stompClient.activate();
+    });
+
+    return connectingPromise;
   },
 
   getClient() {

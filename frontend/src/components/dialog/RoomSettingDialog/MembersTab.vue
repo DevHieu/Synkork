@@ -120,7 +120,10 @@ const handleChangeRole = async (memberId: string, newRole: string) => {
       >
         <!-- Avatar -->
         <Avatar class="h-8 w-8 shrink-0">
-          <AvatarImage :src="member.avatarUrl" />
+          <AvatarImage
+            v-if="member.avatarUrl"
+            :src="member.avatarUrl ?? undefined"
+          />
           <AvatarFallback class="text-xs font-bold">
             {{ getInitials(member.displayName || member.username) }}
           </AvatarFallback>
