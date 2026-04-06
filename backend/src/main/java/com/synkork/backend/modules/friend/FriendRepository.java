@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.friend;
 
 import com.synkork.backend.modules.user.UserEntity;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -13,5 +14,6 @@ public interface FriendRepository extends JpaRepository<FriendEntity, UUID> {
 
     Optional<FriendEntity> findByUserAndFriend(UserEntity user, UserEntity friend);
 
+    @Transactional
     void deleteByUserAndFriend(UserEntity user, UserEntity friend);
 }

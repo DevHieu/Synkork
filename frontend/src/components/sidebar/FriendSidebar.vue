@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { SidebarHeader, SidebarContent } from "@/components/ui/sidebar" // Đảm bảo import đủ component
+import { SidebarHeader, SidebarContent } from "@/components/ui/sidebar"
 import { useFriendStore } from "@/stores/useFriendStore"
 import { storeToRefs } from "pinia"
 import { onMounted } from "vue"
@@ -8,17 +8,11 @@ import { onMounted } from "vue"
 const router = useRouter()
 const store = useFriendStore()
 
-// Sử dụng storeToRefs để lấy dữ liệu reactive
 const { friends, loading, friendCount } = storeToRefs(store)
 
 onMounted(() => {
   store.fetchFriends()
 })
-
-// Hàm bổ trợ để lấy 2 chữ cái đầu của tên làm Avatar
-const getInitials = (name: string) => {
-  return name ? name.substring(0, 2).toUpperCase() : '??'
-}
 </script>
 
 <template>
@@ -48,16 +42,6 @@ const getInitials = (name: string) => {
       </div>
     </div>
 
-    <div class="p-2">
-      <button
-        class="w-full py-2 rounded-md text-sm font-medium
-        bg-[var(--color-primary)] text-[var(--color-primary-foreground)]
-        hover:opacity-90 transition"
-      >
-        + Thêm bạn
-      </button>
-    </div>
-
     <div class="px-3 mt-3 text-xs text-[var(--color-muted-foreground)] uppercase">
       Bạn bè — {{ friendCount }}
     </div>
@@ -78,10 +62,10 @@ const getInitials = (name: string) => {
         hover:bg-[var(--color-sidebar-accent)] transition"
       >
         <div class="relative">
-          <div class="w-8 h-8 rounded-full bg-[var(--color-muted)] flex items-center justify-center text-xs font-bold uppercase">
-            {{ getInitials(friend.name) }}
+          <div class="w-8 h-8 rounded-full bg-[var(--color-muted)] flex items-center justify-center text-xs font-bold uppercase overflow-hidden">
+            <img v-if="friend.avatarUrl" :src="friend.avatarUrl" class="w-full h-full object-cover" alt="avatar" />
+            <span v-else>{{ friend.name?.substring(0, 2).toUpperCase() }}</span>
           </div>
-
           <div class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[var(--color-sidebar)] bg-green-500" />
         </div>
 

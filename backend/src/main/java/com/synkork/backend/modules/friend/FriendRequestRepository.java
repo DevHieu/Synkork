@@ -6,10 +6,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
-public interface FriendRequestRepository extends JpaRepository<FriendRequestEntity, Long> {
+public interface FriendRequestRepository extends JpaRepository<FriendRequestEntity, UUID> {
 
     Optional<FriendRequestEntity> findBySenderAndReceiver(UserEntity sender, UserEntity receiver);
 
     List<FriendRequestEntity> findByReceiverAndStatus(UserEntity receiver, FriendRequestStatus status);
+
+    List<FriendRequestEntity> findBySenderAndStatus(UserEntity sender, FriendRequestStatus status);
 }

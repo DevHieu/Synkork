@@ -1,13 +1,13 @@
 export interface Friend {
   id: string
   name: string
-  avatarUrl: string
+  avatarUrl: string | null
   status: string
 }
 
 export interface FriendRequest {
-  id: string;           // ← phải là string (UUID)
-  senderName: string;
-  receiverName: string;
-  status: string;
+  id: string
+  senderName: string
+  receiverName: string
+  status: string
 }
