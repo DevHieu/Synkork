@@ -15,7 +15,7 @@ axiosClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = cookies.get("accessToken");
     const url = config.url ?? "";
-    if (!url.includes("/auth/")) {
+    if (!url.includes("/auth")) {
       if (token) {
         config.headers = config.headers ?? {};
         config.headers.Authorization = `Bearer ${token}`;
@@ -24,7 +24,7 @@ axiosClient.interceptors.request.use(
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 axiosClient.interceptors.response.use(
@@ -36,7 +36,21 @@ axiosClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Token mà không hợp lệ thì về trang đăng nhập
+    if (
+      error.response?.status === 401 &&
+      error.response?.data?.error === "INVALID_TOKEN"
+    ) {
+      cookies.remove("accessToken");
+      cookies.remove("refreshToken");
+      window.location.href = "/auth";
+    }
+
+    if (
+      error.response?.status === 401 &&
+      error.response?.data?.error === "TOKEN_EXPIRED" &&
+      !originalRequest._retry
+    ) {
       originalRequest._retry = true;
 
       try {
@@ -48,16 +62,16 @@ axiosClient.interceptors.response.use(
         console.log(
           "Refresh failed:",
           refreshError.response?.status,
-          refreshError.response?.data
+          refreshError.response?.data,
         );
         cookies.remove("accessToken");
-        window.location.href = "/auth/login";
+        window.location.href = "/auth";
         return Promise.reject(refreshError);
       }
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default axiosClient;

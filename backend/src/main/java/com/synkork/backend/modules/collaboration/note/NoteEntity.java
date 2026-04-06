@@ -17,7 +17,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class NoteEntity extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "space_id", nullable = false)
+    @JoinColumn(name = "space_id", nullable = false, columnDefinition = "BINARY(16)")
     private SpaceEntity space;
 
     @Column(columnDefinition = "TEXT")
@@ -30,6 +30,6 @@ public class NoteEntity extends BaseEntity {
     private boolean allowEditAll;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by", nullable = false)
+    @JoinColumn(name = "created_by", nullable = false, columnDefinition = "BINARY(16)")
     private UserEntity createdBy;
 }

@@ -1,22 +1,24 @@
-import { createRoom, getUserRooms } from "@/services/roomService";
+import { createRoom, getUserRooms, joinRoom } from "@/services/roomService";
 import { defineStore } from "pinia";
+import { useRoomMemberStore } from "./roomMemberStore";
 import { useSpaceStore } from "./spaceStore";
 import { useUserStore } from "./userStore";
 import { storeToRefs } from "pinia";
 import router from "@/routers";
+import type { Room } from "@/types/Room";
 
 export const useRoomsStore = defineStore("rooms", {
   state: () => ({
-    rooms: [] as any[],
-    currentRoom: null as any | null,
+    rooms: [] as Room[],
+    currentRoom: null as Room | null,
     loading: false,
   }),
 
   actions: {
-    async fetchRooms(userId: string) {
+    async fetchRooms() {
       this.loading = true;
       try {
-        this.rooms = await getUserRooms(userId);
+        this.rooms = await getUserRooms();
         console.log(this.rooms);
       } finally {
         this.loading = false;
@@ -29,6 +31,13 @@ export const useRoomsStore = defineStore("rooms", {
 
       const spaceStore = useSpaceStore();
       await spaceStore.fetchSpacesByRoomId(room.id);
+
+      const { user } = storeToRefs(useUserStore());
+
+      useRoomMemberStore().fetchMembers(
+        room.id,
+        user.value?.username as string,
+      );
 
       // Nếu không có spaceId, mặc định redirect đến CHAT space đầu tiên của room mới
       if (spaceId === undefined) {
@@ -43,7 +52,7 @@ export const useRoomsStore = defineStore("rooms", {
 
     async createRoom(roomData: {
       name: string;
-      ownerId?: string;
+      ownerId: string;
       imageFile?: File;
     }) {
       try {
@@ -64,6 +73,20 @@ export const useRoomsStore = defineStore("rooms", {
       } catch (error) {
         console.error("Error creating room:", error);
       }
+    },
+
+    async joinRoom(inviteCode: string) {
+      const roomInvited = await joinRoom(inviteCode);
+
+      await this.fetchRooms();
+      await this.changeRoom(roomInvited);
+    },
+
+    async leaveRoom(roomId: string) {
+      this.rooms = this.rooms.filter((room) => room.id !== roomId);
+
+      this.currentRoom = null;
+      router.push("/me");
     },
   },
 });

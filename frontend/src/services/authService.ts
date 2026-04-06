@@ -29,7 +29,7 @@ export const logout = async () => {
     console.error("Error during logout:", error);
   } finally {
     VueCookies.remove("accessToken");
-    window.location.href = "/auth/login";
+    window.location.href = "/auth";
   }
 };
 

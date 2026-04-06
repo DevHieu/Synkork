@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
 
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -16,15 +17,23 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ColumnEntity {
+
     @Id
     @UuidGenerator(style = UuidGenerator.Style.TIME)
     @Column(columnDefinition = "BINARY(16)")
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "board_id", nullable = false)
+    @JoinColumn(name = "board_id", nullable = false, columnDefinition = "BINARY(16)")
     private BoardEntity board;
 
+    @Column(nullable = false, length = 100)
     private String name;
+
+    @Column(nullable = false)
     private int position;
+
+    @OneToMany(mappedBy = "column", cascade = CascadeType.ALL)
+    @OrderBy("position ASC")
+    private List<CardEntity> cards;
 }

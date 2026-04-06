@@ -102,7 +102,7 @@ onMounted(() => verify());
           </p>
         </CardContent>
         <CardFooter class="flex justify-center">
-          <Button class="w-full" @click="router.push('/auth/login')">
+          <Button class="w-full" @click="router.push('/auth')">
             Đăng nhập
           </Button>
         </CardFooter>
@@ -180,7 +180,7 @@ onMounted(() => verify());
           <Button
             variant="outline"
             class="w-full"
-            @click="router.push('/auth/login')"
+            @click="router.push('/auth')"
           >
             Về trang đăng nhập
           </Button>
