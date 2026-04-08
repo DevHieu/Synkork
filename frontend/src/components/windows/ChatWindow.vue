@@ -38,9 +38,7 @@ const setContainerRef = (el: HTMLElement | null) => {
 
 onMounted(() => {
   if (spaceId) {
-    socketService.connect(() => {
-      isSocketConnected.value = true;
-    });
+    isSocketConnected.value = true;
   }
 });
 

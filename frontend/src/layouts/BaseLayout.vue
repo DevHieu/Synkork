@@ -8,9 +8,10 @@ import {
   SidebarContent,
   SidebarFooter,
 } from "@/components/ui/sidebar";
+import { socketService } from "@/services/websocket/socketService";
 import { useUserStore } from "@/stores/userStore";
 import { storeToRefs } from "pinia";
-import { ref, provide } from "vue";
+import { ref, provide, watch } from "vue";
 
 const userStore = useUserStore();
 const { user } = storeToRefs(userStore);
@@ -20,6 +21,20 @@ const spaceOpen = ref(true);
 provide("setSpaceOpen", (val: boolean) => {
   spaceOpen.value = val;
 });
+
+import VueCookies from "vue-cookies";
+const cookies = VueCookies as any;
+
+watch(
+  () => cookies.get("accessToken"),
+  async (newToken) => {
+    if (newToken) {
+      await socketService.connect();
+      await userStore.getUserInfo();
+    }
+  },
+  { immediate: true },
+);
 </script>
 
 <template>

@@ -3,7 +3,7 @@ import { useColorMode } from "@vueuse/core";
 const mode = useColorMode();
 
 import { RouterView } from "vue-router";
-import { toast, Toaster } from "vue-sonner";
+import { Toaster } from "vue-sonner";
 import "vue-sonner/style.css";
 </script>
 
