@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// import { watch } from "vue";
 import {
   Sidebar,
   SidebarContent,
@@ -30,6 +29,7 @@ import {
 import { useRouter } from "vue-router";
 import { useRoomsStore } from "@/stores/roomStore";
 import { useSpaceStore } from "@/stores/spaceStore";
+import { useRoomMemberStore } from "@/stores/roomMemberStore";
 import { useVoiceSpaceStore } from "@/stores/voiceSpaceStore";
 import { storeToRefs } from "pinia";
 import CreateSpaceDialog from "../dialog/CreateSpaceDialog.vue";
@@ -40,6 +40,7 @@ import InviteDialog from "@/components/dialog/InviteMemberDialog.vue";
 const router = useRouter();
 const roomStore = useRoomsStore();
 const spaceStore = useSpaceStore();
+const roomMemberStore = useRoomMemberStore();
 const voiceSpaceStore = useVoiceSpaceStore();
 
 const showRoomSettingDialog = ref(false);
@@ -57,6 +58,7 @@ const {
   noteSpaces,
   taskSpaces,
 } = storeToRefs(spaceStore);
+const { canManage } = storeToRefs(roomMemberStore);
 
 const changeSpace = async (
   index: number,
@@ -103,7 +105,7 @@ const getInitials = (name: string) => {
 
 <template>
   <Sidebar collapsible="none" class="hidden flex-1 md:flex">
-    <SidebarHeader class="gap-3.5 border-b p-4">
+    <SidebarHeader class="gap-3.5 border-b px-4 py-3">
       <div class="flex w-full items-center justify-between">
         <div class="text-base font-medium text-foreground">
           {{ currentRoom?.name }}
@@ -113,7 +115,7 @@ const getInitials = (name: string) => {
             @click.stop="openRoomSettingDialog()"
             class="transition duration-150 hover:text-foreground"
           >
-            <Settings class="h-5 w-5" />
+            <Settings v-if="canManage" class="h-5 w-5" />
           </button>
           <button
             @click="showInviteDialog = true"
@@ -139,6 +141,7 @@ const getInitials = (name: string) => {
                 KÊNH TASK
               </div>
               <button
+                v-if="canManage"
                 @click.stop="openAddSpaceDialog('TASK')"
                 class="opacity-0 group-hover/label:opacity-100 transition-opacity duration-200 hover:bg-muted rounded p-0.5"
               >
@@ -181,6 +184,7 @@ const getInitials = (name: string) => {
                 KÊNH GHI CHÚ
               </div>
               <button
+                v-if="canManage"
                 @click.stop="openAddSpaceDialog('NOTE')"
                 class="opacity-0 group-hover/label:opacity-100 transition-opacity duration-200 hover:bg-muted rounded p-0.5"
               >
@@ -223,6 +227,7 @@ const getInitials = (name: string) => {
                 KÊNH LỊCH TRÌNH
               </div>
               <button
+                v-if="canManage"
                 @click.stop="openAddSpaceDialog('CALENDAR')"
                 class="opacity-0 group-hover/label:opacity-100 transition-opacity duration-200 hover:bg-muted rounded p-0.5"
               >
@@ -265,6 +270,7 @@ const getInitials = (name: string) => {
                 KÊNH CHAT
               </div>
               <button
+                v-if="canManage"
                 @click.stop="openAddSpaceDialog('CHAT')"
                 class="opacity-0 group-hover/label:opacity-100 transition-opacity duration-200 hover:bg-muted rounded p-0.5"
               >
@@ -307,6 +313,7 @@ const getInitials = (name: string) => {
                 KÊNH ĐÀM THOẠI
               </div>
               <button
+                v-if="canManage"
                 @click.stop="openAddSpaceDialog('VOICE')"
                 class="opacity-0 group-hover/label:opacity-100 transition-opacity duration-200 hover:bg-muted rounded p-0.5"
               >
@@ -317,10 +324,7 @@ const getInitials = (name: string) => {
           <CollapsibleContent>
             <SidebarGroupContent>
               <SidebarMenu>
-                <SidebarMenuItem
-                  v-for="(item, index) in voiceSpaces"
-                  :key="item.id"
-                >
+                <SidebarMenuItem v-for="item in voiceSpaces" :key="item.id">
                   <!-- Channel row -->
                   <SidebarMenuButton
                     @click="joinVoiceSpace(item.id)"
