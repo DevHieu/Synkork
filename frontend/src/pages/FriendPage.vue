@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from "vue"
 import { useFriendStore } from "@/stores/useFriendStore"
+import { friendSocket } from "@/services/websocket/friendSocket"
 import FriendListTab from "@/components/sidebar/friend/FriendListTab.vue"
 import FriendPendingTab from "@/components/sidebar/friend/FriendPendingTab.vue"
 import FriendAddTab from "@/components/sidebar/friend/FriendAddTab.vue"
@@ -13,9 +14,21 @@ onMounted(async () => {
   await Promise.all([
     store.fetchFriends(),
     store.fetchPendingRequests(),
-    store.fetchSentRequests()
+    store.fetchSentRequests(),
+
+    subscribeFriendSocket()
   ])
 })
+
+const subscribeFriendSocket = () => {
+  friendSocket.subscribeFriendRequest(async () => {
+    // Khi có request mới, chỉ cần fetch lại pending và sent là đủ
+    await Promise.all([
+      store.fetchPendingRequests(),
+      store.fetchSentRequests()
+    ])
+  })
+}
 
 const totalPending = () => store.pendingRequests.length + store.sentRequests.length
 

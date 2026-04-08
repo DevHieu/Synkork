@@ -5,6 +5,7 @@ import com.synkork.backend.modules.friend.dto.FriendRequestDto;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,11 +18,17 @@ public class FriendController {
     @Autowired
     private FriendService friendService;
 
+    @Autowired
+    SimpMessagingTemplate messagingTemplate;
+
     // ==================== GỬI LỜI MỜI ====================
     @PostMapping("/request")
     public ResponseEntity<String> sendFriendRequest(@RequestParam String username) {
         try {
-            friendService.sendFriendRequestByUsername(username);
+            String email = friendService.sendFriendRequestByUsername(username);
+
+            messagingTemplate.convertAndSendToUser(email, "queue/friend-request", "Đã gửi lời mời kết bạn");
+
             return ResponseEntity.ok("Đã gửi lời mời kết bạn");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

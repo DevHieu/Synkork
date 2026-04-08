@@ -106,7 +106,7 @@ public class FriendService {
     }
 
     // Gửi lời mời qua username
-    public void sendFriendRequestByUsername(String username) {
+    public String sendFriendRequestByUsername(String username) {
         UUID senderId = getCurrentUserId();
 
         UserEntity sender = userRepo.findById(senderId)
@@ -134,6 +134,9 @@ public class FriendService {
         req.setReceiver(receiver);
         req.setStatus(FriendRequestStatus.PENDING);
         requestRepo.save(req);
+
+        // Trả về email de lam socket
+        return receiver.getEmail();
     }
 
     public UUID getCurrentUserId() {
