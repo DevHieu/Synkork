@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { getAll, getById, create, update, deleteNote, togglePin, search } from '@/services/noteService'
 import type { Note, NoteRequest } from '@/types/NoteType'
+import { noteSocket } from '@/services/websocket/noteSocket'
 
 export const useNoteStore = defineStore('notes', () => {
   const notes = ref<Note[]>([])
@@ -21,14 +22,21 @@ export const useNoteStore = defineStore('notes', () => {
   const pinnedNotes = computed(() => filteredNotes.value?.filter(n => n.pinned) ?? [])
   const unpinnedNotes = computed(() => filteredNotes.value?.filter(n => !n.pinned) ?? [])
 
+  function addNoteToList(note: any) {
+    notes.value.unshift(note);
+  }
+
   async function fetchNotes(spaceId: string) {
     loading.value = true
     error.value = null
     try {
       const res = await getAll(spaceId)
-      console.log('res:', res)
-      console.log('Array.isArray:', Array.isArray(res))
+      
       notes.value = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : [])
+
+      noteSocket.subscribeCreateNote(spaceId, (payload) => {
+        addNoteToList(payload);
+      });
     } catch (e) {
       error.value = 'Không thể tải ghi chú'
       console.error(e)
@@ -40,7 +48,7 @@ export const useNoteStore = defineStore('notes', () => {
   async function createNote(spaceId: string, data: NoteRequest): Promise<Note | null> {
     try {
       const res = await create(spaceId, data)
-      notes.value.unshift(res)
+      
       return res
     } catch (e) {
       error.value = 'Không thể tạo ghi chú'

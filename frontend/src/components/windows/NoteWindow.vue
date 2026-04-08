@@ -136,21 +136,14 @@ const selectedNote = ref<Note | null>(null)
 const confirmOpen = ref(false)
 const deleteTargetId = ref<string | null>(null)
 
-// Polling mỗi 3 giây
-let pollingInterval: ReturnType<typeof setInterval> | null = null
 
 onMounted(() => {
   store.fetchNotes(spaceId)
-  pollingInterval = setInterval(() => {
-    store.fetchNotes(spaceId)
-  }, 3000)
+
 })
 
 onUnmounted(() => {
-  if (pollingInterval) {
-    clearInterval(pollingInterval)
-    pollingInterval = null
-  }
+  
 })
 
 function openCreate() {

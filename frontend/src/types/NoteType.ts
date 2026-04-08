@@ -16,9 +16,3 @@ export interface NoteRequest {
   pinned?: boolean
   allowEditAll?: boolean
 }
-
-export interface ApiResponse<T> {
-  success: boolean
-  message: string
-  data: T
-}

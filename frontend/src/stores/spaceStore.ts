@@ -71,7 +71,7 @@ export const useSpaceStore = defineStore("spaces", {
 
       router.push(
         `/rooms/${type.toLowerCase()}/${router.currentRoute.value.params.roomId}/${
-          this.currentSpace.value?.id
+          this.currentSpace.id
         }`,
       );
     },

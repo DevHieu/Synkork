@@ -4,6 +4,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -25,12 +26,16 @@ import org.springframework.web.bind.annotation.PutMapping;
 
 
 
+
 @RestController
 @RequestMapping("/spaces/{spaceId}/notes")
 public class NoteController {
 
     @Autowired
     private NoteService noteService;
+
+    @Autowired
+    private SimpMessagingTemplate messageTemplate;
 
     @GetMapping
     public ResponseEntity<List<NoteResponse>> getAllNotes(@PathVariable String spaceId) {
@@ -48,7 +53,11 @@ public class NoteController {
         
         UUID userId = user.getId();
 
-        return ResponseEntity.ok(noteService.createNote(UUID.fromString(spaceId), userId, request));
+        NoteResponse response = noteService.createNote(UUID.fromString(spaceId), userId, request);
+
+        messageTemplate.convertAndSend("/topic/space/" + spaceId + "/notes/create", response);
+
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{id}")
