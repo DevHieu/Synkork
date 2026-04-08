@@ -29,7 +29,7 @@ public class NoteEntity extends BaseEntity {
     private String note;
 
     @Builder.Default
-    private Boolean important = false;
+    private Boolean pinned = false;
 
     @Builder.Default
     private boolean allowEditAll = true;

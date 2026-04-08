@@ -10,5 +10,5 @@ import java.util.UUID;
 public interface NoteRepository extends JpaRepository<NoteEntity, UUID> {
 
     List<NoteEntity> findBySpaceId(UUID spaceUuid);
-    
+    List<NoteEntity> findByTitleContainingIgnoreCase(String title);
 }

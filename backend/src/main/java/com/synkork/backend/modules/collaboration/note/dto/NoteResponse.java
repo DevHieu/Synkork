@@ -16,7 +16,7 @@ public class NoteResponse {
     private UUID id;
     private String title;
     private String note;
-    private Boolean important;
+    private Boolean pinned;
     private String color;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -27,7 +27,7 @@ public class NoteResponse {
         this.id = note.getId();
         this.title = note.getTitle();
         this.note = note.getNote();
-        this.important = note.getImportant();
+        this.pinned = note.getPinned();
         this.color = note.getColor();
         this.createdAt = note.getCreatedAt();
         this.updatedAt = note.getUpdatedAt();

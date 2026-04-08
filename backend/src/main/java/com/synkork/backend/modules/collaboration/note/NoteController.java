@@ -1,9 +1,13 @@
 package com.synkork.backend.modules.collaboration.note;
 
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+
 import com.synkork.backend.security.UserPrinciple;
 
 import java.util.List;
@@ -16,9 +20,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import com.synkork.backend.modules.collaboration.note.dto.NoteRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
 import java.util.UUID;
+import org.springframework.web.bind.annotation.PutMapping;
+
+
+
 
 @RestController
-@RequestMapping("spaces/{spaceId}/notes/")
+@RequestMapping("/spaces/{spaceId}/notes")
 public class NoteController {
 
     @Autowired
@@ -41,5 +49,27 @@ public class NoteController {
         UUID userId = user.getId();
 
         return ResponseEntity.ok(noteService.createNote(UUID.fromString(spaceId), userId, request));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<NoteResponse> updateNote(
+            @PathVariable String id, @RequestBody NoteRequest request) {
+        return ResponseEntity.ok(noteService.updateNote(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void>deleteNote(@PathVariable String id) {
+        noteService.deleteNote(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/pin")
+    public ResponseEntity<NoteResponse> togglePin(@PathVariable String id) {
+        return ResponseEntity.ok(noteService.togglePin(id));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<NoteResponse>> search(@RequestParam String keyword) {
+        return ResponseEntity.ok(noteService.searchNotes(keyword));
     }
 }

@@ -10,8 +10,7 @@ import lombok.AllArgsConstructor;
 public class NoteRequest {
     private String title;
     private String note;
-    private Boolean important;
+    private Boolean pinned;
     private String color;
     private Boolean allowEditAll;
-    
 }
