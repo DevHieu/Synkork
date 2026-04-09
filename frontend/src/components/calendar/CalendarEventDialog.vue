@@ -3,6 +3,7 @@ import { ref, watch, computed } from "vue";
 import type { CalendarEvent } from "@/types/CalendarEvent";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
+import CalendarWarningDialog from "./CalendarWarningDialog.vue";
 
 dayjs.locale("vi");
 
@@ -36,6 +37,8 @@ const conflictEvents = ref<CalendarEvent[]>([]);
 const isCheckingConflict = ref(false);
 
 let conflictDebounce: ReturnType<typeof setTimeout> | null = null;
+const showWarning = ref(false);
+const warningMessage = ref("");
 
 // Reset dữ liệu khi mở dialog
 watch(
@@ -77,6 +80,16 @@ watch(
 
 const handleSubmit = () => {
   if (!formData.value.title.trim()) return;
+
+  if (!props.isEditing) {
+    const eventDateTime = dayjs(`${formData.value.eventDate}T${formData.value.startTime}`);
+    if (eventDateTime.isBefore(dayjs())) {
+      warningMessage.value = "Bạn không thể tạo sự kiện với thời gian nằm ở trong quá khứ! Vui lòng chọn lại ngày và giờ phù hợp.";
+      showWarning.value = true;
+      return;
+    }
+  }
+
   emit("save", formData.value);
 };
 
@@ -310,6 +323,12 @@ const recurrenceSummary = computed(() => {
         </form>
       </div>
     </div>
+    
+    <!-- Modal Cảnh báo -->
+    <CalendarWarningDialog 
+      v-model:show="showWarning" 
+      :message="warningMessage" 
+    />
   </Teleport>
 </template>
 

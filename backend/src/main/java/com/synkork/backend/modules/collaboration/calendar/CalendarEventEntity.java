@@ -4,10 +4,9 @@ import com.synkork.backend.common.base.BaseEntity;
 import com.synkork.backend.modules.space.SpaceEntity;
 import com.synkork.backend.modules.user.UserEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+
+import java.util.List;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -15,6 +14,7 @@ import java.time.LocalTime;
 @Entity
 @Table(name="calendar_events")
 @Getter
+@Data
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -44,7 +44,7 @@ public class CalendarEventEntity extends BaseEntity {
     private boolean allowEditAll;
     private Integer remindBeforeMinutes;
 
-    private boolean allowEditAll = true;
+//    private boolean allowEditAll = true;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false, columnDefinition = "BINARY(16)")

@@ -132,8 +132,23 @@ public class CalendarEventService {
         return getEventsByDateRange(spaceId, date, date);
     }
 
+    private void validateEventTime(CalendarEventDTO eventRequest) {
+        LocalDate today = LocalDate.now();
+        LocalTime now = LocalTime.now();
+
+        if (eventRequest.getEventDate().isBefore(today)) {
+            throw new IllegalArgumentException("Không thể tạo sự kiện ở quá khứ");
+        }
+
+        if (eventRequest.getEventDate().isEqual(today) && eventRequest.getStartTime().isBefore(now)) {
+            throw new IllegalArgumentException("Không thể tạo sự kiện ở quá khứ");
+        }
+    }
+
     // Tạo event mới
     public CalendarEventDTO createEvent(CalendarEventDTO eventRequest, String creatorId) {
+        validateEventTime(eventRequest);
+
         UserEntity creator = userRepository.findById(UUID.fromString(creatorId))
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 

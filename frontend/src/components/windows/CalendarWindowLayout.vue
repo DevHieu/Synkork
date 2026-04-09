@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useSpaceStore } from "@/stores/spaceStore";
 import { useUserStore } from "@/stores/userStore";
 import { storeToRefs } from "pinia";
-import { useCalendar } from "@/composables/useCalendar";
+import { useCalendar } from "@/composables/calendar/useCalendar";
 import type { CalendarEvent } from "@/types/CalendarEvent";
 
 import CalendarMonthView from "@/components/calendar/CalendarMonthView.vue";
 import CalendarWeekView from "@/components/calendar/CalendarWeekView.vue";
 import CalendarYearView from "@/components/calendar/CalendarYearView.vue";
 import CalendarEventDialog from "@/components/calendar/CalendarEventDialog.vue";
+import CalendarToolbar from "@/components/calendar/CalendarToolbar.vue";
+import CalendarDeleteDialog from "@/components/calendar/CalendarDeleteDialog.vue";
 
 // ===== Kho lưu trữ (Store) =====
 const spaceStore = useSpaceStore();
@@ -127,100 +128,22 @@ const executeDelete = async () => {
     isDeletingEvent.value = false;
   }
 };
-const quickJumpBtnClass = "px-2.5 py-1 text-xs font-medium rounded-md bg-white/5 text-gray-400 hover:bg-teal-600/20 hover:text-teal-400 transition-all border border-transparent hover:border-teal-500/30 whitespace-nowrap cursor-pointer";
 </script>
 
 <template>
   <div class="flex flex-col h-screen bg-transparent overflow-hidden">
-    <!-- Header -->
-    <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
-      <div class="flex items-center gap-3">
-        <SidebarTrigger class="-ml-1" />
-        <span class="font-semibold text-lg flex items-center gap-2">
-          <i class="pi pi-calendar text-teal-400"></i>
-          {{ currentSpace?.name }}
-        </span>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <!-- View Mode Buttons -->
-        <div class="flex rounded-lg overflow-hidden border border-white/20">
-          <button @click="viewMode = 'week'" :class="[
-            'px-3 py-1.5 text-sm font-medium transition-all duration-200',
-            viewMode === 'week' ? 'bg-teal-600 text-white' : 'hover:bg-white/10 text-gray-300',
-          ]">
-            Tuần
-          </button>
-          <button @click="viewMode = 'month'" :class="[
-            'px-3 py-1.5 text-sm font-medium transition-all duration-200',
-            viewMode === 'month' ? 'bg-teal-600 text-white' : 'hover:bg-white/10 text-gray-300',
-          ]">
-            Tháng
-          </button>
-          <button @click="viewMode = 'year'" :class="[
-            'px-3 py-1.5 text-sm font-medium transition-all duration-200',
-            viewMode === 'year' ? 'bg-teal-600 text-white' : 'hover:bg-white/10 text-gray-300',
-          ]">
-            Năm
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Navigation Bar -->
-    <div class="flex items-center justify-between px-4 py-2 border-b border-white/10">
-      <div class="flex items-center gap-2">
-        <button @click="goPrev"
-          class="p-2 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors text-gray-300">
-          <i class="pi pi-chevron-left"></i>
-        </button>
-        <button @click="goToday"
-          class="px-3 py-1.5 text-sm rounded-lg bg-teal-600/20 text-teal-400 hover:bg-teal-600/30 transition-colors font-medium min-w-[90px]">
-          {{ relativeTimeText }}
-        </button>
-        <button @click="goNext"
-          class="p-2 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors text-gray-300">
-          <i class="pi pi-chevron-right"></i>
-        </button>
-      </div>
-      <span class="text-lg font-semibold text-white">{{ headerTitle }}</span>
-      <button @click="openCreateDialog"
-        class="px-4 py-1.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium flex items-center gap-1.5">
-        <i class="pi pi-plus"></i>
-        Thêm sự kiện
-      </button>
-    </div>
-
-    <!-- Quick Navigation Bar -->
-    <div class="flex items-center gap-4 px-4 py-2 border-b border-white/10 bg-black/10 overflow-x-auto no-scrollbar scroll-smooth">
-      <!-- Week Group -->
-      <div class="flex items-center gap-1.5 shrink-0 px-2 py-1 rounded-lg bg-teal-500/5 border border-teal-500/10">
-        <span class="text-[10px] font-bold text-teal-500/70 uppercase tracking-widest mr-1">Tuần</span>
-        <div class="flex items-center gap-1">
-          <button @click="jumpDate(-1, 'week')" :class="quickJumpBtnClass">Tuần trước</button>
-          <button @click="jumpDate(1, 'week')" :class="quickJumpBtnClass">Tuần sau</button>
-          <button @click="jumpDate(2, 'week')" :class="quickJumpBtnClass">2 tuần sau</button>
-        </div>
-      </div>
-
-      <!-- Month Group -->
-      <div class="flex items-center gap-1.5 shrink-0 px-2 py-1 rounded-lg bg-teal-500/5 border border-teal-500/10">
-        <span class="text-[10px] font-bold text-teal-500/70 uppercase tracking-widest mr-1">Tháng</span>
-        <div class="flex items-center gap-1">
-          <button @click="jumpDate(-1, 'month')" :class="quickJumpBtnClass">Tháng trước</button>
-          <button @click="jumpDate(1, 'month')" :class="quickJumpBtnClass">Tháng sau</button>
-        </div>
-      </div>
-
-      <!-- Year Group -->
-      <div class="flex items-center gap-1.5 shrink-0 px-2 py-1 rounded-lg bg-teal-500/5 border border-teal-500/10">
-        <span class="text-[10px] font-bold text-teal-500/70 uppercase tracking-widest mr-1">Năm</span>
-        <div class="flex items-center gap-1">
-          <button @click="jumpDate(-1, 'year')" :class="quickJumpBtnClass">Năm trước</button>
-          <button @click="jumpDate(1, 'year')" :class="quickJumpBtnClass">Năm sau</button>
-        </div>
-      </div>
-    </div>
+    <!-- Component quản lý thanh công cụ -->
+    <CalendarToolbar
+      v-model:view-mode="viewMode"
+      :current-space-name="currentSpace?.name"
+      :header-title="headerTitle"
+      :relative-time-text="relativeTimeText"
+      @go-prev="goPrev"
+      @go-next="goNext"
+      @go-today="goToday"
+      @jump-date="jumpDate"
+      @open-create-dialog="openCreateDialog"
+    />
 
     <!-- Main Content -->
     <div class="flex-1 overflow-hidden flex relative">
@@ -243,42 +166,13 @@ const quickJumpBtnClass = "px-2.5 py-1 text-xs font-medium rounded-md bg-white/5
     <CalendarEventDialog v-model:show="showDialog" :is-editing="isEditing" :initial-data="initialFormData"
       :check-conflicts="checkConflicts" :editing-event-id="editingEventId" @save="handleSaveEvent" />
 
-    <!-- Modal Xóa Sự Kiện -->
-    <Teleport to="body">
-      <div v-if="showDeleteEventDialog" class="fixed inset-0 z-50 flex items-center justify-center">
-        <!-- Overlay -->
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showDeleteEventDialog = false"></div>
-
-        <!-- Content -->
-        <div class="relative bg-zinc-900 rounded-xl border border-red-500/20 w-full max-w-sm mx-4 p-5 shadow-2xl">
-          <h3 class="text-lg font-semibold text-white mb-2 flex items-center gap-2">
-            <span class="text-red-500"><i class="pi pi-trash"></i></span>
-            Xóa Sự Kiện
-          </h3>
-
-          <p class="text-sm text-gray-400 mb-6">
-            Bạn có chắc chắn muốn xóa sự kiện "<span class="text-gray-200 font-medium">{{ eventToDelete?.title
-              }}</span>" không?
-            Hành động này không thể hoàn tác.
-          </p>
-
-          <div class="flex justify-end gap-2">
-            <button type="button" @click="showDeleteEventDialog = false"
-              class="px-4 py-2 rounded-lg text-sm text-gray-300 hover:bg-white/10 transition-colors"
-              :disabled="isDeletingEvent">
-              Hủy
-            </button>
-            <button @click="executeDelete"
-              class="px-4 py-2 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-              :disabled="isDeletingEvent">
-              <span v-if="isDeletingEvent"
-                class="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></span>
-              Xoá sự kiện
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+    <!-- Modal Xóa Sự Kiện đã được trích xuất -->
+    <CalendarDeleteDialog
+      v-model:show="showDeleteEventDialog"
+      :event-to-delete="eventToDelete"
+      :is-deleting-event="isDeletingEvent"
+      @execute-delete="executeDelete"
+    />
   </div>
 </template>
 
