@@ -38,8 +38,7 @@ export function useZego({
   const isVideoStream = (streamID: string) => streamID.startsWith("video_");
 
   const playNotificationSound = (type: "join" | "leave") => {
-    const audio = new Audio(`/assets/sounds/${type}Sound.mp3`);
-    audio.volume = 0.5;
+    const audio = new Audio(`/assets/sounds/${type}Sound.wav`);
     audio.play().catch((err) => {
       // Trình duyệt thường chặn tự động phát âm thanh nếu user chưa tương tác với trang
       console.warn("Audio play blocked:", err);

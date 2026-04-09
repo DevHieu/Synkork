@@ -11,6 +11,7 @@ import { Settings, Users, Trash2 } from "lucide-vue-next";
 import InfoTab from "./InfoTab.vue";
 import MembersTab from "./MembersTab.vue";
 import DeleteTab from "./DeleteTab.vue";
+import { useRoomMemberStore } from "@/stores/roomMemberStore";
 
 const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{
@@ -24,15 +25,35 @@ const handleClose = () => {
 const roomStore = useRoomsStore();
 const { currentRoom } = storeToRefs(roomStore);
 
+const roomMemberStore = useRoomMemberStore();
+const { canManage, isOwner } = storeToRefs(roomMemberStore);
+
 // Tabs
 type Tab = "info" | "members" | "danger";
 const activeTab = ref<Tab>("info");
 
-const tabs: { key: Tab; label: string; icon: any }[] = [
-  { key: "info", label: "Thông tin", icon: Settings },
-  { key: "members", label: "Thành viên", icon: Users },
-  { key: "danger", label: "Nguy hiểm", icon: Trash2 },
-];
+const tabs = computed(() =>
+  [
+    {
+      key: "info" as Tab,
+      label: "Thông tin",
+      icon: Settings,
+      show: canManage.value,
+    },
+    {
+      key: "members" as Tab,
+      label: "Thành viên",
+      icon: Users,
+      show: canManage.value,
+    },
+    {
+      key: "danger" as Tab,
+      label: "Nguy hiểm",
+      icon: Trash2,
+      show: isOwner.value,
+    },
+  ].filter((t) => t.show),
+);
 </script>
 
 <template>
@@ -79,18 +100,24 @@ const tabs: { key: Tab; label: string; icon: any }[] = [
 
         <!-- Content -->
         <div class="flex-1 overflow-y-auto px-6 py-4">
-          <!-- TAB: THÔNG TIN -->
-          <div v-if="activeTab === 'info'" class="flex flex-col gap-5">
+          <div
+            v-if="activeTab === 'info' && canManage"
+            class="flex flex-col gap-5"
+          >
             <InfoTab :room="currentRoom" />
           </div>
 
-          <!-- TAB: THÀNH VIÊN -->
-          <div v-if="activeTab === 'members'" class="flex flex-col gap-3">
-            <MembersTab />
+          <div
+            v-if="activeTab === 'members' && canManage"
+            class="flex flex-col gap-3"
+          >
+            <MembersTab :roomId="currentRoom?.id" />
           </div>
 
-          <!-- TAB: NGUY HIỂM -->
-          <div v-if="activeTab === 'danger'" class="flex flex-col gap-5">
+          <div
+            v-if="activeTab === 'danger' && isOwner"
+            class="flex flex-col gap-5"
+          >
             <DeleteTab
               :roomName="currentRoom?.name ?? ''"
               @delete="handleClose"
