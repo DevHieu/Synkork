@@ -12,7 +12,7 @@ export function zegoUtils(participants: Ref<Map<string, Participant>>) {
   // Hàm này để tạo 1 cái element để zego có thể gắn stream vào
   // Nhưng khi tạo sẽ cho ẩn để nó không hiện ngay. Khi nào cần hiện thì mới chỉnh css lại để hiện
   // Trường hợp lúc xài (share màn hình, ...)
-  const ensureHiddenContainer = (id: string): HTMLElement => {
+  const createHiddenContainer = (id: string): HTMLElement => {
     let el = document.getElementById(id);
     if (!el) {
       el = document.createElement("div");
@@ -48,7 +48,7 @@ export function zegoUtils(participants: Ref<Map<string, Participant>>) {
 
   return {
     playNotificationSound,
-    ensureHiddenContainer,
+    ensureHiddenContainer: createHiddenContainer,
     clearHiddenContainer,
     findUserByStreamID,
   };

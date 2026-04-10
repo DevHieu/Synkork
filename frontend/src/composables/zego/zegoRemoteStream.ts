@@ -35,6 +35,11 @@ export function zegoRemoteStream(
       .play(`remote-video-${userID}`);
 
     // Cái này sẽ gửi 1 cái dispatchEvent và bên vue sẽ nhận được cái event này
+    window.dispatchEvent(
+      new CustomEvent("zego:stream-ready", {
+        detail: { containerId: `remote-video-${userID}` },
+      }),
+    );
   };
 
   const playRemoteAudioStream = async (streamId: string) => {
@@ -68,6 +73,13 @@ export function zegoRemoteStream(
     state.zg
       .createRemoteStreamView(screenRemoteStream)
       .play(`remote-screen-${userId}`);
+
+    // Cái này sẽ gửi 1 cái dispatchEvent và bên vue sẽ nhận được cái event này
+    window.dispatchEvent(
+      new CustomEvent("zego:stream-ready", {
+        detail: { containerId: `remote-screen-${userId}` },
+      }),
+    );
   };
 
   // Như tên hàm đó, cái này dùng để dừng mấy cái remoteStream

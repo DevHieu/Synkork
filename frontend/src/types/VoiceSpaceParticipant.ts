@@ -10,3 +10,14 @@ export interface Participant {
   isLocal: boolean;
   avatarUrl?: string;
 }
+
+export interface VoiceItemType {
+  id: string;
+  type: "screen" | "participant";
+  userID: string;
+  isLocal: boolean;
+  userName: string;
+  videoOn: boolean;
+  micOn: boolean;
+  audioOn: boolean;
+}

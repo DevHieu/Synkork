@@ -46,6 +46,13 @@ export function zegoLocalStream(
         me.videoStreamID = state.localVideoStreamID;
         participants.value = new Map(participants.value);
       }
+
+      // Cái này sẽ gửi 1 cái dispatchEvent và bên vue sẽ nhận được cái event này
+      window.dispatchEvent(
+        new CustomEvent("zego:stream-ready", {
+          detail: { containerId: `local-video-container` },
+        }),
+      );
     } catch (e) {
       console.warn("Không mở được cam:", e);
       videoOn.value = false;
@@ -117,6 +124,13 @@ export function zegoLocalStream(
         me.screenStreamID = state.localScreenStreamID;
         participants.value = new Map(participants.value);
       }
+
+      // Cái này sẽ gửi 1 cái dispatchEvent và bên vue sẽ nhận được cái event này
+      window.dispatchEvent(
+        new CustomEvent("zego:stream-ready", {
+          detail: { containerId: `screen-sharing-container` },
+        }),
+      );
     } catch (e) {
       console.warn("Không mở được screen:", e);
       screenOn.value = false;
