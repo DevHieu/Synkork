@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, nextTick, watch, onMounted, onUnmounted } from "vue";
-import { socketService } from "@/services/websocket/socketService";
 import { chatSocket } from "@/services/websocket/chatSocket";
 
 import { getChatFromSpaceId } from "@/services/chatService";
@@ -27,8 +26,9 @@ const messages = ref<Message[]>([]);
 const newMessage = ref("");
 const messageContainer = ref<HTMLElement | null>(null);
 
-const size = 50;
-const page = 0;
+const size = 20;
+const hasMore = ref(false);
+const lastCursor = ref<string | null>("");
 
 const isSocketConnected = ref(false);
 
@@ -56,17 +56,32 @@ watch(
   { immediate: true },
 );
 
-const joinSpace = (spaceId: string) => {
+const joinSpace = async (spaceId: string) => {
   if (!spaceId) return;
+
+  if (currentSpace.value?.id && currentSpace.value.id !== spaceId) {
+    chatSocket.leaveSpace(currentSpace.value.id);
+  }
+
+  await clearAll();
+  await fetchMessages(spaceId, null);
+  await subscribeToChat(spaceId);
+  await scrollToBottom();
+};
+
+const clearAll = async () => {
   messages.value = [];
-  fetchMessages(spaceId);
-  subscribeToChat(spaceId);
+  newMessage.value = "";
+  messageContainer.value = null;
+  lastCursor.value = null;
+  hasMore.value = false;
+
+  console.log(messages.value);
 };
 
 const subscribeToChat = (spaceId: string) => {
   chatSocket.subscribeMessages(spaceId, (msg: Message) => {
     messages.value.push(msg);
-    scrollToBottom();
   });
 
   chatSocket.subscribeDelete(spaceId, (messageId: string) => {
@@ -81,10 +96,15 @@ const subscribeToChat = (spaceId: string) => {
   });
 };
 
-const fetchMessages = async (id: string) => {
-  const chatResponse = await getChatFromSpaceId(id, page, size);
-  messages.value = chatResponse.data.content.reverse();
-  scrollToBottom();
+const fetchMessages = async (id: string, cursor: string | null) => {
+  const chatResponse = await getChatFromSpaceId(id, size, cursor);
+  messages.value = [...chatResponse.data.messages.reverse(), ...messages.value];
+
+  console.log(chatResponse.data);
+  console.log(id, cursor);
+
+  hasMore.value = chatResponse.data.hasMore;
+  if (hasMore.value) lastCursor.value = chatResponse.data.nextCursor;
 };
 
 const handleSendMessage = () => {
@@ -104,6 +124,10 @@ const scrollToBottom = async () => {
     messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
   }
 };
+
+const loadMore = async () => {
+  await fetchMessages(currentSpace.value.id, lastCursor.value);
+};
 </script>
 
 <template>
@@ -117,7 +141,14 @@ const scrollToBottom = async () => {
 
     <div class="flex flex-1 min-w-0 overflow-hidden">
       <div class="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <MessageList :messages="messages" :container-ref="setContainerRef" />
+        <MessageList
+          :key="currentSpace?.id"
+          :messages="messages"
+          :hasMore="hasMore"
+          :container-ref="setContainerRef"
+          :space-name="currentSpace?.name ?? ''"
+          @loadMore="loadMore"
+        />
         <MessageInput v-model="newMessage" @send="handleSendMessage" />
       </div>
 

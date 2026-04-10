@@ -2,9 +2,13 @@ import axiosClient from "@/lib/axiosClient";
 
 export const getChatFromSpaceId = async (
   spaceId: string,
-  page: number,
-  size: number
+  size: number,
+  cursor: string | null,
 ) => {
-  const res = await axiosClient.get(`/api/messages/${spaceId}?page=${page}&size=${size}`);
-  return res;
+  const params = new URLSearchParams({ size: size.toString() });
+  if (cursor !== null) {
+    params.append("cursor", cursor);
+  }
+
+  return axiosClient.get(`/api/messages/${spaceId}?${params.toString()}`);
 };
