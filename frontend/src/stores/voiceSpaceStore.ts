@@ -190,6 +190,30 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     return Array.from(participants.value.values());
   };
 
+  const getAudioTracks = (): MediaStreamTrack[] => {
+    const tracks: MediaStreamTrack[] = [];
+
+    // Remote audio từ div#audio-players
+    const audioPlayers = document.getElementById("audio-players");
+    if (audioPlayers) {
+      audioPlayers.querySelectorAll("audio, video").forEach((el) => {
+        const mediaEl = el as HTMLMediaElement;
+        if (mediaEl.srcObject instanceof MediaStream) {
+          mediaEl.srcObject.getAudioTracks().forEach((t) => tracks.push(t));
+        }
+      });
+    }
+
+    // Local mic
+    if (zegoState.localAudioStream) {
+      zegoState.localAudioStream
+        .getAudioTracks()
+        .forEach((t: MediaStreamTrack) => tracks.push(t));
+    }
+
+    return tracks;
+  };
+
   return {
     currentSpaceId,
     participants,
@@ -209,5 +233,6 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     toggleShareScreen,
     replayAllStreamsToDOM,
     getParticipantsForSpace,
+    getAudioTracks,
   };
 });

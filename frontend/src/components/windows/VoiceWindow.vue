@@ -5,12 +5,12 @@ import type { VoiceItemType } from "@/types/VoiceSpaceParticipant";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, ref, nextTick, watch } from "vue";
 import { useRoute } from "vue-router";
-import SidebarTrigger from "../ui/sidebar/SidebarTrigger.vue";
-import { FileText } from "lucide-vue-next";
+
 import VoiceFocusItem from "../voice/VoiceFocusItem.vue";
 import VoiceStripFocus from "../voice/VoiceStripFocus.vue";
 import VoiceGrid from "../voice/VoiceGrid.vue";
 import ControlBar from "../voice/ControlBar.vue";
+import VoiceHeader from "../voice/VoiceHeader.vue";
 
 const route = useRoute();
 const spaceId = route.params.spaceId as string;
@@ -203,23 +203,7 @@ watch(
   <div
     class="flex flex-col h-full bg-background text-foreground select-none overflow-hidden"
   >
-    <!-- ── Top Bar ── -->
-    <div
-      class="flex items-center justify-between px-4 py-3 border-b border-border shrink-0"
-    >
-      <div class="flex items-center gap-2">
-        <SidebarTrigger class="-ml-1" />
-        <span class="font-semibold text-base"
-          >🔊 {{ route.params.spaceName ?? "Voice" }}</span
-        >
-      </div>
-      <button
-        class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors border border-border"
-      >
-        <FileText class="h-3.5 w-3.5" />
-        Tóm tắt cuộc họp
-      </button>
-    </div>
+    <VoiceHeader />
 
     <!-- ── Video Area ── -->
     <div class="flex-1 min-h-0 p-3 overflow-hidden flex flex-col gap-3">
