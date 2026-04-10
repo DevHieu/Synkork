@@ -20,8 +20,9 @@ import {
 defineProps<{ collapsed?: boolean }>();
 
 const voiceSpaceStore = useVoiceSpaceStore();
-const { micOn, audioOn, isInRoom, isJoining } = storeToRefs(voiceSpaceStore);
-const { toggleMic, toggleAudio } = voiceSpaceStore;
+const { micOn, audioOn, isInRoom, isJoining, screenOn } =
+  storeToRefs(voiceSpaceStore);
+const { toggleMic, toggleAudio, toggleShareScreen } = voiceSpaceStore;
 
 const leaveRoom = async () => {
   await voiceSpaceStore.leaveRoom();
@@ -124,7 +125,7 @@ const shareScreen = () => {
               {{ audioOn ? "Tắt tiếng" : "Bật tiếng" }}
             </button>
             <button
-              @click="shareScreen"
+              @click="toggleShareScreen"
               class="flex items-center gap-2 px-2 py-1.5 rounded-md text-xs hover:bg-muted transition-colors w-full"
             >
               <MonitorUp class="h-4.5 w-4.5" />

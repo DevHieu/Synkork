@@ -29,7 +29,7 @@ public class JwtService {
 
     public String generateToken(String userId, String username, String type) {
         long duration = type.equals("ACCESS")
-                ? TimeUnit.MINUTES.toMillis(15) // Access key hết hạn sau 15p
+                ? TimeUnit.SECONDS.toMillis(15) // Access key hết hạn sau 15p
                 : TimeUnit.DAYS.toMillis(7); // Refresh key thì 7 ngày
 
         Date now = new Date();
