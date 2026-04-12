@@ -13,8 +13,8 @@ import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class CalendarEventService {
@@ -38,7 +38,7 @@ public class CalendarEventService {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
-    // Broadcast thay đổi lịch qua WebSocket
+    // Đồng bộ thay đổi lịch theo thời gian thực
     private void broadcastCalendarUpdate(String spaceId, String action, CalendarEventDTO event) {
         Map<String, Object> payload = new HashMap<>();
         payload.put("action", action);
@@ -48,13 +48,19 @@ public class CalendarEventService {
 
     // Lấy tất cả event theo spaceId
     public List<CalendarEventDTO> getEventsBySpaceId(UUID spaceId) {
-        List<CalendarEventEntity> events = calendarEventRepository.findBySpaceId(spaceId);
-        return events.stream().map(CalendarEventDTO::new).collect(Collectors.toList());
+        List<CalendarEventEntity> events = calendarEventRepository
+                .findBySpaceId(Objects.requireNonNull(spaceId, "SpaceID null"));
+        List<CalendarEventDTO> result = new java.util.ArrayList<>();
+        for (int i = 0; i < events.size(); i++) {
+            result.add(new CalendarEventDTO(events.get(i)));
+        }
+        return result;
     }
 
-    // Lấy event theo khoảng thời gian (dùng cho tuần/tháng/năm)
+    // Danh sách sự kiện trong khoảng thời gian
     public List<CalendarEventDTO> getEventsByDateRange(UUID spaceId, LocalDate start, LocalDate end) {
-        List<CalendarEventEntity> allSpaceEvents = calendarEventRepository.findBySpaceId(spaceId);
+        List<CalendarEventEntity> allSpaceEvents = calendarEventRepository
+                .findBySpaceId(Objects.requireNonNull(spaceId, "SpaceID null"));
         List<CalendarEventDTO> expandedResults = new java.util.ArrayList<>();
 
         for (CalendarEventEntity event : allSpaceEvents) {
@@ -127,7 +133,7 @@ public class CalendarEventService {
         return null;
     }
 
-    // Lấy event theo ngày cụ thể (Bao gồm cả các sự kiện lặp)
+    // Lấy sự kiện theo ngày cụ thể (bao gồm lịch lặp)
     public List<CalendarEventDTO> getEventsByDate(UUID spaceId, LocalDate date) {
         return getEventsByDateRange(spaceId, date, date);
     }
@@ -149,15 +155,17 @@ public class CalendarEventService {
     public CalendarEventDTO createEvent(CalendarEventDTO eventRequest, String creatorId) {
         validateEventTime(eventRequest);
 
-        UserEntity creator = userRepository.findById(UUID.fromString(creatorId))
+        // Null check cho IDE
+        UserEntity creator = userRepository.findById(Objects.requireNonNull(UUID.fromString(creatorId)))
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         CalendarEventEntity calendarEvent = new CalendarEventEntity();
         mapDtoToEntity(eventRequest, calendarEvent);
         calendarEvent.setCreatedBy(creator);
-        calendarEvent.setSpace(spaceRepository.getReferenceById(UUID.fromString(eventRequest.getSpaceId())));
+        calendarEvent.setSpace(
+                spaceRepository.getReferenceById(Objects.requireNonNull(UUID.fromString(eventRequest.getSpaceId()))));
 
-        CalendarEventEntity savedEvent = calendarEventRepository.save(calendarEvent);
+        CalendarEventEntity savedEvent = calendarEventRepository.save(Objects.requireNonNull(calendarEvent));
         CalendarEventDTO result = new CalendarEventDTO(savedEvent);
         broadcastCalendarUpdate(eventRequest.getSpaceId(), "CREATED", result);
         return result;
@@ -176,7 +184,8 @@ public class CalendarEventService {
 
     // Cập nhật event (kiểm tra quyền: creator hoặc allowEditAll)
     public CalendarEventDTO updateEvent(UUID eventId, CalendarEventDTO eventRequest, String userId) {
-        CalendarEventEntity calendarEvent = calendarEventRepository.findById(eventId)
+        // Null check cho IDE
+        CalendarEventEntity calendarEvent = calendarEventRepository.findById(Objects.requireNonNull(eventId))
                 .orElseThrow(() -> new IllegalArgumentException("Event not found"));
 
         if (!hasPermissionToEdit(calendarEvent, UUID.fromString(userId))) {
@@ -185,7 +194,7 @@ public class CalendarEventService {
 
         mapDtoToEntity(eventRequest, calendarEvent);
 
-        CalendarEventEntity savedEvent = calendarEventRepository.save(calendarEvent);
+        CalendarEventEntity savedEvent = calendarEventRepository.save(Objects.requireNonNull(calendarEvent));
         CalendarEventDTO result = new CalendarEventDTO(savedEvent);
         broadcastCalendarUpdate(result.getSpaceId(), "UPDATED", result);
         return result;
@@ -197,7 +206,8 @@ public class CalendarEventService {
 
     // Xóa event (chỉ creator)
     public void deleteEvent(UUID eventId, String userId) {
-        CalendarEventEntity entity = calendarEventRepository.findById(eventId)
+        // Null check cho IDE
+        CalendarEventEntity entity = calendarEventRepository.findById(Objects.requireNonNull(eventId))
                 .orElseThrow(() -> new IllegalArgumentException("Event not found"));
 
         UUID userUUID = UUID.fromString(userId);
@@ -215,12 +225,20 @@ public class CalendarEventService {
     // Kiểm tra sự kiện trùng giờ
     public List<CalendarEventDTO> findConflicts(UUID spaceId, LocalDate date, LocalTime startTime, LocalTime endTime,
             UUID excludeEventId) {
-        // Kiểm tra xung đột bằng cách expand toàn bộ sự kiện của ngày đó (bao gồm cả các bản ghi lặp)
+        // Liệt kê mọi sự kiện trong ngày (bao gồm sự kiện lặp) để tìm trùng lặp
         List<CalendarEventDTO> dayEvents = getEventsByDateRange(spaceId, date, date);
+        List<CalendarEventDTO> conflicts = new java.util.ArrayList<>();
 
-        return dayEvents.stream()
-                .filter(e -> excludeEventId == null || !e.getId().equals(excludeEventId))
-                .filter(e -> e.getStartTime().isBefore(endTime) && e.getEndTime().isAfter(startTime))
-                .collect(Collectors.toList());
+        for (int i = 0; i < dayEvents.size(); i++) {
+            CalendarEventDTO event = dayEvents.get(i);
+            if (excludeEventId != null && event.getId().equals(excludeEventId)) {
+                continue;
+            }
+            if (event.getStartTime().isBefore(endTime) && event.getEndTime().isAfter(startTime)) {
+                conflicts.add(event);
+            }
+        }
+
+        return conflicts;
     }
 }

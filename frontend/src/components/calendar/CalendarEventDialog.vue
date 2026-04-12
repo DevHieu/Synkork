@@ -7,9 +7,6 @@ import CalendarWarningDialog from "./CalendarWarningDialog.vue";
 
 dayjs.locale("vi");
 
-// Khởi tạo phông chữ tiếng Việt cho dayjs
-dayjs.locale("vi");
-
 const props = defineProps<{
   show: boolean;
   isEditing: boolean;
@@ -22,6 +19,8 @@ const props = defineProps<{
     recurrenceType?: string;
     recurrenceEndDate?: string;
     allowEditAll: boolean;
+    attendees?: string[];
+    attachments?: { name: string; size: number; file?: File }[];
   };
   checkConflicts: (date: string, start: string, end: string, excludeId?: string) => Promise<CalendarEvent[]>;
   editingEventId?: string;
@@ -40,6 +39,168 @@ let conflictDebounce: ReturnType<typeof setTimeout> | null = null;
 const showWarning = ref(false);
 const warningMessage = ref("");
 
+// Cấu hình định dạng giờ 24h/12h
+const timeFormat = ref<'24h' | '12h'>('24h');
+
+// Dữ liệu options giờ/phút
+const hours24 = ref<string[]>([]);
+for (let i = 0; i <= 23; i++) {
+  let val = i.toString();
+  if (val.length < 2) val = '0' + val;
+  hours24.value.push(val);
+}
+
+const hours12 = ref<string[]>([]);
+for (let i = 1; i <= 12; i++) {
+  let val = i.toString();
+  if (val.length < 2) val = '0' + val;
+  hours12.value.push(val);
+}
+
+const minutes = ref<string[]>([]);
+for (let i = 0; i <= 59; i++) {
+  let val = i.toString();
+  if (val.length < 2) val = '0' + val;
+  minutes.value.push(val);
+}
+
+// Biến nội bộ để chọn trên giao diện
+const startHour = ref("09");
+const startMinute = ref("00");
+const startAmPm = ref("AM");
+
+const endHour = ref("10");
+const endMinute = ref("00");
+const endAmPm = ref("AM");
+
+// Parse chuỗi "HH:mm" thành dữ liệu hiển thị
+const parseTimeString = (timeStr: string | undefined, isStart: boolean) => {
+  if (!timeStr) return;
+  const parts = timeStr.split(':');
+  if (parts.length < 2) return;
+  
+  const hStr = parts[0];
+  const mStr = parts[1];
+  
+  // Kiểm tra an toàn truy cập mảng
+  if (!hStr || !mStr) return; 
+  
+  let h = parseInt(hStr, 10);
+  
+  let ampm = 'AM';
+  let h12 = h;
+  if (h >= 12) {
+    ampm = 'PM';
+    if (h > 12) h12 = h - 12;
+  }
+  if (h === 0) h12 = 12;
+  
+  let h24Str = h.toString();
+  if (h24Str.length < 2) h24Str = '0' + h24Str;
+  
+  let h12Str = h12.toString();
+  if (h12Str.length < 2) h12Str = '0' + h12Str;
+
+  if (isStart) {
+    startMinute.value = mStr;
+    startAmPm.value = ampm;
+    if (timeFormat.value === '24h') {
+      startHour.value = h24Str;
+    } else {
+      startHour.value = h12Str;
+    }
+  } else {
+    endMinute.value = mStr;
+    endAmPm.value = ampm;
+    if (timeFormat.value === '24h') {
+      endHour.value = h24Str;
+    } else {
+      endHour.value = h12Str;
+    }
+  }
+};
+
+// Gộp giá trị chọn thành định dạng "HH:mm"
+const updateTime = (field: 'startTime' | 'endTime', hour: string, minute: string, ampm: string) => {
+  if (timeFormat.value === '24h') {
+    formData.value[field] = `${hour}:${minute}`;
+  } else {
+    let h = parseInt(hour, 10);
+    if (ampm === 'PM' && h < 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+    
+    let hStr = h.toString();
+    if (hStr.length < 2) hStr = '0' + hStr;
+    formData.value[field] = `${hStr}:${minute}`;
+  }
+};
+
+// Đồng bộ UI với state formData
+watch([startHour, startMinute, startAmPm], () => updateTime('startTime', startHour.value, startMinute.value, startAmPm.value));
+watch([endHour, endMinute, endAmPm], () => updateTime('endTime', endHour.value, endMinute.value, endAmPm.value));
+
+// Parse lại hiển thị khi đổi mode giờ
+watch(timeFormat, () => {
+  parseTimeString(formData.value.startTime, true);
+  parseTimeString(formData.value.endTime, false);
+});
+// Quản lý người tham gia và tệp đính kèm
+const attendeeInput = ref("");
+const attendees = ref<string[]>(props.initialData.attendees || []);
+
+const addAttendee = () => {
+  const email = attendeeInput.value.trim();
+  // Validate format email
+  if (email && /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+    // Kiểm tra trùng lặp email
+    let isExist = false;
+    for (let i = 0; i < attendees.value.length; i++) {
+        if (attendees.value[i] === email) {
+            isExist = true;
+            break;
+        }
+    }
+    if (!isExist) {
+        attendees.value.push(email);
+    }
+    attendeeInput.value = "";
+  }
+};
+
+const removeAttendee = (index: number) => {
+  attendees.value.splice(index, 1);
+};
+
+interface Attachment {
+  name: string;
+  size: number;
+  file?: File;
+}
+const attachments = ref<Attachment[]>(props.initialData.attachments || []);
+
+const handleFileUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (!target.files) return;
+  
+  // Thêm file vào danh sách đính kèm
+  for (let i = 0; i < target.files.length; i++) {
+    const file = target.files[i];
+    if (!file) continue; // Bỏ qua nếu null/undefined do Type mảng
+    
+    attachments.value.push({
+      name: file.name,
+      size: file.size,
+      file: file
+    });
+  }
+  target.value = "";
+};
+
+const removeAttachment = (index: number) => {
+  attachments.value.splice(index, 1);
+};
+
+
 // Reset dữ liệu khi mở dialog
 watch(
   () => props.show,
@@ -47,6 +208,14 @@ watch(
     if (newVal) {
       formData.value = { ...props.initialData };
       conflictEvents.value = [];
+      
+      attendeeInput.value = "";
+      attendees.value = props.initialData.attendees ? [...props.initialData.attendees] : [];
+      attachments.value = props.initialData.attachments ? [...props.initialData.attachments] : [];
+
+      // Khởi tạo hiển thị giờ
+      parseTimeString(formData.value.startTime, true);
+      parseTimeString(formData.value.endTime, false);
     }
   }
 );
@@ -90,7 +259,11 @@ const handleSubmit = () => {
     }
   }
 
-  emit("save", formData.value);
+  emit("save", { 
+    ...formData.value, 
+    attendees: attendees.value, 
+    attachments: attachments.value 
+  });
 };
 
 // Tạo văn bản mô tả chế độ lặp lại
@@ -175,9 +348,32 @@ const recurrenceSummary = computed(() => {
               ></textarea>
             </div>
 
+            <!-- Định dạng 24h hoặc 12h Toggle -->
+            <div>
+              <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Định dạng giờ</label>
+              <div class="inline-flex bg-black/20 p-1 rounded-xl border border-white/5 gap-1.5">
+                <button
+                  type="button"
+                  @click="timeFormat = '24h'"
+                  :class="[
+                    'px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300',
+                    timeFormat === '24h' ? 'bg-teal-600 text-white shadow-lg shadow-teal-500/20' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+                  ]"
+                >24h</button>
+                <button
+                  type="button"
+                  @click="timeFormat = '12h'"
+                  :class="[
+                    'px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-300',
+                    timeFormat === '12h' ? 'bg-teal-600 text-white shadow-lg shadow-teal-500/20' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+                  ]"
+                >12h (AM/PM)</button>
+              </div>
+            </div>
+
             <!-- Date & Time Grid -->
-            <div class="grid grid-cols-2 gap-4">
-              <div class="col-span-2">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="md:col-span-2">
                 <label class="block text-sm text-gray-400 mb-1.5 font-medium">Ngày diễn ra *</label>
                 <input
                   v-model="formData.eventDate"
@@ -186,23 +382,41 @@ const recurrenceSummary = computed(() => {
                   class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 text-sm transition-all"
                 />
               </div>
+              
+              <!-- Component Giờ bắt đầu -->
               <div>
                 <label class="block text-sm text-gray-400 mb-1.5 font-medium">Giờ bắt đầu *</label>
-                <input
-                  v-model="formData.startTime"
-                  type="time"
-                  required
-                  class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 text-sm transition-all"
-                />
+                <div class="flex gap-2">
+                  <select v-model="startHour" class="bg-white/5 border border-white/10 rounded-lg px-2 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-teal-500/50 text-sm w-full custom-scrollbar">
+                    <option class="text-black" v-for="h in (timeFormat === '24h' ? hours24 : hours12)" :key="h" :value="h">{{ h }}</option>
+                  </select>
+                  <span class="text-white font-bold self-center">:</span>
+                  <select v-model="startMinute" class="bg-white/5 border border-white/10 rounded-lg px-2 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-teal-500/50 text-sm w-full custom-scrollbar">
+                    <option class="text-black" v-for="m in minutes" :key="m" :value="m">{{ m }}</option>
+                  </select>
+                  <select v-if="timeFormat === '12h'" v-model="startAmPm" class="bg-white/5 border border-white/10 rounded-lg px-2 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-teal-500/50 text-sm w-full">
+                    <option class="text-black" value="AM">AM</option>
+                    <option class="text-black" value="PM">PM</option>
+                  </select>
+                </div>
               </div>
+
+              <!-- Component Giờ kết thúc -->
               <div>
                 <label class="block text-sm text-gray-400 mb-1.5 font-medium">Giờ kết thúc *</label>
-                <input
-                  v-model="formData.endTime"
-                  type="time"
-                  required
-                  class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 text-sm transition-all"
-                />
+                <div class="flex gap-2">
+                  <select v-model="endHour" class="bg-white/5 border border-white/10 rounded-lg px-2 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-teal-500/50 text-sm w-full custom-scrollbar">
+                    <option class="text-black" v-for="h in (timeFormat === '24h' ? hours24 : hours12)" :key="h" :value="h">{{ h }}</option>
+                  </select>
+                  <span class="text-white font-bold self-center">:</span>
+                  <select v-model="endMinute" class="bg-white/5 border border-white/10 rounded-lg px-2 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-teal-500/50 text-sm w-full custom-scrollbar">
+                    <option class="text-black" v-for="m in minutes" :key="m" :value="m">{{ m }}</option>
+                  </select>
+                  <select v-if="timeFormat === '12h'" v-model="endAmPm" class="bg-white/5 border border-white/10 rounded-lg px-2 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-teal-500/50 text-sm w-full">
+                    <option class="text-black" value="AM">AM</option>
+                    <option class="text-black" value="PM">PM</option>
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -286,6 +500,61 @@ const recurrenceSummary = computed(() => {
                   <span class="text-[10px] italic">({{ c.startTime.substring(0, 5) }} - {{ c.endTime.substring(0, 5) }})</span>
                 </li>
               </ul>
+            </div>
+
+            <!-- Người tham gia (Attendees) -->
+            <div>
+              <label class="block text-sm text-gray-400 mb-1.5 font-medium">Người tham gia</label>
+              <div class="flex flex-col gap-2">
+                <div class="flex gap-2">
+                  <input
+                    v-model="attendeeInput"
+                    @keyup.enter="addAttendee"
+                    @keydown.enter.prevent
+                    type="text"
+                    placeholder="Nhập email và ấn Enter hoặc nút thêm..."
+                    class="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-all text-sm"
+                  />
+                  <button type="button" @click="addAttendee" class="bg-white/10 text-white px-3 py-2 rounded-lg hover:bg-white/20 transition-all">
+                    <i class="pi pi-plus"></i>
+                  </button>
+                </div>
+                <!-- Danh sách người tham gia -->
+                <div v-if="attendees.length > 0" class="flex flex-wrap gap-2 mt-1">
+                  <div v-for="(email, idx) in attendees" :key="idx" class="flex items-center gap-1.5 bg-teal-500/20 text-teal-300 px-2 py-1 rounded-md text-xs border border-teal-500/20">
+                    <span>{{ email }}</span>
+                    <button type="button" @click="removeAttendee(idx)" class="hover:text-white transition-colors">
+                      <i class="pi pi-times text-[10px]"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tệp đính kèm (Attachments) -->
+            <div>
+              <label class="block text-sm text-gray-400 mb-1.5 font-medium">Tệp đính kèm</label>
+              <div class="flex flex-col gap-2">
+                <label class="flex justify-center items-center w-full h-20 px-4 transition bg-white/5 border-2 border-white/10 border-dashed rounded-lg appearance-none cursor-pointer hover:border-teal-500/50 hover:bg-white/10 focus:outline-none">
+                  <span class="flex items-center space-x-2">
+                    <i class="pi pi-upload text-gray-400"></i>
+                    <span class="font-medium text-gray-400 text-sm">Nhấn để chọn tệp...</span>
+                  </span>
+                  <input type="file" multiple class="hidden" @change="handleFileUpload" />
+                </label>
+                <!-- Danh sách file đính kèm -->
+                <div v-if="attachments.length > 0" class="flex flex-col gap-1.5 mt-1">
+                  <div v-for="(file, idx) in attachments" :key="idx" class="flex items-center justify-between bg-black/20 p-2 rounded-lg border border-white/5 text-xs">
+                    <div class="flex items-center gap-2 truncate">
+                      <i class="pi pi-file text-gray-400"></i>
+                      <span class="text-gray-300 truncate">{{ file.name }}</span>
+                    </div>
+                    <button type="button" @click="removeAttachment(idx)" class="text-red-400/80 hover:text-red-400 px-2 shrink-0">
+                      <i class="pi pi-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- Allow Edit All -->

@@ -13,16 +13,16 @@ import CalendarEventDialog from "@/components/calendar/CalendarEventDialog.vue";
 import CalendarToolbar from "@/components/calendar/CalendarToolbar.vue";
 import CalendarDeleteDialog from "@/components/calendar/CalendarDeleteDialog.vue";
 
-// ===== Kho lưu trữ (Store) =====
+// Store state
 const spaceStore = useSpaceStore();
 const userStore = useUserStore();
 const { currentSpace } = storeToRefs(spaceStore);
 const { user } = storeToRefs(userStore);
 
-// Lấy ID người dùng hiện tại
+// Current user ID
 const currentUserId = computed(() => (user.value as any)?.id || "");
 
-// ===== Logic lịch (Composable) =====
+// Calendar logic
 const spaceIdRef = computed(() => currentSpace.value?.id);
 const {
   viewMode,
@@ -44,7 +44,7 @@ const {
   checkConflicts,
 } = useCalendar(spaceIdRef, currentUserId);
 
-// ===== Trạng thái Dialog thêm/sửa =====
+// Event modal state
 const showDialog = ref(false);
 const isEditing = ref(false);
 const editingEventId = ref<string | undefined>(undefined);
@@ -57,7 +57,7 @@ const initialFormData = ref({
   allowEditAll: false,
 });
 
-// Mở dialog tạo mới
+// Mở chức năng thêm sự kiện
 const openCreateDialog = () => {
   isEditing.value = false;
   editingEventId.value = undefined;
@@ -72,7 +72,7 @@ const openCreateDialog = () => {
   showDialog.value = true;
 };
 
-// Mở dialog chỉnh sửa
+// Mở chức năng sửa sự kiện
 const openEditDialog = (event: CalendarEvent) => {
   isEditing.value = true;
   editingEventId.value = event.id;
@@ -87,7 +87,7 @@ const openEditDialog = (event: CalendarEvent) => {
   showDialog.value = true;
 };
 
-// Lưu sự kiện (Tạo mới hoặc Cập nhật)
+// Submit lưu sự kiện
 const handleSaveEvent = async (data: any) => {
   try {
     if (isEditing.value && editingEventId.value) {
@@ -102,18 +102,18 @@ const handleSaveEvent = async (data: any) => {
   }
 };
 
-// ===== Trạng thái Xóa =====
+// Delete modal state
 const showDeleteEventDialog = ref(false);
 const eventToDelete = ref<CalendarEvent | null>(null);
 const isDeletingEvent = ref(false);
 
-// Xác nhận xóa
+// Chuẩn bị xoá sự kiện
 const handleDeleteEvent = (event: CalendarEvent) => {
   eventToDelete.value = event;
   showDeleteEventDialog.value = true;
 };
 
-// Thực hiện xóa
+// Submit xoá sự kiện
 const executeDelete = async () => {
   if (!eventToDelete.value) return;
   isDeletingEvent.value = true;

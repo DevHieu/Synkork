@@ -41,23 +41,37 @@ const monthDays = computed(() => {
   return days;
 });
 
+// Lấy danh sách sự kiện cho một ngày cụ thể
+const getEventsForDate = (date: dayjs.Dayjs) => {
+  const targetDate = date.format("YYYY-MM-DD");
+  const result: CalendarEvent[] = [];
+  
+  for (let i = 0; i < props.events.length; i++) {
+    const event = props.events[i];
+    if (event && event.eventDate === targetDate) {
+      result.push(event);
+    }
+  }
+  
+  result.sort((a, b) => a.startTime.localeCompare(b.startTime));
+  return result;
+};
+
 // Lấy danh sách sự kiện của ngày đang chọn
 const selectedDateEvents = computed(() => {
-  return props.events
-    .filter((e) => e.eventDate === props.selectedDate.format("YYYY-MM-DD"))
-    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+  return getEventsForDate(props.selectedDate);
 });
 
 // Kiểm tra xem ngày có sự kiện không
 const hasEvent = (date: dayjs.Dayjs) => {
-  return props.events.some((e) => e.eventDate === date.format("YYYY-MM-DD"));
-};
-
-// Lấy danh sách sự kiện cho một ngày cụ thể
-const getEventsForDate = (date: dayjs.Dayjs) => {
-  return props.events
-    .filter((e) => e.eventDate === date.format("YYYY-MM-DD"))
-    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+  const targetDate = date.format("YYYY-MM-DD");
+  for (let i = 0; i < props.events.length; i++) {
+    const event = props.events[i];
+    if (event && event.eventDate === targetDate) {
+      return true;
+    }
+  }
+  return false;
 };
 
 // Các hàm kiểm tra trạng thái ngày

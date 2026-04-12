@@ -29,9 +29,18 @@ const weekDays = computed(() => {
 
 // Lấy danh sách sự kiện của một ngày
 const getEventsForDate = (date: dayjs.Dayjs) => {
-  return props.events
-    .filter((e) => e.eventDate === date.format("YYYY-MM-DD"))
-    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+  const targetDate = date.format("YYYY-MM-DD");
+  const result: CalendarEvent[] = [];
+  
+  for (let i = 0; i < props.events.length; i++) {
+    const event = props.events[i];
+    if (event && event.eventDate === targetDate) {
+      result.push(event);
+    }
+  }
+  
+  result.sort((a, b) => a.startTime.localeCompare(b.startTime));
+  return result;
 };
 
 // Các hàm kiểm tra trạng thái ngày

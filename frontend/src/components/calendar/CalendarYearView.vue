@@ -48,7 +48,16 @@ const isToday = (date: dayjs.Dayjs) => date.isSame(dayjs(), "day");
 
 // Kiểm tra xem ngày có sự kiện không (phải khớp đúng tháng đang hiển thị)
 const hasEvent = (date: dayjs.Dayjs, monthIndex: number) => {
-  return date.month() === monthIndex && props.events.some((e) => e.eventDate === date.format("YYYY-MM-DD"));
+  if (date.month() !== monthIndex) return false;
+  const targetDate = date.format("YYYY-MM-DD");
+  
+  for (let i = 0; i < props.events.length; i++) {
+    const event = props.events[i];
+    if (event && event.eventDate === targetDate) {
+      return true;
+    }
+  }
+  return false;
 };
 </script>
 
