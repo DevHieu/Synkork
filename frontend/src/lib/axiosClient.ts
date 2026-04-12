@@ -36,6 +36,16 @@ axiosClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // Token mà không hợp lệ thì về trang đăng nhập
+    if (
+      error.response?.status === 401 &&
+      error.response?.data?.error === "INVALID_TOKEN"
+    ) {
+      cookies.remove("accessToken");
+      cookies.remove("refreshToken");
+      window.location.href = "/auth";
+    }
+
     if (
       error.response?.status === 401 &&
       error.response?.data?.error === "TOKEN_EXPIRED" &&

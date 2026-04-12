@@ -6,4 +6,5 @@ export interface Participant {
   micOn: boolean;
   audioOn: boolean;
   isLocal: boolean;
+  avatarUrl?: string;
 }
