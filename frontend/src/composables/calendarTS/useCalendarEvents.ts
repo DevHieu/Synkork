@@ -10,6 +10,7 @@ import type { CalendarEvent } from "@/types/CalendarEvent";
 import type { Ref } from "vue";
 import type dayjs from "dayjs";
 
+// Chức năng này để gọi API lấy và thay đổi sự kiện trong lịch
 export function useCalendarEvents(
   spaceIdRef: Ref<string | undefined>,
   currentUserId: any,
@@ -19,7 +20,7 @@ export function useCalendarEvents(
   const events = ref<CalendarEvent[]>([]);
   const loading = ref(false);
 
-  // Tải danh sách sự kiện từ API
+  // Tải dữ liệu sự kiện từ máy chủ
   const fetchEvents = async () => {
     if (!spaceIdRef.value) return;
 
@@ -36,7 +37,7 @@ export function useCalendarEvents(
     }
   };
 
-  // Tính toán khoảng ngày cần tải dữ liệu
+  // Tính xem cần lấy dữ liệu từ ngày nào đến ngày nào
   const calculateDateRange = (date: dayjs.Dayjs, mode: string) => {
     if (mode === "week") {
       return {
@@ -52,14 +53,14 @@ export function useCalendarEvents(
       };
     }
 
-    // Mặc định: Chế độ tháng (lấy thêm 7 ngày trước/sau để chuyển đổi mượt)
+    // Mặc định cho xem tháng (lấy rộng ra chút để chuyển trang mượt)
     return {
       start: date.startOf("month").subtract(7, "day").format("YYYY-MM-DD"),
       end: date.endOf("month").add(7, "day").format("YYYY-MM-DD")
     };
   };
 
-  // Chuẩn hóa dữ liệu trước khi gửi lên API
+  // Làm sạch dữ liệu trước khi lưu
   const formatPayload = (data: any, id?: string) => {
     const payload = {
       ...data,
@@ -77,25 +78,25 @@ export function useCalendarEvents(
     return payload;
   };
 
-  // Tạo sự kiện mới
+  // Lưu một sự kiện mới
   const createEvent = async (data: any) => {
     await apiCreateEvent(formatPayload(data));
     await fetchEvents();
   };
 
-  // Cập nhật sự kiện
+  // Lưu thay đổi của một sự kiện
   const updateEvent = async (id: string, data: any) => {
     await apiUpdateEvent(id, formatPayload(data, id));
     await fetchEvents();
   };
 
-  // Xóa sự kiện
+  // Xóa bỏ một sự kiện
   const deleteEvent = async (id: string) => {
     await apiDeleteEvent(id, currentUserId);
     await fetchEvents();
   };
 
-  // Kiểm tra trùng lịch
+  // Tìm xem các sự kiện có bị trùng giờ nhau không
   const checkConflicts = async (date: string, start: string, end: string, excludeId?: string) => {
     if (!spaceIdRef.value) return [];
     try {
@@ -106,7 +107,7 @@ export function useCalendarEvents(
     }
   };
 
-  // Theo dõi thay đổi để tải lại dữ liệu
+  // Tự động tải lại sự kiện khi đổi không gian hoặc thời gian
   watch(spaceIdRef, () => fetchEvents(), { immediate: true });
   watch([currentDate, viewMode], () => fetchEvents());
 

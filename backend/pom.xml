@@ -115,6 +115,13 @@
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+		<!-- org.json — required by TokenServerAssistant (ZegoCloud) -->
+		<dependency>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+			<version>20250517</version>
+		</dependency>
 	</dependencies>
 
 	<build>

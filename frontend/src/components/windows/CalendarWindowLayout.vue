@@ -3,7 +3,7 @@ import { ref, computed } from "vue";
 import { useSpaceStore } from "@/stores/spaceStore";
 import { useUserStore } from "@/stores/userStore";
 import { storeToRefs } from "pinia";
-import { useCalendar } from "@/composables/calendar/useCalendar";
+import { useCalendar } from "@/composables/calendarTS/useCalendar";
 import type { CalendarEvent } from "@/types/CalendarEvent";
 
 import CalendarMonthView from "@/components/calendar/CalendarMonthView.vue";
@@ -133,17 +133,9 @@ const executeDelete = async () => {
 <template>
   <div class="flex flex-col h-screen bg-transparent overflow-hidden">
     <!-- Component quản lý thanh công cụ -->
-    <CalendarToolbar
-      v-model:view-mode="viewMode"
-      :current-space-name="currentSpace?.name"
-      :header-title="headerTitle"
-      :relative-time-text="relativeTimeText"
-      @go-prev="goPrev"
-      @go-next="goNext"
-      @go-today="goToday"
-      @jump-date="jumpDate"
-      @open-create-dialog="openCreateDialog"
-    />
+    <CalendarToolbar v-model:view-mode="viewMode" :current-space-name="currentSpace?.name" :header-title="headerTitle"
+      :relative-time-text="relativeTimeText" @go-prev="goPrev" @go-next="goNext" @go-today="goToday"
+      @jump-date="jumpDate" @open-create-dialog="openCreateDialog" />
 
     <!-- Main Content -->
     <div class="flex-1 overflow-hidden flex relative">
@@ -167,12 +159,8 @@ const executeDelete = async () => {
       :check-conflicts="checkConflicts" :editing-event-id="editingEventId" @save="handleSaveEvent" />
 
     <!-- Modal Xóa Sự Kiện đã được trích xuất -->
-    <CalendarDeleteDialog
-      v-model:show="showDeleteEventDialog"
-      :event-to-delete="eventToDelete"
-      :is-deleting-event="isDeletingEvent"
-      @execute-delete="executeDelete"
-    />
+    <CalendarDeleteDialog v-model:show="showDeleteEventDialog" :event-to-delete="eventToDelete"
+      :is-deleting-event="isDeletingEvent" @execute-delete="executeDelete" />
   </div>
 </template>
 
@@ -182,7 +170,9 @@ const executeDelete = async () => {
 }
 
 .no-scrollbar {
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 </style>

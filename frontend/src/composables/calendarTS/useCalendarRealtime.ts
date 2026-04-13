@@ -4,6 +4,7 @@ import { subscribeCalendarSpace } from "@/services/websocket/calendarSocket";
 import type { CalendarEvent } from "@/types/CalendarEvent";
 import type { Ref } from "vue";
 
+// Chức năng này để tự động cập nhật lịch khi người khác thay đổi (thời gian thực)
 export function useCalendarRealtime(
   spaceIdRef: Ref<string | undefined>,
   events: Ref<CalendarEvent[]>
@@ -11,7 +12,7 @@ export function useCalendarRealtime(
   const isSocketReady = ref(false);
   let sub: { unsubscribe: () => void } | null = null;
 
-  // Hủy đăng ký lắng nghe hiện tại
+  // Ngừng lắng nghe dữ liệu
   const unsubscribeCurrent = () => {
     if (sub) {
       try {
@@ -24,18 +25,18 @@ export function useCalendarRealtime(
   };
 
   onMounted(() => {
-    // Kết nối WebSocket khi linh kiện được gắn
-    socketService.connect(() => {
+    // Mở cổng kết nối dữ liệu trực tuyến
+    socketService.connect().then(() => {
       isSocketReady.value = true;
     });
   });
 
   onUnmounted(() => {
-    // Hủy đăng ký khi linh kiện bị hủy
+    // Đóng cổng kết nối khi không dùng nữa
     unsubscribeCurrent();
   });
 
-  // Theo dõi ID không gian và trạng thái Socket để đăng ký nhận thông báo
+  // Tự động bật/tắt lắng nghe khi vào đúng phòng hoặc mất mạng
   watch(
     [spaceIdRef, isSocketReady],
     ([spaceId, ready]) => {
@@ -46,7 +47,7 @@ export function useCalendarRealtime(
 
       unsubscribeCurrent();
 
-      // Đăng ký nhận thông báo về sự kiện lịch (Tạo/Sửa/Xóa)
+      // Theo dõi biến động: Tạo mới, Sửa, Xóa sự kiện
       sub = subscribeCalendarSpace(spaceId, (payload: any) => {
         const { action, event } = payload;
         if (action === "CREATED") {
