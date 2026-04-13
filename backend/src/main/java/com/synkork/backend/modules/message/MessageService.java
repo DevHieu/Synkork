@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.message;
 
 import com.synkork.backend.modules.message.dto.MessageDTO;
+import com.synkork.backend.modules.message.dto.MessagePageDTO;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
 import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,9 +28,19 @@ public class MessageService {
     @Autowired
     private RoomMemberRepository roomMemberRepository;
 
-    //   @NonNull annotation giúp đảm bảo rằng entity không được null, đỡ bị IDE báo
-    public Optional<MessageEntity> createMessage(@NonNull MessageEntity entity) {
-        return Optional.of(messageRepository.save(entity));
+    public MessagePageDTO getMessagesBySpaceId(UUID spaceId, UUID cursor, int limit) {
+        List<MessageDTO> messages = (cursor == null)
+                ? messageRepository.findFirstPage(spaceId, limit + 1)
+                : messageRepository.findNextPage(spaceId, cursor, limit + 1);
+
+        boolean hasMore = messages.size() > limit;
+        if (hasMore) {
+            messages = messages.subList(0, limit);
+        }
+
+        UUID nextCursor = hasMore ? messages.get(messages.size() - 1).getId() : null;
+
+        return new MessagePageDTO(messages, nextCursor, hasMore);
     }
 
     public MessageDTO saveMessage(MessageDTO dto, String senderId) {
@@ -57,10 +69,6 @@ public class MessageService {
         dto.setSender(senderDto);
 
         return dto;
-    }
-
-    public Page<MessageDTO> getMessagesBySpaceId(UUID spaceId, Pageable pageable) {
-        return messageRepository.findMessagesBySpaceId(spaceId, pageable);
     }
 
     public void deleteMessage(UUID messageId) {
