@@ -7,19 +7,23 @@ import WelcomeSpace from "./WelcomeSpace.vue";
 
 const props = defineProps<{
   messages: Message[];
-  hasMore: boolean;
+  beforeHasMore: boolean;
+  afterHasMore: boolean;
   spaceName: string;
   containerRef: (el: HTMLElement | null) => void;
 }>();
 
 const emits = defineEmits<{
-  (e: "loadMore"): void;
+  (e: "loadBeforeMore"): void;
+  (e: "loadAfterMore"): void;
 }>();
 
 const isLoading = ref(false);
 const container = ref<HTMLElement | null>(null);
-const sentinel = ref<HTMLElement | null>(null);
-let observer: IntersectionObserver | null = null;
+const beforeSentinel = ref<HTMLElement | null>(null);
+const afterSentinel = ref<HTMLElement | null>(null);
+let beforeObserver: IntersectionObserver | null = null;
+let afterObserver: IntersectionObserver | null = null;
 
 const setRef = (el: HTMLElement | null) => {
   container.value = el;
@@ -27,19 +31,33 @@ const setRef = (el: HTMLElement | null) => {
 };
 
 const setupObserver = () => {
-  if (!sentinel.value || !container.value) return;
+  if (!beforeSentinel.value || !afterSentinel.value || !container.value) return;
 
-  observer = new IntersectionObserver(
+  beforeObserver?.disconnect();
+  afterObserver?.disconnect();
+
+  beforeObserver = new IntersectionObserver(
     ([entry]) => {
-      if (entry.isIntersecting && props.hasMore && !isLoading.value) {
+      if (entry?.isIntersecting && props.beforeHasMore && !isLoading.value) {
         isLoading.value = true;
-        emits("loadMore");
+        emits("loadBeforeMore");
       }
     },
     { root: container.value, rootMargin: "200px" },
   );
 
-  observer.observe(sentinel.value);
+  afterObserver = new IntersectionObserver(
+    ([entry]) => {
+      if (entry?.isIntersecting && props.afterHasMore && !isLoading.value) {
+        isLoading.value = true;
+        emits("loadAfterMore");
+      }
+    },
+    { root: container.value, rootMargin: "200px" },
+  );
+
+  beforeObserver.observe(beforeSentinel.value);
+  afterObserver.observe(afterSentinel.value);
 };
 
 watch(
@@ -49,12 +67,13 @@ watch(
   },
 );
 
-watch(sentinel, (el) => {
-  if (el) setupObserver();
+watch([beforeSentinel, afterSentinel, container], () => {
+  setupObserver();
 });
 
 onUnmounted(() => {
-  observer?.disconnect();
+  beforeObserver?.disconnect();
+  afterObserver?.disconnect();
 });
 
 const processedMessages = computed(() => {
@@ -86,9 +105,9 @@ const processedMessages = computed(() => {
       style="overflow-anchor: auto"
     >
       <div class="min-h-full flex flex-col justify-end space-y-4">
-        <div ref="sentinel" class="h-0" />
+        <div ref="beforeSentinel" class="h-0" />
 
-        <div v-if="!hasMore">
+        <div v-if="!beforeHasMore">
           <WelcomeSpace :spaceName="props.spaceName" />
         </div>
 
@@ -99,6 +118,8 @@ const processedMessages = computed(() => {
             :isDifferentDay="msg.isDifferentDay"
           />
         </template>
+
+        <div ref="afterSentinel" class="h-0" />
       </div>
     </div>
   </div>

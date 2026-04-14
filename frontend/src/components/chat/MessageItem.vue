@@ -6,8 +6,11 @@ import type { Message } from "@/types/Message";
 
 import { chatSocket } from "@/services/websocket/chatSocket";
 import { computed, ref } from "vue";
+import { useMessageStore } from "@/stores/messageStore";
 import { useUserStore } from "@/stores/userStore";
 import { storeToRefs } from "pinia";
+
+const messageStore = useMessageStore();
 
 const props = defineProps<{
   message: Message;
@@ -71,7 +74,10 @@ const handleDelete = () => {
 };
 
 const handleReply = () => console.log("Reply to:", props.message.id);
-const handlePin = () => console.log("Pin message:", props.message.id);
+
+const handlePin = () => {
+  messageStore.changePinStatus(props.message.spaceId, props.message.id);
+};
 </script>
 
 <template>
@@ -86,7 +92,8 @@ const handlePin = () => console.log("Pin message:", props.message.id);
   </div>
 
   <div
-    class="relative group flex gap-3 p-2 mx-2 rounded-lg transition-colors hover:bg-secondary/20"
+    :id="`message-${props.message.id}`"
+    class="relative group flex gap-3 p-2 mx-2 rounded-lg transition-colors hover:bg-secondary/20 .message-highlight"
     :class="[isGrouped ? 'mt-0' : 'mt-4']"
   >
     <div class="w-10 shrink-0">
@@ -165,6 +172,7 @@ const handlePin = () => console.log("Pin message:", props.message.id);
       <MessageActions
         v-if="!isEditing && !props.message.deleted"
         :isSender="isFullAction"
+        :isPinned="props.message.pinned"
         @reply="handleReply"
         @edit="handleEdit"
         @delete="handleDelete"
@@ -173,3 +181,21 @@ const handlePin = () => console.log("Pin message:", props.message.id);
     </div>
   </div>
 </template>
+
+<style scoped>
+.message-highlight {
+  animation: highlightFade 1.5s ease;
+}
+
+@keyframes highlightFade {
+  0% {
+    background-color: color-mix(in oklch, var(--primary) 60%, transparent);
+  }
+  50% {
+    background-color: color-mix(in oklch, var(--primary) 30%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+</style>

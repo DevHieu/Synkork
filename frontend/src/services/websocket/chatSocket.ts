@@ -11,6 +11,9 @@ export const chatSocket = {
     socketService.unsubscribeByDestination(
       `/topic/space/${spaceId}/messages/update`,
     );
+    socketService.unsubscribeByDestination(
+      `/topic/space/${spaceId}/messages/pin`,
+    );
   },
 
   sendMessage(msg: { content: string; spaceId: string }) {
@@ -42,6 +45,13 @@ export const chatSocket = {
   subscribeUpdate(spaceId: string, callback: (msg: Message) => void) {
     return socketService.subscribe(
       `/topic/space/${spaceId}/messages/update`,
+      callback,
+    );
+  },
+
+  subscribePinStatus(spaceId: string, callback: (msg: Message) => void) {
+    return socketService.subscribe(
+      `/topic/space/${spaceId}/messages/pin`,
       callback,
     );
   },

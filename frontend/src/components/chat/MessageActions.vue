@@ -5,6 +5,7 @@ const emits = defineEmits(["reply", "edit", "delete", "pin"]);
 
 const props = defineProps<{
   isSender: boolean;
+  isPinned: boolean;
 }>();
 </script>
 
@@ -24,11 +25,16 @@ const props = defineProps<{
         <Reply class="w-4 h-4" />
       </button>
       <button
-        class="p-1.5 rounded hover:bg-foreground/10 text-muted-foreground hover:text-foreground transition-colors"
-        title="Pin"
+        class="p-1.5 rounded transition-colors"
+        :class="
+          isPinned
+            ? 'text-yellow-400 hover:bg-yellow-400/10'
+            : 'text-muted-foreground hover:bg-foreground/10 hover:text-foreground'
+        "
+        :title="isPinned ? 'Bỏ ghim' : 'Ghim'"
         @click="$emit('pin')"
       >
-        <Pin class="w-4 h-4" />
+        <Pin class="w-4 h-4" :class="isPinned ? 'fill-yellow-400' : ''" />
       </button>
       <button
         v-if="props.isSender"
