@@ -41,6 +41,12 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         } else {
             UserEntity newUser = new UserEntity();
             newUser.setEmail(email);
+            newUser.setDisplayName(oAuth2User.getAttribute("name"));
+
+            // Lấy email làm username
+            String username = email.substring(0, email.indexOf("@"));
+            newUser.setUsername(username);
+
             newUser.setProvider(ProviderEnum.GOOGLE);
             existedUser = userService.create(newUser);
         }

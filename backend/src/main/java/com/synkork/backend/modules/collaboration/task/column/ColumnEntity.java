@@ -21,20 +21,23 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ColumnEntity {
+
     @Id
     @UuidGenerator(style = UuidGenerator.Style.TIME)
     @Column(columnDefinition = "BINARY(16)")
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "board_id", nullable = false)
+    @JoinColumn(name = "board_id", nullable = false, columnDefinition = "BINARY(16)")
     @JsonIgnore
     private BoardEntity board;
 
+    @Column(nullable = false, length = 100)
     private String name;
+
+    @Column(nullable = false)
     private int position;
 
-    //thêm
     @OneToMany(mappedBy = "column", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC")
     private List<CardEntity> cards;

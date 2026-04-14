@@ -3,8 +3,7 @@ import { createRouter, createWebHistory } from "vue-router";
 
 import MainPage from "@/pages/MainPage.vue";
 
-import LoginPage from "@/pages/auth/LoginPage.vue";
-import RegisterPage from "@/pages/auth/RegisterPage.vue";
+import AuthPage from "@/pages/auth/AuthPage.vue";
 import ForgotPage from "@/pages/auth/ForgotPage.vue";
 import OAuth2Redirect from "@/pages/auth/OAuth2Redirect.vue";
 import VerifyPage from "@/pages/auth/VerifyPage.vue";
@@ -30,8 +29,7 @@ const routes = [
   {
     path: "/auth",
     children: [
-      { path: "login", component: LoginPage },
-      { path: "register", component: RegisterPage },
+      { path: "", component: AuthPage },
       { path: "forgot-password", component: ForgotPage },
       { path: "verify", component: VerifyPage },
       { path: "reset-password", component: ResetPassword },
@@ -111,13 +109,13 @@ router.beforeEach(async (to, from) => {
       const response = await axiosClient.post(
         "/api/auth/refresh",
         {},
-        { withCredentials: true }
+        { withCredentials: true },
       );
       const newToken = response.data;
       cookies.set("accessToken", newToken, "15m");
       return;
     } catch {
-      return { path: "/auth/login" };
+      return { path: "/auth" };
     }
   }
 

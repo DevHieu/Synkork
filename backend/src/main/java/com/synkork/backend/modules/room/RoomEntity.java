@@ -2,6 +2,7 @@ package com.synkork.backend.modules.room;
 
 import com.synkork.backend.common.base.BaseEntity;
 import com.synkork.backend.modules.room.enums.RoomTypeEnum;
+import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -26,8 +27,14 @@ public class RoomEntity extends BaseEntity {
     @Column(nullable = true)
     private String avatarId;
 
+    @Column(nullable = true)
+    private String description;
+
     @Enumerated(EnumType.STRING)
     private RoomTypeEnum type = RoomTypeEnum.GROUP; // GROUP | DM
+
+    @Column(unique = true, nullable = true)
+    private String inviteCode;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", columnDefinition = "BINARY(16)")
@@ -35,4 +42,5 @@ public class RoomEntity extends BaseEntity {
 
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL)
     private List<RoomMemberEntity> roomMembers;
+
 }

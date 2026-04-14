@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.user;
 
 import com.synkork.backend.common.base.BaseEntity;
+import com.synkork.backend.modules.user.enums.PlanEnum;
 import com.synkork.backend.modules.user.enums.ProviderEnum;
 import com.synkork.backend.modules.user.enums.UserStatusEnum;
 
@@ -23,19 +24,14 @@ public class UserEntity extends BaseEntity {
     @Column(nullable = false, unique = true, length = 50)
     private String username;
 
-    @Column(name = "display_name")
+    @Column(name = "display_name", length = 100)
     private String displayName;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 100)
     private String email;
 
-    @Column(nullable = true)
     private String password;
-
-    @Column(nullable = true)
     private String avatarUrl;
-
-    @Column(nullable = true)
     private String avatarId;
 
     @Enumerated(EnumType.STRING)
@@ -49,5 +45,8 @@ public class UserEntity extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private UserStatusEnum status = UserStatusEnum.ACTIVE;
-}
 
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private PlanEnum currentPlan = PlanEnum.FREE;
+}

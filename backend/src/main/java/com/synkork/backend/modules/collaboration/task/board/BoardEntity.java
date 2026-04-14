@@ -24,9 +24,10 @@ public class BoardEntity {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "space_id", nullable = false)
+    @JoinColumn(name = "space_id", nullable = false, columnDefinition = "BINARY(16)")
     private SpaceEntity space;
 
+    @Column(nullable = false)
     private String name;
 
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL)

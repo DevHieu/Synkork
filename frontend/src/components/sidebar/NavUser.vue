@@ -26,7 +26,7 @@ import {
 import { logout } from "@/services/authService";
 
 const props = defineProps<{
-  user: { name: string; email: string; avatar: string };
+  user: { name: string; email: string; avatar: string | undefined };
   collapsed?: boolean;
 }>();
 
@@ -49,7 +49,11 @@ const { isMobile } = useSidebar();
               class="h-fit rounded-full p-1 hover:bg-sidebar-accent/50 active:bg-sidebar-accent/90 transition-colors duration-200"
             >
               <Avatar class="h-10 w-10 rounded-full shrink-0">
-                <AvatarImage :src="user.avatar || ''" :alt="user.name" />
+                <AvatarImage
+                  v-if="user.avatar"
+                  :src="user.avatar"
+                  :alt="user.name"
+                />
                 <AvatarFallback
                   class="rounded-full bg-primary text-primary-foreground"
                 >
@@ -83,7 +87,11 @@ const { isMobile } = useSidebar();
           <DropdownMenuLabel class="p-0 font-normal">
             <div class="flex items-center gap-2 px-2 py-2.5 text-left text-sm">
               <Avatar class="h-10 w-10 rounded-full">
-                <AvatarImage :src="user.avatar" :alt="user.name" />
+                <AvatarImage
+                  v-if="user.avatar"
+                  :src="user.avatar"
+                  :alt="user.name"
+                />
                 <AvatarFallback class="rounded-full">
                   {{ user.name?.charAt(0).toUpperCase() ?? "CN" }}
                 </AvatarFallback>

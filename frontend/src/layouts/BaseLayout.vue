@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import NavUser from "@/components/sidebar/NavUser.vue";
+import VoiceControlBar from "@/components/sidebar/VoiceControlBar.vue";
 import {
   SidebarInset,
   SidebarProvider,
@@ -7,9 +8,10 @@ import {
   SidebarContent,
   SidebarFooter,
 } from "@/components/ui/sidebar";
+import { socketService } from "@/services/websocket/socketService";
 import { useUserStore } from "@/stores/userStore";
 import { storeToRefs } from "pinia";
-import { ref, provide } from "vue";
+import { ref, provide, watch } from "vue";
 
 const userStore = useUserStore();
 const { user } = storeToRefs(userStore);
@@ -19,6 +21,20 @@ const spaceOpen = ref(true);
 provide("setSpaceOpen", (val: boolean) => {
   spaceOpen.value = val;
 });
+
+import VueCookies from "vue-cookies";
+const cookies = VueCookies as any;
+
+watch(
+  () => cookies.get("accessToken"),
+  async (newToken) => {
+    if (newToken) {
+      await socketService.connect();
+      await userStore.getUserInfo();
+    }
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
@@ -26,17 +42,24 @@ provide("setSpaceOpen", (val: boolean) => {
     <!-- RoomSidebar -->
     <SidebarProvider
       :open="true"
-      style="width: auto; min-height: 100%; flex: none; position: static"
+      style="
+        width: auto;
+        min-height: 100%;
+        flex: none;
+        position: static;
+        z-index: 2;
+      "
     >
       <Sidebar collapsible="none" class="w-16! border-r h-full">
         <SidebarContent class="overflow-y-auto overflow-x-hidden no-scrollbar">
           <slot name="room-sidebar" />
         </SidebarContent>
-        <SidebarFooter v-if="!spaceOpen" class="p-0 border-t">
+        <SidebarFooter v-if="!spaceOpen" class="p-0 border-t gap-0">
+          <VoiceControlBar :collapsed="!spaceOpen" />
           <NavUser
             :user="{
-              name: user?.username,
-              email: user?.email,
+              name: user?.username ?? 'Unknown',
+              email: user?.email ?? '',
               avatar: user?.avatarUrl,
             }"
             :collapsed="true"
@@ -55,7 +78,6 @@ provide("setSpaceOpen", (val: boolean) => {
         position: 'static',
       }"
     >
-      <!-- Thay v-if bằng transition wrapper -->
       <div
         class="flex flex-col border-r h-full bg-sidebar overflow-hidden transition-all duration-300 ease-in-out"
         :style="{
@@ -65,11 +87,12 @@ provide("setSpaceOpen", (val: boolean) => {
       >
         <Sidebar collapsible="none" class="h-full w-full">
           <slot name="space-sidebar" />
-          <SidebarFooter v-if="spaceOpen" class="p-0 border-t">
+          <SidebarFooter v-if="spaceOpen" class="p-0 border-t gap-0">
+            <VoiceControlBar :collapsed="!spaceOpen" />
             <NavUser
               :user="{
-                name: user?.username,
-                email: user?.email,
+                name: user?.username ?? 'Unknown',
+                email: user?.email ?? '',
                 avatar: user?.avatarUrl,
               }"
               :collapsed="false"
@@ -78,7 +101,7 @@ provide("setSpaceOpen", (val: boolean) => {
         </Sidebar>
       </div>
 
-      <SidebarInset class="flex-1 min-w-0">
+      <SidebarInset class="flex-1 min-w-0 background">
         <RouterView />
       </SidebarInset>
     </SidebarProvider>

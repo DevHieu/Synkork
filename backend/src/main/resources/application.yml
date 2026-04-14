@@ -2,11 +2,12 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/synkork?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
     username: ${DB_USERNAME:root}
+    # password: ${DB_PASSWORD:123}
     password: ${DB_PASSWORD:123}
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
@@ -53,3 +54,7 @@ cloudinary:
   name: ${CLOUDINARY_CLOUD_NAME}
   key: ${CLOUDINARY_API_KEY}
   secret: ${CLOUDINARY_API_SECRET}
+
+zego:
+  appId: ${ZEGO_APPID}
+  secret: ${ZEGO_SERVER_SECRET}
