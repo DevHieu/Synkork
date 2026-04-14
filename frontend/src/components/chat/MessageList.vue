@@ -20,8 +20,12 @@ const emits = defineEmits<{
 
 const isLoading = ref(false);
 const container = ref<HTMLElement | null>(null);
+
+// Sentinel là biến gắn trong template để observer có thể theo dõi
 const beforeSentinel = ref<HTMLElement | null>(null);
 const afterSentinel = ref<HTMLElement | null>(null);
+
+// Observer là cái bắt cái sentinel. Sentinel mà chuẩn bị hiện thì cái callback trong observer sẽ chạy
 let beforeObserver: IntersectionObserver | null = null;
 let afterObserver: IntersectionObserver | null = null;
 
@@ -33,7 +37,7 @@ const setRef = (el: HTMLElement | null) => {
 const setupObserver = () => {
   if (!beforeSentinel.value || !afterSentinel.value || !container.value) return;
 
-  beforeObserver?.disconnect();
+  beforeObserver?.disconnect(); // Disconnect cho chắc
   afterObserver?.disconnect();
 
   beforeObserver = new IntersectionObserver(
