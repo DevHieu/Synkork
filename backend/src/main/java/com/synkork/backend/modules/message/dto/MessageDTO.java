@@ -1,5 +1,6 @@
 package com.synkork.backend.modules.message.dto;
 
+import com.synkork.backend.modules.message.MessageEntity;
 import com.synkork.backend.modules.message.MessageTypeEnum;
 import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
 import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
@@ -29,6 +30,25 @@ public class MessageDTO {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    public MessageDTO (MessageEntity message) {
+        this.id = message.getId();
+        this.content = message.getContent();
+        this.spaceId = message.getSpace().getId().toString();
+        this.deleted = message.isDeleted();
+        this.pinned = message.isPinned();
+        this.createdAt = message.getCreatedAt();
+        this.updatedAt = message.getUpdatedAt();
+        this.type = message.getType();
+        this.attachmentUrl = message.getAttachmentUrl();
+        this.sender = new RoomMemberDto(
+                message.getSender().getUser().getDisplayName(),
+                message.getSender().getUser().getUsername(),
+                message.getSender().getUser().getAvatarUrl(),
+                message.getSender().getRole()
+        );
+
+    }
 
     public MessageDTO(UUID id,String content, UUID spaceId, boolean deleted, boolean pinned,
                       MessageTypeEnum type, String attachmentUrl,
