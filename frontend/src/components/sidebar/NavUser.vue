@@ -49,7 +49,7 @@ const { isMobile } = useSidebar();
               class="h-fit rounded-full p-1 hover:bg-sidebar-accent/50 active:bg-sidebar-accent/90 transition-colors duration-200"
             >
               <Avatar class="h-10 w-10 rounded-full shrink-0">
-                <AvatarImage :src="user.avatar" :alt="user.name" />
+                <AvatarImage :src="user.avatar || ''" :alt="user.name" />
                 <AvatarFallback
                   class="rounded-full bg-primary text-primary-foreground"
                 >

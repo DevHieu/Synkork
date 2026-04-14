@@ -85,6 +85,7 @@ const routes = [
           {
             path: "task/:roomId/:spaceId",
             component: TaskWindow,
+            props: true,
             meta: { spaceType: "TASK" },
           },
         ],
