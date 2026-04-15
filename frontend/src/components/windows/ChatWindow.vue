@@ -86,7 +86,7 @@ const scrollToBottom = async () => {
 };
 
 const jumpToMessage = async (id: string) => {
-  await messageStore.jumpToMessage(spaceId, id);
+  await messageStore.jumpToMessage(currentSpace.value.id, id);
 
   await nextTick();
 
