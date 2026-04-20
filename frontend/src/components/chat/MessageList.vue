@@ -21,23 +21,21 @@ const emits = defineEmits<{
 const isLoading = ref(false);
 const container = ref<HTMLElement | null>(null);
 
-// Sentinel là biến gắn trong template để observer có thể theo dõi
 const beforeSentinel = ref<HTMLElement | null>(null);
 const afterSentinel = ref<HTMLElement | null>(null);
 
-// Observer là cái bắt cái sentinel. Sentinel mà chuẩn bị hiện thì cái callback trong observer sẽ chạy
 let beforeObserver: IntersectionObserver | null = null;
 let afterObserver: IntersectionObserver | null = null;
 
-const setRef = (el: HTMLElement | null) => {
-  container.value = el;
-  props.containerRef(el);
+const setRef = (el: any) => {
+  container.value = el as HTMLElement | null;
+  props.containerRef(el as HTMLElement | null);
 };
 
 const setupObserver = () => {
   if (!beforeSentinel.value || !afterSentinel.value || !container.value) return;
 
-  beforeObserver?.disconnect(); // Disconnect cho chắc
+  beforeObserver?.disconnect();
   afterObserver?.disconnect();
 
   beforeObserver = new IntersectionObserver(
@@ -82,7 +80,7 @@ onUnmounted(() => {
 
 const processedMessages = computed(() => {
   return props.messages.map((msg, index) => {
-    const prevMsg = props.messages[index - 1];
+    const prevMsg = props.messages[index + 1];
     const isDifferentDay =
       !prevMsg || !dayjs(msg.createdAt).isSame(dayjs(prevMsg.createdAt), "day");
     const isGrouped =
@@ -103,28 +101,22 @@ const processedMessages = computed(() => {
       />
     </div>
 
-    <div
-      :ref="setRef"
-      class="h-full overflow-y-auto px-4 py-3"
-      style="overflow-anchor: auto"
-    >
-      <div class="min-h-full flex flex-col justify-end space-y-4">
-        <div ref="beforeSentinel" class="h-0" />
-
-        <div v-if="!beforeHasMore">
-          <WelcomeSpace :spaceName="props.spaceName" />
-        </div>
-
-        <template v-for="msg in processedMessages" :key="msg.id">
-          <MessageItem
-            :message="msg"
-            :isGrouped="msg.isGrouped"
-            :isDifferentDay="msg.isDifferentDay"
-          />
-        </template>
-
-        <div ref="afterSentinel" class="h-0" />
+    <div :ref="setRef" class="flex h-full flex-col overflow-y-auto px-4 py-3">
+      <div v-if="!beforeHasMore">
+        <WelcomeSpace :spaceName="props.spaceName" />
       </div>
+
+      <div ref="beforeSentinel" class="h-px" />
+
+      <template v-for="msg in [...processedMessages].reverse()" :key="msg.id">
+        <MessageItem
+          :message="msg"
+          :isGrouped="msg.isGrouped"
+          :isDifferentDay="msg.isDifferentDay"
+        />
+      </template>
+
+      <div ref="afterSentinel" class="h-px" />
     </div>
   </div>
 </template>

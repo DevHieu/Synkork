@@ -53,7 +53,7 @@ export const useMessageStore = defineStore("message", {
 
       const { messages, beforeHasMore, beforeCursor } = res.data;
 
-      this.messages = [...messages.reverse(), ...this.messages];
+      this.messages = [...this.messages, ...messages];
       this.beforeHasMore = beforeHasMore;
       this.beforeCursor = beforeCursor ?? null;
     },
@@ -71,7 +71,7 @@ export const useMessageStore = defineStore("message", {
 
       const { messages, afterHasMore, afterCursor } = res.data;
 
-      this.messages = [...this.messages, ...messages];
+      this.messages = [...messages, ...this.messages];
       this.afterHasMore = afterHasMore;
       this.afterCursor = afterCursor ?? null;
 
@@ -127,7 +127,7 @@ export const useMessageStore = defineStore("message", {
     subscribeToChat(spaceId: string) {
       chatSocket.subscribeMessages(spaceId, (msg: Message) => {
         // Nếu đang jump mode thì không push tin mới vào (tránh lộn xộn)
-        if (!this.isJumpMode) this.messages.push(msg);
+        if (!this.isJumpMode) this.messages.unshift(msg);
       });
 
       chatSocket.subscribeDelete(spaceId, (messageId: string) => {

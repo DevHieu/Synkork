@@ -68,37 +68,34 @@ const joinSpace = async (id: string) => {
   }
   messageStore.clearAll();
   await messageStore.fetchMessages(id, null);
+  scrollToBottom();
   messageStore.subscribeToChat(id);
   messageStore.fetchPinnedList(id, null);
-  await scrollToBottom();
 };
 
 const handleSendMessage = () => {
   messageStore.sendMessage(currentSpace.value.id, newMessage.value);
   newMessage.value = "";
+
+  scrollToBottom();
 };
 
 const scrollToBottom = async () => {
-  await nextTick();
+  await nextTick(); // Chờ tin nhắn render xong
   if (messageContainer.value) {
     messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
   }
 };
 
 const jumpToMessage = async (id: string) => {
-  await messageStore.jumpToMessage(currentSpace.value.id, id);
-
+  await messageStore.jumpToMessage(spaceId, id);
   await nextTick();
 
   const el = document.getElementById(`message-${id}`);
   const container = messageContainer.value;
-
   if (!el || !container) return;
 
-  const offset =
-    el.offsetTop - container.clientHeight / 2 + el.clientHeight / 2;
-
-  container.scrollTop = offset;
+  el.scrollIntoView({ block: "center" });
 
   el.classList.add("message-highlight");
   setTimeout(() => el.classList.remove("message-highlight"), 2000);

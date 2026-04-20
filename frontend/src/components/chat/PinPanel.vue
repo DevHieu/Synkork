@@ -54,12 +54,6 @@ const loadMore = async () => {
       >
         <Pin class="w-3 h-3" />
         Tin nhắn ghim
-        <span
-          v-if="pinnedMessages.length"
-          class="ml-0.5 text-[10px] font-normal normal-case tracking-normal bg-muted text-muted-foreground rounded-full px-1.5 py-0"
-        >
-          {{ pinnedMessages.length }}
-        </span>
       </div>
     </div>
 
