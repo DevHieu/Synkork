@@ -47,9 +47,10 @@ public class MessageService {
         } else {
             // Scroll xuống → load newer
             List<MessageDTO> messages = messageRepository.findNewerPage(spaceId, cursor, limit + 1);
+            Collections.reverse(messages); // Phải reverse lại để danh sách lấy đúng và hiện đúng
             boolean hasMore = messages.size() > limit;
             if (hasMore) messages = messages.subList(0, limit);
-            UUID afterCursor = hasMore ? messages.getLast().getId() : null;
+            UUID afterCursor = hasMore ? messages.getFirst().getId() : null;
             return new MessagePageDTO(messages, null, afterCursor, false, hasMore);
         }
     }
@@ -134,18 +135,18 @@ public class MessageService {
         if (beforeHasMore) before = before.subList(0, limit);
         if (afterHasMore) after = after.subList(0, limit);
 
-        Collections.reverse(before);
+        Collections.reverse(after);
 
         // Gộp 2 list lại
-        List<MessageEntity> combined = new java.util.ArrayList<>(before);
-        combined.addAll(after);
+        List<MessageEntity> combined = new java.util.ArrayList<>(after);
+        combined.addAll(before);
 
         List<MessageDTO> messages = combined.stream()
                 .map(MessageDTO::new)
                 .toList();
 
-        UUID beforeCursor = beforeHasMore ? messages.getFirst().getId() : null;
-        UUID afterCursor = afterHasMore ? messages.getLast().getId() : null;
+        UUID beforeCursor = beforeHasMore ? messages.getLast().getId() : null;
+        UUID afterCursor = afterHasMore ? messages.getFirst().getId() : null;
 
         return new MessagePageDTO(messages, beforeCursor, afterCursor, beforeHasMore, afterHasMore);
     }

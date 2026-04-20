@@ -57,7 +57,7 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
                 FROM MessageEntity m
                 JOIN m.sender rm
                 WHERE m.space.id = :spaceId
-                  AND m.id > :cursor
+                  AND m.id >= :cursor
                 ORDER BY m.id ASC
                 LIMIT :limit
             """)
