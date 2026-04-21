@@ -13,13 +13,13 @@ import MemberPanel from "@/components/chat/MemberPanel.vue";
 import PinPanel from "@/components/chat/PinPanel.vue";
 
 const route = useRoute();
-const spaceId = route.params.spaceId as string;
+const spaceId = ref(route.params.spaceId as string);
 
 const spaceStore = useSpaceStore();
 const { currentSpace } = storeToRefs(spaceStore);
 
 const messageStore = useMessageStore();
-const { messages, beforeHasMore, afterHasMore, replyingTo } =
+const { messages, beforeHasMore, afterHasMore, replyingTo, isScrollTop } =
   storeToRefs(messageStore);
 
 const memberOpen = ref(true);
@@ -44,22 +44,12 @@ const setContainerRef = (el: HTMLElement | null) => {
 const isSocketConnected = ref(false);
 
 onMounted(() => {
-  if (spaceId) isSocketConnected.value = true;
+  if (spaceId.value) isSocketConnected.value = true;
 });
 
 onUnmounted(() => {
-  chatSocket.leaveSpace(spaceId);
+  chatSocket.leaveSpace(spaceId.value);
 });
-
-watch(
-  [currentSpace, isSocketConnected],
-  ([space, connected]) => {
-    if (!space?.id || !connected) return;
-    joinSpace(space.id);
-    console.log(space);
-  },
-  { immediate: true },
-);
 
 const joinSpace = async (id: string) => {
   if (!id) return;
@@ -74,10 +64,8 @@ const joinSpace = async (id: string) => {
 };
 
 const handleSendMessage = () => {
-  messageStore.sendMessage(currentSpace.value.id, newMessage.value);
+  messageStore.sendMessage(spaceId.value, newMessage.value);
   newMessage.value = "";
-
-  scrollToBottom();
 };
 
 const scrollToBottom = async () => {
@@ -88,7 +76,7 @@ const scrollToBottom = async () => {
 };
 
 const jumpToMessage = async (id: string) => {
-  await messageStore.jumpToMessage(spaceId, id);
+  await messageStore.jumpToMessage(spaceId.value, id);
   await nextTick();
 
   const el = document.getElementById(`message-${id}`);
@@ -100,6 +88,32 @@ const jumpToMessage = async (id: string) => {
   el.classList.add("message-highlight");
   setTimeout(() => el.classList.remove("message-highlight"), 2000);
 };
+
+// Vừa vào trang hoặc chuyển space thì join lại để nhận tin nhắn mới nhất và cập nhật message list
+watch(
+  [currentSpace, isSocketConnected],
+  ([space, connected]) => {
+    if (!space?.id || !connected) return;
+    joinSpace(space.id);
+    console.log(space);
+  },
+  { immediate: true },
+);
+
+watch(
+  () => messages.value.length,
+  (newLength, oldLength) => {
+    if (newLength > oldLength) {
+      // Nếu có tin nhắn mới và người dùng đang ở dưới cùng, cuộn xuống
+      const container = messageContainer.value;
+      if (!container) return;
+
+      if (!isScrollTop.value) {
+        scrollToBottom();
+      }
+    }
+  },
+);
 </script>
 
 <template>
@@ -120,8 +134,9 @@ const jumpToMessage = async (id: string) => {
           :messages="messages"
           :beforeHasMore="beforeHasMore"
           :afterHasMore="afterHasMore"
-          :container-ref="setContainerRef"
+          :spaceId="currentSpace?.id ?? ''"
           :space-name="currentSpace?.name ?? ''"
+          :container-ref="setContainerRef"
           @loadBeforeMore="() => messageStore.loadMore(currentSpace.id)"
           @loadAfterMore="
             () => messageStore.fetchNewerMessages(currentSpace.id)

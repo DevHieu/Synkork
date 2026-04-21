@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import { useRoute } from "vue-router";
 import { storeToRefs } from "pinia";
 import { useMessageStore } from "@/stores/messageStore";
-import { useSpaceStore } from "@/stores/spaceStore";
 import { Pin } from "lucide-vue-next";
 
 const messageStore = useMessageStore();
 const { pinnedMessages, pinnedHasMore, pinLoading } = storeToRefs(messageStore);
 
-const spaceStore = useSpaceStore();
-const { currentSpace } = storeToRefs(spaceStore);
+const route = useRoute();
+const spaceId = ref(route.params.spaceId as string);
 
 const emit = defineEmits<{
   "jump-to": [messageId: string];
@@ -26,14 +26,11 @@ const filtered = computed(() => {
 });
 
 const handleUnpin = (messageId: string) => {
-  messageStore.changePinStatus(currentSpace.value.id, messageId);
+  messageStore.changePinStatus(spaceId.value, messageId);
 };
 
 const loadMore = async () => {
-  await messageStore.fetchPinnedList(
-    currentSpace.value.id,
-    messageStore.pinnedCursor,
-  );
+  await messageStore.fetchPinnedList(spaceId.value, messageStore.pinnedCursor);
 };
 </script>
 

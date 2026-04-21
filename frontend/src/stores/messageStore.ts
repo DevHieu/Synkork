@@ -19,6 +19,8 @@ export const useMessageStore = defineStore("message", {
     beforeCursor: null as string | null,
     afterCursor: null as string | null,
 
+    isScrollTop: false,
+
     isJumpMode: false, // đang ở chế độ jump hay scroll bình thường
     jumpTargetId: null as string | null,
 
@@ -167,6 +169,10 @@ export const useMessageStore = defineStore("message", {
       this.replyingTo = msg;
     },
 
+    setScrollTop(val: boolean) {
+      this.isScrollTop = val;
+    },
+
     async changePinStatus(spaceId: string, messageId: string) {
       this.pinLoading = true;
       try {
@@ -174,6 +180,15 @@ export const useMessageStore = defineStore("message", {
       } finally {
         this.pinLoading = false;
       }
+    },
+
+    async exitJumpMode(spaceId: string) {
+      this.isJumpMode = false;
+      this.messages = [];
+      this.beforeCursor = null;
+      this.afterCursor = null;
+      this.afterHasMore = false;
+      await this.fetchMessages(spaceId, null);
     },
   },
 });
