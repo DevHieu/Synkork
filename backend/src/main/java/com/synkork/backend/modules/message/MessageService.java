@@ -8,14 +8,12 @@ import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
 import com.synkork.backend.modules.space.SpaceEntity;
 import com.synkork.backend.modules.space.SpaceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class MessageService {
@@ -28,19 +26,33 @@ public class MessageService {
     @Autowired
     private RoomMemberRepository roomMemberRepository;
 
-    public MessagePageDTO getMessagesBySpaceId(UUID spaceId, UUID cursor, int limit) {
-        List<MessageDTO> messages = (cursor == null)
-                ? messageRepository.findFirstPage(spaceId, limit + 1)
-                : messageRepository.findNextPage(spaceId, cursor, limit + 1);
-
-        boolean hasMore = messages.size() > limit;
-        if (hasMore) {
-            messages = messages.subList(0, limit);
+    public MessagePageDTO getMessagesBySpaceId(UUID spaceId, UUID cursor, boolean isUp, int limit) {
+        if (cursor == null) {
+            // Lần đầu load, không cần direction
+            List<MessageDTO> messages = messageRepository.findFirstPage(spaceId, limit + 1);
+            boolean hasMore = messages.size() > limit;
+            if (hasMore) messages = messages.subList(0, limit);
+            UUID beforeCursor = hasMore ? messages.getLast().getId() : null;
+            return new MessagePageDTO(messages, beforeCursor, null, hasMore, false);
         }
 
-        UUID nextCursor = hasMore ? messages.get(messages.size() - 1).getId() : null;
+        if (isUp) {
+            // Scroll lên → load older
+            List<MessageDTO> messages = messageRepository.findNextPage(spaceId, cursor, limit + 1);
+            boolean hasMore = messages.size() > limit;
+            if (hasMore) messages = messages.subList(0, limit);
+            UUID beforeCursor = hasMore ? messages.getLast().getId() : null;
+            return new MessagePageDTO(messages, beforeCursor, null, hasMore, false);
 
-        return new MessagePageDTO(messages, nextCursor, hasMore);
+        } else {
+            // Scroll xuống → load newer
+            List<MessageDTO> messages = messageRepository.findNewerPage(spaceId, cursor, limit + 1);
+            Collections.reverse(messages); // Phải reverse lại để danh sách lấy đúng và hiện đúng
+            boolean hasMore = messages.size() > limit;
+            if (hasMore) messages = messages.subList(0, limit);
+            UUID afterCursor = hasMore ? messages.getFirst().getId() : null;
+            return new MessagePageDTO(messages, null, afterCursor, false, hasMore);
+        }
     }
 
     public MessageDTO saveMessage(MessageDTO dto, String senderId) {
@@ -60,7 +72,6 @@ public class MessageService {
         entity.setContent(dto.getContent());
 
         MessageEntity newMessage = messageRepository.save(entity);
-        System.out.println("createdAt after save: " + newMessage.getCreatedAt());
         dto.setId(newMessage.getId());
         dto.setCreatedAt(newMessage.getCreatedAt());
         dto.setUpdatedAt(newMessage.getUpdatedAt());
@@ -87,5 +98,56 @@ public class MessageService {
         dto.setUpdatedAt(newMessage.getUpdatedAt());
 
         return dto;
+    }
+
+    public MessageDTO changeMessagePinStatus(UUID messageUUID) {
+        MessageEntity entity = messageRepository.findById(messageUUID).orElseThrow(() -> new IllegalArgumentException("Message not found"));
+
+        entity.setPinned(!entity.isPinned());
+        messageRepository.save(entity);
+
+        return new MessageDTO(entity);
+    }
+
+    public MessagePageDTO getMessagesPinnedBySpaceId(UUID spaceUUID, UUID cursorUUID, int limit) {
+        List<MessageDTO> pinnedList = cursorUUID == null ?
+                messageRepository.findPinnedFirstPage(spaceUUID, limit + 1) :
+                messageRepository.findPinnedNextPage(spaceUUID, cursorUUID, limit + 1);
+
+        boolean hasMore = pinnedList.size() > limit;
+        if (hasMore) {
+            pinnedList = pinnedList.subList(0, limit);
+        }
+
+        UUID nextCursor = hasMore ? pinnedList.get(pinnedList.size() - 1).getId() : null;
+
+        return new MessagePageDTO(pinnedList, nextCursor, null, hasMore, false); // Danh sách pin ko cần làm infinite scroll 2 chiều nên cho before là null luôn
+    }
+
+    public MessagePageDTO findAround(UUID spaceUUID, UUID messageUUID, int limit) {
+
+        List<MessageEntity> before = messageRepository.findBeforeMessage(spaceUUID, messageUUID, limit + 1);
+        List<MessageEntity> after = messageRepository.findAfterMessage(spaceUUID, messageUUID, limit + 1);
+
+        boolean beforeHasMore = before.size() > limit;
+        boolean afterHasMore = after.size() > limit;
+
+        if (beforeHasMore) before = before.subList(0, limit);
+        if (afterHasMore) after = after.subList(0, limit);
+
+        Collections.reverse(after);
+
+        // Gộp 2 list lại
+        List<MessageEntity> combined = new java.util.ArrayList<>(after);
+        combined.addAll(before);
+
+        List<MessageDTO> messages = combined.stream()
+                .map(MessageDTO::new)
+                .toList();
+
+        UUID beforeCursor = beforeHasMore ? messages.getLast().getId() : null;
+        UUID afterCursor = afterHasMore ? messages.getFirst().getId() : null;
+
+        return new MessagePageDTO(messages, beforeCursor, afterCursor, beforeHasMore, afterHasMore);
     }
 }

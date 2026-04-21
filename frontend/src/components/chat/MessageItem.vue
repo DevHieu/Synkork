@@ -6,8 +6,11 @@ import type { Message } from "@/types/Message";
 
 import { chatSocket } from "@/services/websocket/chatSocket";
 import { computed, ref } from "vue";
+import { useMessageStore } from "@/stores/messageStore";
 import { useUserStore } from "@/stores/userStore";
 import { storeToRefs } from "pinia";
+
+const messageStore = useMessageStore();
 
 const props = defineProps<{
   message: Message;
@@ -35,11 +38,10 @@ const isFullAction = computed(
 );
 
 const isEditing = ref(false);
-const editContent = ref(""); // Chỉ cần lưu nội dung text để edit
+const editContent = ref("");
 
 const handleEdit = () => {
   isEditing.value = true;
-  // Clone content để tránh sửa trực tiếp vào props khi đang gõ
   editContent.value = props.message.content;
 };
 
@@ -49,13 +51,7 @@ const handleSaveEdit = () => {
     handleCancelEdit();
     return;
   }
-
-  // Tạo object message mới dựa trên dữ liệu cũ nhưng thay content
-  const updatedMessage: Message = {
-    ...props.message,
-    content: trimmed,
-  };
-
+  const updatedMessage: Message = { ...props.message, content: trimmed };
   chatSocket.updateMessage(updatedMessage);
   isEditing.value = false;
 };
@@ -70,12 +66,13 @@ const handleDelete = () => {
   }
 };
 
-const handleReply = () => console.log("Reply to:", props.message.id);
-const handlePin = () => console.log("Pin message:", props.message.id);
+const handleReply = () => messageStore.setReply(props.message);
+const handlePin = () =>
+  messageStore.changePinStatus(props.message.spaceId, props.message.id);
 </script>
 
 <template>
-  <div v-if="isDifferentDay" class="flex items-center gap-3 my-4 px-4">
+  <div v-if="isDifferentDay" class="flex items-center gap-3 my-6 px-4">
     <div class="flex-1 h-px bg-border/50"></div>
     <span
       class="text-[10px] uppercase font-bold text-muted-foreground tracking-wider"
@@ -84,10 +81,9 @@ const handlePin = () => console.log("Pin message:", props.message.id);
     </span>
     <div class="flex-1 h-px bg-border/50"></div>
   </div>
-
   <div
-    class="relative group flex gap-3 p-2 mx-2 rounded-lg transition-colors hover:bg-secondary/20"
-    :class="[isGrouped ? 'mt-0' : 'mt-4']"
+    :id="`message-${props.message.id}`"
+    class="relative group flex gap-3 p-2 mx-2 rounded-lg transition-colors hover:bg-secondary/20 mb-2"
   >
     <div class="w-10 shrink-0">
       <Avatar v-if="!isGrouped" class="h-10 w-10">
@@ -141,7 +137,7 @@ const handlePin = () => console.log("Pin message:", props.message.id);
         </div>
       </div>
 
-      <div v-else class="text-sm leading-relaxed break-words">
+      <div v-else class="text-sm leading-relaxed wrap-break-word">
         <template v-if="props.message.deleted">
           <span class="text-muted-foreground italic text-xs"
             >Tin nhắn đã bị xóa</span
@@ -165,6 +161,7 @@ const handlePin = () => console.log("Pin message:", props.message.id);
       <MessageActions
         v-if="!isEditing && !props.message.deleted"
         :isSender="isFullAction"
+        :isPinned="props.message.pinned"
         @reply="handleReply"
         @edit="handleEdit"
         @delete="handleDelete"
@@ -173,3 +170,18 @@ const handlePin = () => console.log("Pin message:", props.message.id);
     </div>
   </div>
 </template>
+
+<style scoped>
+.message-highlight {
+  animation: highlightFade 1s ease;
+}
+
+@keyframes highlightFade {
+  0% {
+    background-color: var(--primary);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+</style>
