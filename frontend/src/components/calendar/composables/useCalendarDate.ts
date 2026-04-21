@@ -1,21 +1,23 @@
 import { ref, computed } from "vue";
 import dayjs from "dayjs";
 
+// Quản lý ngày giờ, UI view
 export function useCalendarDate() {
   const viewMode = ref<"week" | "month" | "year">("month");
   const currentDate = ref(dayjs());
   const selectedDate = ref(dayjs());
 
+  // Điều chỉnh ngày (nhảy tới/lui)
+  const jumpDate = (amount: number, unit: "week" | "month" | "year") => {
+    currentDate.value = currentDate.value.add(amount, unit);
+  };
+
   const goNext = () => {
-    if (viewMode.value === "week") currentDate.value = currentDate.value.add(1, "week");
-    else if (viewMode.value === "month") currentDate.value = currentDate.value.add(1, "month");
-    else currentDate.value = currentDate.value.add(1, "year");
+    jumpDate(1, viewMode.value);
   };
 
   const goPrev = () => {
-    if (viewMode.value === "week") currentDate.value = currentDate.value.subtract(1, "week");
-    else if (viewMode.value === "month") currentDate.value = currentDate.value.subtract(1, "month");
-    else currentDate.value = currentDate.value.subtract(1, "year");
+    jumpDate(-1, viewMode.value);
   };
 
   const goToday = () => {
@@ -27,11 +29,13 @@ export function useCalendarDate() {
     selectedDate.value = date;
   };
 
+  // Chọn tháng, chuyển view month
   const setYearMonth = (monthIndex: number) => {
     currentDate.value = currentDate.value.month(monthIndex);
     viewMode.value = "month";
   };
 
+  // Tiêu đề header
   const headerTitle = computed(() => {
     if (viewMode.value === "week") {
       const start = currentDate.value.startOf("week");
@@ -43,6 +47,7 @@ export function useCalendarDate() {
     return currentDate.value.format("MMMM YYYY");
   });
 
+  // Label thời gian tương đối
   const relativeTimeText = computed(() => {
     const now = dayjs();
     if (viewMode.value === "week") {
@@ -77,6 +82,7 @@ export function useCalendarDate() {
     goNext,
     goPrev,
     goToday,
+    jumpDate,
     selectDate,
     setYearMonth,
   };

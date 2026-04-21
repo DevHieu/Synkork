@@ -52,54 +52,57 @@ public class CalendarEventController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime startTime,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime endTime,
             @RequestParam(required = false) UUID excludeId) {
-        List<CalendarEventDTO> conflicts = calendarEventService.findConflicts(spaceId, date, startTime, endTime,
-                excludeId);
+        List<CalendarEventDTO> conflicts = calendarEventService.findConflicts(spaceId, date, startTime, endTime, excludeId);
         return ResponseEntity.ok(conflicts);
+    }
+
+    // Thêm hàm xác thực logic nhỏ gọn
+    private void validateUserId(String userId) {
+        if (userId == null || userId.isEmpty()) {
+            throw new IllegalArgumentException("User ID is required");
+        }
     }
 
     // Tạo event mới
     @PostMapping
     public ResponseEntity<CalendarEventDTO> createEvent(@RequestBody CalendarEventDTO dto) {
-        // Lấy userId từ sessionStorage phía frontend gửi lên
         String userId = dto.getCreatedById();
-        if (userId == null || userId.isEmpty()) {
-            return ResponseEntity.badRequest().build();
-        }
+        validateUserId(userId);
+        
         CalendarEventDTO created = calendarEventService.createEvent(dto, userId);
         return ResponseEntity.ok(created);
     }
 
     // Cập nhật event
     @PutMapping("/{eventId}")
-    public ResponseEntity<?> updateEvent(
+    public ResponseEntity<CalendarEventDTO> updateEvent(
             @PathVariable UUID eventId,
             @RequestBody CalendarEventDTO dto) {
-        try {
-            String userId = dto.getCreatedById();
-            if (userId == null || userId.isEmpty()) {
-                return ResponseEntity.badRequest().body("User ID is required");
-            }
-            CalendarEventDTO updated = calendarEventService.updateEvent(eventId, dto, userId);
-            return ResponseEntity.ok(updated);
-        } catch (SecurityException e) {
-            return ResponseEntity.status(403).body(e.getMessage());
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        String userId = dto.getCreatedById();
+        validateUserId(userId);
+        
+        CalendarEventDTO updated = calendarEventService.updateEvent(eventId, dto, userId);
+        return ResponseEntity.ok(updated);
     }
 
     // Xóa event
     @DeleteMapping("/{eventId}")
-    public ResponseEntity<?> deleteEvent(
+    public ResponseEntity<Void> deleteEvent(
             @PathVariable UUID eventId,
             @RequestParam String userId) {
-        try {
-            calendarEventService.deleteEvent(eventId, userId);
-            return ResponseEntity.ok().build();
-        } catch (SecurityException e) {
-            return ResponseEntity.status(403).body(e.getMessage());
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        validateUserId(userId);
+        
+        calendarEventService.deleteEvent(eventId, userId);
+        return ResponseEntity.ok().build();
+    }
+
+    @ExceptionHandler(SecurityException.class)
+    public ResponseEntity<String> handleSecurityException(SecurityException e) {
+        return ResponseEntity.status(403).body(e.getMessage());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<String> handleIllegalArgumentException(IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(e.getMessage());
     }
 }
