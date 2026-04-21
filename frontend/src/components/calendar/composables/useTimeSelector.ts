@@ -1,8 +1,9 @@
-import { ref, watch } from "vue";
+import { ref } from "vue";
 
+// State & Utils thời gian
 export type TimeFormat = "24h" | "12h";
 
-// Danh sách giờ và phút để hiển thị lên giao diện
+// Mock data dropdown
 const buildHours24 = (): string[] =>
   Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, "0"));
 
@@ -12,14 +13,14 @@ const buildHours12 = (): string[] =>
 const buildMinutes = (): string[] =>
   Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, "0"));
 
-// Chuyển đổi chuỗi thời gian sang phút để dễ so sánh
+/** Parse (HH:mm) -> số phút */
 export const toMinutes = (time: string): number => {
   const [hStr, mStr] = time.split(":");
   if (!hStr || !mStr) return 0;
   return parseInt(hStr, 10) * 60 + parseInt(mStr, 10);
 };
 
-// Chuyển đổi số phút về lại định dạng chuỗi HH:mm
+/** Format phút -> (HH:mm) */
 const fromMinutes = (totalMinutes: number): string => {
   const clamped = Math.min(totalMinutes, 23 * 60 + 59);
   const hh = Math.floor(clamped / 60).toString().padStart(2, "0");
@@ -27,7 +28,6 @@ const fromMinutes = (totalMinutes: number): string => {
   return `${hh}:${mm}`;
 };
 
-// Chức năng này để xử lý việc chọn giờ bắt đầu và kết thúc
 export function useTimeSelector() {
   const timeFormat = ref<TimeFormat>("24h");
 
@@ -35,7 +35,7 @@ export function useTimeSelector() {
   const hours12 = buildHours12();
   const minutes = buildMinutes();
 
-  // Các biến lưu trữ giá trị đang chọn trên giao diện
+  // State UI
   const startHour = ref("09");
   const startMinute = ref("00");
   const startAmPm = ref("AM");
@@ -44,7 +44,7 @@ export function useTimeSelector() {
   const endMinute = ref("00");
   const endAmPm = ref("AM");
 
-  // Tách chuỗi thời gian sang định dạng 24h
+  // Parse (24h)
   const parseInto24h = (timeStr: string): { h24: string; m: string; ampm: string } => {
     const [hStr = "00", mStr = "00"] = timeStr.split(":");
     const h = parseInt(hStr, 10);
@@ -53,7 +53,7 @@ export function useTimeSelector() {
     return { h24, m: mStr, ampm };
   };
 
-  // Tách chuỗi thời gian sang định dạng 12h (AM/PM)
+  // Parse (12h)
   const parseInto12h = (timeStr: string): { h12: string; m: string; ampm: string } => {
     const [hStr = "00", mStr = "00"] = timeStr.split(":");
     let h = parseInt(hStr, 10);
@@ -63,7 +63,7 @@ export function useTimeSelector() {
     return { h12: h.toString().padStart(2, "0"), m: mStr, ampm };
   };
 
-  // Cập nhật các ô chọn giờ từ chuỗi thời gian mẫu
+  // Update refs từ chuỗi đầu vào
   const parseTimeString = (timeStr: string | undefined, isStart: boolean): void => {
     if (!timeStr) return;
 
@@ -78,7 +78,7 @@ export function useTimeSelector() {
     }
   };
 
-  // Gộp giờ và phút thành chuỗi định dạng HH:mm để lưu trữ
+  // Format HH:mm string
   const buildTimeString = (hour: string, minute: string, ampm: string): string => {
     if (timeFormat.value === "24h") return `${hour}:${minute}`;
     let h = parseInt(hour, 10);
@@ -87,7 +87,7 @@ export function useTimeSelector() {
     return `${h.toString().padStart(2, "0")}:${minute}`;
   };
 
-  // Tự động đẩy giờ kết thúc lên nếu nhỏ hơn giờ bắt đầu
+  // Validate End sau Start
   const adjustEndTimeIfNeeded = (startTime: string, endTime: string): string => {
     if (toMinutes(endTime) <= toMinutes(startTime)) {
       return fromMinutes(toMinutes(startTime) + 60);
@@ -95,7 +95,7 @@ export function useTimeSelector() {
     return endTime;
   };
 
-  // Cập nhật lại giao diện chọn giờ khi đổi định dạng 24h/12h
+  // Sync format chéo 12h/24h
   const syncDropdownsOnFormatChange = (startTime: string, endTime: string) => {
     parseTimeString(startTime, true);
     parseTimeString(endTime, false);

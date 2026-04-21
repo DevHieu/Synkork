@@ -50,4 +50,16 @@ public class CalendarEventDTO {
         this.createdAt = entity.getCreatedAt();
         this.updatedAt = entity.getUpdatedAt();
     }
+
+    // Map ngược từ DTO sang Entity
+    public void updateEntity(CalendarEventEntity target) {
+        target.setTitle(this.title);
+        target.setDescription(this.description);
+        target.setEventDate(this.eventDate);
+        target.setStartTime(this.startTime);
+        target.setEndTime(this.endTime);
+        target.setRecurrenceType(this.recurrenceType != null ? this.recurrenceType : "NONE");
+        target.setRecurrenceEndDate(this.recurrenceEndDate);
+        target.setAllowEditAll(this.allowEditAll);
+    }
 }

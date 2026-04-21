@@ -16,32 +16,36 @@ const emit = defineEmits<{
   (e: "deleteEvent", event: CalendarEvent): void;
 }>();
 
-// Tên các thứ trong tuần
+// Cấu hình
 const dayNames = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
-// Tính toán các ngày hiển thị trong tháng (bao gồm cả ngày đệm từ tháng trước/sau)
+/**
+ * Tính toán các ngày hiển thị trong tháng bao gồm cả ngày đệm từ tháng trước và sau (tổng 6 tuần)
+ */
 const monthDays = computed(() => {
   const startOfMonth = props.currentDate.startOf("month");
   const endOfMonth = props.currentDate.endOf("month");
   const startDay = startOfMonth.day();
   const days: dayjs.Dayjs[] = [];
 
-  // Thêm các ngày của tháng trước
+  // Đệm từ tháng trước
   for (let i = startDay - 1; i >= 0; i--) {
     days.push(startOfMonth.subtract(i + 1, "day"));
   }
-  // Thêm các ngày của tháng hiện tại
+  // Các ngày trong tháng hiện tại
   for (let d = startOfMonth; d.isBefore(endOfMonth) || d.isSame(endOfMonth, "day"); d = d.add(1, "day")) {
     days.push(d);
   }
-  // Thêm các ngày của tháng sau để đủ 42 ô (6 tuần)
+  // Đệm từ tháng sau để đủ 42 ô
   while (days.length < 42) {
     days.push(endOfMonth.add(days.length - endOfMonth.date() - startDay + 1, "day"));
   }
   return days;
 });
 
-// Lấy danh sách sự kiện cho một ngày cụ thể
+/**
+ * Lọc và sắp xếp sự kiện cho một ngày cụ thể
+ */
 const getEventsForDate = (date: dayjs.Dayjs) => {
   const targetDate = date.format("YYYY-MM-DD");
   const result: CalendarEvent[] = [];
@@ -57,19 +61,16 @@ const getEventsForDate = (date: dayjs.Dayjs) => {
   return result;
 };
 
-// Lấy danh sách sự kiện của ngày đang chọn
+// Các sự kiện cho ngày hiện đang được chọn (hiển thị ở thanh bên)
 const selectedDateEvents = computed(() => {
   return getEventsForDate(props.selectedDate);
 });
 
-// Kiểm tra xem ngày có sự kiện không
 const hasEvent = (date: dayjs.Dayjs) => {
   const targetDate = date.format("YYYY-MM-DD");
   for (let i = 0; i < props.events.length; i++) {
     const event = props.events[i];
-    if (event && event.eventDate === targetDate) {
-      return true;
-    }
+    if (event && event.eventDate === targetDate) return true;
   }
   return false;
 };
@@ -79,12 +80,11 @@ const isToday = (date: dayjs.Dayjs) => date.isSame(dayjs(), "day");
 const isSelected = (date: dayjs.Dayjs) => date.isSame(props.selectedDate, "day");
 const isCurrentMonth = (date: dayjs.Dayjs) => date.month() === props.currentDate.month();
 
-// Kiểm tra quyền chỉnh sửa
+// Kiểm tra quyền hạn
 const canEdit = (event: CalendarEvent) => {
   return event.createdById === props.currentUserId || event.allowEditAll;
 };
 
-// Kiểm tra quyền xóa (chỉ người tạo)
 const canDelete = (event: CalendarEvent) => {
   return event.createdById === props.currentUserId;
 };

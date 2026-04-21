@@ -59,11 +59,12 @@ public class CalendarEventService {
 
     // Danh sách sự kiện trong khoảng thời gian
     public List<CalendarEventDTO> getEventsByDateRange(UUID spaceId, LocalDate start, LocalDate end) {
-        List<CalendarEventEntity> allSpaceEvents = calendarEventRepository
-                .findBySpaceId(Objects.requireNonNull(spaceId, "SpaceID null"));
+
+        List<CalendarEventEntity> targetEvents = calendarEventRepository
+                .findBySpaceIdAndEventDateLessThanEqual(Objects.requireNonNull(spaceId, "SpaceID null"), end);
         List<CalendarEventDTO> expandedResults = new java.util.ArrayList<>();
 
-        for (CalendarEventEntity event : allSpaceEvents) {
+        for (CalendarEventEntity event : targetEvents) {
             if (isNonRecurring(event)) {
                 addIfInRange(expandedResults, event, start, end);
             } else {
@@ -155,12 +156,11 @@ public class CalendarEventService {
     public CalendarEventDTO createEvent(CalendarEventDTO eventRequest, String creatorId) {
         validateEventTime(eventRequest);
 
-        // Null check cho IDE
-        UserEntity creator = userRepository.findById(Objects.requireNonNull(UUID.fromString(creatorId)))
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        // Tận dụng hàm có sẵn getReferenceById để lấy trực tiếp Proxy mà không cần Select DB
+        UserEntity creator = userRepository.getReferenceById(UUID.fromString(creatorId));
 
         CalendarEventEntity calendarEvent = new CalendarEventEntity();
-        mapDtoToEntity(eventRequest, calendarEvent);
+        eventRequest.updateEntity(calendarEvent);
         calendarEvent.setCreatedBy(creator);
         calendarEvent.setSpace(
                 spaceRepository.getReferenceById(Objects.requireNonNull(UUID.fromString(eventRequest.getSpaceId()))));
@@ -169,17 +169,6 @@ public class CalendarEventService {
         CalendarEventDTO result = new CalendarEventDTO(savedEvent);
         broadcastCalendarUpdate(eventRequest.getSpaceId(), "CREATED", result);
         return result;
-    }
-
-    private void mapDtoToEntity(CalendarEventDTO source, CalendarEventEntity target) {
-        target.setTitle(source.getTitle());
-        target.setDescription(source.getDescription());
-        target.setEventDate(source.getEventDate());
-        target.setStartTime(source.getStartTime());
-        target.setEndTime(source.getEndTime());
-        target.setRecurrenceType(source.getRecurrenceType() != null ? source.getRecurrenceType() : RECURRENCE_NONE);
-        target.setRecurrenceEndDate(source.getRecurrenceEndDate());
-        target.setAllowEditAll(source.isAllowEditAll());
     }
 
     // Cập nhật event (kiểm tra quyền: creator hoặc allowEditAll)
@@ -191,9 +180,7 @@ public class CalendarEventService {
         if (!hasPermissionToEdit(calendarEvent, UUID.fromString(userId))) {
             throw new SecurityException("Bạn không có quyền chỉnh sửa sự kiện này");
         }
-
-        mapDtoToEntity(eventRequest, calendarEvent);
-
+        eventRequest.updateEntity(calendarEvent);
         CalendarEventEntity savedEvent = calendarEventRepository.save(Objects.requireNonNull(calendarEvent));
         CalendarEventDTO result = new CalendarEventDTO(savedEvent);
         broadcastCalendarUpdate(result.getSpaceId(), "UPDATED", result);

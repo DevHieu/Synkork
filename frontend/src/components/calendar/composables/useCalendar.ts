@@ -5,12 +5,12 @@ import type { CalendarEvent } from "@/types/CalendarEvent";
 
 export type { CalendarEvent };
 
-// Chức năng này để gộp tất cả các xử lý về lịch vào một chỗ
+// Điều phối logic lịch, event & realtime
 export function useCalendar(spaceIdRef: any, currentUserId: any) {
-  // Quản lý việc đổi ngày và xem theo tuần/tháng/năm
+  // Trạng thái ngày giờ
   const calendarDate = useCalendarDate();
 
-  // Quản lý thông tin các sự kiện (Thêm, Sửa, Xóa)
+  // Thao tác CRUD event
   const calendarEvents = useCalendarEvents(
     spaceIdRef,
     currentUserId,
@@ -18,7 +18,7 @@ export function useCalendar(spaceIdRef: any, currentUserId: any) {
     calendarDate.viewMode
   );
 
-  // Cập nhật dữ liệu từ xa khi có người khác thay đổi
+  // Realtime update
   useCalendarRealtime(spaceIdRef, calendarEvents.events);
 
   return {

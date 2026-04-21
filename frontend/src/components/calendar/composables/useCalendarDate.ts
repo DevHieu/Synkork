@@ -1,45 +1,41 @@
 import { ref, computed } from "vue";
 import dayjs from "dayjs";
 
-// Chức năng này để xử lý ngày tháng và thanh điều hướng lịch
+// Quản lý ngày giờ, UI view
 export function useCalendarDate() {
   const viewMode = ref<"week" | "month" | "year">("month");
   const currentDate = ref(dayjs());
   const selectedDate = ref(dayjs());
 
-  // Di chuyển thời gian linh hoạt
+  // Điều chỉnh ngày (nhảy tới/lui)
   const jumpDate = (amount: number, unit: "week" | "month" | "year") => {
     currentDate.value = currentDate.value.add(amount, unit);
   };
 
-  // Xem trang tiếp theo
   const goNext = () => {
     jumpDate(1, viewMode.value);
   };
 
-  // Quay lại trang trước
   const goPrev = () => {
     jumpDate(-1, viewMode.value);
   };
 
-  // Về ngày hôm nay
   const goToday = () => {
     currentDate.value = dayjs();
     selectedDate.value = dayjs();
   };
 
-  // Đánh dấu ngày đang chọn
   const selectDate = (date: dayjs.Dayjs) => {
     selectedDate.value = date;
   };
 
-  // Chọn nhanh một tháng từ màn hình xem năm
+  // Chọn tháng, chuyển view month
   const setYearMonth = (monthIndex: number) => {
     currentDate.value = currentDate.value.month(monthIndex);
     viewMode.value = "month";
   };
 
-  // Chữ hiển thị tiêu đề trên đầu lịch
+  // Tiêu đề header
   const headerTitle = computed(() => {
     if (viewMode.value === "week") {
       const start = currentDate.value.startOf("week");
@@ -51,7 +47,7 @@ export function useCalendarDate() {
     return currentDate.value.format("MMMM YYYY");
   });
 
-  // Chữ hiển thị thời gian tương đương (Tháng này, Năm sau...)
+  // Label thời gian tương đối
   const relativeTimeText = computed(() => {
     const now = dayjs();
     if (viewMode.value === "week") {

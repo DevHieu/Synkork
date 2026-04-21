@@ -3,15 +3,15 @@ import { ref, computed } from "vue";
 import { useSpaceStore } from "@/stores/spaceStore";
 import { useUserStore } from "@/stores/userStore";
 import { storeToRefs } from "pinia";
-import { useCalendar } from "@/composables/calendarTS/useCalendar";
+import { useCalendar } from "@/components/calendar/composables/useCalendar";
 import type { CalendarEvent } from "@/types/CalendarEvent";
 
-import CalendarMonthView from "@/components/calendar/CalendarMonthView.vue";
-import CalendarWeekView from "@/components/calendar/CalendarWeekView.vue";
-import CalendarYearView from "@/components/calendar/CalendarYearView.vue";
-import CalendarEventDialog from "@/components/calendar/CalendarEventDialog.vue";
-import CalendarToolbar from "@/components/calendar/CalendarToolbar.vue";
-import CalendarDeleteDialog from "@/components/calendar/CalendarDeleteDialog.vue";
+import CalendarMonthView from "@/components/calendar/views/CalendarMonthView.vue";
+import CalendarWeekView from "@/components/calendar/views/CalendarWeekView.vue";
+import CalendarYearView from "@/components/calendar/views/CalendarYearView.vue";
+import CalendarEventDialog from "@/components/calendar/dialogs/CalendarEventDialog.vue";
+import CalendarToolbar from "@/components/calendar/sub-components/CalendarToolbar.vue";
+import CalendarDeleteDialog from "@/components/calendar/dialogs/CalendarDeleteDialog.vue";
 
 // Store state
 const spaceStore = useSpaceStore();
