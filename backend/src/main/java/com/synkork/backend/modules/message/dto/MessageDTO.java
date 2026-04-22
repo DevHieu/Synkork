@@ -1,5 +1,6 @@
 package com.synkork.backend.modules.message.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.synkork.backend.modules.message.MessageEntity;
 import com.synkork.backend.modules.message.MessageTypeEnum;
 import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
@@ -21,15 +22,19 @@ public class MessageDTO {
 
     private boolean deleted = false;
     private boolean pinned = false;
+    private boolean edited = false;
 
     private MessageTypeEnum type = MessageTypeEnum.TEXT;
 
     private String attachmentUrl;
 
     private RoomMemberDto sender;
+    private ReplyPreviewDTO replyTo;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    private UUID replyToId;
 
     public MessageDTO (MessageEntity message) {
         this.id = message.getId();
@@ -37,6 +42,7 @@ public class MessageDTO {
         this.spaceId = message.getSpace().getId().toString();
         this.deleted = message.isDeleted();
         this.pinned = message.isPinned();
+        this.edited = message.isEdited();
         this.createdAt = message.getCreatedAt();
         this.updatedAt = message.getUpdatedAt();
         this.type = message.getType();
@@ -47,23 +53,27 @@ public class MessageDTO {
                 message.getSender().getUser().getAvatarUrl(),
                 message.getSender().getRole()
         );
-
+        if (message.getReplyTo() != null) {
+            this.replyTo = new ReplyPreviewDTO(message.getReplyTo());
+        }
     }
 
-    public MessageDTO(UUID id,String content, UUID spaceId, boolean deleted, boolean pinned,
+    public MessageDTO(UUID id,String content, UUID spaceId, boolean deleted, boolean pinned, boolean edited,
                       MessageTypeEnum type, String attachmentUrl,
                       String senderUsername, String senderDisplayName,
-                      String senderAvatarUrl, RoomMemberRoleEnum senderRole,
+                      String senderAvatarUrl, RoomMemberRoleEnum senderRole, UUID replyToId,
                       LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.content = content;
         this.spaceId = spaceId.toString();
         this.deleted = deleted;
         this.pinned = pinned;
+        this.edited = edited;
         this.type = type;
         this.attachmentUrl = attachmentUrl;
         this.sender = new RoomMemberDto(senderDisplayName, senderUsername, senderAvatarUrl, senderRole);
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.replyToId = replyToId;
     }
 }

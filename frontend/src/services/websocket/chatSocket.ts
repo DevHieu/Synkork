@@ -16,7 +16,11 @@ export const chatSocket = {
     );
   },
 
-  sendMessage(msg: { content: string; spaceId: string }) {
+  sendMessage(msg: {
+    content: string;
+    spaceId: string;
+    replyToId?: string | null;
+  }) {
     socketService.publish("/app/chat.sendMessage", msg);
   },
 

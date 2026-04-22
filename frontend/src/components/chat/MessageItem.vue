@@ -21,7 +21,6 @@ const props = defineProps<{
 const userStore = useUserStore();
 const { user } = storeToRefs(userStore);
 
-// hard code tạm màu của owner, admin với member thường khi nhắn tin
 const senderNameColor = computed(() => {
   switch (props.message.sender?.role) {
     case "OWNER":
@@ -67,8 +66,14 @@ const handleDelete = () => {
 };
 
 const handleReply = () => messageStore.setReply(props.message);
+
 const handlePin = () =>
   messageStore.changePinStatus(props.message.spaceId, props.message.id);
+
+const jumpToReply = () => {
+  if (!props.message.replyTo?.id) return;
+  messageStore.jumpToMessage(props.message.spaceId, props.message.replyTo.id);
+};
 </script>
 
 <template>
@@ -81,12 +86,15 @@ const handlePin = () =>
     </span>
     <div class="flex-1 h-px bg-border/50"></div>
   </div>
+
+  <!-- Giữ nguyên cấu trúc flat như code gốc, không lồng thêm div -->
   <div
     :id="`message-${props.message.id}`"
     class="relative group flex gap-3 p-2 mx-2 rounded-lg transition-colors hover:bg-secondary/20 mb-2"
   >
+    <!-- Avatar column -->
     <div class="w-10 shrink-0">
-      <Avatar v-if="!isGrouped" class="h-10 w-10">
+      <Avatar v-if="!isGrouped || props.message.replyTo" class="h-10 w-10">
         <AvatarImage
           v-if="props.message.sender?.avatarUrl"
           :src="props.message.sender.avatarUrl"
@@ -103,8 +111,41 @@ const handlePin = () =>
       </span>
     </div>
 
+    <!-- Content column -->
     <div class="flex-1 min-w-0">
-      <div v-if="!isGrouped" class="flex items-center gap-2 mb-1">
+      <!-- Reply quote block -->
+      <div
+        v-if="props.message.replyTo"
+        class="flex items-stretch mb-2 cursor-pointer max-w-xs rounded-r-md overflow-hidden group/quote"
+        @click="jumpToReply"
+      >
+        <div class="w-0.5 shrink-0 bg-teal-500/60" />
+        <div
+          class="flex-1 min-w-0 bg-white/[0.04] group-hover/quote:bg-white/[0.07] transition-colors px-2.5 py-1.5"
+        >
+          <p
+            class="text-[11px] font-semibold text-teal-400 mb-0.5 leading-none truncate"
+          >
+            {{ props.message.replyTo.senderDisplayName }}
+          </p>
+          <p
+            class="text-[11px] text-white/40 truncate leading-snug"
+            :class="{ italic: props.message.replyTo.deleted }"
+          >
+            {{
+              props.message.replyTo.deleted
+                ? "Tin nhắn đã bị xóa"
+                : props.message.replyTo.content
+            }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Sender header -->
+      <div
+        v-if="!isGrouped || props.message.replyTo"
+        class="flex items-center gap-2 mb-1"
+      >
         <span class="font-bold text-sm" :class="senderNameColor">
           {{ props.message.sender?.displayName }}
         </span>
@@ -113,6 +154,7 @@ const handlePin = () =>
         </span>
       </div>
 
+      <!-- Edit mode -->
       <div v-if="isEditing" class="mt-1">
         <textarea
           v-model="editContent"
@@ -137,6 +179,7 @@ const handlePin = () =>
         </div>
       </div>
 
+      <!-- Message content -->
       <div v-else class="text-sm leading-relaxed wrap-break-word">
         <template v-if="props.message.deleted">
           <span class="text-muted-foreground italic text-xs"
@@ -146,7 +189,7 @@ const handlePin = () =>
         <template v-else>
           <span class="text-foreground/90">{{ props.message.content }}</span>
           <span
-            v-if="props.message.updatedAt !== props.message.createdAt"
+            v-if="props.message.edited"
             class="text-[10px] text-muted-foreground ml-1"
           >
             (đã chỉnh sửa)
@@ -155,6 +198,7 @@ const handlePin = () =>
       </div>
     </div>
 
+    <!-- Action buttons -->
     <div
       class="absolute right-4 -top-4 opacity-0 group-hover:opacity-100 transition-opacity z-10"
     >

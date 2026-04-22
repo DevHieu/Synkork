@@ -116,12 +116,12 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!-- org.json — required by TokenServerAssistant (ZegoCloud) -->
-		<dependency>
-			<groupId>org.json</groupId>
-			<artifactId>json</artifactId>
-			<version>20250517</version>
-		</dependency>
+<!--        For zego cloud generate token-->
+        <dependency>
+            <groupId>com.googlecode.json-simple</groupId>
+            <artifactId>json-simple</artifactId>
+            <version>1.1.1</version>
+        </dependency>
 	</dependencies>
 
 	<build>

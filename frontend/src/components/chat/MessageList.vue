@@ -12,12 +12,6 @@ const props = defineProps<{
   afterHasMore: boolean;
   spaceId: string;
   spaceName: string;
-  containerRef: (el: HTMLElement | null) => void;
-}>();
-
-const emits = defineEmits<{
-  (e: "loadBeforeMore"): void;
-  (e: "loadAfterMore"): void;
 }>();
 
 const messageStore = useMessageStore();
@@ -33,7 +27,8 @@ let afterObserver: IntersectionObserver | null = null;
 
 const setRef = (el: any) => {
   container.value = el as HTMLElement | null;
-  props.containerRef(el as HTMLElement | null);
+  messageStore.setScrollContainer(el as HTMLElement | null); // ← thêm
+  if (el) nextTick(() => setupObserver());
 };
 
 const handleScroll = () => {
@@ -50,21 +45,6 @@ const handleScroll = () => {
   }
 };
 
-const goToBottom = async () => {
-  if (messageStore.isJumpMode) {
-    // Đang jump mode → fetch lại từ đầu rồi scroll xuống
-    isLoading.value = true;
-    await messageStore.exitJumpMode(props.spaceId); // cần truyền spaceId vào prop
-    isLoading.value = false;
-  }
-
-  await nextTick();
-  container.value?.scrollTo({
-    top: container.value.scrollHeight,
-    behavior: "smooth",
-  });
-};
-
 const setupObserver = () => {
   if (!beforeSentinel.value || !afterSentinel.value || !container.value) return;
 
@@ -75,7 +55,7 @@ const setupObserver = () => {
     ([entry]) => {
       if (entry?.isIntersecting && props.beforeHasMore && !isLoading.value) {
         isLoading.value = true;
-        emits("loadBeforeMore");
+        messageStore.loadMore(props.spaceId, "later");
       }
     },
     { root: container.value, rootMargin: "200px" },
@@ -85,7 +65,7 @@ const setupObserver = () => {
     ([entry]) => {
       if (entry?.isIntersecting && props.afterHasMore && !isLoading.value) {
         isLoading.value = true;
-        emits("loadAfterMore");
+        messageStore.loadMore(props.spaceId, "newer");
       }
     },
     { root: container.value, rootMargin: "200px" },
@@ -139,7 +119,7 @@ const processedMessages = computed(() => {
     <Transition name="fade">
       <button
         v-if="messageStore.isScrollTop"
-        @click="goToBottom"
+        @click="messageStore.scrollToBottom(props.spaceId)"
         class="absolute bottom-4 right-4 z-10 flex items-center justify-center w-9 h-9 rounded-full bg-background border border-border shadow-md hover:bg-muted transition-colors"
       >
         <svg
