@@ -1,5 +1,6 @@
 package com.synkork.backend.modules.message.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.synkork.backend.modules.message.MessageEntity;
 import com.synkork.backend.modules.message.MessageTypeEnum;
 import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
@@ -28,9 +29,12 @@ public class MessageDTO {
     private String attachmentUrl;
 
     private RoomMemberDto sender;
+    private ReplyPreviewDTO replyTo;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    private UUID replyToId;
 
     public MessageDTO (MessageEntity message) {
         this.id = message.getId();
@@ -49,13 +53,15 @@ public class MessageDTO {
                 message.getSender().getUser().getAvatarUrl(),
                 message.getSender().getRole()
         );
-
+        if (message.getReplyTo() != null) {
+            this.replyTo = new ReplyPreviewDTO(message.getReplyTo());
+        }
     }
 
     public MessageDTO(UUID id,String content, UUID spaceId, boolean deleted, boolean pinned, boolean edited,
                       MessageTypeEnum type, String attachmentUrl,
                       String senderUsername, String senderDisplayName,
-                      String senderAvatarUrl, RoomMemberRoleEnum senderRole,
+                      String senderAvatarUrl, RoomMemberRoleEnum senderRole, UUID replyToId,
                       LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.content = content;
@@ -68,5 +74,6 @@ public class MessageDTO {
         this.sender = new RoomMemberDto(senderDisplayName, senderUsername, senderAvatarUrl, senderRole);
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.replyToId = replyToId;
     }
 }

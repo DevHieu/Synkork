@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.message;
 
 import com.synkork.backend.modules.message.dto.MessageDTO;
+import com.synkork.backend.modules.message.dto.ReplyPreviewDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,7 +18,7 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
                 m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
                 m.type, m.attachmentUrl,
                 rm.user.username, rm.user.displayName, rm.user.avatarUrl,
-                rm.role, m.createdAt, m.updatedAt
+                rm.role, m.replyTo.id, m.createdAt, m.updatedAt
                 )
                 FROM MessageEntity m
                 JOIN m.sender rm
@@ -32,7 +33,7 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
                     m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
                     m.type, m.attachmentUrl,
                     rm.user.username, rm.user.displayName, rm.user.avatarUrl,
-                    rm.role, m.createdAt, m.updatedAt
+                    rm.role, m.replyTo.id, m.createdAt, m.updatedAt
                     )
                 FROM MessageEntity m
                 JOIN m.sender rm
@@ -52,7 +53,7 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
                     m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
                     m.type, m.attachmentUrl,
                     rm.user.username, rm.user.displayName, rm.user.avatarUrl,
-                    rm.role, m.createdAt, m.updatedAt
+                    rm.role, m.replyTo.id, m.createdAt, m.updatedAt
                 )
                 FROM MessageEntity m
                 JOIN m.sender rm
@@ -73,7 +74,7 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
                 m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
                 m.type, m.attachmentUrl,
                 rm.user.username, rm.user.displayName, rm.user.avatarUrl,
-                rm.role, m.createdAt, m.updatedAt
+                rm.role, m.replyTo.id, m.createdAt, m.updatedAt
                 )
                 FROM MessageEntity m
                 JOIN m.sender rm
@@ -88,7 +89,7 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
                     m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
                     m.type, m.attachmentUrl,
                     rm.user.username, rm.user.displayName, rm.user.avatarUrl,
-                    rm.role, m.createdAt, m.updatedAt
+                    rm.role, m.replyTo.id, m.createdAt, m.updatedAt
                     )
                 FROM MessageEntity m
                 JOIN m.sender rm
@@ -124,5 +125,14 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
             """)
     List<MessageEntity> findAfterMessage(UUID spaceId, UUID messageId, int limit); //    Lấy cả tin nhắn mình chọn và các tin nhắn sau
 
-
+    @Query("""
+                SELECT new com.synkork.backend.modules.message.dto.ReplyPreviewDTO(
+                    r.id, r.content, r.deleted,
+                    ru.user.displayName
+                )
+                FROM MessageEntity r
+                JOIN r.sender ru
+                WHERE r.id IN :ids
+            """)
+    List<ReplyPreviewDTO> findReplyPreviews(@Param("ids") List<UUID> ids);
 }

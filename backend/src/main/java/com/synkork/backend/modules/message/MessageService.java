@@ -2,6 +2,7 @@ package com.synkork.backend.modules.message;
 
 import com.synkork.backend.modules.message.dto.MessageDTO;
 import com.synkork.backend.modules.message.dto.MessagePageDTO;
+import com.synkork.backend.modules.message.dto.ReplyPreviewDTO;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
 import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
@@ -10,9 +11,8 @@ import com.synkork.backend.modules.space.SpaceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class MessageService {
@@ -32,7 +32,7 @@ public class MessageService {
             boolean hasMore = messages.size() > limit;
             if (hasMore) messages = messages.subList(0, limit);
             UUID beforeCursor = hasMore ? messages.getLast().getId() : null;
-            return new MessagePageDTO(messages, beforeCursor, null, hasMore, false);
+            return returnPageDto(messages, beforeCursor, null, hasMore, false);
         }
 
         if (isUp) {
@@ -41,7 +41,7 @@ public class MessageService {
             boolean hasMore = messages.size() > limit;
             if (hasMore) messages = messages.subList(0, limit);
             UUID beforeCursor = hasMore ? messages.getLast().getId() : null;
-            return new MessagePageDTO(messages, beforeCursor, null, hasMore, false);
+            return returnPageDto(messages, beforeCursor, null, hasMore, false);
 
         } else {
             // Scroll xuống → load newer
@@ -50,11 +50,12 @@ public class MessageService {
             boolean hasMore = messages.size() > limit;
             if (hasMore) messages = messages.subList(0, limit);
             UUID afterCursor = hasMore ? messages.getFirst().getId() : null;
-            return new MessagePageDTO(messages, null, afterCursor, false, hasMore);
+            return returnPageDto(messages, null, afterCursor, false, hasMore);
         }
     }
 
     public MessageDTO saveMessage(MessageDTO dto, String senderId) {
+        System.out.println(dto.getReplyToId());
         MessageEntity entity = new MessageEntity();
         UUID userId = UUID.fromString(senderId);
         UUID spaceId = UUID.fromString(dto.getSpaceId());
@@ -70,6 +71,10 @@ public class MessageService {
         entity.setSpace(space);
         entity.setContent(dto.getContent());
 
+        if (dto.getReplyToId() != null) {
+            entity.setReplyTo(messageRepository.getReferenceById(dto.getReplyToId()));
+        }
+
         MessageEntity newMessage = messageRepository.save(entity);
         dto.setId(newMessage.getId());
         dto.setCreatedAt(newMessage.getCreatedAt());
@@ -77,6 +82,13 @@ public class MessageService {
 
         RoomMemberDto senderDto = new RoomMemberDto(sender);
         dto.setSender(senderDto);
+
+        if (dto.getReplyToId() != null) {
+            messageRepository.findReplyPreviews(List.of(dto.getReplyToId()))
+                    .stream()
+                    .findFirst()
+                    .ifPresent(dto::setReplyTo);
+        }
 
         return dto;
     }
@@ -124,7 +136,7 @@ public class MessageService {
 
         UUID nextCursor = hasMore ? pinnedList.get(pinnedList.size() - 1).getId() : null;
 
-        return new MessagePageDTO(pinnedList, nextCursor, null, hasMore, false); // Danh sách pin ko cần làm infinite scroll 2 chiều nên cho before là null luôn
+        return returnPageDto(pinnedList, nextCursor, null, hasMore, false); // Danh sách pin ko cần làm infinite scroll 2 chiều nên cho before là null luôn
     }
 
     public MessagePageDTO findAround(UUID spaceUUID, UUID messageUUID, int limit) {
@@ -151,6 +163,36 @@ public class MessageService {
         UUID beforeCursor = beforeHasMore ? messages.getLast().getId() : null;
         UUID afterCursor = afterHasMore ? messages.getFirst().getId() : null;
 
-        return new MessagePageDTO(messages, beforeCursor, afterCursor, beforeHasMore, afterHasMore);
+
+        return returnPageDto(messages, beforeCursor, afterCursor, beforeHasMore, afterHasMore);
+    }
+
+    // Hàm này nhằm load lên những cái tin nhắn được reply
+    private void enrichReplyTo(List<MessageDTO> messages) {
+        List<UUID> replyToIds = messages.stream()
+                .map(MessageDTO::getReplyToId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        if (replyToIds.isEmpty()) return;
+
+        Map<UUID, ReplyPreviewDTO> previewMap = messageRepository
+                .findReplyPreviews(replyToIds)
+                .stream()
+                .collect(Collectors.toMap(ReplyPreviewDTO::getId, r -> r));
+
+        messages.forEach(m -> {
+            if (m.getReplyToId() != null) {
+                m.setReplyTo(previewMap.get(m.getReplyToId()));
+            }
+        });
+    }
+
+    private MessagePageDTO returnPageDto(List<MessageDTO> messages, UUID beforeCursor, UUID afterCursor, boolean beforeHasMore, boolean afterHasMore) {
+        MessagePageDTO page = new MessagePageDTO(messages, beforeCursor, afterCursor, beforeHasMore, afterHasMore);
+        enrichReplyTo(messages);
+
+        return page;
     }
 }
