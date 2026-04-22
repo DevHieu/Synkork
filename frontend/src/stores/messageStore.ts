@@ -135,11 +135,20 @@ export const useMessageStore = defineStore("message", {
       chatSocket.subscribeDelete(spaceId, (messageId: string) => {
         const msg = this.messages.find((m) => m.id === messageId);
         if (msg) msg.deleted = true;
+
+        this.pinnedMessages = this.pinnedMessages.filter(
+          (m) => m.id !== messageId,
+        );
       });
 
       chatSocket.subscribeUpdate(spaceId, (updatedMsg: Message) => {
         const index = this.messages.findIndex((m) => m.id === updatedMsg.id);
         if (index !== -1) this.messages[index] = updatedMsg;
+
+        const pinnedIndex = this.pinnedMessages.findIndex(
+          (m) => m.id === updatedMsg.id,
+        );
+        if (pinnedIndex !== -1) this.pinnedMessages[pinnedIndex] = updatedMsg;
       });
 
       chatSocket.subscribePinStatus(spaceId, (updatedMsg: Message) => {

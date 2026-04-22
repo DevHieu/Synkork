@@ -6,6 +6,7 @@ export interface Message {
   spaceId: string;
   deleted: boolean;
   pinned: boolean;
+  edited: boolean;
   type: "TEXT" | "IMAGE" | "FILE";
   attachmentUrl: string | null;
   sender: Sender;

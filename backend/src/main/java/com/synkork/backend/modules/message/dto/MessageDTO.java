@@ -21,6 +21,7 @@ public class MessageDTO {
 
     private boolean deleted = false;
     private boolean pinned = false;
+    private boolean edited = false;
 
     private MessageTypeEnum type = MessageTypeEnum.TEXT;
 
@@ -37,6 +38,7 @@ public class MessageDTO {
         this.spaceId = message.getSpace().getId().toString();
         this.deleted = message.isDeleted();
         this.pinned = message.isPinned();
+        this.edited = message.isEdited();
         this.createdAt = message.getCreatedAt();
         this.updatedAt = message.getUpdatedAt();
         this.type = message.getType();
@@ -50,7 +52,7 @@ public class MessageDTO {
 
     }
 
-    public MessageDTO(UUID id,String content, UUID spaceId, boolean deleted, boolean pinned,
+    public MessageDTO(UUID id,String content, UUID spaceId, boolean deleted, boolean pinned, boolean edited,
                       MessageTypeEnum type, String attachmentUrl,
                       String senderUsername, String senderDisplayName,
                       String senderAvatarUrl, RoomMemberRoleEnum senderRole,
@@ -60,6 +62,7 @@ public class MessageDTO {
         this.spaceId = spaceId.toString();
         this.deleted = deleted;
         this.pinned = pinned;
+        this.edited = edited;
         this.type = type;
         this.attachmentUrl = attachmentUrl;
         this.sender = new RoomMemberDto(senderDisplayName, senderUsername, senderAvatarUrl, senderRole);

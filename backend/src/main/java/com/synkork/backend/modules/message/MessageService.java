@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class MessageService {
@@ -91,11 +90,15 @@ public class MessageService {
     }
 
     public MessageDTO updateMessage(MessageDTO dto) {
-        MessageEntity  entity = messageRepository.findById(dto.getId()).orElseThrow(() -> new IllegalArgumentException("Message not found"));
-        entity.setContent(dto.getContent());
-        MessageEntity newMessage = messageRepository.save(entity);
+        MessageEntity entity = messageRepository.findById(dto.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Message not found"));
 
-        dto.setUpdatedAt(newMessage.getUpdatedAt());
+        entity.setContent(dto.getContent());
+        entity.setEdited(true); // thêm cái này vào là xong
+
+        MessageEntity saved = messageRepository.save(entity);
+        dto.setUpdatedAt(saved.getUpdatedAt());
+        dto.setEdited(true);
 
         return dto;
     }

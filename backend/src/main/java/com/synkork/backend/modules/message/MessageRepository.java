@@ -14,7 +14,7 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
 
     @Query("""
             SELECT new com.synkork.backend.modules.message.dto.MessageDTO(
-                m.id, m.content, m.space.id, m.deleted, m.pinned,
+                m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
                 m.type, m.attachmentUrl,
                 rm.user.username, rm.user.displayName, rm.user.avatarUrl,
                 rm.role, m.createdAt, m.updatedAt
@@ -29,7 +29,7 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
 
     @Query("""
                 SELECT new com.synkork.backend.modules.message.dto.MessageDTO(
-                    m.id, m.content, m.space.id, m.deleted, m.pinned,
+                    m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
                     m.type, m.attachmentUrl,
                     rm.user.username, rm.user.displayName, rm.user.avatarUrl,
                     rm.role, m.createdAt, m.updatedAt
@@ -49,7 +49,7 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
 
     @Query("""
                 SELECT new com.synkork.backend.modules.message.dto.MessageDTO(
-                    m.id, m.content, m.space.id, m.deleted, m.pinned,
+                    m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
                     m.type, m.attachmentUrl,
                     rm.user.username, rm.user.displayName, rm.user.avatarUrl,
                     rm.role, m.createdAt, m.updatedAt
@@ -70,7 +70,7 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
     // pinned tin nhawns
     @Query("""
             SELECT new com.synkork.backend.modules.message.dto.MessageDTO(
-                m.id, m.content, m.space.id, m.deleted, m.pinned,
+                m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
                 m.type, m.attachmentUrl,
                 rm.user.username, rm.user.displayName, rm.user.avatarUrl,
                 rm.role, m.createdAt, m.updatedAt
@@ -85,7 +85,7 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
 
     @Query("""
                 SELECT new com.synkork.backend.modules.message.dto.MessageDTO(
-                    m.id, m.content, m.space.id, m.deleted, m.pinned,
+                    m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
                     m.type, m.attachmentUrl,
                     rm.user.username, rm.user.displayName, rm.user.avatarUrl,
                     rm.role, m.createdAt, m.updatedAt

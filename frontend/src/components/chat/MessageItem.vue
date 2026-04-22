@@ -146,7 +146,7 @@ const handlePin = () =>
         <template v-else>
           <span class="text-foreground/90">{{ props.message.content }}</span>
           <span
-            v-if="props.message.updatedAt !== props.message.createdAt"
+            v-if="props.message.edited"
             class="text-[10px] text-muted-foreground ml-1"
           >
             (đã chỉnh sửa)
