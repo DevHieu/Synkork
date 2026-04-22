@@ -1,19 +1,15 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { useRoute } from "vue-router";
 import { storeToRefs } from "pinia";
 import { useMessageStore } from "@/stores/messageStore";
 import { Pin } from "lucide-vue-next";
 
+const props = defineProps<{
+  spaceId: string;
+}>();
+
 const messageStore = useMessageStore();
 const { pinnedMessages, pinnedHasMore, pinLoading } = storeToRefs(messageStore);
-
-const route = useRoute();
-const spaceId = ref(route.params.spaceId as string);
-
-const emit = defineEmits<{
-  "jump-to": [messageId: string];
-}>();
 
 const searchQuery = ref("");
 
@@ -26,11 +22,11 @@ const filtered = computed(() => {
 });
 
 const handleUnpin = (messageId: string) => {
-  messageStore.changePinStatus(spaceId.value, messageId);
+  messageStore.changePinStatus(props.spaceId, messageId);
 };
 
 const loadMore = async () => {
-  await messageStore.fetchPinnedList(spaceId.value, messageStore.pinnedCursor);
+  await messageStore.fetchPinnedList(props.spaceId, messageStore.pinnedCursor);
 };
 </script>
 
@@ -123,7 +119,7 @@ const loadMore = async () => {
           v-for="msg in filtered"
           :key="msg.id"
           class="group relative rounded-lg px-3 py-3 cursor-pointer transition-all duration-200 border border-transparent hover:border-border hover:bg-accent/70"
-          @click="emit('jump-to', msg.id)"
+          @click="messageStore.jumpToMessage(props.spaceId, msg.id)"
         >
           <!-- Header -->
           <div class="flex items-center gap-2 mb-1.5">

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, watch, onMounted, onUnmounted } from "vue";
+import { ref, watch, onMounted, onUnmounted } from "vue";
 import { chatSocket } from "@/services/websocket/chatSocket";
 import { useRoute } from "vue-router";
 import { useSpaceStore } from "@/stores/spaceStore";
@@ -19,7 +19,7 @@ const spaceStore = useSpaceStore();
 const { currentSpace } = storeToRefs(spaceStore);
 
 const messageStore = useMessageStore();
-const { messages, beforeHasMore, afterHasMore, replyingTo, isScrollTop } =
+const { messages, beforeHasMore, afterHasMore, replyingTo } =
   storeToRefs(messageStore);
 
 const memberOpen = ref(true);
@@ -34,17 +34,10 @@ const togglePins = () => {
   memberOpen.value = false;
 };
 
-const newMessage = ref("");
-const messageContainer = ref<HTMLElement | null>(null);
-
-const setContainerRef = (el: HTMLElement | null) => {
-  messageContainer.value = el;
-};
-
-const isSocketConnected = ref(false);
-
 onMounted(() => {
-  if (spaceId.value) isSocketConnected.value = true;
+  if (currentSpace.value?.id) {
+    joinSpace(currentSpace.value.id);
+  }
 });
 
 onUnmounted(() => {
@@ -58,62 +51,16 @@ const joinSpace = async (id: string) => {
   }
   messageStore.clearAll();
   await messageStore.fetchMessages(id, null);
-  scrollToBottom();
+  messageStore.scrollToBottom(spaceId.value);
   messageStore.subscribeToChat(id);
   messageStore.fetchPinnedList(id, null);
 };
 
-const handleSendMessage = () => {
-  messageStore.sendMessage(spaceId.value, newMessage.value);
-  newMessage.value = "";
-};
-
-const scrollToBottom = async () => {
-  await nextTick(); // Chờ tin nhắn render xong
-  if (messageContainer.value) {
-    messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
-  }
-};
-
-const jumpToMessage = async (id: string) => {
-  await messageStore.jumpToMessage(spaceId.value, id);
-  await nextTick();
-
-  const el = document.getElementById(`message-${id}`);
-  const container = messageContainer.value;
-  if (!el || !container) return;
-
-  el.scrollIntoView({ block: "center" });
-
-  el.classList.add("message-highlight");
-  setTimeout(() => el.classList.remove("message-highlight"), 2000);
-};
-
-// Vừa vào trang hoặc chuyển space thì join lại để nhận tin nhắn mới nhất và cập nhật message list
-watch(
-  [currentSpace, isSocketConnected],
-  ([space, connected]) => {
-    if (!space?.id || !connected) return;
-    joinSpace(space.id);
-    console.log(space);
-  },
-  { immediate: true },
-);
-
-watch(
-  () => messages.value.length,
-  (newLength, oldLength) => {
-    if (newLength > oldLength) {
-      // Nếu có tin nhắn mới và người dùng đang ở dưới cùng, cuộn xuống
-      const container = messageContainer.value;
-      if (!container) return;
-
-      if (!isScrollTop.value) {
-        scrollToBottom();
-      }
-    }
-  },
-);
+watch(currentSpace, (space, prevSpace) => {
+  if (!space?.id) return;
+  if (space.id === prevSpace?.id) return; // không re-join nếu cùng space
+  joinSpace(space.id);
+});
 </script>
 
 <template>
@@ -136,17 +83,10 @@ watch(
           :afterHasMore="afterHasMore"
           :spaceId="currentSpace?.id ?? ''"
           :space-name="currentSpace?.name ?? ''"
-          :container-ref="setContainerRef"
-          @loadBeforeMore="() => messageStore.loadMore(currentSpace.id)"
-          @loadAfterMore="
-            () => messageStore.fetchNewerMessages(currentSpace.id)
-          "
         />
         <MessageInput
-          v-model="newMessage"
+          :spaceId="currentSpace?.id ?? ''"
           :replying-to="replyingTo"
-          @send="handleSendMessage"
-          @cancel-reply="messageStore.setReply(null)"
         />
       </div>
 
@@ -158,7 +98,7 @@ watch(
           borderColor: 'var(--border)',
         }"
       >
-        <PinPanel @jump-to="jumpToMessage" />
+        <PinPanel :space-id="currentSpace?.id ?? ''" />
       </div>
 
       <!-- Member Sidebar -->
