@@ -61,20 +61,31 @@ public class NoteController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<NoteResponse> updateNote(
-            @PathVariable String id, @RequestBody NoteRequest request) {
-        return ResponseEntity.ok(noteService.updateNote(id, request));
+    public ResponseEntity<NoteResponse> updateNote(@PathVariable String id,@PathVariable String spaceId, @RequestBody NoteRequest request) {
+
+        NoteResponse response = noteService.updateNote(id, request);
+
+        messageTemplate.convertAndSend("/topic/space/" + spaceId + "/notes/update",  response );
+
+
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void>deleteNote(@PathVariable String id) {
-        noteService.deleteNote(id);
+    public ResponseEntity<Void>deleteNote(@PathVariable String id, @PathVariable String spaceId) {noteService.deleteNote(id);
+
+        messageTemplate.convertAndSend("/topic/space/" + spaceId + "/notes/delete" ,id );
+
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/pin")
-    public ResponseEntity<NoteResponse> togglePin(@PathVariable String id) {
-        return ResponseEntity.ok(noteService.togglePin(id));
+    public ResponseEntity<NoteResponse> togglePin(@PathVariable String id,@PathVariable String spaceId) {
+        NoteResponse response = noteService.togglePin(id);
+
+        messageTemplate.convertAndSend("/topic/space/" + spaceId + "/notes/pin" , response);
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/search")
