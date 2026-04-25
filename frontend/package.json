@@ -41,6 +41,7 @@
     "vue-cookies": "^1.8.6",
     "vue-router": "^4.6.4",
     "vue-sonner": "^2.0.9",
+    "vue3-emoji-picker": "^1.1.8",
     "zego-express-engine-webrtc": "^3.11.0"
   },
   "devDependencies": {

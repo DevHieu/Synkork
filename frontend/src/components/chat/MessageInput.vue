@@ -1,22 +1,32 @@
 <script setup lang="ts">
 import { useMessageStore } from "@/stores/messageStore";
+import { CirclePlus, Smile } from "lucide-vue-next";
 import { storeToRefs } from "pinia";
-import { watch, nextTick, ref } from "vue";
+import { watch, nextTick, ref, onMounted, onUnmounted } from "vue";
+
+import EmojiPicker from "vue3-emoji-picker";
+import "vue3-emoji-picker/css";
 
 const newMessage = ref("");
 
+const inputRef = ref<HTMLInputElement | null>(null);
+const fileInputRef = ref<HTMLInputElement | null>(null);
+const showEmojiPicker = ref(false);
+const emojiPickerRef = ref<HTMLDivElement | null>(null);
+const emojiButtonRef = ref<HTMLButtonElement | null>(null);
+const emojiPickerPos = ref({ bottom: 0, right: 0 });
+
 const props = defineProps<{
   spaceId: string;
+  replyingTo?: any;
 }>();
 
-const inputRef = ref<HTMLInputElement | null>(null);
 const messageStore = useMessageStore();
 const { replyingTo } = storeToRefs(messageStore);
 
 const handleSubmit = async () => {
   messageStore.sendMessage(props.spaceId, newMessage.value);
   newMessage.value = "";
-
   await nextTick();
   messageStore.scrollToBottom(props.spaceId);
 };
@@ -24,6 +34,47 @@ const handleSubmit = async () => {
 const cancelReply = () => {
   messageStore.setReply(null);
 };
+
+const handleFileClick = () => {
+  fileInputRef.value?.click();
+};
+
+const handleFileChange = (e: Event) => {
+  const file = (e.target as HTMLInputElement).files?.[0];
+  console.log("[log] File selected:", file);
+};
+
+const onSelectEmoji = (emoji: { i: string }) => {
+  newMessage.value += emoji.i;
+  inputRef.value?.focus();
+};
+
+const toggleEmojiPicker = () => {
+  if (!showEmojiPicker.value && emojiButtonRef.value) {
+    const rect = emojiButtonRef.value.getBoundingClientRect();
+    emojiPickerPos.value = {
+      bottom: window.innerHeight - rect.top + 8,
+      right: window.innerWidth - rect.right,
+    };
+  }
+  showEmojiPicker.value = !showEmojiPicker.value;
+};
+
+const handleClickOutside = (e: MouseEvent) => {
+  const target = e.target as Node;
+  if (
+    emojiPickerRef.value &&
+    !emojiPickerRef.value.contains(target) &&
+    !emojiButtonRef.value?.contains(target)
+  ) {
+    showEmojiPicker.value = false;
+  }
+};
+
+onMounted(() => document.addEventListener("mousedown", handleClickOutside));
+onUnmounted(() =>
+  document.removeEventListener("mousedown", handleClickOutside),
+);
 
 watch(
   replyingTo,
@@ -43,10 +94,8 @@ watch(
     <!-- Reply preview bar -->
     <Transition name="reply-slide">
       <div v-if="replyingTo" class="flex items-center gap-3 px-4 pt-2.5 pb-1">
-        <!-- Accent line + icon -->
         <div class="flex items-center gap-2 shrink-0">
           <div class="w-0.5 h-8 rounded-full bg-teal-500/80"></div>
-          <!-- Reply icon -->
           <svg
             class="w-3.5 h-3.5 text-teal-400 shrink-0"
             viewBox="0 0 24 24"
@@ -60,8 +109,6 @@ watch(
             <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
           </svg>
         </div>
-
-        <!-- Reply content -->
         <div class="flex-1 min-w-0">
           <p class="text-[11px] font-semibold text-teal-400 mb-0.5">
             Đang trả lời
@@ -73,8 +120,6 @@ watch(
             {{ replyingTo.content }}
           </p>
         </div>
-
-        <!-- Cancel button -->
         <button
           @click="cancelReply"
           class="shrink-0 w-5 h-5 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors group"
@@ -96,31 +141,76 @@ watch(
     </Transition>
 
     <!-- Input row -->
-    <div class="flex gap-2 px-4 py-3.5">
-      <input
-        ref="inputRef"
-        v-model="newMessage"
-        :placeholder="
-          replyingTo
-            ? `Trả lời ${replyingTo.sender?.displayName}...`
-            : 'Nhắn tin...'
-        "
-        class="flex-1 bg-white/5 border px-3 py-2 rounded text-white placeholder-gray-500 focus:outline-none focus:ring-1 transition-colors text-sm"
-        :class="
-          replyingTo
-            ? 'border-teal-500/40 focus:ring-teal-500/50 focus:border-teal-500/60'
-            : 'border-white/10 focus:ring-teal-500 focus:border-white/20'
-        "
-        @keydown.esc="cancelReply"
-        @keydown.enter.exact.prevent="handleSubmit"
-      />
+    <div class="flex items-center gap-1 px-3 py-3">
+      <!-- Nút gửi file -->
       <button
-        @click="handleSubmit"
-        class="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-500 active:scale-95 transition-all font-medium text-sm"
+        @click="handleFileClick"
+        title="Đính kèm file"
+        class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white/40 hover:text-white/80 hover:bg-white/8 transition-all"
       >
-        Gửi
+        <CirclePlus />
       </button>
+      <input
+        ref="fileInputRef"
+        type="file"
+        class="hidden"
+        @change="handleFileChange"
+      />
+
+      <!-- Input box -->
+      <div
+        class="flex-1 flex items-center bg-white/8 rounded-lg px-3 gap-2 border border-white/5 focus-within:border-white/10 transition-colors"
+      >
+        <input
+          ref="inputRef"
+          v-model="newMessage"
+          :placeholder="
+            replyingTo
+              ? `Trả lời ${replyingTo.sender?.displayName}...`
+              : 'Nhắn tin...'
+          "
+          class="flex-1 bg-transparent py-2.5 text-white placeholder-white/25 focus:outline-none text-sm"
+          @keydown.esc="cancelReply"
+          @keydown.enter.exact.prevent="handleSubmit"
+        />
+
+        <!-- Nút emoji -->
+        <div class="relative shrink-0">
+          <button
+            ref="emojiButtonRef"
+            @click="toggleEmojiPicker"
+            title="Emoji"
+            class="w-8 h-8 rounded-full flex items-center justify-center transition-all"
+            :class="
+              showEmojiPicker
+                ? 'text-teal-400'
+                : 'text-white/40 hover:text-white/80'
+            "
+          >
+            <Smile />
+          </button>
+        </div>
+      </div>
     </div>
+
+    <!-- Emoji picker teleported to body -->
+    <Teleport to="body">
+      <div
+        v-if="showEmojiPicker"
+        ref="emojiPickerRef"
+        class="fixed z-50"
+        :style="{
+          bottom: emojiPickerPos.bottom + 'px',
+          right: emojiPickerPos.right + 'px',
+        }"
+      >
+        <EmojiPicker
+          :native="true"
+          :disable-skin-tones="true"
+          @select="onSelectEmoji"
+        />
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -130,7 +220,6 @@ watch(
   transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }
-
 .reply-slide-enter-from,
 .reply-slide-leave-to {
   opacity: 0;
@@ -138,10 +227,29 @@ watch(
   padding-top: 0;
   padding-bottom: 0;
 }
-
 .reply-slide-enter-to,
 .reply-slide-leave-from {
   opacity: 1;
   max-height: 60px;
 }
+
+:deep(.v3-emoji-picker) {
+  --v3-picker-bg: var(--popover);
+  --v3-picker-fg: var(--foreground);
+  --v3-picker-border: var(--border);
+  --v3-picker-input-bg: var(--muted);
+  --v3-picker-input-border: var(--border);
+  --v3-picker-input-focus-border: var(--primary);
+  --v3-picker-emoji-hover: var(--accent);
+  /* Để invert màu tạm lại vì chưa biết fix theme trắng đen */
+  --v3-group-image-filter: invert(1);
+
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+:global(.dark) :deep(.v3-emoji-picker) {
+  --v3-group-image-filter: invert(1);
+}
 </style>
+Z
