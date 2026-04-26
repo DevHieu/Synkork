@@ -1,119 +1,335 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { Plus, MoreHorizontal, Search, Hash, Pencil, Trash2 } from 'lucide-vue-next'
 import draggable from 'vuedraggable'
+import { useRoute } from 'vue-router'
+import { Plus, Hash } from 'lucide-vue-next'
 
+import { taskSocket } from '@/services/websocket/taskSocket'
+import { getAllColumns, createColumn, updateColumn, deleteColumn, moveColumn } from '@/services/task/columnService'
+import { createCard, updateCard, deleteCard, moveCard } from '@/services/task/cardService'
+import { useSpaceStore } from "@/stores/spaceStore";
+// import { useUserStore } from '@/stores/userStore'
+import { storeToRefs } from "pinia";
+import { socketService } from '@/services/websocket/socketService';
+import type { CardEvent, ColumnEvent, TaskMoveEvent } from "@/types/Task";
 
-// đổi tên board
-const boardName = ref('Synkork')
-const isEditingName = ref(false)
-const tempBoardName = ref('')
+import TaskColumn from '@/components/windows/task/TaskColumn.vue'
+import ColumnFormDialog from '../dialog/task/ColumnFormDialog.vue'
+import DeleteConfirmDialog from '../dialog/task/DeleteConfirmDialog.vue'
+import CardFormDialog from '@/components/dialog/task/CardFormDialog.vue'    
 
-const startEditName = () => {
-    tempBoardName.value = boardName.value
-    isEditingName.value = true
+const columns = ref<ColumnEvent[]>([])
+const isSocketConnected = ref(false)
+
+const route = useRoute();
+const spaceId = route.params.spaceId as string;
+
+const spaceStore = useSpaceStore();
+const { currentSpace } = storeToRefs(spaceStore);
+// const userStore = useUserStore();
+// const { user } = storeToRefs(userStore);
+
+const isColumnDialogOpen = ref(false)
+const editingCol = ref<{id : string, title: string} | null>(null)
+
+const isCardDialogOpen = ref(false)
+const editingCard = ref<CardEvent | null>(null)
+
+const isSaving = ref(false)
+const targetColumnId = ref<string>('')
+
+const isDeleteOpen = ref(false)
+const deleteType = ref('')
+const deleteData = ref<{cardId: string, columnId: string} | null>(null)
+
+const executeDelete = async () => {
+    try {
+        if (deleteType.value === 'column' && deleteData.value) {
+            await deleteColumn(currentSpace.value.id, deleteData.value.columnId)
+            columns.value = columns.value.filter(c => c.id !== deleteData.value?.columnId) // ← .columnId
+        } else if (deleteType.value === 'card' && deleteData.value) {
+            await deleteCard(currentSpace.value.id, deleteData.value.cardId)
+        }
+        isDeleteOpen.value = false
+        deleteData.value = null
+    } catch (e) {
+        console.error("Lỗi:", e)
+    }
 }
 
-const saveBoardName = async () => {
-    if(tempBoardName.value.trim() && tempBoardName.value !== boardName.value){
+//-------------- Column ---------------
+const openAddColumnDialog = () => {
+    editingCol.value = null
+    isColumnDialogOpen.value = true
+}
+
+const openEditColumnDialog = async (col: any) => {
+    editingCol.value = col
+
+    await nextTick()
+    isColumnDialogOpen.value = true
+}
+
+const handleSaveColumn = async (data: { title: string }) => {
+    isSaving.value = true
+    try {
+        if (editingCol.value) await updateColumn(currentSpace.value.id, editingCol.value.id, data.title)
+        else await createColumn(currentSpace.value.id, data.title)
+
+        isColumnDialogOpen.value = false
+    } catch (e) {
+        console.error("Lỗi:", e)
+
+        const error = e as any
+        alert("Lỗi: " + (error.response?.data?.message || error.message))
+    } finally {
+        isSaving.value = false
+    }
+}
+
+const confirmDeleteColumn = (colId: string) => {
+    console.log("CLICK DELETE", colId)
+    deleteType.value = 'column'
+    deleteData.value = { columnId: colId, cardId: '' }
+    isDeleteOpen.value = true
+}
+
+const onColumnMove = async (event: TaskMoveEvent) => {
+    if(event.moved){
+        const columnId = event.moved.element.id;
+        const newPosition = event.moved.newIndex;
+
         try {
-            
-        } catch (e) {
-            console.error("Lỗi đổi tên:", e)
+            await moveColumn(currentSpace.value.id, columnId, newPosition);
+        } catch (error) {
+            console.error("Lỗi di chuyển cột:", error);
         }
     }
-    isEditingName.value = false
 }
 
+const fetchColumns = async (spaceId: string) => {
+    try {
+        const res = await getAllColumns(spaceId);
+        columns.value = res.data;
+        console.log(res.data);
+    } catch (e) {
+        console.error("Lỗi tải cột:", e)
+    }
+}
 
+// -------------- Card ---------------
+const openAddCardDialog = (columnId: string) => {
+    targetColumnId.value = columnId
+    editingCard.value = null
+    isCardDialogOpen.value = true
+}
+
+const openEditCardDialog = (columnId: string, card: any) => {
+    targetColumnId.value = columnId
+    editingCard.value = card
+    isCardDialogOpen.value = true
+}
+
+const handleSaveCard = async (data: { title: string, description: string }) => {
+    try {
+        const payload = {
+            columnId: targetColumnId.value,
+            title: data.title,
+            description: data.description,
+        }
+
+        if (editingCard.value) {
+            await updateCard(currentSpace.value.id, editingCard.value.id, payload)
+        } else {
+            await createCard(currentSpace.value.id, payload)
+        }
+
+        isCardDialogOpen.value = false
+    } catch (error) {
+        console.error("Lỗi:", error)
+    }
+}
+
+const confirmDeleteCard = (columnId: string, cardId: string) => {
+    deleteType.value = 'card'
+    deleteData.value = { columnId, cardId }
+    isDeleteOpen.value = true
+}
+
+const onCardMove = async (event: TaskMoveEvent, currentColumnId: string) => {
+    try {
+        if(event.moved){
+            const cardId = event.moved.element.id
+            const payload = {
+                targetColumnId: currentColumnId,
+                newPosition: event.moved.newIndex
+            }
+            await moveCard(currentSpace.value.id, cardId, payload)
+        } else if(event.added){
+            const cardId = event.added.element.id
+            const payload = {
+                targetColumnId: currentColumnId,
+                newPosition: event.added.newIndex
+            }
+            await moveCard(currentSpace.value.id, cardId, payload)
+        }
+    } catch (error) {
+        console.error("Lỗi di chuyển card: ", error)
+    }
+    
+}
+
+onMounted(() => {
+    if (spaceId) {
+        isSocketConnected.value = true;
+    }
+})
+
+onUnmounted(() => {
+    taskSocket.leaveSpace(spaceId);
+})
+
+watch(
+    [currentSpace, isSocketConnected],
+    ([space, connected]) => {
+        if (!space?.id || !connected) return;
+        joinspace(space.id);
+    },
+    { immediate: true },
+)
+
+const joinspace = async (spaceId: string) => {
+    if (!spaceId) return;
+
+    if (currentSpace.value?.id && currentSpace.value.id !== spaceId) {
+        taskSocket.leaveSpace(currentSpace.value.id);
+    }
+
+    await clearAll();
+    await fetchColumns(spaceId);
+    await subscribeTospace(spaceId);
+
+}
+
+const subscribeTospace = async (spaceId: string) => {
+    socketService.connect();
+
+    taskSocket.subscribeCardCreate(spaceId, (card) => {
+        console.log("Card mới:", card);
+
+        const col = columns.value.find(c => c.id === card.columnId);
+        if (col) {
+            col.cards = col.cards || [];
+            col.cards.push(card);
+        }
+
+    });
+
+    taskSocket.subscribeCardUpdate(spaceId, (card) => {
+        console.log("Card cập nhật:", card);
+        const col = columns.value.find(c => c.id === card.columnId);
+        if (col && col.cards) {
+            const index = col.cards.findIndex(t => t.id === card.id);
+            if (index !== -1) {
+                col.cards[index] = card;
+            }
+        }
+    });
+
+    taskSocket.subscribeCardDelete(spaceId, (cardId) => {
+        console.log("Card bị xóa:", cardId);
+        columns.value.forEach(col => {
+            if (col.cards) {
+                const index = col.cards.findIndex(t => t.id === cardId);
+                if (index !== -1) {
+                    col.cards.splice(index, 1);
+                }
+            }
+        });
+    });
+
+    taskSocket.subscribeCardMove(spaceId, (card) => {
+        console.log("Card di chuyển: ", card)
+        columns.value.forEach(col => {
+            if (col.cards) {
+                const index = col.cards.findIndex(t => t.id === card.id)
+                if (index !== -1) col.cards.splice(index, 1)
+            }
+            if (col.id === card.columnId) {
+                col.cards = col.cards || []
+                col.cards.push(card)
+            }
+        })
+    })
+
+    taskSocket.subscribeColumnCreate(spaceId, (column) => {
+        console.log("Cột mới:", column);
+        columns.value.push(column);
+    });
+
+    taskSocket.subscribeColumnUpdate(spaceId, (column) => {
+        console.log("Cột cập nhật:", column)
+        const index = columns.value.findIndex(c => c.id === column.id);
+        if (index !== -1) {
+            columns.value[index] = column;
+        }
+    })
+
+    taskSocket.subscribeColumnDelete(spaceId, (columnId) => {
+        console.log("Cột bị xóa:", columnId)
+        const index = columns.value.findIndex(c => c.id === columnId);
+        if (index !== -1) {
+            columns.value.splice(index, 1);
+        }
+    })
+
+    taskSocket.subscribeColumnMove(spaceId, (data) => {
+        console.log("Cột di chuyển:", data)
+        
+        const { columnId, newPosition } = data;
+
+        const oldIndex = columns.value.findIndex(c => c.id === columnId);
+        if (oldIndex === -1) return;
+
+        const [movedItem] = columns.value.splice(oldIndex, 1);
+        if (movedItem) {
+            columns.value.splice(newPosition, 0, movedItem);
+        }
+    });
+
+}
+
+const clearAll = async () => {
+    columns.value = []
+}
 </script>
 
 <template>
-    <div class="flex h-screen w-full bg-slate-50 overflow-hidden">
-        <div class="flex-1 flex flex-col relative overflow-hidden background">
-            <header class="p-6 flex justify-between items-center bg-transparent">
-                <div class="flex items-center gap-2 font-semibold text-slate-700">
-                    <Hash class="w-5 h-5 text-teal-600" />
-                    <span 
-                        class="cursor-pointer hover:bg-slate-200/50 px-1 rounded transition-colors"
-                        title="Click để đổi tên"
-                    >
-                        {{ boardName }}
-                    </span>
-                </div>
+    <div class="flex h-screen w-full bg-slate-50 overflow-hidden background">
+        <div class="flex-1 flex flex-col relative overflow-hidden">
+            <header class="p-6 flex items-center gap-2 font-semibold text-slate-700">
+                <Hash class="w-5 h-5 text-teal-600" />
+                <span>{{ currentSpace?.name }}</span>
             </header>
 
             <div class="flex-1 flex items-start gap-6 p-6 overflow-x-auto">
-                <draggable group="columns" item-key="id" handle=".column-handle"
-                        class="flex gap-6 items-start">
+                <draggable v-model="columns" group="columns" item-key="id" handle=".column-handle"
+                    @change="onColumnMove" class="flex gap-6 items-start">
                     <template #item="{ element: col }">
-                        <div class="w-80 flex-shrink-0 flex flex-col max-h-full border-2 border-slate-200 rounded-3xl p-4 bg-slate-50/50">
-                            <div class="flex items-center justify-between mb-4 px-1">
-                                <h3 class="column-handle cursor-move font-bold text-slate-700 text-sm uppercase tracking-wide flex items-center gap-2">
-                                    {{ col.name }}
-                                    <span class="text-slate-400 text-xs font-normal">
-                                        ({{ col.cards?.length || 0 }})
-                                    </span>
-                                </h3>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger as-child>
-                                        <Button variant="ghost" size="icon" class="h-8 w-8 text-slate-400">
-                                            <MoreHorizontal class="w-4 h-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end"
-                                        class="rounded-xl border-none shadow-lg backdrop-blur-md">
-                                        <DropdownMenuItem 
-                                            class="gap-2 cursor-pointer text-xs">
-                                            <Pencil class="w-3.5 h-3.5" /> Sửa tên cột
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem 
-                                            class="gap-2 cursor-pointer text-xs text-red-500">
-                                            <Trash2 class="w-3.5 h-3.5" /> Xóa cột
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-
-                            <draggable v-model="col.cards" group="tasks" item-key="id" :animation="200"
-                                ghost-class="opacity-50" 
-                                class="flex-1 flex flex-col gap-3 overflow-y-auto min-h-[150px] p-1">
-                                <template #item="{ element: card }">
-                                    <Card class="p-4 border-none shadow-sm hover:shadow-md transition-all cursor-grab group relative bg-white rounded-2xl">
-                                        <div class="flex flex-col gap-2">
-                                            <p class="font-bold text-slate-800 text-sm pr-10">{{ card.title }}</p>
-                                            <p class="text-slate-500 text-xs line-clamp-2">{{ card.description }}</p>
-                                            <div class="flex justify-between items-center mt-2">
-                                                <div class="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center text-[10px] font-bold text-orange-600">
-                                                    {{ card.user?.name || 'V' }}
-                                                </div>
-                                                <span class="text-[10px] text-slate-400 font-medium">
-                                                    {{ card.createdAt || card.date }}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div class="absolute top-3 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Button variant="ghost" size="icon" class="h-6 w-6"
-                                                >
-                                                <Pencil class="w-3 h-3" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon" class="h-6 w-6 text-red-400"
-                                                >
-                                                <Trash2 class="w-3 h-3" />
-                                            </Button>
-                                        </div>
-                                    </Card>
-                                </template>
-                            </draggable>
-
-                            <button class="mt-3 w-full py-2 flex items-center justify-center gap-1 text-slate-400 hover:text-teal-600 text-sm font-medium">
-                                <Plus class="w-4 h-4" /> Thêm task
-                            </button>
-                        </div>
+                        <TaskColumn
+                            :column="col"
+                            @edit-column="openEditColumnDialog"
+                            @delete-column="confirmDeleteColumn"
+                            @add-card="openAddCardDialog"
+                            @edit-card="openEditCardDialog"
+                            @delete-card="confirmDeleteCard"
+                            @card-move="onCardMove"
+                        />
                     </template>
                 </draggable>
 
-                <div class="flex-shrink-0 w-72 h-32 border-2 border-dashed border-slate-300 rounded-3xl flex flex-col items-center justify-center gap-2 group cursor-pointer hover:border-teal-400 transition-colors">
+                <div @click="openAddColumnDialog"
+                    class="flex-shrink-0 w-72 h-32 border-2 border-dashed border-slate-300 rounded-3xl flex flex-col items-center justify-center gap-2 group cursor-pointer hover:border-teal-400 transition-colors">
                     <div class="bg-slate-200 p-2 rounded-full group-hover:bg-teal-100">
                         <Plus class="w-5 h-5 text-slate-500 group-hover:text-teal-600" />
                     </div>
@@ -124,6 +340,15 @@ const saveBoardName = async () => {
             </div>
         </div>
     </div>
+
+    <CardFormDialog v-model:open="isCardDialogOpen" :columnId="targetColumnId" :taskData="editingCard" @save="handleSaveCard" />
+    <ColumnFormDialog v-model:open="isColumnDialogOpen" :column-data="editingCol" @save="handleSaveColumn" />
+    <DeleteConfirmDialog
+        v-model:open="isDeleteOpen"
+        :title="deleteType === 'column' ? 'Xóa cột này?' : 'Xóa nhiệm vụ?'"
+        :description="deleteType === 'column' ? 'Toàn bộ task trong cột này sẽ bị mất.' : 'Bạn không thể khôi phục task này sau khi xóa.'"
+        @confirm="executeDelete"
+    />
 </template>
 
 <style scoped></style>

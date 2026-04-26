@@ -1,7 +1,6 @@
 <script setup>
 import { ref, watch, nextTick } from 'vue'
 
-// Import đúng theo shadcn-vue / reka-ui hoặc radix-vue
 import {
   Dialog,
   DialogContent,
@@ -22,6 +21,7 @@ const props = defineProps({
 const emit = defineEmits(['update:open', 'save'])
 
 const form = ref({ title: '', description: '' })
+
 
 const isOpen = ref(props.open)
 
@@ -54,17 +54,11 @@ const closeDialog = () => {
 }
 
 const handleSave = () => {
-  if (!form.value.title?.trim()) {
-    alert("Vui lòng nhập tiêu đề task!")
-    return
-  }
+  if (!form.value.title?.trim()) return
 
   emit('save', {
-    columnId: props.columnId,
     title: form.value.title.trim(),
-    description: form.value.description.trim() || '',
-    date: new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
-    user: 'V'
+    description: form.value.description.trim() || ''
   })
 
   closeDialog()

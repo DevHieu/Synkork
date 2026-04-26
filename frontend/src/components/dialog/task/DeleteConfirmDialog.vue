@@ -32,10 +32,12 @@ const handleConfirm = () => {
   emit('confirm')
   closeDialog()
 }
+
 </script>
 
 <template>
-  <Dialog :open="open" @update:open="(val) => emit('update:open', val)">
+  <Dialog :open="open" 
+  @update:open="(val) => emit('update:open', val)">
     <DialogContent class="sm:max-w-[400px] bg-white/95 border-none shadow-2xl backdrop-blur-md rounded-xl p-6">
       <DialogHeader class="flex flex-col items-center gap-3">
         <div class="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">

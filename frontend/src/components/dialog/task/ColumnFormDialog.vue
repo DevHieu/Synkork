@@ -77,14 +77,14 @@ const handleSave = () => {
           Tên cột (Ví dụ: Đang đợi, Review...)
         </label>
         <Input v-model="form.title" placeholder="Nhập tên cột..." @keyup.enter="handleSave"
-          class="h-12 rounded-2xl border-slate-200 focus-visible:ring-orange-400 bg-slate-50/50" />
+          class="h-12 rounded-2xl border-slate-200 focus-visible:ring-orange-400 bg-slate-50/50" maxlength="100"/>
       </div>
 
       <DialogFooter>
         <Button variant="ghost" @click="closeDialog" class="rounded-xl hover:bg-slate-100 text-slate-500">Hủy</Button>
-        <Button @click="handleSave" :disabled="!form.title.trim()"
+        <Button @click="handleSave" :disabled="isSaving" 
           class="bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-6 shadow-md shadow-orange-200 transition-all active:scale-95 disabled:opacity-50">
-          {{ columnData ? 'Lưu' : 'Tạo cột' }}
+          {{ isSaving ? 'Đang lưu...' : columnData ? 'Cập nhật' : 'Tạo cột' }} 
         </Button>
       </DialogFooter>
     </DialogContent>
