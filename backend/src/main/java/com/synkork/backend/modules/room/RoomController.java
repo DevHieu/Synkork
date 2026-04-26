@@ -1,4 +1,4 @@
-package com.synkork.backend.modules.room;
+    package com.synkork.backend.modules.room;
 
 import com.synkork.backend.modules.room.dto.CreateRoomDto;
 import com.synkork.backend.modules.room.dto.RoomDto;
