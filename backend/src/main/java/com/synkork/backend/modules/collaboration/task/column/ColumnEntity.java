@@ -8,9 +8,10 @@ import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.synkork.backend.modules.collaboration.task.board.BoardEntity;
 import com.synkork.backend.modules.collaboration.task.card.CardEntity;
+import com.synkork.backend.modules.space.SpaceEntity;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,9 +29,9 @@ public class ColumnEntity {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "board_id", nullable = false, columnDefinition = "BINARY(16)")
+    @JoinColumn(name = "space_id", nullable = false, columnDefinition = "BINARY(16)")
     @JsonIgnore
-    private BoardEntity board;
+    private SpaceEntity space;
 
     @Column(nullable = false, length = 100)
     private String name;
@@ -40,5 +41,5 @@ public class ColumnEntity {
 
     @OneToMany(mappedBy = "column", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC")
-    private List<CardEntity> cards;
+    private List<CardEntity> cards = new ArrayList<>();
 }

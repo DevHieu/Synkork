@@ -1,5 +1,7 @@
 package com.synkork.backend.modules.collaboration.task.card;
 
+import com.synkork.backend.security.UserPrinciple;
+
 import java.nio.file.attribute.UserPrincipal;
 import java.util.UUID;
 
@@ -22,7 +24,7 @@ import com.synkork.backend.modules.collaboration.task.dto.CardRequest;
 import com.synkork.backend.modules.collaboration.task.dto.MoveCardRequest;
 
 @RestController
-@RequestMapping("/column/{columnId}/cards")
+@RequestMapping("/space/{spaceId}/card")
 public class CardController {
     
     @Autowired
@@ -39,15 +41,14 @@ public class CardController {
     }
 
     @PostMapping
-    public ResponseEntity<CardDTO> createCard(@PathVariable String columnId, @RequestBody CardRequest req){
-        UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String creatorEmail = principal.getName();
-        UUID columnUUID = UUID.fromString(columnId);
+    public ResponseEntity<CardDTO> createCard(@PathVariable String spaceId, @RequestBody CardRequest req){
+        UserPrinciple principal = (UserPrinciple) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String creatorEmail = principal.getUsername();
+        UUID spaceUUID = UUID.fromString(spaceId);
 
-        CardDTO createdCard = cardService.createCard(columnUUID, creatorEmail, req);
+        CardDTO createdCard = cardService.createCard(spaceUUID, creatorEmail, req);
         
-        // Sau khi tạo xong card, gửi thông báo qua WebSocket
-        messagingTemplate.convertAndSend("/topic/columns/" + columnId + "/cards", createdCard);
+        messagingTemplate.convertAndSend("/topic/space/" + spaceId + "/card/create", createdCard);
         
         return ResponseEntity.ok(createdCard);
     }
@@ -57,32 +58,29 @@ public class CardController {
         UUID cardUUID = UUID.fromString(cardId);
         CardDTO updatedCard = cardService.updateCard(cardUUID, req);
         
-        // Sau khi cập nhật xong card, gửi thông báo qua WebSocket
-        messagingTemplate.convertAndSend("/topic/columns/" + updatedCard.getColumnId() + "/cards", updatedCard);
+        messagingTemplate.convertAndSend("/topic/space/" + updatedCard.getSpaceId() + "/card/update", updatedCard);
         
         return ResponseEntity.ok(updatedCard);
     }
 
     @DeleteMapping("/{cardId}")
-    public ResponseEntity<Void> deleteCard(@PathVariable String cardId, @PathVariable String columnId) {
+    public ResponseEntity<Void> deleteCard(@PathVariable String cardId, @PathVariable String spaceId) {
         UUID cardUUID = UUID.fromString(cardId);
         cardService.deleteCard(cardUUID);
         
-        // Sau khi xóa xong card, gửi thông báo qua WebSocket
-        messagingTemplate.convertAndSend("/topic/columns/" + columnId + "/cards", "deleted:" + cardId);
+        messagingTemplate.convertAndSend("/topic/space/" + spaceId + "/card/delete",  cardId);
         
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{cardId}/move")
-    public ResponseEntity<Void> moveCard(@PathVariable String cardId, @PathVariable String columnId, @RequestBody MoveCardRequest req){
+    public ResponseEntity<Void> moveCard(@PathVariable String cardId, @PathVariable String spaceId, @RequestBody MoveCardRequest req){
         UUID cardUUID = UUID.fromString(cardId);
 
-        cardService.moveCard(cardUUID, req);
+        CardDTO movedCard = cardService.moveCard(cardUUID, req); 
 
-        messagingTemplate.convertAndSend("/topic/columns/" + columnId + "/cards/move");
+        messagingTemplate.convertAndSend("/topic/space/" + spaceId + "/card/move", movedCard);
 
         return ResponseEntity.noContent().build();
-
     }
 }

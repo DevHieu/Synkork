@@ -9,6 +9,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ColumnRequest {
     private String name;
-    private String boardId;
     private String spaceId;
 }

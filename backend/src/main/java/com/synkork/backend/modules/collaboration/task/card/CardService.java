@@ -2,6 +2,7 @@ package com.synkork.backend.modules.collaboration.task.card;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import javax.smartcardio.Card;
 
@@ -31,7 +32,8 @@ public class CardService {
     private ColumnRepository columnRepository;
 
     @Transactional
-    public CardDTO createCard(UUID columnId, String creatorEmail, CardRequest req) {
+    public CardDTO createCard(UUID spaceId, String creatorEmail, CardRequest req) {
+         UUID columnId = req.getColumnId();
         ColumnEntity column = columnRepository.findById(columnId)
                 .orElseThrow(() -> new RuntimeException("Cột không tồn tại"));
 
@@ -90,13 +92,13 @@ public class CardService {
     }
 
     @Transactional
-    public void moveCard(UUID cardId, MoveCardRequest req) {
+    public CardDTO moveCard(UUID cardId, MoveCardRequest req) {
 
         CardEntity card = cardRepository.findById(cardId)
             .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
             
         ColumnEntity oldCol = card.getColumn();
-        ColumnEntity newCol = columnRepository.findById(cardId)
+        ColumnEntity newCol = columnRepository.findById(req.getTargetColumnId())
         .orElseThrow(() -> new RuntimeException("Cột đích không tồn tại"));
 
         if(oldCol.getId().equals(req.getTargetColumnId())){
@@ -109,22 +111,24 @@ public class CardService {
         card.setPosition(req.getNewPosition());
 
         cardRepository.save(card);
+        
+        return new CardDTO(card);
     }
 
-    // CASE 1: Di chuyển trong cùng một cột
     private void handleSameColumnMove(ColumnEntity column, CardEntity card, int newPosition) {
         int oldPosition = card.getPosition();
-        List<CardEntity> cards = cardRepository.findByColumn_IdOrderByPositionAsc(column.getId());
+        List<CardEntity> cards = cardRepository.findByColumn_IdOrderByPositionAsc(column.getId())
+            .stream()
+            .filter(c -> !c.getId().equals(card.getId()))
+            .collect(Collectors.toList());
 
         if (oldPosition < newPosition) {
-            // Kéo xuống: Các card ở giữa sẽ bị giảm vị trí đi 1
             for (CardEntity c : cards) {
                 if (c.getPosition() > oldPosition && c.getPosition() <= newPosition) {
                     c.setPosition(c.getPosition() - 1);
                 }
             }
         } else if (oldPosition > newPosition) {
-            // Kéo lên: Các card ở giữa sẽ bị tăng vị trí lên 1
             for (CardEntity c : cards) {
                 if (c.getPosition() >= newPosition && c.getPosition() < oldPosition) {
                     c.setPosition(c.getPosition() + 1);
@@ -134,10 +138,11 @@ public class CardService {
         cardRepository.saveAll(cards);
     }
 
-    // CASE 2: Di chuyển sang cột khác
     private void handleCrossColumnMove(ColumnEntity oldCol, ColumnEntity newCol, CardEntity card, int newPosition) {
-        // 1. Cập nhật các card ở cột cũ (lấp chỗ trống)
-        List<CardEntity> oldCards = cardRepository.findByColumn_IdOrderByPositionAsc(oldCol.getId());
+        List<CardEntity> oldCards = cardRepository.findByColumn_IdOrderByPositionAsc(oldCol.getId())
+            .stream()
+            .filter(c -> !c.getId().equals(card.getId()))
+            .collect(Collectors.toList());
         for (CardEntity c : oldCards) {
             if (c.getPosition() > card.getPosition()) {
                 c.setPosition(c.getPosition() - 1);
@@ -145,7 +150,6 @@ public class CardService {
         }
         cardRepository.saveAll(oldCards);
 
-        // 2. Cập nhật các card ở cột mới (nhường chỗ cho card mới tới)
         List<CardEntity> newCards = cardRepository.findByColumn_IdOrderByPositionAsc(newCol.getId());
         for (CardEntity c : newCards) {
             if (c.getPosition() >= newPosition) {
@@ -154,13 +158,4 @@ public class CardService {
         }
         cardRepository.saveAll(newCards);
     }
-    // public UUID getBoardIdByColumnId(UUID columnId) {
-    //     return columnRepository.findBoardIdByColumnId(columnId)
-    //             .orElseThrow(() -> new RuntimeException("Column not found"));
-    // }
-
-    // public UUID getBoardIdByTaskId(UUID taskId) {
-    //     return cardRepository.findBoardIdByTaskId(taskId)
-    //             .orElseThrow(() -> new RuntimeException("Task not found"));
-    // }
 }

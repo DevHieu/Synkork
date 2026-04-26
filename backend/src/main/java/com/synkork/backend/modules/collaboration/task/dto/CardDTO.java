@@ -15,6 +15,7 @@ public class CardDTO {
     private String description;
     private int position;
 
+    private UUID spaceId;
     private UUID columnId;
 
     private UUID assigneeId;
@@ -31,6 +32,7 @@ public class CardDTO {
         this.title = e.getTitle();
         this.description = e.getDescription();
         this.position = e.getPosition();
+        this.spaceId = e.getColumn().getSpace().getId();
         this.columnId = e.getColumn().getId();
         if (e.getAssignee() != null) {
             this.assigneeId = e.getAssignee().getId();

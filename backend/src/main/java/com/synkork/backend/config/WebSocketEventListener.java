@@ -1,4 +1,4 @@
-kwpackage com.synkork.backend.config;
+package com.synkork.backend.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

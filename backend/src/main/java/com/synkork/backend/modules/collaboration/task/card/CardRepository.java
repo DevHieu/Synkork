@@ -15,8 +15,5 @@ public interface CardRepository extends JpaRepository<CardEntity, UUID> {
     
     List<CardEntity> findByColumn_IdOrderByPositionAsc(UUID columnId);
     List<CardEntity> findByAssigneeId(UUID userId);
-
-    @Query("SELECT c.column.board.id FROM CardEntity c WHERE c.id = :cardId")
-    Optional<UUID> findBoardIdByTaskId(@Param("cardId") UUID cardId);
     
 }
