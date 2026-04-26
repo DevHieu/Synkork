@@ -12,6 +12,7 @@ const emit = defineEmits<{
   (e: "clickYearMonth", monthIndex: number): void;
 }>();
 
+// Tính toán dữ liệu 12 tháng trong năm
 const yearMonths = computed(() => {
   const months: { month: number; name: string; days: dayjs.Dayjs[] }[] = [];
   for (let m = 0; m < 12; m++) {
@@ -20,12 +21,15 @@ const yearMonths = computed(() => {
     const startDay = monthStart.day();
     const days: dayjs.Dayjs[] = [];
 
+    // Ngày đệm từ tháng trước
     for (let i = startDay - 1; i >= 0; i--) {
       days.push(monthStart.subtract(i + 1, "day"));
     }
+    // Các ngày trong tháng
     for (let d = monthStart; d.isBefore(monthEnd) || d.isSame(monthEnd, "day"); d = d.add(1, "day")) {
       days.push(d);
     }
+    // Ngày đệm tháng sau
     while (days.length < 42) {
       days.push(monthEnd.add(days.length - monthEnd.date() - startDay + 1, "day"));
     }
@@ -39,9 +43,21 @@ const yearMonths = computed(() => {
   return months;
 });
 
+// Kiểm tra ngày hiện tại
 const isToday = (date: dayjs.Dayjs) => date.isSame(dayjs(), "day");
+
+// Kiểm tra xem ngày có sự kiện không (phải khớp đúng tháng đang hiển thị)
 const hasEvent = (date: dayjs.Dayjs, monthIndex: number) => {
-  return date.month() === monthIndex && props.events.some((e) => e.eventDate === date.format("YYYY-MM-DD"));
+  if (date.month() !== monthIndex) return false;
+  const targetDate = date.format("YYYY-MM-DD");
+  
+  for (let i = 0; i < props.events.length; i++) {
+    const event = props.events[i];
+    if (event && event.eventDate === targetDate) {
+      return true;
+    }
+  }
+  return false;
 };
 </script>
 

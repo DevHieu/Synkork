@@ -30,6 +30,7 @@ public class MessageEntity extends BaseEntity {
 
     private boolean deleted = false;
     private boolean pinned = false;
+    private boolean edited = false;
 
     @Enumerated(EnumType.STRING)
     private MessageTypeEnum type =  MessageTypeEnum.TEXT;
@@ -40,4 +41,5 @@ public class MessageEntity extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reply_to_id")
     private MessageEntity replyTo;
+
 }

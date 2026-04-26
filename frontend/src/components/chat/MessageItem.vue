@@ -6,8 +6,11 @@ import type { Message } from "@/types/Message";
 
 import { chatSocket } from "@/services/websocket/chatSocket";
 import { computed, ref } from "vue";
+import { useMessageStore } from "@/stores/messageStore";
 import { useUserStore } from "@/stores/userStore";
 import { storeToRefs } from "pinia";
+
+const messageStore = useMessageStore();
 
 const props = defineProps<{
   message: Message;
@@ -18,7 +21,6 @@ const props = defineProps<{
 const userStore = useUserStore();
 const { user } = storeToRefs(userStore);
 
-// hard code tạm màu của owner, admin với member thường khi nhắn tin
 const senderNameColor = computed(() => {
   switch (props.message.sender?.role) {
     case "OWNER":
@@ -35,11 +37,10 @@ const isFullAction = computed(
 );
 
 const isEditing = ref(false);
-const editContent = ref(""); // Chỉ cần lưu nội dung text để edit
+const editContent = ref("");
 
 const handleEdit = () => {
   isEditing.value = true;
-  // Clone content để tránh sửa trực tiếp vào props khi đang gõ
   editContent.value = props.message.content;
 };
 
@@ -49,13 +50,7 @@ const handleSaveEdit = () => {
     handleCancelEdit();
     return;
   }
-
-  // Tạo object message mới dựa trên dữ liệu cũ nhưng thay content
-  const updatedMessage: Message = {
-    ...props.message,
-    content: trimmed,
-  };
-
+  const updatedMessage: Message = { ...props.message, content: trimmed };
   chatSocket.updateMessage(updatedMessage);
   isEditing.value = false;
 };
@@ -70,12 +65,19 @@ const handleDelete = () => {
   }
 };
 
-const handleReply = () => console.log("Reply to:", props.message.id);
-const handlePin = () => console.log("Pin message:", props.message.id);
+const handleReply = () => messageStore.setReply(props.message);
+
+const handlePin = () =>
+  messageStore.changePinStatus(props.message.spaceId, props.message.id);
+
+const jumpToReply = () => {
+  if (!props.message.replyTo?.id) return;
+  messageStore.jumpToMessage(props.message.spaceId, props.message.replyTo.id);
+};
 </script>
 
 <template>
-  <div v-if="isDifferentDay" class="flex items-center gap-3 my-4 px-4">
+  <div v-if="isDifferentDay" class="flex items-center gap-3 my-6 px-4">
     <div class="flex-1 h-px bg-border/50"></div>
     <span
       class="text-[10px] uppercase font-bold text-muted-foreground tracking-wider"
@@ -85,12 +87,14 @@ const handlePin = () => console.log("Pin message:", props.message.id);
     <div class="flex-1 h-px bg-border/50"></div>
   </div>
 
+  <!-- Giữ nguyên cấu trúc flat như code gốc, không lồng thêm div -->
   <div
-    class="relative group flex gap-3 p-2 mx-2 rounded-lg transition-colors hover:bg-secondary/20"
-    :class="[isGrouped ? 'mt-0' : 'mt-4']"
+    :id="`message-${props.message.id}`"
+    class="relative group flex gap-3 p-2 mx-2 rounded-lg transition-colors hover:bg-secondary/20 mb-2"
   >
+    <!-- Avatar column -->
     <div class="w-10 shrink-0">
-      <Avatar v-if="!isGrouped" class="h-10 w-10">
+      <Avatar v-if="!isGrouped || props.message.replyTo" class="h-10 w-10">
         <AvatarImage
           v-if="props.message.sender?.avatarUrl"
           :src="props.message.sender.avatarUrl"
@@ -107,8 +111,41 @@ const handlePin = () => console.log("Pin message:", props.message.id);
       </span>
     </div>
 
+    <!-- Content column -->
     <div class="flex-1 min-w-0">
-      <div v-if="!isGrouped" class="flex items-center gap-2 mb-1">
+      <!-- Reply quote block -->
+      <div
+        v-if="props.message.replyTo"
+        class="flex items-stretch mb-2 cursor-pointer max-w-xs rounded-r-md overflow-hidden group/quote"
+        @click="jumpToReply"
+      >
+        <div class="w-0.5 shrink-0 bg-teal-500/60" />
+        <div
+          class="flex-1 min-w-0 bg-white/[0.04] group-hover/quote:bg-white/[0.07] transition-colors px-2.5 py-1.5"
+        >
+          <p
+            class="text-[11px] font-semibold text-teal-400 mb-0.5 leading-none truncate"
+          >
+            {{ props.message.replyTo.senderDisplayName }}
+          </p>
+          <p
+            class="text-[11px] text-white/40 truncate leading-snug"
+            :class="{ italic: props.message.replyTo.deleted }"
+          >
+            {{
+              props.message.replyTo.deleted
+                ? "Tin nhắn đã bị xóa"
+                : props.message.replyTo.content
+            }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Sender header -->
+      <div
+        v-if="!isGrouped || props.message.replyTo"
+        class="flex items-center gap-2 mb-1"
+      >
         <span class="font-bold text-sm" :class="senderNameColor">
           {{ props.message.sender?.displayName }}
         </span>
@@ -117,6 +154,7 @@ const handlePin = () => console.log("Pin message:", props.message.id);
         </span>
       </div>
 
+      <!-- Edit mode -->
       <div v-if="isEditing" class="mt-1">
         <textarea
           v-model="editContent"
@@ -141,7 +179,8 @@ const handlePin = () => console.log("Pin message:", props.message.id);
         </div>
       </div>
 
-      <div v-else class="text-sm leading-relaxed break-words">
+      <!-- Message content -->
+      <div v-else class="text-sm leading-relaxed wrap-break-word">
         <template v-if="props.message.deleted">
           <span class="text-muted-foreground italic text-xs"
             >Tin nhắn đã bị xóa</span
@@ -150,7 +189,7 @@ const handlePin = () => console.log("Pin message:", props.message.id);
         <template v-else>
           <span class="text-foreground/90">{{ props.message.content }}</span>
           <span
-            v-if="props.message.updatedAt !== props.message.createdAt"
+            v-if="props.message.edited"
             class="text-[10px] text-muted-foreground ml-1"
           >
             (đã chỉnh sửa)
@@ -159,12 +198,14 @@ const handlePin = () => console.log("Pin message:", props.message.id);
       </div>
     </div>
 
+    <!-- Action buttons -->
     <div
       class="absolute right-4 -top-4 opacity-0 group-hover:opacity-100 transition-opacity z-10"
     >
       <MessageActions
         v-if="!isEditing && !props.message.deleted"
         :isSender="isFullAction"
+        :isPinned="props.message.pinned"
         @reply="handleReply"
         @edit="handleEdit"
         @delete="handleDelete"
@@ -173,3 +214,18 @@ const handlePin = () => console.log("Pin message:", props.message.id);
     </div>
   </div>
 </template>
+
+<style scoped>
+.message-highlight {
+  animation: highlightFade 1s ease;
+}
+
+@keyframes highlightFade {
+  0% {
+    background-color: var(--primary);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+</style>
