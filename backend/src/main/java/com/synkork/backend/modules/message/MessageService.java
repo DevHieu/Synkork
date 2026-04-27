@@ -1,5 +1,7 @@
 package com.synkork.backend.modules.message;
 
+import com.synkork.backend.common.dtos.FileUploaded;
+import com.synkork.backend.common.utils.FileService;
 import com.synkork.backend.modules.message.dto.MessageDTO;
 import com.synkork.backend.modules.message.dto.MessagePageDTO;
 import com.synkork.backend.modules.message.dto.ReplyPreviewDTO;
@@ -10,12 +12,17 @@ import com.synkork.backend.modules.space.SpaceEntity;
 import com.synkork.backend.modules.space.SpaceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class MessageService {
+
+    @Autowired
+    FileService fileService;
+
     @Autowired
     MessageRepository messageRepository;
 
@@ -194,5 +201,40 @@ public class MessageService {
         enrichReplyTo(messages);
 
         return page;
+    }
+
+
+    public List<MessageDTO> sendFileMessage(UUID spaceId, UUID userId, UUID replyToId, List<MultipartFile> fileList) {
+        SpaceEntity space = spaceRepository.findById(spaceId).orElseThrow();
+        MessageEntity replyTo = replyToId != null ? messageRepository.findById(replyToId).orElse(null) : null;
+
+        RoomMemberEntity sender = roomMemberRepository
+                .findByUserIdAndRoom_IdWithUser(userId, space.getRoom().getId())
+                .orElseThrow(() -> new IllegalArgumentException("User is not a member of this room"));
+
+        List<MessageDTO> result = new ArrayList<>();
+
+        // Gửi từng file message, không có content, không có replyTo
+        for (MultipartFile file : fileList) {
+            boolean isImage = file.getContentType() != null && file.getContentType().startsWith("image/");
+            FileUploaded uploaded = isImage
+                    ? fileService.uploadImage(file, "message_file")
+                    : fileService.uploadFile(file, "message_file");
+
+            MessageEntity fileMessage = new MessageEntity();
+            fileMessage.setSpace(space);
+            fileMessage.setSender(sender);
+            fileMessage.setContent(null);
+            fileMessage.setType(isImage ? MessageTypeEnum.IMAGE : MessageTypeEnum.FILE);
+            fileMessage.setAttachmentUrl(uploaded.url());
+            fileMessage.setAttachmentPublicId(uploaded.publicId());
+            fileMessage.setAttachmentResourceType(uploaded.resourceType());
+            fileMessage.setAttachmentName(uploaded.originalName());
+            fileMessage.setReplyTo(replyTo);
+
+            result.add(new MessageDTO(messageRepository.save(fileMessage)));
+        }
+
+        return result;
     }
 }
