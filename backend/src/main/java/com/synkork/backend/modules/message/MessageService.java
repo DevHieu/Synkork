@@ -19,7 +19,6 @@ import java.util.UUID;
 public class MessageService {
     @Autowired
     MessageRepository messageRepository;
-
     @Autowired
     SpaceRepository spaceRepository;
 
