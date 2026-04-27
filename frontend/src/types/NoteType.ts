@@ -7,6 +7,10 @@ export interface Note {
   allowEditAll: boolean
   createdAt: string
   updatedAt: string
+  posX: number
+  posY: number
+  width: number
+  height: number
 }
 
 export interface NoteRequest {
@@ -15,4 +19,8 @@ export interface NoteRequest {
   color?: string
   pinned?: boolean
   allowEditAll?: boolean
+  posX?: number
+  posY?: number
+  width?: number
+  height?: number
 }

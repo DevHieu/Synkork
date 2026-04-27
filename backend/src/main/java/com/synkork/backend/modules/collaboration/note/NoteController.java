@@ -92,4 +92,18 @@ public class NoteController {
     public ResponseEntity<List<NoteResponse>> search(@RequestParam String keyword) {
         return ResponseEntity.ok(noteService.searchNotes(keyword));
     }
+
+    @PatchMapping("/{id}/position")
+    public ResponseEntity<NoteResponse> updatePosition(
+            @PathVariable String id,
+            @PathVariable String spaceId,
+            @RequestBody NoteRequest request) {
+
+        NoteResponse response = noteService.updatePosition(id, request);
+
+        messageTemplate.convertAndSend(
+            "/topic/space/" + spaceId + "/notes/update", response);
+
+        return ResponseEntity.ok(response);
+    }
 }

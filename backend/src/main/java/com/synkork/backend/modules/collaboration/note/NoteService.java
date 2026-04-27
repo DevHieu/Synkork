@@ -99,4 +99,17 @@ public class NoteService {
         return noteRepository.findByTitleContainingIgnoreCase(keyword)
                 .stream().map(NoteResponse::new).collect(Collectors.toList());
     }
+
+    public NoteResponse updatePosition(String id, NoteRequest request) {
+        UUID noteId = UUID.fromString(id);
+        NoteEntity note = noteRepository.findById(noteId)
+            .orElseThrow(() -> new RuntimeException("Note not found: " + id));
+    
+        if (request.getPosX()   != null) note.setPosX(request.getPosX());
+        if (request.getPosY()   != null) note.setPosY(request.getPosY());
+        if (request.getWidth()  != null) note.setWidth(request.getWidth());
+        if (request.getHeight() != null) note.setHeight(request.getHeight());
+    
+        return new NoteResponse(noteRepository.save(note));
+    }
 }

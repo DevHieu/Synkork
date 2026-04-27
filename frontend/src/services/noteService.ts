@@ -43,3 +43,15 @@ export const search = async ( spaceId: string, keyword: string  ) => {
 
   return res.data;
 }
+
+export const updatePosition = async (
+  spaceId: string,
+  id: string,
+  data: { posX: number; posY: number; width: number; height: number }
+) => {
+  const res = await axiosClient.patch(
+    `/api/spaces/${spaceId}/notes/${id}/position`,
+    data
+  )
+  return res.data
+}

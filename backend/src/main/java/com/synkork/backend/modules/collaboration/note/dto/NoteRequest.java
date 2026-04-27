@@ -13,4 +13,8 @@ public class NoteRequest {
     private Boolean pinned;
     private String color;
     private Boolean allowEditAll;
+    private Integer posX;
+    private Integer posY;
+    private Integer width;
+    private Integer height;
 }

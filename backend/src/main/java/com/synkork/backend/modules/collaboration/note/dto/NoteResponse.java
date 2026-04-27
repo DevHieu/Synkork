@@ -22,6 +22,10 @@ public class NoteResponse {
     private LocalDateTime updatedAt;
     private String displayName;
     private String avatarUrl;
+    private Integer posX;
+    private Integer posY;
+    private Integer width;
+    private Integer height;
 
     public NoteResponse(NoteEntity note) {
         this.id = note.getId();
@@ -31,5 +35,9 @@ public class NoteResponse {
         this.color = note.getColor();
         this.createdAt = note.getCreatedAt();
         this.updatedAt = note.getUpdatedAt();
+        this.posX   = note.getPosX();
+        this.posY   = note.getPosY();
+        this.width  = note.getWidth();
+        this.height = note.getHeight();
     }
 }
