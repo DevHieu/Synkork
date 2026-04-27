@@ -2,13 +2,15 @@
 import { useMessageStore } from "@/stores/messageStore";
 import { CirclePlus, Smile } from "lucide-vue-next";
 import { storeToRefs } from "pinia";
-import { watch, nextTick, ref, onMounted, onUnmounted } from "vue";
+import { watch, nextTick, ref, onMounted, onUnmounted, computed } from "vue";
 
 import EmojiPicker from "vue3-emoji-picker";
-import "vue3-emoji-picker/css";
+import "vue3-emoji-picker/css"; // Nó báo lỗi thì kệ mịa nó đi, sửa lại đúng đường dẫn là ko chạy được đâu á
+
+import ReplyBar from "./sub-components/ReplyBar.vue";
+import FilePreview from "./sub-components/FilePreview.vue";
 
 const newMessage = ref("");
-
 const inputRef = ref<HTMLInputElement | null>(null);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const showEmojiPicker = ref(false);
@@ -16,32 +18,87 @@ const emojiPickerRef = ref<HTMLDivElement | null>(null);
 const emojiButtonRef = ref<HTMLButtonElement | null>(null);
 const emojiPickerPos = ref({ bottom: 0, right: 0 });
 
-const props = defineProps<{
-  spaceId: string;
-  replyingTo?: any;
-}>();
+const selectedFiles = ref<File[]>([]);
+const filePreviews = ref<Map<File, string>>(new Map());
+
+const props = defineProps<{ spaceId: string }>();
 
 const messageStore = useMessageStore();
 const { replyingTo } = storeToRefs(messageStore);
 
+const isImage = (file: File) => file.type.startsWith("image/");
+const hasFiles = computed(() => selectedFiles.value.length > 0);
+
+const addFiles = (newFiles: FileList | File[]) => {
+  Array.from(newFiles).forEach((file) => {
+    if (
+      selectedFiles.value.some(
+        (f) => f.name === file.name && f.size === file.size,
+      )
+    )
+      return;
+    selectedFiles.value.push(file);
+    if (isImage(file)) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        filePreviews.value = new Map(filePreviews.value).set(
+          file,
+          e.target?.result as string,
+        );
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  console.log(filePreviews);
+};
+
+const removeFile = (file: File) => {
+  selectedFiles.value = selectedFiles.value.filter((f) => f !== file);
+  const map = new Map(filePreviews.value);
+  map.delete(file);
+  filePreviews.value = map;
+};
+
+const clearFiles = () => {
+  selectedFiles.value = [];
+  filePreviews.value = new Map();
+  if (fileInputRef.value) fileInputRef.value.value = "";
+};
+
 const handleSubmit = async () => {
-  messageStore.sendMessage(props.spaceId, newMessage.value);
+  if (!newMessage.value.trim() && !hasFiles.value) return;
+
+  const content = newMessage.value.trim();
+  let files: File[] | null = null;
+  let formData: FormData | null = null;
+
+  if (hasFiles.value) {
+    formData = new FormData();
+    selectedFiles.value.forEach((file) => formData!.append("fileList", file));
+
+    // Gửi file nhưng ko có text thì cái reply sẽ gắn vào file
+    if (replyingTo.value?.id && !content) {
+      formData.append("replyToId", replyingTo.value.id);
+    }
+
+    files = [...selectedFiles.value];
+  }
+
+  // Reset UI trước
   newMessage.value = "";
-  await nextTick();
-  messageStore.scrollToBottom(props.spaceId);
-};
-
-const cancelReply = () => {
+  clearFiles();
   messageStore.setReply(null);
-};
 
-const handleFileClick = () => {
-  fileInputRef.value?.click();
+  messageStore.sendMessage(props.spaceId, content, formData, files);
 };
 
 const handleFileChange = (e: Event) => {
-  const file = (e.target as HTMLInputElement).files?.[0];
-  console.log("[log] File selected:", file);
+  const files = (e.target as HTMLInputElement).files;
+  if (files) addFiles(files);
+  if (fileInputRef.value) fileInputRef.value.value = "";
+
+  inputRef.value?.focus();
 };
 
 const onSelectEmoji = (emoji: { i: string }) => {
@@ -71,11 +128,7 @@ const handleClickOutside = (e: MouseEvent) => {
   }
 };
 
-onMounted(() => document.addEventListener("mousedown", handleClickOutside));
-onUnmounted(() =>
-  document.removeEventListener("mousedown", handleClickOutside),
-);
-
+// Watch khi bắt đầu trả lời một tin nhắn, tự động focus vào input và clear nội dung đang nhập
 watch(
   replyingTo,
   async (newVal) => {
@@ -87,64 +140,67 @@ watch(
   },
   { immediate: true },
 );
+
+// Xử lí ném file vào ô input
+const isDragging = ref(false);
+const handleDragOver = (e: DragEvent) => {
+  e.preventDefault();
+  isDragging.value = true;
+};
+const handleDragLeave = () => {
+  isDragging.value = false;
+};
+const handleDrop = (e: DragEvent) => {
+  e.preventDefault();
+  isDragging.value = false;
+  if (e.dataTransfer?.files) addFiles(e.dataTransfer.files);
+};
+
+onMounted(() => document.addEventListener("mousedown", handleClickOutside));
+onUnmounted(() =>
+  document.removeEventListener("mousedown", handleClickOutside),
+);
 </script>
 
 <template>
-  <div class="border-t border-white/10 bg-muted/60 backdrop-blur-md">
-    <!-- Reply preview bar -->
-    <Transition name="reply-slide">
-      <div v-if="replyingTo" class="flex items-center gap-3 px-4 pt-2.5 pb-1">
-        <div class="flex items-center gap-2 shrink-0">
-          <div class="w-0.5 h-8 rounded-full bg-teal-500/80"></div>
-          <svg
-            class="w-3.5 h-3.5 text-teal-400 shrink-0"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <polyline points="9 14 4 9 9 4" />
-            <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
-          </svg>
-        </div>
-        <div class="flex-1 min-w-0">
-          <p class="text-[11px] font-semibold text-teal-400 mb-0.5">
-            Đang trả lời
-            <span class="text-white/80">{{
-              replyingTo.sender?.displayName
-            }}</span>
-          </p>
-          <p class="text-xs text-white/40 truncate leading-tight">
-            {{ replyingTo.content }}
-          </p>
-        </div>
-        <button
-          @click="cancelReply"
-          class="shrink-0 w-5 h-5 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors group"
-          title="Hủy reply"
-        >
-          <svg
-            class="w-2.5 h-2.5 text-white/50 group-hover:text-white/90 transition-colors"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="3"
-            stroke-linecap="round"
-          >
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
+  <div
+    class="relative border-t border-white/10 bg-muted/60 backdrop-blur-md"
+    @dragover="handleDragOver"
+    @dragleave="handleDragLeave"
+    @drop="handleDrop"
+  >
+    <!-- Drag overlay -->
+    <Transition name="fade">
+      <div
+        v-if="isDragging"
+        class="absolute inset-0 z-50 flex items-center justify-center bg-primary/10 border-2 border-dashed border-primary/50 rounded-lg pointer-events-none"
+      >
+        <p class="text-primary font-medium text-sm">Thả file vào đây</p>
       </div>
     </Transition>
 
-    <!-- Input row -->
+    <Transition name="reply-slide">
+      <ReplyBar
+        v-if="replyingTo"
+        :replying-to="replyingTo"
+        @cancel="messageStore.setReply(null)"
+      />
+    </Transition>
+
+    <Transition name="reply-slide">
+      <FilePreview
+        v-if="hasFiles"
+        :files="selectedFiles"
+        :previews="filePreviews"
+        @remove="removeFile"
+        @clear="clearFiles"
+        @add-more="fileInputRef?.click()"
+      />
+    </Transition>
+
     <div class="flex items-center gap-1 px-3 py-3">
-      <!-- Nút gửi file -->
       <button
-        @click="handleFileClick"
+        @click="fileInputRef?.click()"
         title="Đính kèm file"
         class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white/40 hover:text-white/80 hover:bg-white/8 transition-all"
       >
@@ -153,11 +209,11 @@ watch(
       <input
         ref="fileInputRef"
         type="file"
+        multiple
         class="hidden"
         @change="handleFileChange"
       />
 
-      <!-- Input box -->
       <div
         class="flex-1 flex items-center bg-white/8 rounded-lg px-3 gap-2 border border-white/5 focus-within:border-white/10 transition-colors"
       >
@@ -170,11 +226,9 @@ watch(
               : 'Nhắn tin...'
           "
           class="flex-1 bg-transparent py-2.5 text-white placeholder-white/25 focus:outline-none text-sm"
-          @keydown.esc="cancelReply"
+          @keydown.esc="messageStore.setReply(null)"
           @keydown.enter.exact.prevent="handleSubmit"
         />
-
-        <!-- Nút emoji -->
         <div class="relative shrink-0">
           <button
             ref="emojiButtonRef"
@@ -193,12 +247,11 @@ watch(
       </div>
     </div>
 
-    <!-- Emoji picker teleported to body -->
     <Teleport to="body">
       <div
         v-if="showEmojiPicker"
         ref="emojiPickerRef"
-        class="fixed z-50"
+        class="fixed z-[9999]"
         :style="{
           bottom: emojiPickerPos.bottom + 'px',
           right: emojiPickerPos.right + 'px',
@@ -230,7 +283,16 @@ watch(
 .reply-slide-enter-to,
 .reply-slide-leave-from {
   opacity: 1;
-  max-height: 60px;
+  max-height: 160px;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 :deep(.v3-emoji-picker) {
@@ -241,9 +303,7 @@ watch(
   --v3-picker-input-border: var(--border);
   --v3-picker-input-focus-border: var(--primary);
   --v3-picker-emoji-hover: var(--accent);
-  /* Để invert màu tạm lại vì chưa biết fix theme trắng đen */
   --v3-group-image-filter: invert(1);
-
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
@@ -252,4 +312,3 @@ watch(
   --v3-group-image-filter: invert(1);
 }
 </style>
-Z

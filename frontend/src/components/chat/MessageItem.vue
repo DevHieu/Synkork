@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import dayjs from "dayjs";
-import MessageActions from "./MessageActions.vue";
+import MessageActions from "./sub-components/MessageActions.vue";
+import ReplyQuote from "./sub-components/ReplyQuote.vue";
+import FileAttachment from "./sub-components/FileAttachment.vue";
 import type { Message } from "@/types/Message";
 
 import { chatSocket } from "@/services/websocket/chatSocket";
@@ -9,8 +11,6 @@ import { computed, ref } from "vue";
 import { useMessageStore } from "@/stores/messageStore";
 import { useUserStore } from "@/stores/userStore";
 import { storeToRefs } from "pinia";
-
-const messageStore = useMessageStore();
 
 const props = defineProps<{
   message: Message;
@@ -20,6 +20,8 @@ const props = defineProps<{
 
 const userStore = useUserStore();
 const { user } = storeToRefs(userStore);
+
+const messageStore = useMessageStore();
 
 const senderNameColor = computed(() => {
   switch (props.message.sender?.role) {
@@ -35,13 +37,12 @@ const senderNameColor = computed(() => {
 const isFullAction = computed(
   () => props.message.sender?.username === user.value?.username,
 );
-
 const isEditing = ref(false);
 const editContent = ref("");
 
 const handleEdit = () => {
   isEditing.value = true;
-  editContent.value = props.message.content;
+  editContent.value = props.message.content ?? "";
 };
 
 const handleSaveEdit = () => {
@@ -50,8 +51,7 @@ const handleSaveEdit = () => {
     handleCancelEdit();
     return;
   }
-  const updatedMessage: Message = { ...props.message, content: trimmed };
-  chatSocket.updateMessage(updatedMessage);
+  chatSocket.updateMessage({ ...props.message, content: trimmed });
   isEditing.value = false;
 };
 
@@ -64,7 +64,6 @@ const handleDelete = () => {
     chatSocket.deleteMessage(props.message);
   }
 };
-
 const handleReply = () => messageStore.setReply(props.message);
 
 const handlePin = () =>
@@ -73,6 +72,26 @@ const handlePin = () =>
 const jumpToReply = () => {
   if (!props.message.replyTo?.id) return;
   messageStore.jumpToMessage(props.message.spaceId, props.message.replyTo.id);
+};
+
+const openAttachment = async () => {
+  if (!props.message.attachmentUrl) return;
+  if (props.message.type === "FILE") {
+    const res = await fetch(props.message.attachmentUrl);
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = props.message.attachmentName ?? "file";
+    a.click();
+    URL.revokeObjectURL(blobUrl);
+  } else {
+    window.open(props.message.attachmentUrl, "_blank");
+  }
+};
+
+const deleteFailedMessage = () => {
+  messageStore.dismissFailedMessage([props.message.id]);
 };
 </script>
 
@@ -87,12 +106,11 @@ const jumpToReply = () => {
     <div class="flex-1 h-px bg-border/50"></div>
   </div>
 
-  <!-- Giữ nguyên cấu trúc flat như code gốc, không lồng thêm div -->
   <div
     :id="`message-${props.message.id}`"
     class="relative group flex gap-3 p-2 mx-2 rounded-lg transition-colors hover:bg-secondary/20 mb-2"
   >
-    <!-- Avatar column -->
+    <!-- Avatar -->
     <div class="w-10 shrink-0">
       <Avatar v-if="!isGrouped || props.message.replyTo" class="h-10 w-10">
         <AvatarImage
@@ -111,37 +129,14 @@ const jumpToReply = () => {
       </span>
     </div>
 
-    <!-- Content column -->
+    <!-- Content -->
     <div class="flex-1 min-w-0">
-      <!-- Reply quote block -->
-      <div
+      <ReplyQuote
         v-if="props.message.replyTo"
-        class="flex items-stretch mb-2 cursor-pointer max-w-xs rounded-r-md overflow-hidden group/quote"
-        @click="jumpToReply"
-      >
-        <div class="w-0.5 shrink-0 bg-teal-500/60" />
-        <div
-          class="flex-1 min-w-0 bg-white/[0.04] group-hover/quote:bg-white/[0.07] transition-colors px-2.5 py-1.5"
-        >
-          <p
-            class="text-[11px] font-semibold text-teal-400 mb-0.5 leading-none truncate"
-          >
-            {{ props.message.replyTo.senderDisplayName }}
-          </p>
-          <p
-            class="text-[11px] text-white/40 truncate leading-snug"
-            :class="{ italic: props.message.replyTo.deleted }"
-          >
-            {{
-              props.message.replyTo.deleted
-                ? "Tin nhắn đã bị xóa"
-                : props.message.replyTo.content
-            }}
-          </p>
-        </div>
-      </div>
+        :reply-to="props.message.replyTo"
+        @jump="jumpToReply"
+      />
 
-      <!-- Sender header -->
       <div
         v-if="!isGrouped || props.message.replyTo"
         class="flex items-center gap-2 mb-1"
@@ -179,26 +174,79 @@ const jumpToReply = () => {
         </div>
       </div>
 
-      <!-- Message content -->
       <div v-else class="text-sm leading-relaxed wrap-break-word">
         <template v-if="props.message.deleted">
           <span class="text-muted-foreground italic text-xs"
             >Tin nhắn đã bị xóa</span
           >
         </template>
-        <template v-else>
-          <span class="text-foreground/90">{{ props.message.content }}</span>
-          <span
-            v-if="props.message.edited"
-            class="text-[10px] text-muted-foreground ml-1"
+
+        <template v-else-if="props.message.sending || props.message.failed">
+          <div class="flex items-center gap-2">
+            <FileAttachment
+              v-if="props.message.type !== 'TEXT'"
+              :type="props.message.type"
+              :attachment-url="props.message.attachmentUrl ?? ''"
+              :attachment-name="props.message.attachmentName"
+              :sending="true"
+            />
+          </div>
+
+          <div
+            v-if="props.message.sending"
+            class="flex items-center gap-1 mt-1"
           >
-            (đã chỉnh sửa)
-          </span>
+            <span
+              class="w-2 h-2 rounded-full bg-muted-foreground/50 animate-pulse"
+            />
+            <span class="text-[10px] text-muted-foreground">Đang gửi...</span>
+          </div>
+
+          <div
+            v-else-if="props.message.failed"
+            class="flex items-center gap-2 mt-1"
+          >
+            <span class="text-[10px] text-red-400 flex items-center gap-1">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fill-rule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              Gửi thất bại
+            </span>
+            <button
+              @click="deleteFailedMessage()"
+              class="text-[10px] text-muted-foreground hover:underline"
+            >
+              Xóa
+            </button>
+          </div>
+        </template>
+
+        <template v-else>
+          <div v-if="props.message.content">
+            <span class="text-foreground/90">{{ props.message.content }}</span>
+            <span
+              v-if="props.message.edited"
+              class="text-[10px] text-muted-foreground ml-1"
+              >(đã chỉnh sửa)</span
+            >
+          </div>
+
+          <FileAttachment
+            v-if="props.message.type !== 'TEXT' && props.message.attachmentUrl"
+            :type="props.message.type"
+            :attachment-url="props.message.attachmentUrl"
+            :attachment-name="props.message.attachmentName"
+            @open="openAttachment"
+          />
         </template>
       </div>
     </div>
 
-    <!-- Action buttons -->
+    <!-- Actions -->
     <div
       class="absolute right-4 -top-4 opacity-0 group-hover:opacity-100 transition-opacity z-10"
     >
