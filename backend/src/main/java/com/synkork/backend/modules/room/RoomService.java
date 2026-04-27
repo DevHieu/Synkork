@@ -1,7 +1,7 @@
 package com.synkork.backend.modules.room;
 
-import com.synkork.backend.common.dtos.ImageCreated;
-import com.synkork.backend.common.utils.ImageService;
+import com.synkork.backend.common.dtos.FileUploaded;
+import com.synkork.backend.common.utils.FileService;
 import com.synkork.backend.modules.room.dto.CreateRoomDto;
 import com.synkork.backend.modules.room.dto.RoomDto;
 import com.synkork.backend.modules.room.dto.RoomReviewResponse;
@@ -34,7 +34,7 @@ public class RoomService {
     RoomMemberRepository roomMemberRepository;
 
     @Autowired
-    ImageService imageService;
+    FileService imageService;
 
     @Autowired
     SimpMessagingTemplate messagingTemplate;
@@ -60,10 +60,10 @@ public class RoomService {
         roomEntity.setInviteCode(generateInviteCode());
 
         if (roomData.imageFile() != null) {
-            ImageCreated avatar = imageService.uploadImage(roomData.imageFile(), "roomAvatar");
+            FileUploaded avatar = imageService.uploadImage(roomData.imageFile(), "roomAvatar");
 
-            roomEntity.setAvatarUrl(avatar.imageUrl());
-            roomEntity.setAvatarId(avatar.imagePublicId());
+            roomEntity.setAvatarUrl(avatar.url());
+            roomEntity.setAvatarId(avatar.publicId());
         }
 
         UUID ownerId = null;

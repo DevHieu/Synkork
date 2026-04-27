@@ -9,15 +9,18 @@ export interface ReplyPreview {
 
 export interface Message {
   id: string;
-  content: string;
+  content: string | null;
   spaceId: string;
   deleted: boolean;
   pinned: boolean;
   edited: boolean;
   type: "TEXT" | "IMAGE" | "FILE";
-  attachmentUrl: string | null;
   sender: Sender;
   replyTo: ReplyPreview | null;
+  attachmentUrl: string | null;
+  attachmentName: string | null;
+  sending?: boolean;
+  failed?: boolean;
   createdAt: string;
   updatedAt: string;
 }

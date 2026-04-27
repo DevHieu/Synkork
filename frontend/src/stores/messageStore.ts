@@ -4,10 +4,12 @@ import {
   changePinStatus,
   getPinnedChatList,
   getAroundMessage,
+  sendFileMessage as sendFileMessageApi,
 } from "@/services/chatService";
 import { chatSocket } from "@/services/websocket/chatSocket";
 import type { Message } from "@/types/Message";
 import { nextTick } from "vue";
+import { useUserStore } from "./userStore";
 
 let _container: HTMLElement | null = null;
 const MESSAGE_SIZE = 20;
@@ -19,6 +21,7 @@ export const useMessageStore = defineStore("message", {
     isJumpMode: false, // đang ở chế độ jump hay scroll bình thường
 
     messages: [] as Message[],
+
     beforeHasMore: false, // còn tin nhắn cũ hơn không
     afterHasMore: false, // còn tin nhắn mới hơn không (sau khi jump)
     beforeCursor: null as string | null,
@@ -51,6 +54,7 @@ export const useMessageStore = defineStore("message", {
       chatSocket.subscribeMessages(spaceId, (msg: Message) => {
         // Nếu đang jump mode thì không push tin mới vào (tránh lộn xộn)
         if (!this.isJumpMode) {
+          this.messages = this.messages.filter((m) => m.id !== msg.id);
           this.messages.unshift(msg);
           if (!this.isScrollTop) {
             // Tự nhảy xuống
@@ -138,18 +142,65 @@ export const useMessageStore = defineStore("message", {
       }
     },
 
-    sendMessage(spaceId: string, content: string) {
-      if (!content.trim()) return;
+    async sendMessage(
+      spaceId: string,
+      content: string,
+      formData: FormData | null,
+      files: File[] | null,
+    ) {
+      // Cần các mảng này để lưu lại, khi lỗi thì báo lỗi tin nhắn dựa vào id này
+      const tempMsgs: Message[] = [];
+      const textTempIds: string[] = [];
+      const fileTempIds: string[] = [];
 
-      console.log(this.replyingTo?.id);
-      console.log(content);
+      if (files) {
+        files.forEach((file) => {
+          const msg = createTempMessage(file, spaceId, null, this.replyingTo);
+          tempMsgs.push(msg);
+          fileTempIds.push(msg.id);
+        });
+      }
 
-      chatSocket.sendMessage({
-        content,
-        spaceId,
-        replyToId: this.replyingTo?.id ?? null,
-      });
-      this.replyingTo = null;
+      if (content.trim()) {
+        const msg = createTempMessage(null, spaceId, content, this.replyingTo);
+        tempMsgs.push(msg);
+        textTempIds.push(msg.id);
+      }
+
+      const allTempIds = [...fileTempIds, ...textTempIds];
+
+      this.messages = [...tempMsgs, ...this.messages];
+      await nextTick();
+      await this.scrollToBottom(spaceId);
+
+      try {
+        if (content.trim()) {
+          // Xóa cái temp message đã add vào trước đấy, tại vì socket trả về message khá nhanh. Xóa tránh hiện 2 tin nhắn
+          this.messages = this.messages.filter(
+            (m) => !textTempIds.includes(m.id),
+          );
+          chatSocket.sendMessage({
+            content,
+            spaceId,
+            replyToId: this.replyingTo?.id ?? null,
+          });
+        }
+
+        if (files && formData) {
+          await sendFileMessageApi(spaceId, formData);
+          this.messages = this.messages.filter(
+            (m) => !fileTempIds.includes(m.id),
+          );
+        }
+
+        this.replyingTo = null;
+      } catch (err) {
+        this.messages = this.messages.map((m) =>
+          allTempIds.includes(m.id)
+            ? { ...m, sending: false, failed: true }
+            : m,
+        );
+      }
     },
 
     async fetchPinnedList(spaceId: string, cursor: string | null) {
@@ -234,6 +285,10 @@ export const useMessageStore = defineStore("message", {
       if (!el) return;
       el.scrollTop = el.scrollHeight;
     },
+
+    dismissFailedMessage(tempIds: string[]) {
+      this.messages = this.messages.filter((m) => !tempIds.includes(m.id));
+    },
   },
 });
 
@@ -243,4 +298,30 @@ function highlightMessage(messageId: string) {
   el.scrollIntoView({ block: "center" });
   el.classList.add("message-highlight");
   setTimeout(() => el.classList.remove("message-highlight"), 2000);
+}
+
+function createTempMessage(
+  file: File | null,
+  spaceId: string,
+  content: string | null,
+  replyTo: Message | null,
+): Message {
+  return {
+    id: crypto.randomUUID(),
+    content,
+    spaceId,
+    type: file ? (file.type.startsWith("image/") ? "IMAGE" : "FILE") : "TEXT",
+    attachmentName: file ? file.name : null,
+    attachmentUrl:
+      file && file.type.startsWith("image/") ? URL.createObjectURL(file) : null,
+    sending: true,
+    failed: false,
+    sender: useUserStore().user as any,
+    replyTo,
+    deleted: false,
+    pinned: false,
+    edited: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  } as Message;
 }

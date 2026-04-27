@@ -1,17 +1,21 @@
 package com.synkork.backend.modules.message;
 
+import com.synkork.backend.common.utils.FileService;
 import com.synkork.backend.modules.message.dto.MessageDTO;
 import com.synkork.backend.modules.message.dto.MessagePageDTO;
+import com.synkork.backend.security.UserPrinciple;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -65,5 +69,26 @@ public class MessageController {
         MessagePageDTO messages = messageService.findAround(spaceUUID, messageUUID, limit);
 
         return  ResponseEntity.ok(messages);
+    }
+
+    @PostMapping("/file")
+    public ResponseEntity<?> createMessageFile(
+            @RequestParam List<MultipartFile> fileList,
+            @RequestParam(required = false) String replyToId,
+            @PathVariable String spaceId
+    ) {
+        UserPrinciple userPrinciple = (UserPrinciple) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        UUID spaceUUID = UUID.fromString(spaceId);
+        UUID replyToUUID = replyToId != null ? UUID.fromString(replyToId) : null;
+
+        List<MessageDTO> messages = messageService.sendFileMessage(spaceUUID, userPrinciple.getId(), replyToUUID, fileList);
+
+        // Broadcast từng message qua socket
+        messages.forEach(msg -> {
+            messagingTemplate.convertAndSend("/topic/space/" + spaceId + "/messages", msg);
+        });
+
+        return ResponseEntity.ok().build();
     }
 }
