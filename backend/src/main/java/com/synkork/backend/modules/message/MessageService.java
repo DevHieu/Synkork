@@ -104,8 +104,18 @@ public class MessageService {
         MessageEntity message = messageRepository.findById(messageId)
                 .orElseThrow(() -> new IllegalArgumentException("Message not found"));
 
+        message.setContent(null);
+        message.setPinned(false);
         message.setDeleted(true);
         messageRepository.save(message);
+
+        if (message.getAttachmentPublicId() != null) {
+            if (message.getType() == MessageTypeEnum.IMAGE) {
+                fileService.deleteFile(message.getAttachmentPublicId(), "image");
+            } else if (message.getType() == MessageTypeEnum.FILE) {
+                fileService.deleteFile(message.getAttachmentPublicId(), "raw");
+            }
+        }
     }
 
     public MessageDTO updateMessage(MessageDTO dto) {

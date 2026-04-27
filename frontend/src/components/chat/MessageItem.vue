@@ -177,7 +177,10 @@ const deleteFailedMessage = () => {
       <div v-else class="text-sm leading-relaxed wrap-break-word">
         <template v-if="props.message.deleted">
           <span class="text-muted-foreground italic text-xs"
-            >Tin nhắn đã bị xóa</span
+            >{{
+              props.message.type === "TEXT" ? "Tin nhắn" : "Tệp đính kèm"
+            }}
+            đã bị xóa</span
           >
         </template>
 
