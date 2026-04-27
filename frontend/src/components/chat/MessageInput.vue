@@ -9,6 +9,10 @@ import "vue3-emoji-picker/css"; // Nó báo lỗi thì kệ mịa nó đi, sửa
 
 import ReplyBar from "./sub-components/ReplyBar.vue";
 import FilePreview from "./sub-components/FilePreview.vue";
+import FileSizeDialog from "../dialog/FileSizeDialog.vue";
+
+// Hiện tại sẽ set cứng tạm ở đây. Sau này làm cơ chế mua vip rồi sẽ check kĩ sau
+const FILE_LIMIT_BYTES = 10 * 1024 * 1024; // 10 MB cho free
 
 const newMessage = ref("");
 const inputRef = ref<HTMLInputElement | null>(null);
@@ -29,8 +33,17 @@ const { replyingTo } = storeToRefs(messageStore);
 const isImage = (file: File) => file.type.startsWith("image/");
 const hasFiles = computed(() => selectedFiles.value.length > 0);
 
+const fileSizeDialogOpen = ref(false);
+const rejectedFile = ref<File | null>(null);
+
 const addFiles = (newFiles: FileList | File[]) => {
   Array.from(newFiles).forEach((file) => {
+    if (file.size > FILE_LIMIT_BYTES) {
+      rejectedFile.value = file;
+      fileSizeDialogOpen.value = true;
+      return;
+    }
+
     if (
       selectedFiles.value.some(
         (f) => f.name === file.name && f.size === file.size,
@@ -49,8 +62,6 @@ const addFiles = (newFiles: FileList | File[]) => {
       reader.readAsDataURL(file);
     }
   });
-
-  console.log(filePreviews);
 };
 
 const removeFile = (file: File) => {
@@ -88,7 +99,6 @@ const handleSubmit = async () => {
   // Reset UI trước
   newMessage.value = "";
   clearFiles();
-  messageStore.setReply(null);
 
   messageStore.sendMessage(props.spaceId, content, formData, files);
 };
@@ -97,7 +107,6 @@ const handleFileChange = (e: Event) => {
   const files = (e.target as HTMLInputElement).files;
   if (files) addFiles(files);
   if (fileInputRef.value) fileInputRef.value.value = "";
-
   inputRef.value?.focus();
 };
 
@@ -133,8 +142,6 @@ watch(
   replyingTo,
   async (newVal) => {
     if (newVal) {
-      newMessage.value = "";
-      await nextTick();
       inputRef.value?.focus();
     }
   },
@@ -263,6 +270,15 @@ onUnmounted(() =>
           @select="onSelectEmoji"
         />
       </div>
+
+      <FileSizeDialog
+        v-model:open="fileSizeDialogOpen"
+        :file-name="rejectedFile?.name ?? ''"
+        :file-size="rejectedFile?.size ?? 0"
+        current-plan="free"
+        @upgrade="(plan) => console.log('Navigate to upgrade:', plan)"
+        @dismiss="rejectedFile = null"
+      />
     </Teleport>
   </div>
 </template>

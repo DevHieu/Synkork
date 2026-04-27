@@ -11,6 +11,7 @@ import { computed, ref } from "vue";
 import { useMessageStore } from "@/stores/messageStore";
 import { useUserStore } from "@/stores/userStore";
 import { storeToRefs } from "pinia";
+import DeleteConfirmDialog from "@/components/dialog/DeleteConfirmDialog.vue";
 
 const props = defineProps<{
   message: Message;
@@ -39,6 +40,7 @@ const isFullAction = computed(
 );
 const isEditing = ref(false);
 const editContent = ref("");
+const isDeleteOpen = ref(false);
 
 const handleEdit = () => {
   isEditing.value = true;
@@ -60,10 +62,9 @@ const handleCancelEdit = () => {
 };
 
 const handleDelete = () => {
-  if (confirm("Bạn có chắc chắn muốn xóa tin nhắn này?")) {
-    chatSocket.deleteMessage(props.message);
-  }
+  chatSocket.deleteMessage(props.message);
 };
+
 const handleReply = () => messageStore.setReply(props.message);
 
 const handlePin = () =>
@@ -259,11 +260,18 @@ const deleteFailedMessage = () => {
         :isPinned="props.message.pinned"
         @reply="handleReply"
         @edit="handleEdit"
-        @delete="handleDelete"
+        @delete="isDeleteOpen = true"
         @pin="handlePin"
       />
     </div>
   </div>
+
+  <DeleteConfirmDialog
+    v-model:open="isDeleteOpen"
+    title="Xóa tin nhắn này?"
+    description="Bạn không thể khôi phục tin nhắn này sau khi xóa."
+    @confirm="handleDelete"
+  />
 </template>
 
 <style scoped>
