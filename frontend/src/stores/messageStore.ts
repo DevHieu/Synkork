@@ -159,6 +159,8 @@ export const useMessageStore = defineStore("message", {
           tempMsgs.push(msg);
           fileTempIds.push(msg.id);
         });
+
+        console.log(files);
       }
 
       if (content.trim()) {
@@ -173,6 +175,10 @@ export const useMessageStore = defineStore("message", {
       await nextTick();
       await this.scrollToBottom(spaceId);
 
+      // Phải như này để t clear cái UI
+      const replyId = this.replyingTo?.id ?? null;
+      this.replyingTo = null;
+
       try {
         if (content.trim()) {
           // Xóa cái temp message đã add vào trước đấy, tại vì socket trả về message khá nhanh. Xóa tránh hiện 2 tin nhắn
@@ -182,7 +188,7 @@ export const useMessageStore = defineStore("message", {
           chatSocket.sendMessage({
             content,
             spaceId,
-            replyToId: this.replyingTo?.id ?? null,
+            replyToId: replyId,
           });
         }
 
@@ -200,6 +206,8 @@ export const useMessageStore = defineStore("message", {
             ? { ...m, sending: false, failed: true }
             : m,
         );
+      } finally {
+        this.replyingTo = null;
       }
     },
 
