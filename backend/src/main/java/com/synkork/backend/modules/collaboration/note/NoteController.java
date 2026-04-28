@@ -92,7 +92,7 @@ public class NoteController {
     public ResponseEntity<List<NoteResponse>> search(@RequestParam String keyword) {
         return ResponseEntity.ok(noteService.searchNotes(keyword));
     }
-
+    
     @PatchMapping("/{id}/position")
     public ResponseEntity<NoteResponse> updatePosition(
             @PathVariable String id,
