@@ -1,5 +1,6 @@
 package com.synkork.backend.modules.friend;
 
+import com.synkork.backend.common.base.BaseEntity;
 import com.synkork.backend.modules.friend.enums.FriendRequestStatus;
 import com.synkork.backend.modules.user.UserEntity;
 import jakarta.persistence.*;
@@ -24,12 +25,9 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class FriendRequestEntity {
+public class FriendRequestEntity extends BaseEntity {  // ← extends BaseEntity
 
-    @Id
-    @UuidGenerator(style = UuidGenerator.Style.TIME)
-    @Column(name = "id", columnDefinition = "BINARY(16)")
-    private UUID id;
+    // Xóa id, createdAt, updatedAt — đã có trong BaseEntity
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sender_id", nullable = false)
@@ -45,11 +43,4 @@ public class FriendRequestEntity {
 
     @Column(columnDefinition = "TEXT")
     private String message;
-
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
 }

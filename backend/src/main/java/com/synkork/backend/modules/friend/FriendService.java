@@ -42,25 +42,29 @@ public class FriendService {
     }
 
     // Chấp nhận lời mời
-    public void acceptRequest(UUID requestId) {
+    public List<String> acceptRequest(UUID requestId) {
         FriendRequestEntity req = requestRepo.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy lời mời"));
 
         friendRepo.save(new FriendEntity(null, req.getSender(), req.getReceiver(), null));
         friendRepo.save(new FriendEntity(null, req.getReceiver(), req.getSender(), null));
 
-        requestRepo.delete(req);  // ← phải DELETE, không phải setStatus
+        requestRepo.delete(req);
+
+       return List.of(req.getSender().getEmail(), req.getReceiver().getEmail());
     }
 
     // Từ chối lời mời — xóa luôn để người gửi có thể gửi lại sau
-    public void rejectRequest(UUID requestId) {
+    public String rejectRequest(UUID requestId) {
         FriendRequestEntity req = requestRepo.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy lời mời"));
+        String senderEmail = req.getSender().getEmail(); // lấy email trước khi xóa
         requestRepo.delete(req);
+        return senderEmail; // ← thêm dòng này
     }
 
     // Hủy lời mời đã gửi
-    public void cancelRequest(UUID requestId) {
+    public String cancelRequest(UUID requestId) {
         FriendRequestEntity req = requestRepo.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy lời mời"));
 
@@ -70,6 +74,9 @@ public class FriendService {
         }
 
         requestRepo.delete(req);
+
+        // Gửi email ra để gửi realtime cho thak nhận
+        return req.getReceiver().getEmail();
     }
 
     // Lấy danh sách bạn bè
@@ -81,7 +88,7 @@ public class FriendService {
 
     // Xóa bạn (2 chiều)
     @Transactional
-    public void removeFriend(UUID userId, UUID friendId) {
+    public List<String> removeFriend(UUID userId, UUID friendId) {
         UserEntity user = userRepo.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
         UserEntity friend = userRepo.findById(friendId)
@@ -89,7 +96,11 @@ public class FriendService {
 
         friendRepo.deleteByUserAndFriend(user, friend);
         friendRepo.deleteByUserAndFriend(friend, user);
+
+        return List.of(user.getEmail(), friend.getEmail());
     }
+
+
 
     // Lấy lời mời đã nhận
     public List<FriendRequestEntity> getPending(UUID userId) {

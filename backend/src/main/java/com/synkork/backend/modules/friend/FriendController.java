@@ -21,7 +21,7 @@ public class FriendController {
     @Autowired
     SimpMessagingTemplate messagingTemplate;
 
-    // ==================== GỬI LỜI MỜI ====================
+    //  GỬI LỜI MỜI
     @PostMapping("/request")
     public ResponseEntity<String> sendFriendRequest(@RequestParam String username) {
         try {
@@ -35,41 +35,49 @@ public class FriendController {
         }
     }
 
-    // ==================== HỦY LỜI MỜI ĐÃ GỬI ====================
+
+    //  HỦY LỜI MỜI ĐÃ GỬI
     @DeleteMapping("/request/{requestId}")
     public ResponseEntity<String> cancelRequest(@PathVariable UUID requestId) {
         try {
-            friendService.cancelRequest(requestId);
+            String email = friendService.cancelRequest(requestId);
+            // Fix: dùng đúng topic friend-cancel
+            messagingTemplate.convertAndSendToUser(email, "queue/friend-cancel", "Lời mời đã bị hủy");
             return ResponseEntity.ok("Đã hủy lời mời kết bạn");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    // ==================== CHẤP NHẬN LỜI MỜI ====================
+    //CHẤP NHẬN LỜI MỜI
     @Transactional
     @PostMapping("/accept/{requestId}")
     public ResponseEntity<String> accept(@PathVariable UUID requestId) {
         try {
-            friendService.acceptRequest(requestId);
+            List<String> emails = friendService.acceptRequest(requestId);
+
+            messagingTemplate.convertAndSendToUser(emails.get(0), "queue/friend-accept", "Đã chấp nhận lời mời kết bạn");
+            messagingTemplate.convertAndSendToUser(emails.get(1), "queue/friend-accept", "Bạn đã chấp nhận lời mời");
+
             return ResponseEntity.ok("Đã chấp nhận lời mời kết bạn");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    // ==================== TỪ CHỐI LỜI MỜI ====================
+    // TỪ CHỐI LỜI MỜI
     @PostMapping("/reject/{requestId}")
     public ResponseEntity<String> reject(@PathVariable UUID requestId) {
         try {
-            friendService.rejectRequest(requestId);
+            String senderEmail = friendService.rejectRequest(requestId); // đổi void → String
+            messagingTemplate.convertAndSendToUser(senderEmail, "queue/friend-reject", "Lời mời bị từ chối");
             return ResponseEntity.ok("Đã từ chối lời mời");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    // ==================== LẤY DANH SÁCH BẠN BÈ ====================
+    //  LẤY DANH SÁCH BẠN BÈ
     @GetMapping("/{userId}")
     public ResponseEntity<List<FriendDto>> getFriends(@PathVariable UUID userId) {
         List<FriendEntity> friends = friendService.getFriends(userId);
@@ -86,20 +94,22 @@ public class FriendController {
         return ResponseEntity.ok(dtos);
     }
 
-    // ==================== XÓA BẠN ====================
+    // XÓA BẠN
     @DeleteMapping
     public ResponseEntity<String> removeFriend(
             @RequestParam UUID userId,
             @RequestParam UUID friendId) {
         try {
-            friendService.removeFriend(userId, friendId);
+            List<String> emails = friendService.removeFriend(userId, friendId);
+            messagingTemplate.convertAndSendToUser(emails.get(0), "queue/friend-remove", "Đã xóa bạn bè thành công");
+            messagingTemplate.convertAndSendToUser(emails.get(1), "queue/friend-remove", "Đã bị xóa khỏi danh sách bạn bè");
             return ResponseEntity.ok("Đã xóa bạn bè thành công");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    // ==================== LẤY LỜI MỜI ĐÃ NHẬN (PENDING) ====================
+    //  LẤY LỜI MỜI ĐÃ NHẬN (PENDING)
     @GetMapping("/requests/pending")
     public ResponseEntity<List<FriendRequestDto>> getPendingRequests() {
         try {
@@ -123,7 +133,7 @@ public class FriendController {
         }
     }
 
-    // ==================== LẤY LỜI MỜI ĐÃ GỬI (PENDING) ====================
+    //  LẤY LỜI MỜI ĐÃ GỬI (PENDING)
     @GetMapping("/requests/sent")
     public ResponseEntity<List<FriendRequestDto>> getSentRequests() {
         try {
