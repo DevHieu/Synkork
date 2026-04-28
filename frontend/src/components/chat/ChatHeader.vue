@@ -6,11 +6,13 @@ import { Pin, Search, Users, X } from "lucide-vue-next";
 const props = defineProps<{
   spaceName: string;
   memberOpen: boolean;
+  pinOpen: boolean;
 }>();
 
 const emit = defineEmits<{
   search: [query: string];
   "toggle-members": [];
+  "toggle-pins": [];
 }>();
 
 const searchActive = ref(false);
@@ -73,8 +75,14 @@ const closeSearch = () => {
 
       <!-- Pin -->
       <button
-        class="w-8 h-8 rounded-md flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+        class="w-8 h-8 rounded-md flex items-center justify-center transition-colors"
+        :class="
+          pinOpen
+            ? 'bg-accent text-foreground'
+            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+        "
         title="Tin nhắn được ghim"
+        @click="$emit('toggle-pins')"
       >
         <Pin class="w-4.5 h-4.5" />
       </button>

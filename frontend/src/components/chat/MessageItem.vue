@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import dayjs from "dayjs";
-import MessageActions from "./MessageActions.vue";
+import MessageActions from "./sub-components/MessageActions.vue";
+import ReplyQuote from "./sub-components/ReplyQuote.vue";
+import FileAttachment from "./sub-components/FileAttachment.vue";
 import type { Message } from "@/types/Message";
 
 import { chatSocket } from "@/services/websocket/chatSocket";
 import { computed, ref } from "vue";
+import { useMessageStore } from "@/stores/messageStore";
 import { useUserStore } from "@/stores/userStore";
 import { storeToRefs } from "pinia";
+import DeleteConfirmDialog from "@/components/dialog/DeleteConfirmDialog.vue";
 
 const props = defineProps<{
   message: Message;
@@ -18,7 +22,8 @@ const props = defineProps<{
 const userStore = useUserStore();
 const { user } = storeToRefs(userStore);
 
-// hard code tạm màu của owner, admin với member thường khi nhắn tin
+const messageStore = useMessageStore();
+
 const senderNameColor = computed(() => {
   switch (props.message.sender?.role) {
     case "OWNER":
@@ -33,14 +38,13 @@ const senderNameColor = computed(() => {
 const isFullAction = computed(
   () => props.message.sender?.username === user.value?.username,
 );
-
 const isEditing = ref(false);
-const editContent = ref(""); // Chỉ cần lưu nội dung text để edit
+const editContent = ref("");
+const isDeleteOpen = ref(false);
 
 const handleEdit = () => {
   isEditing.value = true;
-  // Clone content để tránh sửa trực tiếp vào props khi đang gõ
-  editContent.value = props.message.content;
+  editContent.value = props.message.content ?? "";
 };
 
 const handleSaveEdit = () => {
@@ -49,14 +53,7 @@ const handleSaveEdit = () => {
     handleCancelEdit();
     return;
   }
-
-  // Tạo object message mới dựa trên dữ liệu cũ nhưng thay content
-  const updatedMessage: Message = {
-    ...props.message,
-    content: trimmed,
-  };
-
-  chatSocket.updateMessage(updatedMessage);
+  chatSocket.updateMessage({ ...props.message, content: trimmed });
   isEditing.value = false;
 };
 
@@ -65,17 +62,42 @@ const handleCancelEdit = () => {
 };
 
 const handleDelete = () => {
-  if (confirm("Bạn có chắc chắn muốn xóa tin nhắn này?")) {
-    chatSocket.deleteMessage(props.message);
+  chatSocket.deleteMessage(props.message);
+};
+
+const handleReply = () => messageStore.setReply(props.message);
+
+const handlePin = () =>
+  messageStore.changePinStatus(props.message.spaceId, props.message.id);
+
+const jumpToReply = () => {
+  if (!props.message.replyTo?.id) return;
+  messageStore.jumpToMessage(props.message.spaceId, props.message.replyTo.id);
+};
+
+const openAttachment = async () => {
+  if (!props.message.attachmentUrl) return;
+  if (props.message.type === "FILE") {
+    const res = await fetch(props.message.attachmentUrl);
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = props.message.attachmentName ?? "file";
+    a.click();
+    URL.revokeObjectURL(blobUrl);
+  } else {
+    window.open(props.message.attachmentUrl, "_blank");
   }
 };
 
-const handleReply = () => console.log("Reply to:", props.message.id);
-const handlePin = () => console.log("Pin message:", props.message.id);
+const deleteFailedMessage = () => {
+  messageStore.dismissFailedMessage([props.message.id]);
+};
 </script>
 
 <template>
-  <div v-if="isDifferentDay" class="flex items-center gap-3 my-4 px-4">
+  <div v-if="isDifferentDay" class="flex items-center gap-3 my-6 px-4">
     <div class="flex-1 h-px bg-border/50"></div>
     <span
       class="text-[10px] uppercase font-bold text-muted-foreground tracking-wider"
@@ -86,11 +108,12 @@ const handlePin = () => console.log("Pin message:", props.message.id);
   </div>
 
   <div
-    class="relative group flex gap-3 p-2 mx-2 rounded-lg transition-colors hover:bg-secondary/20"
-    :class="[isGrouped ? 'mt-0' : 'mt-4']"
+    :id="`message-${props.message.id}`"
+    class="relative group flex gap-3 p-2 mx-2 rounded-lg transition-colors hover:bg-secondary/20 mb-2"
   >
+    <!-- Avatar -->
     <div class="w-10 shrink-0">
-      <Avatar v-if="!isGrouped" class="h-10 w-10">
+      <Avatar v-if="!isGrouped || props.message.replyTo" class="h-10 w-10">
         <AvatarImage
           v-if="props.message.sender?.avatarUrl"
           :src="props.message.sender.avatarUrl"
@@ -107,8 +130,18 @@ const handlePin = () => console.log("Pin message:", props.message.id);
       </span>
     </div>
 
+    <!-- Content -->
     <div class="flex-1 min-w-0">
-      <div v-if="!isGrouped" class="flex items-center gap-2 mb-1">
+      <ReplyQuote
+        v-if="props.message.replyTo"
+        :reply-to="props.message.replyTo"
+        @jump="jumpToReply"
+      />
+
+      <div
+        v-if="!isGrouped || props.message.replyTo"
+        class="flex items-center gap-2 mb-1"
+      >
         <span class="font-bold text-sm" :class="senderNameColor">
           {{ props.message.sender?.displayName }}
         </span>
@@ -117,6 +150,7 @@ const handlePin = () => console.log("Pin message:", props.message.id);
         </span>
       </div>
 
+      <!-- Edit mode -->
       <div v-if="isEditing" class="mt-1">
         <textarea
           v-model="editContent"
@@ -141,35 +175,116 @@ const handlePin = () => console.log("Pin message:", props.message.id);
         </div>
       </div>
 
-      <div v-else class="text-sm leading-relaxed break-words">
+      <div v-else class="text-sm leading-relaxed wrap-break-word">
         <template v-if="props.message.deleted">
           <span class="text-muted-foreground italic text-xs"
-            >Tin nhắn đã bị xóa</span
+            >{{
+              props.message.type === "TEXT" ? "Tin nhắn" : "Tệp đính kèm"
+            }}
+            đã bị xóa</span
           >
         </template>
-        <template v-else>
-          <span class="text-foreground/90">{{ props.message.content }}</span>
-          <span
-            v-if="props.message.updatedAt !== props.message.createdAt"
-            class="text-[10px] text-muted-foreground ml-1"
+
+        <template v-else-if="props.message.sending || props.message.failed">
+          <div class="flex items-center gap-2">
+            <FileAttachment
+              v-if="props.message.type !== 'TEXT'"
+              :type="props.message.type"
+              :attachment-url="props.message.attachmentUrl ?? ''"
+              :attachment-name="props.message.attachmentName"
+              :sending="true"
+            />
+          </div>
+
+          <div
+            v-if="props.message.sending"
+            class="flex items-center gap-1 mt-1"
           >
-            (đã chỉnh sửa)
-          </span>
+            <span
+              class="w-2 h-2 rounded-full bg-muted-foreground/50 animate-pulse"
+            />
+            <span class="text-[10px] text-muted-foreground">Đang gửi...</span>
+          </div>
+
+          <div
+            v-else-if="props.message.failed"
+            class="flex items-center gap-2 mt-1"
+          >
+            <span class="text-[10px] text-red-400 flex items-center gap-1">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fill-rule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              Gửi thất bại
+            </span>
+            <button
+              @click="deleteFailedMessage()"
+              class="text-[10px] text-muted-foreground hover:underline"
+            >
+              Xóa
+            </button>
+          </div>
+        </template>
+
+        <template v-else>
+          <div v-if="props.message.content">
+            <span class="text-foreground/90">{{ props.message.content }}</span>
+            <span
+              v-if="props.message.edited"
+              class="text-[10px] text-muted-foreground ml-1"
+              >(đã chỉnh sửa)</span
+            >
+          </div>
+
+          <FileAttachment
+            v-if="props.message.type !== 'TEXT' && props.message.attachmentUrl"
+            :type="props.message.type"
+            :attachment-url="props.message.attachmentUrl"
+            :attachment-name="props.message.attachmentName"
+            @open="openAttachment"
+          />
         </template>
       </div>
     </div>
 
+    <!-- Actions -->
     <div
       class="absolute right-4 -top-4 opacity-0 group-hover:opacity-100 transition-opacity z-10"
     >
       <MessageActions
         v-if="!isEditing && !props.message.deleted"
         :isSender="isFullAction"
+        :isPinned="props.message.pinned"
         @reply="handleReply"
         @edit="handleEdit"
-        @delete="handleDelete"
+        @delete="isDeleteOpen = true"
         @pin="handlePin"
       />
     </div>
   </div>
+
+  <DeleteConfirmDialog
+    v-model:open="isDeleteOpen"
+    title="Xóa tin nhắn này?"
+    description="Bạn không thể khôi phục tin nhắn này sau khi xóa."
+    @confirm="handleDelete"
+  />
 </template>
+
+<style scoped>
+.message-highlight {
+  animation: highlightFade 1s ease;
+}
+
+@keyframes highlightFade {
+  0% {
+    background-color: var(--primary);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+</style>

@@ -21,6 +21,8 @@ public class CalendarEventDTO {
     private LocalDate eventDate;
     private LocalTime startTime;
     private LocalTime endTime;
+    private String recurrenceType;
+    private LocalDate recurrenceEndDate;
     private boolean allowEditAll;
 
     private String createdById;
@@ -39,11 +41,25 @@ public class CalendarEventDTO {
         this.eventDate = entity.getEventDate();
         this.startTime = entity.getStartTime();
         this.endTime = entity.getEndTime();
+        this.recurrenceType = entity.getRecurrenceType();
+        this.recurrenceEndDate = entity.getRecurrenceEndDate();
         this.allowEditAll = entity.isAllowEditAll();
         this.createdById = entity.getCreatedBy().getId().toString();
         this.createdByUsername = entity.getCreatedBy().getUsername();
         this.createdByDisplayName = entity.getCreatedBy().getDisplayName();
         this.createdAt = entity.getCreatedAt();
         this.updatedAt = entity.getUpdatedAt();
+    }
+
+    // Map ngược từ DTO sang Entity
+    public void updateEntity(CalendarEventEntity target) {
+        target.setTitle(this.title);
+        target.setDescription(this.description);
+        target.setEventDate(this.eventDate);
+        target.setStartTime(this.startTime);
+        target.setEndTime(this.endTime);
+        target.setRecurrenceType(this.recurrenceType != null ? this.recurrenceType : "NONE");
+        target.setRecurrenceEndDate(this.recurrenceEndDate);
+        target.setAllowEditAll(this.allowEditAll);
     }
 }

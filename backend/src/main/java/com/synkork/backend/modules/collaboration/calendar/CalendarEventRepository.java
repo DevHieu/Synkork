@@ -14,6 +14,8 @@ public interface CalendarEventRepository extends JpaRepository<CalendarEventEnti
 
     List<CalendarEventEntity> findBySpaceIdAndEventDateBetween(UUID spaceId, LocalDate start, LocalDate end);
 
+    List<CalendarEventEntity> findBySpaceIdAndEventDateLessThanEqual(UUID spaceId, LocalDate endDate);
+
     List<CalendarEventEntity> findBySpaceIdAndEventDate(UUID spaceId, LocalDate date);
 
     void deleteBySpaceId(UUID spaceId);
