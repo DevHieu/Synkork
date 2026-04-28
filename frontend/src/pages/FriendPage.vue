@@ -16,7 +16,11 @@ onMounted(async () => {
     store.fetchPendingRequests(),
     store.fetchSentRequests(),
 
-    subscribeFriendSocket()
+    subscribeFriendSocket(),
+    subscribeFriendAccept(),
+    subscribeFriendReject(),  
+    subscribeFriendCancel(),  
+    subscribeFriendRemove()
   ])
 })
 
@@ -24,11 +28,47 @@ const subscribeFriendSocket = () => {
   friendSocket.subscribeFriendRequest(async () => {
     // Khi có request mới, chỉ cần fetch lại pending và sent là đủ
     await Promise.all([
+      console.log("RUNNING"),
+      
       store.fetchPendingRequests(),
       store.fetchSentRequests()
     ])
   })
 }
+
+const subscribeFriendAccept = () => {
+  friendSocket.subscribeFriendAccept(async () => {
+   await Promise.all([
+      console.log("RUNNING"),
+      
+      store.fetchPendingRequests(),
+      store.fetchSentRequests(),
+      store.fetchFriends()
+    ])
+  })
+}
+
+// Bị từ chối → cập nhật lại sent requests
+const subscribeFriendReject = () => {
+  friendSocket.subscribeFriendReject(async () => {
+    await store.fetchSentRequests()
+  })
+}
+
+// Lời mời bị hủy → cập nhật lại pending
+const subscribeFriendCancel = () => {
+  friendSocket.subscribeFriendCancel(async () => {
+    await store.fetchPendingRequests()
+  })
+}
+
+// Bị xóa khỏi danh sách bạn → cập nhật lại friends
+const subscribeFriendRemove = () => {
+  friendSocket.subscribeFriendRemove(async () => {
+    await store.fetchFriends()
+  })
+}
+
 
 const totalPending = () => store.pendingRequests.length + store.sentRequests.length
 

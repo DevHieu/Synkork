@@ -4,10 +4,6 @@ import { friendService } from "@/services/friendService"
 import type { Friend, FriendRequest } from "@/types/friend"
 import { useUserStore } from "@/stores/userStore"
 
-// Interface cục bộ - không sửa userStore của người khác
-interface UserWithId {
-  id: string
-}
 
 export const useFriendStore = defineStore("friend", () => {
   const friends = ref<Friend[]>([])
@@ -18,14 +14,13 @@ export const useFriendStore = defineStore("friend", () => {
   const friendCount = computed(() => friends.value.length)
   const hasPending = computed(() => pendingRequests.value.length > 0 || sentRequests.value.length > 0)
 
-  // Lấy userId — nếu user chưa load thì fetch trước
   const getCurrentUserId = async (): Promise<string | null> => {
-    const userStore = useUserStore()
-    if (!userStore.user) {
-      await userStore.getUserInfo()
-    }
-    return (userStore.user as UserWithId | null)?.id ?? null
+  const userStore = useUserStore()
+  if (!userStore.user) {
+    await userStore.getUserInfo()
   }
+  return (userStore.user as any)?.id ?? null
+}
 
   const fetchFriends = async () => {
     try {
@@ -37,7 +32,7 @@ export const useFriendStore = defineStore("friend", () => {
       }
       friends.value = await friendService.getFriends(userId)
     } catch (e: any) {
-      console.error("❌ Fetch friends failed:", e.response?.data || e.message)
+      console.error(" Fetch friends failed:", e.response?.data || e.message)
       friends.value = []
     } finally {
       loading.value = false
