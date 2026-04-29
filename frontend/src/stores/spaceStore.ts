@@ -1,6 +1,8 @@
 import { defineStore } from "pinia";
-import { createSpace, getAllSpacesFromRoomId } from "@/services/spaceService";
+import { getAllSpacesFromRoomId } from "@/services/spaceService";
+import { spaceSocket } from "@/services/websocket/spaceSocket";
 import router from "@/routers";
+import { socketService } from "@/services/websocket/socketService";
 
 export const useSpaceStore = defineStore("spaces", {
   state: () => ({
@@ -22,9 +24,27 @@ export const useSpaceStore = defineStore("spaces", {
         const res = await getAllSpacesFromRoomId(roomId);
 
         await this.filterSpacesByType(res.data);
+
+        this.connectSpaceSocket(roomId);
       } finally {
         this.loading = false;
       }
+    },
+
+    connectSpaceSocket(roomId: string) {
+      socketService.connect();
+
+      spaceSocket.subscribeSpaceCreated(roomId, (space) => {
+        this.addSpaceToArray(space);
+      });
+
+      spaceSocket.subscribeSpaceUpdated(roomId, (updatedSpace) => {
+        this.updateSpaceToArray(updatedSpace);
+      });
+
+      spaceSocket.subscribeSpaceDeleted(roomId, (spaceId) => {
+        this.removeSpaceFromArray(spaceId);
+      });
     },
 
     async filterSpacesByType(rooms: any[]) {
@@ -48,8 +68,6 @@ export const useSpaceStore = defineStore("spaces", {
     },
 
     async changeSpace(index: number, type: string) {
-      console.log("changeigin: " + type);
-
       switch (type) {
         case "CHAT":
           this.currentSpace = this.chatSpaces[index];
@@ -105,7 +123,45 @@ export const useSpaceStore = defineStore("spaces", {
       }
 
       if (this.currentSpace === null) {
-        this.currentSpace = this.chatSpaces[0] || null;
+        this.currentSpace = this.chatSpaces[0];
+      }
+
+      router.push(
+        `/rooms/chat/${router.currentRoute.value.params.roomId}/${
+          this.chatSpaces[0]?.id || ""
+        }`,
+      );
+    },
+
+    addSpaceToArray(space: any) {
+      switch (space.type.toUpperCase()) {
+        case "CHAT":
+          this.chatSpaces.push(space);
+          break;
+        case "VOICE":
+          this.voiceSpaces.push(space);
+          break;
+        case "NOTE":
+          this.noteSpaces.push(space);
+          break;
+        case "CALENDAR":
+          this.calendarSpaces.push(space);
+          break;
+        case "TASK":
+          this.taskSpaces.push(space);
+          break;
+      }
+    },
+
+    removeSpaceFromArray(spaceId: string) {
+      this.chatSpaces = this.chatSpaces.filter((s) => s.id !== spaceId);
+      this.voiceSpaces = this.voiceSpaces.filter((s) => s.id !== spaceId);
+      this.noteSpaces = this.noteSpaces.filter((s) => s.id !== spaceId);
+      this.calendarSpaces = this.calendarSpaces.filter((s) => s.id !== spaceId);
+      this.taskSpaces = this.taskSpaces.filter((s) => s.id !== spaceId);
+
+      if (this.currentSpace?.id === spaceId) {
+        this.currentSpace = null;
         router.push(
           `/rooms/chat/${router.currentRoute.value.params.roomId}/${
             this.chatSpaces[0]?.id || ""
@@ -114,34 +170,43 @@ export const useSpaceStore = defineStore("spaces", {
       }
     },
 
-    async createSpace(name: string, type: string, roomId: string) {
-      const spaceData = {
-        name,
-        type,
-      };
-      const newSpace = await createSpace(roomId, spaceData);
-
-      switch (type.toUpperCase()) {
+    updateSpaceToArray(space: any) {
+      switch (space.type.toUpperCase()) {
         case "CHAT":
-          this.chatSpaces.unshift(newSpace);
+          const chatIndex = this.chatSpaces.findIndex((s) => s.id === space.id);
+          if (chatIndex !== -1) {
+            this.chatSpaces[chatIndex] = space;
+          }
           break;
         case "VOICE":
-          this.voiceSpaces.unshift(newSpace);
+          const voiceIndex = this.voiceSpaces.findIndex(
+            (s) => s.id === space.id,
+          );
+          if (voiceIndex !== -1) {
+            this.voiceSpaces[voiceIndex] = space;
+          }
           break;
         case "NOTE":
-          this.noteSpaces.unshift(newSpace);
+          const noteIndex = this.noteSpaces.findIndex((s) => s.id === space.id);
+          if (noteIndex !== -1) {
+            this.noteSpaces[noteIndex] = space;
+          }
           break;
         case "CALENDAR":
-          this.calendarSpaces.unshift(newSpace);
+          const calendarIndex = this.calendarSpaces.findIndex(
+            (s) => s.id === space.id,
+          );
+          if (calendarIndex !== -1) {
+            this.calendarSpaces[calendarIndex] = space;
+          }
           break;
         case "TASK":
-          this.taskSpaces.unshift(newSpace);
+          const taskIndex = this.taskSpaces.findIndex((s) => s.id === space.id);
+          if (taskIndex !== -1) {
+            this.taskSpaces[taskIndex] = space;
+          }
           break;
       }
-
-      await this.changeSpaceById(newSpace.id, type);
-
-      return newSpace.id;
     },
   },
 });

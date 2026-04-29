@@ -1,0 +1,54 @@
+<script setup lang="ts">
+import { watch } from "vue";
+import { useAttachments } from "../composables/useAttachments";
+
+const props = defineProps<{
+  initialAttachments?: { name: string; size: number; file?: File }[];
+  show: boolean;
+}>();
+
+const emit = defineEmits<{
+  (e: "change", attachments: { name: string; size: number; file?: File }[]): void;
+}>();
+
+const { attachments, addFromFileInput, removeAttachment, resetAttachments } =
+  useAttachments(props.initialAttachments || []);
+
+// Đồng bộ với component cha khi danh sách tệp đính kèm thay đổi
+watch(attachments, (newList) => {
+  emit("change", newList);
+}, { deep: true });
+
+// Làm mới khi Dialog mở ra
+watch(() => props.show, (isOpen) => {
+  if (isOpen) resetAttachments(props.initialAttachments || []);
+});
+</script>
+
+<template>
+  <div>
+    <label class="block text-sm text-gray-400 mb-1.5 font-medium">Tệp đính kèm</label>
+    <div class="flex flex-col gap-2">
+      <label
+        class="flex justify-center items-center w-full h-20 px-4 transition bg-white/5 border-2 border-white/10 border-dashed rounded-lg appearance-none cursor-pointer hover:border-teal-500/50 hover:bg-white/10 focus:outline-none">
+        <span class="flex items-center space-x-2">
+          <i class="pi pi-upload text-gray-400" />
+          <span class="font-medium text-gray-400 text-sm">Nhấn để chọn tệp...</span>
+        </span>
+        <input type="file" multiple class="hidden" @change="addFromFileInput" />
+      </label>
+      <div v-if="attachments.length > 0" class="flex flex-col gap-1.5 mt-1">
+        <div v-for="(file, idx) in attachments" :key="idx"
+          class="flex items-center justify-between bg-black/20 p-2 rounded-lg border border-white/5 text-xs">
+          <div class="flex items-center gap-2 truncate">
+            <i class="pi pi-file text-gray-400" />
+            <span class="text-gray-300 truncate">{{ file.name }}</span>
+          </div>
+          <button type="button" @click="removeAttachment(idx)" class="text-red-400/80 hover:text-red-400 px-2 shrink-0">
+            <i class="pi pi-trash" />
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

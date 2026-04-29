@@ -30,14 +30,24 @@ public class MessageEntity extends BaseEntity {
 
     private boolean deleted = false;
     private boolean pinned = false;
+    private boolean edited = false;
 
     @Enumerated(EnumType.STRING)
     private MessageTypeEnum type =  MessageTypeEnum.TEXT;
 
-    @Column(name = "attachment_url")
-    private String attachmentUrl;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reply_to_id")
     private MessageEntity replyTo;
+
+    @Column(name = "attachment_url")
+    private String attachmentUrl;
+
+    @Column(name = "attachment_public_id")
+    private String attachmentPublicId;  // cần để xóa trên Cloudinary
+
+    @Column(name = "attachment_resource_type")
+    private String attachmentResourceType;  // "image" hoặc "raw" để xóa đúng
+
+    @Column(name = "attachment_name")
+    private String attachmentName;  // tên file gốc để hiển thị cho user
 }
