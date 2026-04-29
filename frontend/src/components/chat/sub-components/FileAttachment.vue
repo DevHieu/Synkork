@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import ImageViewerDialog from "@/components/dialog/ImageViewerDialog.vue";
 import { FileIcon } from "lucide-vue-next";
+import { ref } from "vue";
 
 const props = defineProps<{
   type: "IMAGE" | "FILE";
@@ -8,9 +10,22 @@ const props = defineProps<{
   sending?: boolean;
 }>();
 
-const emit = defineEmits<{
-  open: [];
-}>();
+const viewerOpen = ref(false);
+
+const handleClick = async () => {
+  if (props.type === "IMAGE") {
+    viewerOpen.value = true;
+  } else {
+    const res = await fetch(props.attachmentUrl);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = props.attachmentName ?? "file";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+};
 </script>
 
 <template>
@@ -37,8 +52,14 @@ const emit = defineEmits<{
     <img
       :src="attachmentUrl"
       :alt="attachmentName ?? 'image'"
-      class="max-w-xs max-h-72 rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity"
-      @click="emit('open')"
+      class="max-w-xs max-h-72 rounded-lg object-cover cursor-zoom-in hover:opacity-90 transition-opacity"
+      @click="handleClick"
+    />
+
+    <ImageViewerDialog
+      v-model:open="viewerOpen"
+      :src="attachmentUrl"
+      :name="attachmentName ?? 'image'"
     />
   </div>
 
@@ -46,7 +67,7 @@ const emit = defineEmits<{
   <div
     v-else
     class="mt-1 flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 max-w-xs hover:bg-white/8 transition-colors cursor-pointer"
-    @click="emit('open')"
+    @click="handleClick"
   >
     <div
       class="w-8 h-8 rounded-md bg-primary/20 flex items-center justify-center shrink-0"

@@ -75,22 +75,6 @@ const jumpToReply = () => {
   messageStore.jumpToMessage(props.message.spaceId, props.message.replyTo.id);
 };
 
-const openAttachment = async () => {
-  if (!props.message.attachmentUrl) return;
-  if (props.message.type === "FILE") {
-    const res = await fetch(props.message.attachmentUrl);
-    const blob = await res.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = blobUrl;
-    a.download = props.message.attachmentName ?? "file";
-    a.click();
-    URL.revokeObjectURL(blobUrl);
-  } else {
-    window.open(props.message.attachmentUrl, "_blank");
-  }
-};
-
 const deleteFailedMessage = () => {
   messageStore.dismissFailedMessage([props.message.id]);
 };
@@ -244,7 +228,6 @@ const deleteFailedMessage = () => {
             :type="props.message.type"
             :attachment-url="props.message.attachmentUrl"
             :attachment-name="props.message.attachmentName"
-            @open="openAttachment"
           />
         </template>
       </div>
