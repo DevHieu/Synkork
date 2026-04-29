@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.message;
 
 import com.synkork.backend.modules.message.dto.MessageDTO;
+import com.synkork.backend.modules.message.dto.ReplyPreviewDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,10 +15,10 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
 
     @Query("""
             SELECT new com.synkork.backend.modules.message.dto.MessageDTO(
-                m.id, m.content, m.space.id, m.deleted, m.pinned,
-                m.type, m.attachmentUrl,
+                m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
+                m.type, m.attachmentUrl, m.attachmentName,
                 rm.user.username, rm.user.displayName, rm.user.avatarUrl,
-                rm.role, m.createdAt, m.updatedAt
+                rm.role, m.replyTo.id, m.createdAt, m.updatedAt
                 )
                 FROM MessageEntity m
                 JOIN m.sender rm
@@ -29,10 +30,10 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
 
     @Query("""
                 SELECT new com.synkork.backend.modules.message.dto.MessageDTO(
-                    m.id, m.content, m.space.id, m.deleted, m.pinned,
-                    m.type, m.attachmentUrl,
+                    m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
+                    m.type, m.attachmentUrl, m.attachmentName,
                     rm.user.username, rm.user.displayName, rm.user.avatarUrl,
-                    rm.role, m.createdAt, m.updatedAt
+                    rm.role, m.replyTo.id, m.createdAt, m.updatedAt
                     )
                 FROM MessageEntity m
                 JOIN m.sender rm
@@ -47,4 +48,91 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
             @Param("limit") int limit
     );
 
+    @Query("""
+                SELECT new com.synkork.backend.modules.message.dto.MessageDTO(
+                    m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
+                    m.type, m.attachmentUrl, m.attachmentName,
+                    rm.user.username, rm.user.displayName, rm.user.avatarUrl,
+                    rm.role, m.replyTo.id, m.createdAt, m.updatedAt
+                )
+                FROM MessageEntity m
+                JOIN m.sender rm
+                WHERE m.space.id = :spaceId
+                  AND m.id >= :cursor
+                ORDER BY m.id ASC
+                LIMIT :limit
+            """)
+    List<MessageDTO> findNewerPage(
+            @Param("spaceId") UUID spaceId,
+            @Param("cursor") UUID cursor,
+            @Param("limit") int limit
+    );
+
+    // pinned tin nhawns
+    @Query("""
+            SELECT new com.synkork.backend.modules.message.dto.MessageDTO(
+                m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
+                m.type, m.attachmentUrl, m.attachmentName,
+                rm.user.username, rm.user.displayName, rm.user.avatarUrl,
+                rm.role, m.replyTo.id, m.createdAt, m.updatedAt
+                )
+                FROM MessageEntity m
+                JOIN m.sender rm
+                WHERE m.space.id = :spaceId AND m.pinned = TRUE
+                ORDER BY m.id DESC
+                LIMIT :limit
+            """)
+    List<MessageDTO> findPinnedFirstPage(@Param("spaceId") UUID spaceId, @Param("limit") int limit);
+
+    @Query("""
+                SELECT new com.synkork.backend.modules.message.dto.MessageDTO(
+                    m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
+                    m.type, m.attachmentUrl, m.attachmentName,
+                    rm.user.username, rm.user.displayName, rm.user.avatarUrl,
+                    rm.role, m.replyTo.id, m.createdAt, m.updatedAt
+                    )
+                FROM MessageEntity m
+                JOIN m.sender rm
+                WHERE m.space.id = :spaceId
+                  AND m.pinned = TRUE
+                  AND m.id < :cursor
+                ORDER BY m.id DESC
+                LIMIT :limit
+            """)
+    List<MessageDTO> findPinnedNextPage(
+            @Param("spaceId") UUID spaceId,
+            @Param("cursor") UUID cursor,
+            @Param("limit") int limit
+    );
+
+    // Tìm với load máy cái tin nhắn khi nhấn lướt đến 1 cái tin nhắn trong Pinned
+    @Query("""
+                SELECT m from MessageEntity m
+                WHERE m.space.id = :spaceId
+                  AND m.id < :messageId
+                ORDER BY m.id DESC
+                LIMIT :limit
+            """)
+    List<MessageEntity> findBeforeMessage(UUID spaceId, UUID messageId, int limit);
+
+
+    @Query("""
+                SELECT m from MessageEntity m
+                WHERE m.space.id = :spaceId
+                  AND m.id >= :messageId
+                ORDER BY m.id ASC
+                LIMIT :limit
+            """)
+    List<MessageEntity> findAfterMessage(UUID spaceId, UUID messageId, int limit); //    Lấy cả tin nhắn mình chọn và các tin nhắn sau
+
+    @Query("""
+                SELECT new com.synkork.backend.modules.message.dto.ReplyPreviewDTO(
+                    r.id, r.content, r.deleted,
+                    ru.user.displayName
+                )
+                FROM MessageEntity r
+                JOIN r.sender ru
+                WHERE r.id IN :ids
+            """)
+    List<ReplyPreviewDTO> findReplyPreviews(@Param("ids") List<UUID> ids);
 }
