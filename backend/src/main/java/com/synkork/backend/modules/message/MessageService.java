@@ -25,7 +25,6 @@ public class MessageService {
 
     @Autowired
     MessageRepository messageRepository;
-
     @Autowired
     SpaceRepository spaceRepository;
 
