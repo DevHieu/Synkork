@@ -10,6 +10,25 @@ export const createSpace = async (roomId: string, spaceData: {}) => {
   return res.data;
 };
 
+export const updateSpace = async (
+  roomId: string,
+  spaceId: string,
+  spaceData: {},
+) => {
+  const res = await axiosClient.put(
+    `/api/rooms/${roomId}/spaces/${spaceId}`,
+    spaceData,
+  );
+  return res.data;
+};
+
+export const deleteSpace = async (roomId: string, spaceId: string) => {
+  const res = await axiosClient.delete(
+    `/api/rooms/${roomId}/spaces/${spaceId}`,
+  );
+  return res.data;
+};
+
 export const getZegoToken = async (userId: string) => {
   const res = await axiosClient.get(`/api/zego/token/${userId}`);
   console.log("token: " + res.data);

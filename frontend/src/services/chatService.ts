@@ -53,3 +53,17 @@ export const getAroundMessage = async (
     `/api/spaces/${spaceId}/messages/around/${messageId}?${params}`,
   );
 };
+
+export const sendFileMessage = async (spaceId: string, formData: FormData) => {
+  const res = await axiosClient.post(
+    `/api/spaces/${spaceId}/messages/file`,
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    },
+  );
+
+  return res.data;
+};

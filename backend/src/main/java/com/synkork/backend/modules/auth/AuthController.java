@@ -1,8 +1,5 @@
 package com.synkork.backend.modules.auth;
 
-import com.synkork.backend.common.utils.EmailService;
-import com.synkork.backend.common.utils.ImageService;
-import com.synkork.backend.modules.auth.dto.JwtResponse;
 import com.synkork.backend.modules.auth.dto.LoginRequest;
 import com.synkork.backend.modules.auth.dto.RegisterRequest;
 import com.synkork.backend.modules.auth.dto.ResetPasswordRequest;
@@ -15,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;

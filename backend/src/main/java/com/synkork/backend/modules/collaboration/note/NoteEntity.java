@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.Builder;
 
 @Entity
 @Table(name="notes")
@@ -15,6 +16,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class NoteEntity extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "space_id", nullable = false, columnDefinition = "BINARY(16)")
@@ -26,10 +28,31 @@ public class NoteEntity extends BaseEntity {
     @Column(columnDefinition = "LONGTEXT")
     private String note;
 
-    private boolean important;
-    private boolean allowEditAll;
+    @Builder.Default
+    private Boolean pinned = false;
+
+    @Builder.Default
+    private boolean allowEditAll = true;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false, columnDefinition = "BINARY(16)")
     private UserEntity createdBy;
+
+    @Column(name = "color", length = 7)
+    private String color;
+
+    @Column(name = "pos_x", columnDefinition = "INT DEFAULT 0")
+    private Integer posX = 0;
+
+    @Column(name = "pos_y", columnDefinition = "INT DEFAULT 0")
+    private Integer posY = 0;
+
+    @Column(name = "width", columnDefinition = "INT DEFAULT 2")
+    private Integer width = 2;
+
+    @Column(name = "height", columnDefinition = "INT DEFAULT 2")
+    private Integer height = 2;
 }
+
+
+    

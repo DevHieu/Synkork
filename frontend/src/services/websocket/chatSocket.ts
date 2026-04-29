@@ -21,6 +21,10 @@ export const chatSocket = {
     spaceId: string;
     replyToId?: string | null;
   }) {
+    if (!socketService.isConnected()) {
+      throw new Error("DISCONNECTED");
+    }
+
     socketService.publish("/app/chat.sendMessage", msg);
   },
 

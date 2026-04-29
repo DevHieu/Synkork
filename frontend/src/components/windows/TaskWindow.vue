@@ -15,7 +15,7 @@ import type { CardEvent, ColumnEvent, TaskMoveEvent } from "@/types/Task";
 
 import TaskColumn from '@/components/windows/task/TaskColumn.vue'
 import ColumnFormDialog from '../dialog/task/ColumnFormDialog.vue'
-import DeleteConfirmDialog from '../dialog/task/DeleteConfirmDialog.vue'
+import DeleteConfirmDialog from '../dialog/DeleteConfirmDialog.vue'
 import CardFormDialog from '@/components/dialog/task/CardFormDialog.vue'    
 
 const columns = ref<ColumnEvent[]>([])
