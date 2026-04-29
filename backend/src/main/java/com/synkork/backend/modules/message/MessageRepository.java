@@ -135,4 +135,6 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
                 WHERE r.id IN :ids
             """)
     List<ReplyPreviewDTO> findReplyPreviews(@Param("ids") List<UUID> ids);
+
+    void deleteBySpaceId(UUID spaceId);
 }

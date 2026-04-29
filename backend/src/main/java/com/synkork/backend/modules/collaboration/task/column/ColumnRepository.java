@@ -17,4 +17,6 @@ public interface ColumnRepository extends JpaRepository<ColumnEntity, UUID> {
             "cards"
     })
     List<ColumnEntity> findBySpaceIdOrderByPositionAsc(UUID spaceId);
+
+    void deleteBySpaceId(UUID spaceId);
 }
