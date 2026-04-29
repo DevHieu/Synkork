@@ -22,35 +22,18 @@ const form = ref({
   title: ''
 })
 
-// biến này dùng để đồng bộ trạng thái mở đóng của dialog với props.open, tránh trường hợp dialog không đóng được khi props.open bị thay đổi từ bên ngoài
-const isOpen = ref(props.open)
 
-// 3 cái watch này dùng để:
-// 1. Đồng bộ trạng thái mở đóng của dialog với props.open
-// 2. Khi dialog mở lên, nếu có columnData thì điền dữ liệu vào form, còn không thì để trống
-// 3. Khi form thay đổi (isOpen thay đổi) thì emit sự kiện để cập nhật lại props.open ở component cha, tránh trường hợp dialog không đóng được khi props.open bị thay đổi từ bên ngoài
-watch(() => props.open, (val) => {
-  isOpen.value = val
+watch(() => props.open, (newVal) => {
+  if (newVal) {
+    if (props.columnData) {
+      form.value.title = props.columnData.name || ''
+    } else {
+      form.value.title = ''
+    }
+  }
 })
 
-watch(isOpen, (val) => {
-  emit('update:open', val)
-})
-
-watch(
-  () => [props.open, props.columnData],
-  ([open, column]) => {
-    isOpen.value = open
-    if (!open) return
-
-    form.value.title = column?.name ?? ''
-  },
-  { immediate: true }
-)
-
-const closeDialog = () => {
-  isOpen.value = false
-}
+const closeDialog = () => emit('update:open', false)
 
 const handleSave = () => {
   if (!form.value.title.trim()) return
@@ -65,7 +48,7 @@ const handleSave = () => {
 </script>
 
 <template>
-  <Dialog :open="isOpen">
+  <Dialog :open="open" @update:open="$emit('update:open', $event)">
     <DialogContent class="sm:max-w-[425px] bg-white border border-slate-200 shadow-2xl rounded-2xl [&>button]:hidden">
       <DialogHeader>
         <DialogTitle class="text-xl font-semibold text-slate-800">{{ columnData ? 'Chỉnh sửa cột' : 'Thêm cột mới' }}

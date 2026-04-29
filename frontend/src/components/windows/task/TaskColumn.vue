@@ -69,7 +69,7 @@ const emit = defineEmits<{
             @click="emit('addCard', column.id)"
             class="mt-3 w-full py-2 flex items-center justify-center gap-1 text-slate-400 hover:text-teal-600 text-sm font-medium cursor-pointer"
         >
-            <Plus class="w-4 h-4" /> Thêm task
+            <Plus class="w-4 h-4" /> Thêm thẻ
         </button>
     </div>
 </template>
