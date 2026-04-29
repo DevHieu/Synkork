@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { watch } from "vue";
+import { AlertTriangle } from "lucide-vue-next";
 import type { CalendarEvent } from "@/types/CalendarEvent";
 import CalendarWarningDialog from "./CalendarWarningDialog.vue";
 import EventTimeSection from "../sub-components/EventTimeSection.vue";
@@ -121,7 +122,7 @@ const handleSubmit = (): void => {
             <div v-if="conflictEvents.length > 0"
               class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 shadow-lg shadow-amber-500/5">
               <div class="flex items-center gap-2.5 text-amber-400 text-sm font-semibold mb-2">
-                <i class="pi pi-exclamation-triangle" />
+                <AlertTriangle :size="14" />
                 Trùng giờ với {{ conflictEvents.length }} sự kiện:
               </div>
               <ul class="text-xs text-amber-300/70 space-y-1.5 ml-6">

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { watch } from "vue";
+import { Plus, X } from "lucide-vue-next";
 import { useAttendees } from "../composables/useAttendees";
 
 const props = defineProps<{
@@ -35,7 +36,7 @@ watch(() => props.show, (isOpen) => {
           class="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-all text-sm" />
         <button type="button" @click="addAttendee"
           class="bg-white/10 text-white px-3 py-2 rounded-lg hover:bg-white/20 transition-all">
-          <i class="pi pi-plus" />
+          <Plus :size="16" />
         </button>
       </div>
       <div v-if="attendees.length > 0" class="flex flex-wrap gap-2 mt-1">
@@ -43,7 +44,7 @@ watch(() => props.show, (isOpen) => {
           class="flex items-center gap-1.5 bg-teal-500/20 text-teal-300 px-2 py-1 rounded-md text-xs border border-teal-500/20">
           <span>{{ email }}</span>
           <button type="button" @click="removeAttendee(idx)" class="hover:text-white transition-colors">
-            <i class="pi pi-times text-[10px]" />
+            <X :size="10" />
           </button>
         </div>
       </div>

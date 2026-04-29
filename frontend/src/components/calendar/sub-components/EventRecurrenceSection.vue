@@ -1,9 +1,18 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
+import { Ban, RefreshCw, CalendarPlus, Calendar, Star, Info } from "lucide-vue-next";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
 
 dayjs.locale("vi");
+
+const recurrenceOptions = [
+  { val: "NONE",    label: "Không", icon: Ban },
+  { val: "DAILY",   label: "Ngày",  icon: RefreshCw },
+  { val: "WEEKLY",  label: "Tuần",  icon: CalendarPlus },
+  { val: "MONTHLY", label: "Tháng", icon: Calendar },
+  { val: "YEARLY",  label: "Năm",   icon: Star },
+];
 
 const props = defineProps<{
   initialType: string;
@@ -58,19 +67,13 @@ watch(() => props.initialEndDate, (val) => recurrenceEndDate.value = val);
     <div>
       <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Chế độ lặp lại</label>
       <div class="grid grid-cols-5 gap-1.5 bg-black/20 p-1 rounded-xl border border-white/5">
-        <button v-for="opt in [
-          { val: 'NONE', label: 'Không', icon: 'pi pi-ban' },
-          { val: 'DAILY', label: 'Ngày', icon: 'pi pi-sync' },
-          { val: 'WEEKLY', label: 'Tuần', icon: 'pi pi-calendar-plus' },
-          { val: 'MONTHLY', label: 'Tháng', icon: 'pi pi-calendar' },
-          { val: 'YEARLY', label: 'Năm', icon: 'pi pi-star' },
-        ]" :key="opt.val" type="button" @click="recurrenceType = opt.val" :class="[
+        <button v-for="opt in recurrenceOptions" :key="opt.val" type="button" @click="recurrenceType = opt.val" :class="[
             'flex flex-col items-center gap-1.5 py-2 px-1 rounded-lg transition-all duration-300',
             recurrenceType === opt.val
               ? 'bg-teal-600 text-white shadow-lg shadow-teal-500/20'
               : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
           ]">
-          <i :class="[opt.icon, 'text-sm']" />
+          <component :is="opt.icon" :size="14" />
           <span class="text-[9px] font-bold uppercase">{{ opt.label }}</span>
         </button>
       </div>
@@ -82,16 +85,16 @@ watch(() => props.initialEndDate, (val) => recurrenceEndDate.value = val);
       leave-to-class="transform -translate-y-2 opacity-0">
       <div v-if="recurrenceType !== 'NONE'" class="space-y-4 pt-1">
         <div class="flex items-start gap-2.5 px-3 py-2 bg-teal-500/10 rounded-lg border border-teal-500/20">
-          <i class="pi pi-info-circle text-teal-400 mt-0.5 text-xs" />
+          <Info :size="12" class="text-teal-400 mt-0.5 flex-shrink-0" />
           <p class="text-[11px] text-teal-300/90 leading-relaxed font-medium">{{ recurrenceSummary }}</p>
         </div>
         <div>
           <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Ngày kết thúc</label>
           <div class="relative group">
             <input v-model="recurrenceEndDate" type="date"
-              class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-all text-sm" />
+              class="w-full bg-white/5 border border-white/10 rounded-lg px-3 pr-36 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-all text-sm" />
             <div v-if="!recurrenceEndDate"
-              class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[10px] text-gray-500 italic">
+              class="absolute right-14 top-1/2 -translate-y-1/2 pointer-events-none text-[10px] text-gray-500 italic">
               Mặc định: 1 năm
             </div>
           </div>
