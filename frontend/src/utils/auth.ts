@@ -13,3 +13,17 @@ export async function getFreshToken(): Promise<string> {
   cookies.set("accessToken", accessToken, "15m");
   return accessToken;
 }
+
+export const getUserIdFromToken = (): string | null => {
+  const token = cookies.get("accessToken") // ✅ đúng chỗ
+
+  if (!token) return null
+
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]))
+    return payload.userId
+  } catch (e) {
+    console.error("Decode token failed", e)
+    return null
+  }
+}
