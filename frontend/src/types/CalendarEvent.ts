@@ -6,6 +6,8 @@ export interface CalendarEvent {
   eventDate: string;
   startTime: string;
   endTime: string;
+  recurrenceType?: string;
+  recurrenceEndDate?: string;
   allowEditAll: boolean;
   createdById: string;
   createdByUsername: string;
