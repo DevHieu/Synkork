@@ -124,13 +124,12 @@ export const useSpaceStore = defineStore("spaces", {
 
       if (this.currentSpace === null) {
         this.currentSpace = this.chatSpaces[0];
+        router.push(
+          `/rooms/chat/${router.currentRoute.value.params.roomId}/${
+            this.chatSpaces[0]?.id || ""
+          }`,
+        );
       }
-
-      router.push(
-        `/rooms/chat/${router.currentRoute.value.params.roomId}/${
-          this.chatSpaces[0]?.id || ""
-        }`,
-      );
     },
 
     addSpaceToArray(space: any) {
