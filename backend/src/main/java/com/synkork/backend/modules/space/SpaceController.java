@@ -1,7 +1,7 @@
 package com.synkork.backend.modules.space;
 
 import com.synkork.backend.modules.space.dto.CreateSpaceRequest;
-import com.synkork.backend.modules.space.dto.SpaceDTOS;
+import com.synkork.backend.modules.space.dto.SpaceDTO;
 import com.synkork.backend.modules.space.dto.UpdateSpaceRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -22,18 +22,18 @@ public class SpaceController {
     private SimpMessagingTemplate simpMessagingTemplate;
 
     @GetMapping
-    public ResponseEntity<List<SpaceDTOS>> getAllSpaceByRoomId(@PathVariable UUID roomId) {
-        List<SpaceDTOS> spaces = spaceService.getAllSpaceByRoomId(roomId);
+    public ResponseEntity<List<SpaceDTO>> getAllSpaceByRoomId(@PathVariable UUID roomId) {
+        List<SpaceDTO> spaces = spaceService.getAllSpaceByRoomId(roomId);
 
         return ResponseEntity.ok(spaces);
     }
 
     @PostMapping
-    public ResponseEntity<SpaceDTOS> createSpace(@PathVariable String roomId, @RequestBody CreateSpaceRequest space) {
+    public ResponseEntity<SpaceDTO> createSpace(@PathVariable String roomId, @RequestBody CreateSpaceRequest space) {
         UUID roomUUID = UUID.fromString(roomId);
 
         SpaceEntity entity = spaceService.createSpace(space, roomUUID);
-        SpaceDTOS dto = new SpaceDTOS(entity);
+        SpaceDTO dto = new SpaceDTO(entity);
 
         simpMessagingTemplate.convertAndSend("/topic/rooms/" + roomId + "/spaces/create", dto);
 
@@ -41,11 +41,11 @@ public class SpaceController {
     }
 
     @PutMapping("/{spaceId}")
-    public ResponseEntity<SpaceDTOS> updateSpace(@PathVariable String roomId, @PathVariable String spaceId, @RequestBody UpdateSpaceRequest space) {
+    public ResponseEntity<SpaceDTO> updateSpace(@PathVariable String roomId, @PathVariable String spaceId, @RequestBody UpdateSpaceRequest space) {
         UUID spaceUUID = UUID.fromString(spaceId);
 
         SpaceEntity entity = spaceService.updateSpace(space, spaceUUID);
-        SpaceDTOS dto = new SpaceDTOS(entity);
+        SpaceDTO dto = new SpaceDTO(entity);
 
         simpMessagingTemplate.convertAndSend("/topic/rooms/" + roomId + "/spaces/update", dto);
 
@@ -54,7 +54,7 @@ public class SpaceController {
 
 
     @DeleteMapping("/{spaceId}")
-    public ResponseEntity<SpaceDTOS> deleteSpace(@PathVariable String roomId, @PathVariable String spaceId) {
+    public ResponseEntity<SpaceDTO> deleteSpace(@PathVariable String roomId, @PathVariable String spaceId) {
         UUID spaceUUID = UUID.fromString(spaceId);
 
         spaceService.deleteSpace(spaceUUID);
