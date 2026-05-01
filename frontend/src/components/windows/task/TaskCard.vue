@@ -13,9 +13,9 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <Card class="p-4 border-none shadow-sm hover:shadow-md transition-all cursor-grab group relative bg-white rounded-2xl">
+    <Card class="p-4 border-none shadow-sm hover:shadow-md transition-all cursor-grab group relative rounded-2xl">
         <div class="flex flex-col gap-2">
-            <p class="font-bold text-slate-800 text-sm pr-10">{{ card.title }}</p>
+            <p class="font-bold text-sm pr-10">{{ card.title }}</p>
             <p class="text-slate-500 text-xs line-clamp-2">{{ card.description }}</p>
             <div class="flex justify-between items-center mt-2">
                 <div class="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center text-[10px] font-bold text-orange-600">

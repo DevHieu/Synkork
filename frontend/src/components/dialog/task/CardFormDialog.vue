@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog'
 
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 
 const props = defineProps({
@@ -51,33 +52,31 @@ const handleSave = () => {
 
 <template>
   <Dialog :open="open" @update:open="$emit('update:open', $event)">
-    <DialogContent class="sm:max-w-[425px] bg-white border border-slate-200 shadow-2xl rounded-2xl [&>button]:hidden">
+    <DialogContent class="sm:max-w-md ">
       <DialogHeader>
-        <DialogTitle class="text-xl font-semibold text-slate-800">
+        <DialogTitle class="mb-5">
           {{ taskData ? 'Chỉnh sửa thẻ' : 'Thêm thẻ mới' }}
         </DialogTitle>
       </DialogHeader>
 
       <div class="grid gap-6">
-        <div class="py-3">
-          <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Tiêu đề</label>
-          <Input v-model="form.title" placeholder="Nhập tiêu đề ..." class="h-12 rounded-xl border-slate-50 text-sm focus-visible:ring-orange-400 bg-slate-50/50" @keyup.enter="handleSave" />
+        <div class="flex flex-col">
+          <label class="mb-3">Tiêu đề</label>
+          <Input v-model="form.title" placeholder="Nhập tiêu đề ..." @keyup.enter="handleSave" />
         </div>
 
-        <div class="py-3">
-          <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Mô tả</label>
-          <textarea v-model="form.description" rows="4"
-            class="w-full rounded-xl border border-slate-50 bg-slate-50/50 p-3 text-sm focus:outline-none focus:border-orange-400 focus-visible:ring-2 focus-visible:ring-orange-400 placeholder:text-slate-400 resize-y min-h-[120px]"
-            placeholder="Mô tả chi tiết..."></textarea>
+        <div class="flex flex-col py-3">
+          <label class="mb-3">Mô tả</label>
+          <Textarea v-model="form.description" class="min-h-[120px] resize-none"
+            placeholder="Mô tả chi tiết..."></Textarea>
         </div>
       </div>
 
-      <DialogFooter class="gap-2 sm:justify-end">
-        <Button type="button" variant="ghost" @click="closeDialog" class="rounded-xl hover:bg-slate-100 text-slate-500">
+      <DialogFooter class="gap-2">
+        <Button type="button" variant="outline" @click="closeDialog">
           Hủy
         </Button>
-        <Button @click="handleSave" :disabled="isSaving || !form.title.trim()"
-          class="bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-6 shadow-md shadow-orange-200 transition-all active:scale-95 disabled:opacity-50">
+        <Button @click="handleSave" :disabled="isSaving || !form.title.trim()">
           {{ isSaving ? 'Đang lưu...' : taskData ? 'Cập nhật' : 'Tạo thẻ' }} 
         </Button>
       </DialogFooter>

@@ -38,30 +38,31 @@ const handleConfirm = () => {
 <template>
   <Dialog :open="open" 
   @update:open="(val) => emit('update:open', val)">
-    <DialogContent class="sm:max-w-[400px] bg-white/95 border-none shadow-2xl backdrop-blur-md rounded-xl p-6">
+    <DialogContent class="sm:max-w-md">
       <DialogHeader class="flex flex-col items-center gap-3">
-        <div class="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">
+        <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
           <AlertTriangle class="w-6 h-6 text-red-500" />
         </div>
-        <DialogTitle class="text-xl font-bold text-slate-800 text-center">
+        <DialogTitle class="text-xl font-bold text-center">
           {{ title }}
         </DialogTitle>
-        <DialogDescription class="text-center text-slate-500 text-sm leading-relaxed">
+        <DialogDescription class="text-center text-slate-400 text-sm leading-relaxed">
           {{ description }}
         </DialogDescription>
       </DialogHeader>
 
       <DialogFooter class="flex gap-2 mt-4 sm:justify-center">
         <Button 
-          variant="ghost" 
+          variant="outline" 
           @click="closeDialog" 
           class="flex-1 rounded-xl font-bold text-slate-400 hover:bg-slate-300"
         >
           Hủy bỏ
         </Button>
         <Button 
+          variant="destructive"
           @click="handleConfirm" 
-          class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl shadow-lg shadow-red-100"
+          class="flex-1 font-bold rounded-xl"
         >
           Xóa ngay
         </Button>

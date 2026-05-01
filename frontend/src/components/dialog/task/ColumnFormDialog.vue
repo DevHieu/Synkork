@@ -49,24 +49,22 @@ const handleSave = () => {
 
 <template>
   <Dialog :open="open" @update:open="$emit('update:open', $event)">
-    <DialogContent class="sm:max-w-[425px] bg-white border border-slate-200 shadow-2xl rounded-2xl [&>button]:hidden">
+    <DialogContent class="sm:max-w-md">
       <DialogHeader>
-        <DialogTitle class="text-xl font-semibold text-slate-800">{{ columnData ? 'Chỉnh sửa cột' : 'Thêm cột mới' }}
+        <DialogTitle>{{ columnData ? 'Chỉnh sửa cột' : 'Thêm cột mới' }}
         </DialogTitle>
       </DialogHeader>
 
-      <div class="py-6">
-        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">
+      <div class="grid gap-3 py-3">
+        <label>
           Tên cột (Ví dụ: Đang đợi, Review...)
         </label>
-        <Input v-model="form.title" placeholder="Nhập tên cột..." @keyup.enter="handleSave"
-          class="h-12 rounded-2xl border-slate-200 focus-visible:ring-orange-400 bg-slate-50/50" maxlength="100"/>
+        <Input v-model="form.title" placeholder="Nhập tên cột..." @keyup.enter="handleSave" maxlength="100"/>
       </div>
 
       <DialogFooter>
-        <Button variant="ghost" @click="closeDialog" class="rounded-xl hover:bg-slate-100 text-slate-500">Hủy</Button>
-        <Button @click="handleSave" :disabled="isSaving" 
-          class="bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-6 shadow-md shadow-orange-200 transition-all active:scale-95 disabled:opacity-50">
+        <Button variant="outline" @click="closeDialog">Hủy</Button>
+        <Button @click="handleSave" :disabled="isSaving || !form.title.trim()">
           {{ isSaving ? 'Đang lưu...' : columnData ? 'Cập nhật' : 'Tạo cột' }} 
         </Button>
       </DialogFooter>

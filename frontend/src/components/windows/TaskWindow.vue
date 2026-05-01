@@ -11,7 +11,7 @@ import { useSpaceStore } from "@/stores/spaceStore";
 // import { useUserStore } from '@/stores/userStore'
 import { storeToRefs } from "pinia";
 import { socketService } from '@/services/websocket/socketService';
-import type { CardEvent, ColumnEvent, TaskMoveEvent } from "@/types/Task";
+import type { CardEvent, ColumnEvent, TaskMoveEvent, CardMovePayload } from "@/types/Task";
 
 import TaskColumn from '@/components/windows/task/TaskColumn.vue'
 import ColumnFormDialog from '../dialog/task/ColumnFormDialog.vue'
@@ -160,25 +160,33 @@ const confirmDeleteCard = (columnId: string, cardId: string) => {
 
 const onCardMove = async (event: TaskMoveEvent, currentColumnId: string) => {
     try {
-        if(event.moved){
-            const cardId = event.moved.element.id
-            const payload = {
-                targetColumnId: currentColumnId,
-                newPosition: event.moved.newIndex
-            }
-            await moveCard(currentSpace.value.id, cardId, payload)
-        } else if(event.added){
-            const cardId = event.added.element.id
-            const payload = {
-                targetColumnId: currentColumnId,
-                newPosition: event.added.newIndex
-            }
-            await moveCard(currentSpace.value.id, cardId, payload)
+        let cardId = '';
+        let newPosition = 0;
+
+        if (event.moved) {
+            // Di chuyển trong cùng 1 cột
+            cardId = event.moved.element.id;
+            newPosition = event.moved.newIndex;
+        } else if (event.added) {
+            // Kéo từ cột khác bỏ vào cột này
+            cardId = event.added.element.id;
+            newPosition = event.added.newIndex;
+        } else {
+            // Trường hợp 'removed' thì không cần gọi API move vì 'added' ở cột kia sẽ lo
+            return;
         }
+
+        const payload = {
+            targetColumnId: currentColumnId,
+            newPosition: newPosition
+        };
+
+        await moveCard(currentSpace.value.id, cardId, payload);
     } catch (error) {
-        console.error("Lỗi di chuyển card: ", error)
+        console.error("Lỗi di chuyển card: ", error);
+        // Nếu lỗi, bạn nên fetch lại columns để UI đồng bộ lại với DB
+        await fetchColumns(currentSpace.value.id);
     }
-    
 }
 
 onMounted(() => {
@@ -250,20 +258,20 @@ const subscribeTospace = async (spaceId: string) => {
         });
     });
 
-    taskSocket.subscribeCardMove(spaceId, (card) => {
-        console.log("Card di chuyển: ", card)
+    taskSocket.subscribeCardMove(spaceId, (payload: CardMovePayload) => {
+        console.log("Card di chuyển: ", payload);
+        const targetCol = columns.value.find(c => c.id === payload.targetColumnId);
+        if (targetCol) {
+            targetCol.cards = payload.targetCards
+        };
 
-        columns.value.forEach(col => {
-            if (col.cards) {
-                const index = col.cards.findIndex(t => t.id === card.id)
-                if (index !== -1) col.cards.splice(index, 1)
+        if (payload.sourceColumnId && payload.sourceCards) {
+            const sourceCol = columns.value.find(c => c.id === payload.sourceColumnId);
+            if (sourceCol) {
+                sourceCol.cards = payload.sourceCards;
             }
-            if (col.id === card.columnId) {
-                col.cards = col.cards || []
-                col.cards.push(card)
-            }
-        })
-    })
+        };
+    });
 
     taskSocket.subscribeColumnCreate(spaceId, (column) => {
         console.log("Cột mới:", column);
@@ -311,14 +319,14 @@ const clearAll = async () => {
 <template>
     <div class="flex h-screen w-full overflow-hidden background">
         <div class="flex-1 flex flex-col relative overflow-hidden">
-            <header class="p-6 flex items-center gap-2 font-semibold text-slate-700">
+            <header class="p-6 flex items-center gap-2 font-semibold">
                 <Hash class="w-5 h-5 text-teal-600" />
                 <span>{{ currentSpace?.name }}</span>
             </header>
 
             <div class="flex-1 flex items-start gap-6 p-6 overflow-x-auto">
                 <draggable v-model="columns" group="columns" item-key="id" handle=".column-handle"
-                    @change="onColumnMove" class="flex gap-6 items-start">
+                    @change="onColumnMove" class="flex gap-6 items-start h-full">
                     <template #item="{ element: col }">
                         <TaskColumn
                             :column="col"
@@ -333,11 +341,11 @@ const clearAll = async () => {
                 </draggable>
 
                 <div @click="openAddColumnDialog"
-                    class="flex-shrink-0 w-72 h-32 border-2 border-dashed border-slate-300 rounded-3xl flex flex-col items-center justify-center gap-2 group cursor-pointer hover:border-teal-400 transition-colors">
+                    class="flex-shrink-0 w-72 h-32 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center gap-2 group cursor-pointer hover:border-teal-700 transition-colors">
                     <div class="bg-slate-200 p-2 rounded-full group-hover:bg-teal-100">
                         <Plus class="w-5 h-5 text-slate-500 group-hover:text-teal-600" />
                     </div>
-                    <p class="text-xs font-bold text-slate-500 uppercase tracking-widest group-hover:text-teal-600">
+                    <p class="text-xs font-bold text-slate-200 uppercase tracking-widest group-hover:text-teal-600">
                         Thêm cột mới
                     </p>
                 </div>
