@@ -19,10 +19,10 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <div class="w-80 flex-shrink-0 flex flex-col max-h-full border-2 border-slate-200 rounded-3xl p-4 bg-slate-50/50">
+    <div class="w-80 flex flex-col max-h-full border-3 border-slate-400 rounded-3xl p-4 overflow-hidden">
         <!-- Header -->
         <div class="flex items-start justify-between mb-4 px-1">
-            <h3 class="column-handle cursor-move font-bold text-slate-700 text-sm uppercase tracking-wide break-words min-w-0 flex-1 mr-2">
+            <h3 class="column-handle cursor-move font-bold text-sm uppercase tracking-wide break-words min-w-0 flex-1 mr-2">
                 {{ column.name }}
                 <span class="text-slate-400 text-xs font-normal">
                     ({{ column?.cards?.length || 0 }})
@@ -30,7 +30,7 @@ const emit = defineEmits<{
             </h3>
             <DropdownMenu>
                 <DropdownMenuTrigger as-child>
-                    <Button variant="ghost" size="icon" class="h-8 w-8 text-slate-400">
+                    <Button variant="ghost" size="icon" class="h-8 w-8 text-slate-500">
                         <MoreHorizontal class="w-4 h-4" />
                     </Button>
                 </DropdownMenuTrigger>
@@ -56,6 +56,7 @@ const emit = defineEmits<{
             class="flex-1 flex flex-col gap-3 overflow-y-auto min-h-[150px] p-1"
         >
             <template #item="{ element: card }">
+        
                 <TaskCard
                     :card="card"
                     @edit="emit('editCard', column.id, card)"
@@ -69,7 +70,7 @@ const emit = defineEmits<{
             @click="emit('addCard', column.id)"
             class="mt-3 w-full py-2 flex items-center justify-center gap-1 text-slate-400 hover:text-teal-600 text-sm font-medium cursor-pointer"
         >
-            <Plus class="w-4 h-4" /> Thêm task
+            <Plus class="w-4 h-4" /> Thêm thẻ
         </button>
     </div>
 </template>
