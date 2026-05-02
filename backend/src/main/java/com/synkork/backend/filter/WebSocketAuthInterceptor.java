@@ -42,15 +42,15 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
         String token = authHeader.substring(7);
         try {
-            String username = jwtService.extractUserName(token);
+            String email = jwtService.extractUserName(token);
             String tokenType = jwtService.extractClaim(token,
                     claims -> claims.get("type", String.class));
 
-            if (username == null) {
+            if (email == null) {
                 throw new MessagingException("Unauthorized: missing username in token");
             }
 
-            UserDetails userDetails = userDetailService.loadUserByUsername(username);
+            UserDetails userDetails = userDetailService.loadUserByUsername(email);
 
             if (!"ACCESS".equals(tokenType) || !jwtService.validateToken(token, userDetails)) {
                 throw new MessagingException("Unauthorized: invalid token type or expired");
@@ -61,11 +61,10 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
                             userDetails, null, userDetails.getAuthorities());
 
             accessor.setUser(authToken);
-
             String userId = jwtService.extractClaim(token, claims -> claims.get("userId", String.class));
             accessor.getSessionAttributes().put("userId", userId);
-            System.out.println("userId = " + userId);
 
+            accessor.getSessionAttributes().put("userEmail", email);
         } catch (MessagingException e) {
             throw e;
         } catch (Exception e) {

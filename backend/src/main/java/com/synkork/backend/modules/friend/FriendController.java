@@ -88,7 +88,7 @@ public class FriendController {
                         ? f.getFriend().getDisplayName()
                         : f.getFriend().getUsername(),
                 f.getFriend().getAvatarUrl(),
-                "offline"
+                false
         )).toList();
 
         return ResponseEntity.ok(dtos);

@@ -7,6 +7,7 @@ const cookies = VueCookies as any;
 let stompClient: Client | null = null;
 const subscriptions = new Map<string, StompSubscription>();
 let connectingPromise: Promise<void> | null = null;
+const persistentDestinations = new Set<string>();
 
 const createStompClient = (token: string, onConnected?: () => void): Client => {
   const client = new Client({
@@ -85,7 +86,11 @@ export const socketService = {
     return stompClient?.connected ?? false;
   },
 
-  subscribe(destination: string, callback: (payload: any) => void) {
+  subscribe(
+    destination: string,
+    callback: (payload: any) => void,
+    options?: { persistent?: boolean },
+  ) {
     if (!this.isConnected()) {
       console.error(
         `[Socket] Cannot subscribe to ${destination}. Not connected.`,
@@ -93,7 +98,6 @@ export const socketService = {
       return null;
     }
 
-    // Unsubscribe cái cũ nếu đã subscribe destination này rồi
     if (subscriptions.has(destination)) {
       subscriptions.get(destination)!.unsubscribe();
       subscriptions.delete(destination);
@@ -103,23 +107,45 @@ export const socketService = {
       try {
         callback(JSON.parse(msg.body));
       } catch {
-        callback(msg.body); // plain string
+        callback(msg.body);
       }
     });
 
     subscriptions.set(destination, sub);
+
+    // Đánh dấu persistent nếu có
+    if (options?.persistent) {
+      persistentDestinations.add(destination);
+    }
+
     return sub;
   },
 
+  // unsubscribeAll bỏ qua persistent
   unsubscribeAll() {
+    console.log("changing");
+
+    subscriptions.forEach((sub, destination) => {
+      if (!persistentDestinations.has(destination)) {
+        console.log("subscribe: ", sub);
+
+        sub.unsubscribe();
+        subscriptions.delete(destination);
+      }
+    });
+  },
+
+  unsubscribeAllForce() {
     subscriptions.forEach((sub) => sub.unsubscribe());
     subscriptions.clear();
+    persistentDestinations.clear();
   },
 
   unsubscribeByDestination(destination: string) {
     if (subscriptions.has(destination)) {
       subscriptions.get(destination)!.unsubscribe();
       subscriptions.delete(destination);
+      persistentDestinations.delete(destination);
     }
   },
 
