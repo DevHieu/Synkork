@@ -82,12 +82,8 @@ public class MessageController {
         UUID spaceUUID = UUID.fromString(spaceId);
         UUID replyToUUID = replyToId != null ? UUID.fromString(replyToId) : null;
 
-        List<MessageDTO> messages = messageService.sendFileMessage(spaceUUID, userPrinciple.getId(), replyToUUID, fileList);
-
-        // Broadcast từng message qua socket
-        messages.forEach(msg -> {
-            messagingTemplate.convertAndSend("/topic/space/" + spaceId + "/messages", msg);
-        });
+        messageService.sendFileMessage(spaceUUID, userPrinciple.getId(), replyToUUID, fileList);
+        // Broadcast file trong service luôn
 
         return ResponseEntity.ok().build();
     }
