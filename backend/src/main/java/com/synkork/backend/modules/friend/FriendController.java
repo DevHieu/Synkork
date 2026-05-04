@@ -92,7 +92,8 @@ public class FriendController {
                         ? f.getFriend().getDisplayName()
                         : f.getFriend().getUsername(),
                 f.getFriend().getAvatarUrl(),
-                webSocketEventListener.isOnline(f.getFriend().getId())
+                webSocketEventListener.isOnline(f.getFriend().getId()),
+                f.getConversationId()
 
         )).toList();
 

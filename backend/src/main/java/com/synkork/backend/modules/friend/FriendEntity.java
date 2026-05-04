@@ -1,6 +1,6 @@
 package com.synkork.backend.modules.friend;
 
-import com.synkork.backend.common.base.BaseEntity;
+import com.synkork.backend.common.utils.uuid.UuidV7Annotation;
 import com.synkork.backend.modules.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -8,7 +8,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -26,8 +25,7 @@ import java.util.UUID;
 public class FriendEntity  {
 
     @Id
-    @UuidGenerator(style = UuidGenerator.Style.TIME)
-    @Column(name = "id", columnDefinition = "BINARY(16)")
+    @UuidV7Annotation
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -37,6 +35,8 @@ public class FriendEntity  {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "friend_id", nullable = false)
     private UserEntity friend;
+
+    private UUID conversationId;
 
     @CreationTimestamp
     @Column(updatable = false)

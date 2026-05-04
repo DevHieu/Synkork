@@ -1,11 +1,11 @@
 package com.synkork.backend.modules.roomMember;
 
+import com.synkork.backend.common.utils.uuid.UuidV7Annotation;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
 import com.synkork.backend.modules.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -24,8 +24,7 @@ import java.util.UUID;
 public class RoomMemberEntity {
 
     @Id
-    @UuidGenerator(style = UuidGenerator.Style.TIME)
-    @Column(columnDefinition = "BINARY(16)")
+    @UuidV7Annotation
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -37,7 +36,9 @@ public class RoomMemberEntity {
     private UserEntity user;
 
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     private RoomMemberRoleEnum role = RoomMemberRoleEnum.MEMBER;
 
+    @Builder.Default
     private LocalDateTime joinedAt =  LocalDateTime.now();
 }
