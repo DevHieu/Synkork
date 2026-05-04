@@ -35,6 +35,8 @@ export const useFriendStore = defineStore("friend", () => {
         return;
       }
       friends.value = await friendService.getFriends(userId);
+      console.log(friends.value);
+
       subscribeOnlineStatus();
     } catch (e: any) {
       console.error(" Fetch friends failed:", e.response?.data || e.message);

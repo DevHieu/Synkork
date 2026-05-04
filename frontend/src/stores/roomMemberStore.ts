@@ -42,6 +42,7 @@ export const useRoomMemberStore = defineStore("roomMember", {
 
     async fetchMembers(roomId: string, username: string) {
       this.loading = true;
+      this.clearMembers();
       try {
         this.members = await getRoomMembers(roomId);
 
@@ -58,6 +59,11 @@ export const useRoomMemberStore = defineStore("roomMember", {
     async setCurrentAuthority(username: string) {
       this.currentAuthority =
         this.members.find((m) => m.username === username)?.role ?? "MEMBER";
+    },
+
+    async clearMembers() {
+      this.members = [];
+      this.currentAuthority = null;
     },
   },
 

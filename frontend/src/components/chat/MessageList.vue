@@ -12,6 +12,8 @@ const props = defineProps<{
   afterHasMore: boolean;
   spaceId: string;
   spaceName: string;
+  isDm: boolean;
+  friendName?: string;
 }>();
 
 const messageStore = useMessageStore();
@@ -144,7 +146,11 @@ const processedMessages = computed(() => {
       class="flex h-full flex-col overflow-y-auto px-4 py-3"
     >
       <div v-if="!beforeHasMore">
-        <WelcomeSpace :spaceName="props.spaceName" />
+        <WelcomeSpace
+          :spaceName="props.spaceName"
+          :isDm="props.isDm"
+          :friendName="props.friendName"
+        />
       </div>
 
       <div ref="beforeSentinel" class="h-px" />
