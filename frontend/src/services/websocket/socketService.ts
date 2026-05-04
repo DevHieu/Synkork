@@ -43,6 +43,7 @@ const createStompClient = (token: string, onConnected?: () => void): Client => {
     },
     onStompError: (frame) => {
       console.error("[STOMP Error]", frame.headers["message"]);
+      return;
     },
   });
 

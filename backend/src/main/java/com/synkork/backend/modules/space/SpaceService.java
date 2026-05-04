@@ -81,4 +81,11 @@ public class SpaceService {
             }
         }
     }
+
+    public SpaceDTO getSpaceById(UUID spaceId) {
+        SpaceEntity space =  spaceRepository.findById(spaceId)
+                .orElseThrow(() -> new IllegalArgumentException("Space not found"));
+
+        return new SpaceDTO(space);
+    }
 }

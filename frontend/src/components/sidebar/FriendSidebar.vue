@@ -6,22 +6,22 @@ import { storeToRefs } from "pinia";
 import { onMounted } from "vue";
 
 const router = useRouter();
-const store = useFriendStore();
+const friendStore = useFriendStore();
 
-const { friends, loading, friendCount } = storeToRefs(store);
+const { friends, loading, friendCount } = storeToRefs(friendStore);
 
 onMounted(() => {
-  store.fetchFriends();
+  friendStore.fetchFriends();
 });
 </script>
 
 <template>
-  <SidebarHeader class="gap-3.5 border-b p-3">
+  <SidebarHeader class="gap-3.5 border-b px-4 py-3">
     <div class="flex w-full items-center justify-between">
       <input
         type="text"
         placeholder="Tìm bạn..."
-        class="w-full rounded-lg border px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+        class="w-full rounded-lg border px-2 py-1 pb-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
       />
     </div>
   </SidebarHeader>
@@ -69,6 +69,7 @@ onMounted(() => {
       <div
         v-for="friend in friends"
         :key="friend.id"
+        @click="router.push(`/me/${friend.conversationId}`)"
         class="flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-[var(--color-sidebar-accent)] transition"
       >
         <div class="relative">

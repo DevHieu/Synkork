@@ -2,11 +2,17 @@
 import { ref } from "vue";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Pin, Search, Users, X } from "lucide-vue-next";
+import type { Friend } from "@/types/Friends";
+import Avatar from "../ui/avatar/Avatar.vue";
+import AvatarImage from "../ui/avatar/AvatarImage.vue";
+import AvatarFallback from "../ui/avatar/AvatarFallback.vue";
 
 const props = defineProps<{
   spaceName: string;
   memberOpen: boolean;
   pinOpen: boolean;
+  dmFriend: Friend | null;
+  isDm: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -36,8 +42,24 @@ const closeSearch = () => {
     <!-- Left -->
     <div class="flex items-center gap-2 min-w-0">
       <SidebarTrigger class="-ml-1 shrink-0" />
-      <span class="text-muted-foreground text-xl font-light shrink-0">#</span>
-      <span class="font-semibold text-[15px] truncate">{{ spaceName }}</span>
+      <template v-if="isDm && dmFriend">
+        <Avatar class="w-7 h-7 text-xs font-bold uppercase">
+          <AvatarImage v-if="dmFriend.avatarUrl" :src="dmFriend.avatarUrl" />
+          <AvatarFallback class="bg-primary">
+            {{ dmFriend.name?.substring(0, 2).toUpperCase() }}
+          </AvatarFallback>
+        </Avatar>
+        <span class="font-semibold text-[15px] truncate">{{
+          dmFriend.name
+        }}</span>
+      </template>
+
+      <!-- Group: hiện dấu # -->
+      <template v-else>
+        <span class="text-muted-foreground text-xl font-light shrink-0">#</span>
+
+        <span class="font-semibold text-[15px] truncate">{{ spaceName }}</span>
+      </template>
     </div>
 
     <!-- Right -->
@@ -87,21 +109,23 @@ const closeSearch = () => {
         <Pin class="w-4.5 h-4.5" />
       </button>
 
-      <div class="w-px h-5 bg-border" />
+      <template v-if="!isDm">
+        <div class="w-px h-5 bg-border" />
 
-      <!-- Toggle members -->
-      <button
-        class="w-8 h-8 rounded-md flex items-center justify-center transition-colors"
-        :class="
-          memberOpen
-            ? 'bg-accent text-foreground'
-            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-        "
-        title="Danh sách thành viên"
-        @click="$emit('toggle-members')"
-      >
-        <Users class="w-4.5 h-4.5" />
-      </button>
+        <!-- Toggle members -->
+        <button
+          class="w-8 h-8 rounded-md flex items-center justify-center transition-colors"
+          :class="
+            memberOpen
+              ? 'bg-accent text-foreground'
+              : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+          "
+          title="Danh sách thành viên"
+          @click="$emit('toggle-members')"
+        >
+          <Users class="w-4.5 h-4.5" />
+        </button>
+      </template>
     </div>
   </div>
 </template>

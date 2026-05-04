@@ -3,6 +3,7 @@ export interface Friend {
   name: string;
   avatarUrl: string | null;
   isOnline: boolean;
+  conversationId: string;
 }
 
 export interface FriendRequest {

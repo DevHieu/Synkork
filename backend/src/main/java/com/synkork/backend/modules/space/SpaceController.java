@@ -28,6 +28,11 @@ public class SpaceController {
         return ResponseEntity.ok(spaces);
     }
 
+    @GetMapping("/{spaceId}")
+    public ResponseEntity<SpaceDTO> getSpaceById(@PathVariable UUID spaceId) {
+        return ResponseEntity.ok(spaceService.getSpaceById(spaceId));
+    }
+
     @PostMapping
     public ResponseEntity<SpaceDTO> createSpace(@PathVariable String roomId, @RequestBody CreateSpaceRequest space) {
         UUID roomUUID = UUID.fromString(roomId);

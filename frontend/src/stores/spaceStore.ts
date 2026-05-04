@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { getAllSpacesFromRoomId } from "@/services/spaceService";
+import { getAllSpacesFromRoomId, getSpaceById } from "@/services/spaceService";
 import { spaceSocket } from "@/services/websocket/spaceSocket";
 import router from "@/routers";
 import { socketService } from "@/services/websocket/socketService";
@@ -173,6 +173,18 @@ export const useSpaceStore = defineStore("spaces", {
       }
 
       this.currentSpace = space;
+    },
+
+    async joinDMSpace(spaceId: string) {
+      try {
+        this.loading = true;
+        useRoomMemberStore().clearMembers();
+        this.currentSpace = await getSpaceById(spaceId);
+      } catch (error) {
+        toast.error("Không thể tham gia phòng chat này.");
+      } finally {
+        this.loading = false;
+      }
     },
 
     addSpaceToArray(space: any) {

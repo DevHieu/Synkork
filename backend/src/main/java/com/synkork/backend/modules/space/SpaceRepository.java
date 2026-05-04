@@ -12,7 +12,7 @@ import java.util.UUID;
 @Repository
 public interface SpaceRepository extends JpaRepository<SpaceEntity, UUID> {
 
-    @Query("SELECT new com.synkork.backend.modules.space.dto.SpaceDTO(s.id, s.name, s.type, s.isRestricted) " +
+    @Query("SELECT new com.synkork.backend.modules.space.dto.SpaceDTO(s.id, s.name, s.type, s.room.type, s.isRestricted) " +
             "FROM SpaceEntity s WHERE s.room.id = :roomId ORDER BY s.createdAt ASC")
     List<SpaceDTO> findAllByRoomIdAsDto(@Param("roomId") UUID roomId);
 }
