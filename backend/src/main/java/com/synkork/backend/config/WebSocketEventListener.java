@@ -16,6 +16,7 @@ import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 // Lớp này lắng nghe các sự kiện kết nối và ngắt kết nối WebSocket (join out room)
 @Component
@@ -29,19 +30,19 @@ public class WebSocketEventListener {
     private FriendService friendService;
 
     // Lưu lại các user online
-    private final Map<String, String> onlineUsers = new HashMap<>();
+    public Map<String, String> onlineUsers = new HashMap<>();
 
     @EventListener
     public void handleWebSocketConnectListener(SessionConnectEvent event) {
         logger.info("Received a new web socket connection");
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
         if (headerAccessor.getSessionAttributes() != null) {
-            String userEmail = (String) headerAccessor.getSessionAttributes().get("userEmail");
-            if (userEmail != null) {
-                onlineUsers.put(userEmail, headerAccessor.getSessionId());
-                String userId = (String) headerAccessor.getSessionAttributes().get("userId");
+            String userId = (String) headerAccessor.getSessionAttributes().get("userId");
+            if (userId != null) {
+                onlineUsers.put(userId, headerAccessor.getSessionId());
 
-                this.notifyFriends(userId, userEmail, true);
+
+                this.notifyFriends(userId, true);
             }
         }
     }
@@ -50,20 +51,19 @@ public class WebSocketEventListener {
     public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
         if (headerAccessor.getSessionAttributes() != null) {
-            String userEmail = (String) headerAccessor.getSessionAttributes().get("userEmail");
-            if (userEmail != null) {
-                onlineUsers.remove(userEmail);
-                String userId = (String) headerAccessor.getSessionAttributes().get("userId");
+            String userId = (String) headerAccessor.getSessionAttributes().get("userId");
+            if (userId != null) {
+                onlineUsers.remove(userId);
 
-                this.notifyFriends(userId, userEmail, false);
+                this.notifyFriends(userId, false);
             }
         }
     }
 
-    private void notifyFriends(String userId, String userEmail, boolean isOnline) {
+    private void notifyFriends(String userId, boolean isOnline) {
         // Ý tưởng là lấy danh sách bạn bè ra -> Gửi trạng thái của mình cho từng người bạn
 
-        List<String> friendEmails = friendService.getFriendEmails(userEmail);
+        List<String> friendEmails = friendService.getFriendEmails(userId);
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("userId", userId); // Do bên frontend interface chỉ có id và displayname nên cần truyền id để FE so sánh mà hiện đúng trạng thái
@@ -76,5 +76,9 @@ public class WebSocketEventListener {
                     payload
             );
         }
+    }
+
+    public boolean isOnline(UUID userId) {
+        return onlineUsers.containsKey(userId.toString());
     }
 }

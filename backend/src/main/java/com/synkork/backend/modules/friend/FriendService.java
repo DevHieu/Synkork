@@ -161,7 +161,8 @@ public class FriendService {
                 .getId();
     }
 
-    public List<String> getFriendEmails(String email) {
-        return friendRepo.findFriendEmailByEmail(email);
+    public List<String> getFriendEmails(String userId) {
+        UUID userUUID = UUID.fromString(userId);
+        return friendRepo.findFriendEmailByUserId(userUUID);
     }
 }

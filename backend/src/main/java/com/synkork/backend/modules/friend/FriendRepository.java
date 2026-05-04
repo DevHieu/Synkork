@@ -18,6 +18,6 @@ public interface FriendRepository extends JpaRepository<FriendEntity, UUID> {
     @Transactional
     void deleteByUserAndFriend(UserEntity user, UserEntity friend);
 
-    @Query("SELECT f.friend.email FROM FriendEntity f WHERE f.user.email = :email")
-    List<String> findFriendEmailByEmail(String email);
+    @Query("SELECT f.friend.email FROM FriendEntity f WHERE f.user.id = :userId")
+    List<String> findFriendEmailByUserId(UUID userId);
 }
