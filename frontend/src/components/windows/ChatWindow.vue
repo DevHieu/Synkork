@@ -80,6 +80,7 @@ watch(currentSpace, (space, prevSpace) => {
   <div class="flex flex-col h-screen overflow-hidden">
     <ChatHeader
       :space-name="currentSpace?.name ?? ''"
+      :space-id="spaceId"
       :member-open="memberOpen"
       :pin-open="pinOpen"
       :dm-friend="dmFriend"

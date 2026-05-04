@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { ref } from "vue";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Pin, Search, Users, X } from "lucide-vue-next";
+import { Pin, Users } from "lucide-vue-next";
 import type { Friend } from "@/types/Friends";
 import Avatar from "../ui/avatar/Avatar.vue";
 import AvatarImage from "../ui/avatar/AvatarImage.vue";
 import AvatarFallback from "../ui/avatar/AvatarFallback.vue";
+import SearchBar from "./sub-components/SearchBar.vue";
 
 const props = defineProps<{
   spaceName: string;
+  spaceId: string;
   memberOpen: boolean;
   pinOpen: boolean;
   dmFriend: Friend | null;
@@ -20,19 +21,6 @@ const emit = defineEmits<{
   "toggle-members": [];
   "toggle-pins": [];
 }>();
-
-const searchActive = ref(false);
-const searchQuery = ref("");
-
-const openSearch = () => {
-  searchActive.value = true;
-};
-
-const closeSearch = () => {
-  searchActive.value = false;
-  searchQuery.value = "";
-  emit("search", "");
-};
 </script>
 
 <template>
@@ -64,36 +52,7 @@ const closeSearch = () => {
 
     <!-- Right -->
     <div class="flex items-center gap-1.5 shrink-0 ml-4">
-      <!-- Search: expanded -->
-      <template v-if="searchActive">
-        <div class="flex items-center gap-1.5 bg-muted rounded-md px-2.5 h-8">
-          <Search class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-          <input
-            v-model="searchQuery"
-            @input="$emit('search', searchQuery)"
-            placeholder="Tìm trong kênh..."
-            class="bg-transparent border-none outline-none text-[13px] w-44 text-foreground placeholder:text-muted-foreground"
-            autofocus
-          />
-          <button
-            @click="closeSearch"
-            class="text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <X class="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </template>
-
-      <!-- Search: collapsed -->
-      <template v-else>
-        <button
-          class="w-8 h-8 rounded-md flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-          title="Tìm kiếm"
-          @click="openSearch"
-        >
-          <Search class="w-4.5 h-4.5" />
-        </button>
-      </template>
+      <SearchBar :space-id="spaceId" />
 
       <!-- Pin -->
       <button
@@ -101,7 +60,7 @@ const closeSearch = () => {
         :class="
           pinOpen
             ? 'bg-accent text-foreground'
-            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+            : 'text-foreground/70 hover:bg-accent hover:text-foreground'
         "
         title="Tin nhắn được ghim"
         @click="$emit('toggle-pins')"
@@ -118,7 +77,7 @@ const closeSearch = () => {
           :class="
             memberOpen
               ? 'bg-accent text-foreground'
-              : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+              : 'text-foreground/70 hover:bg-accent hover:text-foreground'
           "
           title="Danh sách thành viên"
           @click="$emit('toggle-members')"

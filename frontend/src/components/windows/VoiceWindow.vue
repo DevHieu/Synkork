@@ -130,7 +130,9 @@ const handleStreamReady = (e: Event) => {
   if (!tile) return;
 
   nextTick(() => {
-    syncVideoToItem(containerId, itemRefs.value[tile.id]);
+    const el = itemRefs.value[tile.id];
+    if (!el) return;
+    syncVideoToItem(containerId, el);
   });
 };
 

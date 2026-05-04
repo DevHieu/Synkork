@@ -33,16 +33,16 @@ const handleClick = async () => {
   <template v-if="sending">
     <div
       v-if="type === 'IMAGE'"
-      class="w-48 h-36 bg-white/10 rounded-lg animate-pulse"
+      class="w-48 h-36 bg-muted rounded-lg animate-pulse"
     />
     <div
       v-else
-      class="flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 max-w-xs"
+      class="flex items-center gap-3 bg-muted border border-border rounded-lg px-3 py-2.5 max-w-xs"
     >
-      <div class="w-8 h-8 rounded-md bg-white/10 animate-pulse shrink-0" />
+      <div class="w-8 h-8 rounded-md bg-accent animate-pulse shrink-0" />
       <div class="flex-1 space-y-1.5">
-        <div class="h-3 w-32 bg-white/10 rounded animate-pulse" />
-        <div class="h-2.5 w-20 bg-white/10 rounded animate-pulse" />
+        <div class="h-3 w-32 bg-accent rounded animate-pulse" />
+        <div class="h-2.5 w-20 bg-accent rounded animate-pulse" />
       </div>
     </div>
   </template>
@@ -66,7 +66,7 @@ const handleClick = async () => {
   <!-- File -->
   <div
     v-else
-    class="mt-1 flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 max-w-xs hover:bg-white/8 transition-colors cursor-pointer"
+    class="mt-1 flex items-center gap-3 bg-muted border border-border rounded-lg px-3 py-2.5 max-w-xs hover:bg-accent transition-colors cursor-pointer"
     @click="handleClick"
   >
     <div

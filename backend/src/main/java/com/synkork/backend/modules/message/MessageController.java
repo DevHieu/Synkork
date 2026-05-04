@@ -71,6 +71,18 @@ public class MessageController {
         return  ResponseEntity.ok(messages);
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<MessagePageDTO> searchMessages(
+            @PathVariable String spaceId,
+            @RequestParam String keyword,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "5") int limit
+    ) {
+        UUID spaceUUID = UUID.fromString(spaceId);
+        UUID cursorUUID = cursor != null ? UUID.fromString(cursor) : null;
+        return ResponseEntity.ok(messageService.searchMessages(spaceUUID, keyword, cursorUUID, limit));
+    }
+
     @PostMapping("/file")
     public ResponseEntity<?> createMessageFile(
             @RequestParam List<MultipartFile> fileList,

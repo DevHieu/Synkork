@@ -1,7 +1,24 @@
 <script setup lang="ts">
 import type { User } from "@/types/User";
 import type { VoiceItemType } from "@/types/VoiceSpaceParticipant";
-import { MicOff, VolumeX, MonitorUp } from "lucide-vue-next";
+import {
+  MicOff,
+  VolumeX,
+  MonitorUp,
+  MoreHorizontal,
+  Mic,
+  Volume2,
+  Video,
+  VideoOff,
+  PhoneOff,
+} from "lucide-vue-next";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const props = defineProps<{
   item: VoiceItemType;
@@ -79,6 +96,70 @@ const getInitials = (name: string) =>
       <div v-if="!item.audioOn" class="bg-destructive/80 rounded-full p-1">
         <VolumeX class="h-3 w-3 text-destructive-foreground" />
       </div>
+    </div>
+
+    <!-- 3 chấm -->
+    <div
+      class="absolute bottom-2 right-2 z-10 opacity-0 group-hover/tile:opacity-100 transition-opacity"
+      @click.stop
+    >
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <button
+            class="bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-md p-1 text-white transition-colors"
+          >
+            <MoreHorizontal class="h-5 w-5" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent class="w-44" align="end">
+          <div class="px-2 py-1.5 text-xs text-muted-foreground font-medium">
+            {{ item.userName }}<span v-if="item.isLocal"> (Bạn)</span>
+          </div>
+          <DropdownMenuSeparator />
+          <template v-if="item.isLocal">
+            <DropdownMenuItem class="gap-2">
+              <Mic v-if="!item.micOn" class="h-4 w-4" />
+              <MicOff v-else class="h-4 w-4" />
+              {{ item.micOn ? "Tắt mic" : "Bật mic" }}
+            </DropdownMenuItem>
+            <DropdownMenuItem class="gap-2">
+              <Volume2 v-if="!item.audioOn" class="h-4 w-4" />
+              <VolumeX v-else class="h-4 w-4" />
+              {{ item.audioOn ? "Tắt âm thanh" : "Bật âm thanh" }}
+            </DropdownMenuItem>
+            <DropdownMenuItem v-if="item.type === 'participant'" class="gap-2">
+              <Video v-if="!item.videoOn" class="h-4 w-4" />
+              <VideoOff v-else class="h-4 w-4" />
+              {{ item.videoOn ? "Tắt camera" : "Bật camera" }}
+            </DropdownMenuItem>
+          </template>
+          <template v-else>
+            <DropdownMenuItem class="gap-2">
+              <VolumeX class="h-4 w-4" />
+              Tắt âm thanh
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              class="gap-2 text-destructive focus:text-destructive"
+            >
+              <MicOff class="h-4 w-4" />
+              Tắt mic người này
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              class="gap-2 text-destructive focus:text-destructive"
+            >
+              <VideoOff class="h-4 w-4" />
+              Tắt camera người này
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              class="gap-2 text-destructive focus:text-destructive"
+            >
+              <PhoneOff class="h-4 w-4" />
+              Kick khỏi phòng
+            </DropdownMenuItem>
+          </template>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   </div>
 </template>

@@ -159,6 +159,18 @@ public class MessageService {
         return returnPageDto(pinnedList, nextCursor, null, hasMore, false); // Danh sách pin ko cần làm infinite scroll 2 chiều nên cho before là null luôn
     }
 
+    public MessagePageDTO searchMessages(UUID spaceId, String keyword, UUID cursor, int limit) {
+        List<MessageDTO> messages = cursor == null
+                ? messageRepository.searchFirstPage(spaceId, keyword, limit + 1)
+                : messageRepository.searchNextPage(spaceId, keyword, cursor, limit + 1);
+
+        boolean hasMore = messages.size() > limit;
+        if (hasMore) messages = messages.subList(0, limit);
+        UUID beforeCursor = hasMore ? messages.getLast().getId() : null;
+
+        return returnPageDto(messages, beforeCursor, null, hasMore, false);
+    }
+
     public MessagePageDTO findAround(UUID spaceUUID, UUID messageUUID, int limit) {
 
         List<MessageEntity> before = messageRepository.findBeforeMessage(spaceUUID, messageUUID, limit + 1);
@@ -248,4 +260,5 @@ public class MessageService {
             simpMessagingTemplate.convertAndSend("/topic/space/" + spaceId + "/messages", dto);
         }
     }
+
 }
