@@ -13,9 +13,9 @@ const emit = defineEmits<{
 <template>
   <div class="flex items-center gap-3 px-4 pt-2.5 pb-1">
     <div class="flex items-center gap-2 shrink-0">
-      <div class="w-0.5 h-8 rounded-full bg-teal-500/80"></div>
+      <div class="w-0.5 h-8 rounded-full bg-primary/80"></div>
       <svg
-        class="w-3.5 h-3.5 text-teal-400 shrink-0"
+        class="w-3.5 h-3.5 text-primary shrink-0"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -28,21 +28,22 @@ const emit = defineEmits<{
       </svg>
     </div>
     <div class="flex-1 min-w-0">
-      <p class="text-[11px] font-semibold text-teal-400 mb-0.5">
+      <p class="text-[11px] font-semibold text-primary mb-0.5">
         Đang trả lời
-        <span class="text-white/80">{{ replyingTo.sender?.displayName }}</span>
+        <span class="text-foreground">{{
+          replyingTo.sender?.displayName
+        }}</span>
       </p>
-      <p class="text-xs text-white/40 truncate leading-tight">
+      <p class="text-xs text-muted-foreground truncate leading-tight">
         {{ replyingTo.content }}
       </p>
     </div>
     <button
       @click="emit('cancel')"
-      class="shrink-0 w-5 h-5 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors group"
-      title="Hủy reply"
+      class="shrink-0 w-5 h-5 rounded-full bg-muted hover:bg-accent flex items-center justify-center transition-colors group"
     >
       <svg
-        class="w-2.5 h-2.5 text-white/50 group-hover:text-white/90 transition-colors"
+        class="w-2.5 h-2.5 text-muted-foreground group-hover:text-foreground transition-colors"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"

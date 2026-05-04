@@ -27,7 +27,7 @@ const getInitials = (name: string) =>
 <template>
   <div
     :ref="(el) => el && emit('register-ref', focusedTile.id, el as HTMLElement)"
-    class="flex-1 min-h-0 relative rounded-xl overflow-hidden bg-black ring-1 ring-border"
+    class="flex-1 min-h-0 relative rounded-xl overflow-hidden bg-muted ring-1 ring-border"
   >
     <div
       v-if="focusedTile.type === 'participant' && !focusedTile.videoOn"
@@ -44,7 +44,7 @@ const getInitials = (name: string) =>
       >
         {{ getInitials(focusedTile.userName) }}
       </div>
-      <span class="text-sm text-white/70">
+      <span class="text-sm text-foreground/70">
         {{ focusedTile.userName }}
         <span v-if="focusedTile.isLocal" class="opacity-60">(Bạn)</span>
       </span>

@@ -2,7 +2,7 @@
 import { useMessageStore } from "@/stores/messageStore";
 import { CirclePlus, Smile } from "lucide-vue-next";
 import { storeToRefs } from "pinia";
-import { watch, nextTick, ref, onMounted, onUnmounted, computed } from "vue";
+import { watch, ref, onMounted, onUnmounted, computed } from "vue";
 
 import EmojiPicker from "vue3-emoji-picker";
 import "vue3-emoji-picker/css"; // Nó báo lỗi thì kệ mịa nó đi, sửa lại đúng đường dẫn là ko chạy được đâu á
@@ -171,7 +171,7 @@ onUnmounted(() =>
 
 <template>
   <div
-    class="relative border-t border-white/10 bg-muted/60 backdrop-blur-md"
+    class="relative border-t background"
     @dragover="handleDragOver"
     @dragleave="handleDragLeave"
     @drop="handleDrop"
@@ -209,7 +209,7 @@ onUnmounted(() =>
       <button
         @click="fileInputRef?.click()"
         title="Đính kèm file"
-        class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white/40 hover:text-white/80 hover:bg-white/8 transition-all"
+        class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
       >
         <CirclePlus />
       </button>
@@ -222,7 +222,7 @@ onUnmounted(() =>
       />
 
       <div
-        class="flex-1 flex items-center bg-white/8 rounded-lg px-3 gap-2 border border-white/5 focus-within:border-white/10 transition-colors"
+        class="flex-1 flex items-center bg-muted/50 rounded-lg px-3 gap-2 border border-border focus-within:border-primary/50 transition-colors"
       >
         <input
           ref="inputRef"
@@ -232,7 +232,7 @@ onUnmounted(() =>
               ? `Trả lời ${replyingTo.sender?.displayName}...`
               : 'Nhắn tin...'
           "
-          class="flex-1 bg-transparent py-2.5 text-white placeholder-white/25 focus:outline-none text-sm"
+          class="flex-1 bg-transparent py-2.5 text-foreground placeholder:text-muted-foreground focus:outline-none text-sm"
           @keydown.esc="messageStore.setReply(null)"
           @keydown.enter.exact.prevent="handleSubmit"
         />
@@ -244,8 +244,8 @@ onUnmounted(() =>
             class="w-8 h-8 rounded-full flex items-center justify-center transition-all"
             :class="
               showEmojiPicker
-                ? 'text-teal-400'
-                : 'text-white/40 hover:text-white/80'
+                ? 'text-primary'
+                : 'text-muted-foreground hover:text-foreground'
             "
           >
             <Smile />
