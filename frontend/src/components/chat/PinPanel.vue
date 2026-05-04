@@ -17,7 +17,7 @@ const filtered = computed(() => {
   if (!searchQuery.value.trim()) return pinnedMessages.value;
   const q = searchQuery.value.toLowerCase();
   return pinnedMessages.value.filter((m) =>
-    m.content.toLowerCase().includes(q),
+    m.content?.toLowerCase().includes(q),
   );
 });
 
@@ -144,7 +144,11 @@ const loadMore = async () => {
           <p
             class="text-[13px] text-muted-foreground leading-relaxed line-clamp-3 group-hover:text-foreground transition-colors"
           >
-            {{ msg.content }}
+            {{
+              msg.content
+                ? msg.content
+                : (msg.attachmentName ?? "Tin nhắn không có nội dung")
+            }}
           </p>
 
           <!-- Unpin -->
