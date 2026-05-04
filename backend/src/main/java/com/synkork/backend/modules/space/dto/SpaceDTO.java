@@ -5,8 +5,8 @@ import com.synkork.backend.modules.space.enums.SpaceTypeEnum;
 
 import java.util.UUID;
 
-public record SpaceDTOS(UUID id, String name, SpaceTypeEnum type, boolean restricted) {
-    public SpaceDTOS(SpaceEntity space) {
+public record SpaceDTO(UUID id, String name, SpaceTypeEnum type, boolean restricted) {
+    public SpaceDTO(SpaceEntity space) {
         this(
                 space.getId(),
                 space.getName(),

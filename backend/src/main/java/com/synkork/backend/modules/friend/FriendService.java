@@ -160,4 +160,9 @@ public class FriendService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"))
                 .getId();
     }
+
+    public List<String> getFriendEmails(String userId) {
+        UUID userUUID = UUID.fromString(userId);
+        return friendRepo.findFriendEmailByUserId(userUUID);
+    }
 }

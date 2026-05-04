@@ -6,6 +6,7 @@ import { useUserStore } from "./userStore";
 import { storeToRefs } from "pinia";
 import router from "@/routers";
 import type { Room } from "@/types/Room";
+import { socketService } from "@/services/websocket/socketService";
 
 export const useRoomsStore = defineStore("rooms", {
   state: () => ({
@@ -28,6 +29,7 @@ export const useRoomsStore = defineStore("rooms", {
     // Nhận spaceId để check xem khi đổi room có cần redirect đến space nào không
     async changeRoom(room: any, spaceId?: string) {
       this.currentRoom = room;
+      socketService.unsubscribeAll(); // Hủy tất cả subscription cũ khi đổi room để tránh nhận dữ liệu của phòng trước đó vào
 
       const spaceStore = useSpaceStore();
       await spaceStore.fetchSpacesByRoomId(room.id);

@@ -5,7 +5,7 @@ import com.synkork.backend.modules.collaboration.task.column.ColumnRepository;
 import com.synkork.backend.modules.message.MessageRepository;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.RoomRepository;
-import com.synkork.backend.modules.space.dto.SpaceDTOS;
+import com.synkork.backend.modules.space.dto.SpaceDTO;
 import com.synkork.backend.modules.space.dto.CreateSpaceRequest;
 import com.synkork.backend.modules.space.dto.UpdateSpaceRequest;
 import com.synkork.backend.modules.space.enums.SpaceTypeEnum;
@@ -44,7 +44,7 @@ public class SpaceService {
         return spaceRepository.save(spaceEntity);
     }
 
-    public List<SpaceDTOS> getAllSpaceByRoomId(UUID roomId) {
+    public List<SpaceDTO> getAllSpaceByRoomId(UUID roomId) {
         return spaceRepository.findAllByRoomIdAsDto(roomId);
     }
 
