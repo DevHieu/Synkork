@@ -18,6 +18,8 @@ import ColumnFormDialog from '../dialog/task/ColumnFormDialog.vue'
 import DeleteConfirmDialog from '../dialog/DeleteConfirmDialog.vue'
 import CardFormDialog from '@/components/dialog/task/CardFormDialog.vue'    
 
+import { SidebarTrigger } from "@/components/ui/sidebar";
+
 const columns = ref<ColumnEvent[]>([])
 const isSocketConnected = ref(false)
 
@@ -320,6 +322,7 @@ const clearAll = async () => {
     <div class="flex h-screen w-full overflow-hidden background">
         <div class="flex-1 flex flex-col relative overflow-hidden">
             <header class="p-6 flex items-center gap-2 font-semibold">
+                <SidebarTrigger class="-ml-1 shrink-0" />
                 <Hash class="w-5 h-5 text-teal-600" />
                 <span>{{ currentSpace?.name }}</span>
             </header>
@@ -330,6 +333,7 @@ const clearAll = async () => {
                     <template #item="{ element: col }">
                         <TaskColumn
                             :column="col"
+                            :space-name="currentSpace?.name ?? ''"
                             @edit-column="openEditColumnDialog"
                             @delete-column="confirmDeleteColumn"
                             @add-card="openAddCardDialog"
