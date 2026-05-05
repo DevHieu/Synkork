@@ -27,10 +27,6 @@ const { toggleMic, toggleAudio, toggleShareScreen } = voiceSpaceStore;
 const leaveRoom = async () => {
   await voiceSpaceStore.leaveRoom();
 };
-
-const shareScreen = () => {
-  console.log("Sharinggg.....");
-};
 </script>
 
 <template>
@@ -96,7 +92,7 @@ const shareScreen = () => {
           </p>
           <div class="flex flex-col gap-1">
             <button
-              @click="toggleMic"
+              @click="() => toggleMic()"
               :class="[
                 'flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors w-full',
                 micOn
@@ -109,7 +105,7 @@ const shareScreen = () => {
               {{ micOn ? "Tắt mic" : "Bật mic" }}
             </button>
             <button
-              @click="toggleAudio"
+              @click="() => toggleAudio()"
               :class="[
                 'flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors w-full',
                 audioOn
@@ -122,7 +118,7 @@ const shareScreen = () => {
               {{ audioOn ? "Tắt tiếng" : "Bật tiếng" }}
             </button>
             <button
-              @click="toggleShareScreen"
+              @click="() => toggleShareScreen()"
               :class="[
                 'flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors w-full',
                 screenOn
@@ -159,7 +155,7 @@ const shareScreen = () => {
         </div>
         <div class="flex items-center gap-1">
           <button
-            @click="toggleMic"
+            @click="() => toggleMic()"
             :class="[
               'flex-1 flex items-center justify-center py-1.5 rounded-md transition-colors',
               micOn
@@ -171,7 +167,7 @@ const shareScreen = () => {
             <MicOff v-else class="h-4 w-4" />
           </button>
           <button
-            @click="toggleAudio"
+            @click="() => toggleAudio()"
             :class="[
               'flex-1 flex items-center justify-center py-1.5 rounded-md transition-colors',
               audioOn
@@ -183,7 +179,7 @@ const shareScreen = () => {
             <VolumeX v-else class="h-4 w-4" />
           </button>
           <button
-            @click="toggleShareScreen"
+            @click="() => toggleShareScreen()"
             :class="[
               'flex-1 flex items-center justify-center py-1.5 rounded-md transition-colors',
               screenOn

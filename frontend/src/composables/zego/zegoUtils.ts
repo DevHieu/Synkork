@@ -48,7 +48,7 @@ export function zegoUtils(participants: Ref<Map<string, Participant>>) {
 
   return {
     playNotificationSound,
-    ensureHiddenContainer: createHiddenContainer,
+    createHiddenContainer,
     clearHiddenContainer,
     findUserByStreamID,
   };

@@ -4,6 +4,7 @@ import { zegoUtils } from "./zegoUtils";
 import { zegoMedia } from "./zegoMedia";
 import { zegoRemoteStream } from "./zegoRemoteStream";
 import { zegoLocalStream } from "./zegoLocalStream";
+import { useVoiceSpaceStore } from "@/stores/voiceSpaceStore";
 
 import type { Participant } from "@/types/VoiceSpaceParticipant";
 import type { Ref } from "vue";
@@ -28,6 +29,8 @@ interface ZegoServiceOptions {
   micOn: Ref<boolean>;
   audioOn: Ref<boolean>;
   screenOn: Ref<boolean>;
+  isMuted: Ref<boolean>;
+  isDeafen: Ref<boolean>;
 }
 
 export function useZego({
@@ -40,6 +43,8 @@ export function useZego({
   micOn,
   audioOn,
   screenOn,
+  isMuted,
+  isDeafen,
 }: ZegoServiceOptions) {
   let isFirstLoad = true;
 
@@ -51,6 +56,8 @@ export function useZego({
     micOn,
     audioOn,
     screenOn,
+    isMuted,
+    isDeafen,
   );
   const remote = zegoRemoteStream(state, remoteStreams, participants);
   const local = zegoLocalStream(
@@ -88,6 +95,7 @@ export function useZego({
         userList.forEach((u) => {
           if (!participants.value.has(u.userID)) {
             // Thêm user vào list participants
+
             participants.value.set(u.userID, {
               userID: u.userID,
               userName: u.userName || u.userID,
@@ -96,6 +104,8 @@ export function useZego({
               audioOn: true,
               screenOn: false,
               isLocal: false,
+              muted: false,
+              deafen: false,
             });
           }
 
@@ -141,34 +151,55 @@ export function useZego({
       }
     });
 
+    state.zg.on("screenSharingEnded", () => {
+      local.stopScreenStream();
+      screenOn.value = false;
+    });
+
     state.zg.on("IMRecvCustomCommand", (_roomID, fromUser, command) => {
       // Cái command là cái dữ liệu mình gửi khi mình dùng mấy cái hàm custom trạng thái mà mình tạo bên zegoMedia á. (broadcastMediaState, requestMediaStates). Qua đấy để xem thêm
 
       try {
         const data = JSON.parse(command);
 
-        if (data.type === "media_state") {
-          const p = participants.value.get(fromUser.userID); // Tìm user
+        switch (data.type) {
+          case "media_state": {
+            const p = participants.value.get(fromUser.userID);
 
-          if (p) {
-            // Chỉnh trạng thái và cập nhập list participant
-            p.micOn = data.micOn;
-            p.audioOn = data.audioOn;
-            p.screenOn = data.screenOn;
-            participants.value = new Map(participants.value);
+            if (p) {
+              p.micOn = data.micOn;
+              p.audioOn = data.audioOn;
+              p.screenOn = data.screenOn;
+              p.muted = data.muted ?? p.muted;
+              p.deafen = data.deafen ?? p.deafen;
+              participants.value = new Map(participants.value);
+            }
+            console.log(participants.value);
+            break;
           }
-        } else if (data.type === "request_state") {
-          // Cái này là gửi yêu cầu lấy state của người trong phòng trước đó
-          media.broadcastMediaState(_roomID);
+
+          case "request_state": {
+            media.broadcastMediaState(_roomID);
+            break;
+          }
+
+          case "ROOM_MUTE":
+          case "ROOM_DEAFEN": {
+            if (data.muted !== null) {
+              useVoiceSpaceStore().toggleMic(data.muted, true);
+            } else if (data.deafen !== null) {
+              useVoiceSpaceStore().toggleAudio(data.deafen, true);
+            }
+
+            break;
+          }
+
+          default:
+            break;
         }
       } catch (e) {
         console.warn(e);
       }
-    });
-
-    state.zg.on("screenSharingEnded", () => {
-      local.stopScreenStream();
-      screenOn.value = false;
     });
   };
 

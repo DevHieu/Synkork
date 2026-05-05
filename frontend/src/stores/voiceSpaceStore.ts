@@ -1,5 +1,7 @@
+import { useRoomMemberStore } from "./roomMemberStore";
+import { storeToRefs } from "pinia";
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { ZegoExpressEngine } from "zego-express-engine-webrtc";
 import type { Participant } from "@/types/VoiceSpaceParticipant";
 import { useUserStore } from "@/stores/userStore";
@@ -9,9 +11,8 @@ import { useLocalStorage } from "@vueuse/core";
 import { useSpaceStore } from "@/stores/spaceStore";
 
 import { useZego } from "@/composables/zego/useZego";
-import { zegoLocalStream } from "@/composables/zego/zegoLocalStream";
-import { zegoMedia } from "@/composables/zego/zegoMedia";
-import { zegoUtils } from "@/composables/zego/zegoUtils";
+import { muteAudio } from "@/services/roomMemberService";
+import { toast } from "vue-sonner";
 
 export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
   const appID = Number(import.meta.env.VITE_ZEGO_APP_ID);
@@ -30,17 +31,36 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
   const remoteStreams = new Map<string, any>();
   const participants = ref<Map<string, Participant>>(new Map());
 
+  const currentRoomId = ref(router.currentRoute.value.params.roomId as string);
   const currentSpaceId = ref<string | null>(null);
   const videoOn = ref(false);
   const micOn = useLocalStorage("voice-mic-on", false);
   const audioOn = ref(true);
   const screenOn = ref(false);
+  const isMuted = ref(false);
+  const isDeafen = ref(false);
+
   const isJoining = ref(false);
   const isInRoom = ref(false);
   const isExpanded = ref(false);
   const participantList = computed(() =>
     Array.from(participants.value.values()),
   );
+
+  const roomMemberStore = useRoomMemberStore();
+  const { isMuted: mutedStore, isDeafen: deafenStore } =
+    storeToRefs(roomMemberStore);
+
+  // Vì thông tin ở roomMember load nó sẽ chậm nên để watch ở đây để khi nó load xong sẽ thay đổi luôn
+  watch(mutedStore, (val) => {
+    isMuted.value = val;
+    if (isInRoom.value) toggleMic(val, true);
+  });
+
+  watch(deafenStore, (val) => {
+    isDeafen.value = val;
+    if (isInRoom.value) toggleAudio(val, true);
+  });
 
   const zego = useZego({
     state: zegoState,
@@ -52,8 +72,11 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     micOn,
     audioOn,
     screenOn,
+    isMuted,
+    isDeafen,
   });
 
+  // Cần thêm roomId để làm chức năng mute tiếng user toàn phòng
   const joinRoom = async (spaceId: string) => {
     isJoining.value = true;
     if (isInRoom.value && currentSpaceId.value === spaceId) {
@@ -77,6 +100,9 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
       console.warn("[Room] user chưa load xong, thử lại sau...");
       return;
     }
+
+    isMuted.value = mutedStore.value;
+    isDeafen.value = deafenStore.value;
 
     const token = await getZegoToken(userID);
 
@@ -105,6 +131,8 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
         audioOn: true,
         screenOn: false,
         isLocal: true,
+        muted: isMuted.value,
+        deafen: isDeafen.value,
       });
 
       await zego.local.publishAudioStream();
@@ -146,10 +174,39 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     }
   };
 
-  const toggleMic = () => {
+  const toggleMic = (state?: boolean, isAdmin?: boolean) => {
     if (!zegoState.zg) return;
-    micOn.value = !micOn.value;
-    zego.media.muteMicro(!micOn.value);
+
+    // state dduwwocj truyền vào khi admin chặn/mở. Nên là nếu state không có -> user đang nhấn -> chặn
+    if (isMuted.value === true && isAdmin === undefined) {
+      toast.error("Bạn đã bị chủ phòng tắt mic. Hãy liên hệ đễ được gỡ");
+      return;
+    }
+
+    if (state !== undefined && isAdmin === true) {
+      isMuted.value = state;
+      // Admin khóa → tắt mic luôn
+      if (state === true) {
+        micOn.value = false;
+        zego.media.muteMicro(true);
+        const userStore = useUserStore();
+        const me = participants.value.get(userStore.user?.id!);
+        if (me) {
+          me.micOn = false;
+          me.muted = true;
+        }
+      } else {
+        // Admin mở → chỉ gỡ khóa, không tự bật mic. Người dùng tự quyết
+        const userStore = useUserStore();
+        const me = participants.value.get(userStore.user?.id!);
+        if (me) me.muted = false;
+      }
+      zego.media.broadcastMediaState(currentSpaceId.value!);
+      return;
+    }
+
+    micOn.value = state !== undefined ? state : !micOn.value;
+    zego.media.muteMicro(!micOn.value); // Phải đảo lại vì cách hiểu true false lúc làm nó cứ sai sai. Mà lười sửa quá nên để tạm vậy
 
     // Cái này để cập nhập trạng thái mic của user trong participant. Trong mấy hàm nhỏ ko ghi nên ghi ngoài đây
     const userStore = useUserStore();
@@ -159,9 +216,22 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     zego.media.broadcastMediaState(currentSpaceId.value!);
   };
 
-  const toggleAudio = () => {
+  const toggleAudio = (state?: boolean, isAdmin?: boolean) => {
     if (!zegoState.zg) return;
-    audioOn.value = !audioOn.value;
+
+    if (isDeafen.value === true && isAdmin === undefined) {
+      toast.error("Bạn đã bị chủ phòng tắt âm thanh. Hãy liên hệ đễ được gỡ");
+      return;
+    }
+
+    if (state !== undefined && isAdmin === true) {
+      isDeafen.value = state;
+    } else if (audioOn.value === true) {
+      // Tắt loa thì tắt mic luôn, so sánh state để admin tắt loa thì ko cần tắt mic
+      toggleMic(false);
+    }
+
+    audioOn.value = state !== undefined ? !state : !audioOn.value;
     zego.media.muteAllRemoteAudio(!audioOn.value);
 
     // Cái này y chang như trên mic
@@ -214,6 +284,30 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     return tracks;
   };
 
+  const toggleMuteUser = (
+    userId: string,
+    type: "ROOM_MUTE" | "ROOM_DEAFEN",
+    data: {
+      muted: boolean | null;
+      deafen: boolean | null;
+    },
+  ) => {
+    console.log("what the fack");
+
+    console.log(zegoState.zg);
+    console.log(currentRoomId.value);
+
+    if (!zegoState.zg || !currentRoomId.value) return;
+
+    const payload = {
+      type: type,
+      ...data,
+    };
+
+    muteAudio(currentRoomId.value, userId, data);
+    zego.media.roomMutedUserRequest(currentSpaceId.value!, userId, payload);
+  };
+
   return {
     currentSpaceId,
     participants,
@@ -234,5 +328,6 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     replayAllStreamsToDOM,
     getParticipantsForSpace,
     getAudioTracks,
+    toggleMuteUser,
   };
 });
