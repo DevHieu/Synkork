@@ -41,4 +41,11 @@ public class RoomMemberEntity {
 
     @Builder.Default
     private LocalDateTime joinedAt =  LocalDateTime.now();
+
+    @Builder.Default
+    private boolean muted = false;
+
+    @Builder.Default
+    private boolean deafen = false;
+
 }

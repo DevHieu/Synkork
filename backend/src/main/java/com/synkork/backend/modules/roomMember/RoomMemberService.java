@@ -2,6 +2,7 @@ package com.synkork.backend.modules.roomMember;
 
 import com.synkork.backend.modules.roomMember.dto.ChangeAuthorityDTO;
 import com.synkork.backend.modules.room.RoomEntity;
+import com.synkork.backend.modules.roomMember.dto.MuteRequest;
 import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
 import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
 import com.synkork.backend.modules.room.RoomRepository;
@@ -108,5 +109,20 @@ public class RoomMemberService {
         roomMemberRepository.deleteById(memberUUID);
 
         return target.getUser().getEmail();
+    }
+
+    public void toogleMuteMembers(String roomId, String userId, MuteRequest muteRequest) {
+        UUID roomUUID =  UUID.fromString(roomId);
+        UUID memberUUID = UUID.fromString(userId);
+
+        RoomMemberEntity member = roomMemberRepository.findByRoom_IdAndUser_Id(roomUUID, memberUUID).orElseThrow(() -> new RuntimeException("Member not found"));
+
+        if (muteRequest.muted() != null) {
+            member.setMuted(muteRequest.muted());
+        } else {
+            member.setDeafen(muteRequest.deafen());
+        }
+
+        roomMemberRepository.save(member);
     }
 }

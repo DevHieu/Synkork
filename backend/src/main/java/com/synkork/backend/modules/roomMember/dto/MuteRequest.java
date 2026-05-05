@@ -1,4 +1,4 @@
 package com.synkork.backend.modules.roomMember.dto;
 
-public record MuteRequest() {
+public record MuteRequest(Boolean muted, Boolean deafen) {
 }
