@@ -1,4 +1,4 @@
-import type { Sender } from "./Sender";
+import type { Member } from "./Member";
 
 export interface ReplyPreview {
   id: string;
@@ -15,7 +15,7 @@ export interface Message {
   pinned: boolean;
   edited: boolean;
   type: "TEXT" | "IMAGE" | "FILE";
-  sender: Sender;
+  sender: Member;
   replyTo: ReplyPreview | null;
   attachmentUrl: string | null;
   attachmentName: string | null;
