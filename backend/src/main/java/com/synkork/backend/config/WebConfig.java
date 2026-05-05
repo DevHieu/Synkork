@@ -9,8 +9,8 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins("http://localhost:5173") // Port của Vite/Vue
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedOrigins("http://localhost:5173")
+                .allowedMethods("*")           // ← Thay đổi thành "*" cho dễ
                 .allowedHeaders("*")
                 .allowCredentials(true);
     }

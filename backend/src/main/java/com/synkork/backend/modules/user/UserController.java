@@ -1,16 +1,16 @@
 package com.synkork.backend.modules.user;
 
+import com.synkork.backend.modules.user.dto.ChangePasswordDto;
+import com.synkork.backend.modules.user.dto.UpdateprofileDto;
 import com.synkork.backend.modules.user.dto.UserInfoDto;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
 // Controller là NƠI XỬ LÝ CÁC YÊU CẦU HTTP TỪ CLIENT VÀ XỬ LÝ VỀ PHẦN TRẢ VỀ DỮ LIỆU
 // Những phần về XỬ LÍ NGHIỆP VỤ sẽ được chuyển xuống SERVICE để tách biệt rõ ràng các tầng trong ứng dụng
@@ -52,5 +52,41 @@ public class UserController {
   @GetMapping("/{userId}")
   public String getUserById(@RequestParam String userId) {
     return new String();
+  }
+
+  // Cập nhật displayName / username
+  @PatchMapping("/me")
+  public ResponseEntity<?> updateProfile(@RequestBody UpdateprofileDto dto) {
+    try {
+      UserInfoDto updated = userService.updateProfile(dto);
+      return ResponseEntity.ok(updated);
+    } catch (Exception e) {
+      return ResponseEntity.badRequest().body(e.getMessage());
+    }
+  }
+
+  // Đổi mật khẩu
+  @PatchMapping("/me/password")
+  public ResponseEntity<?> changePassword(@RequestBody ChangePasswordDto dto) {
+    try {
+      userService.changePassword(dto);
+      return ResponseEntity.ok("Đổi mật khẩu thành công");
+    } catch (Exception e) {
+      e.printStackTrace();   // ← Thêm dòng này để xem lỗi ở console server
+      return ResponseEntity.badRequest().body(e.getMessage());
+    }
+  }
+
+  // Cập nhật avatar (nhận avatarUrl + avatarId từ frontend sau khi upload)
+  @PatchMapping("/me/avatar")
+  public ResponseEntity<?> updateAvatar(@RequestBody Map<String, String> body) {
+    try {
+      String avatarUrl = body.get("avatarUrl");
+      String avatarId = body.get("avatarId");
+      UserInfoDto updated = userService.updateAvatar(avatarUrl, avatarId);
+      return ResponseEntity.ok(updated);
+    } catch (Exception e) {
+      return ResponseEntity.badRequest().body(e.getMessage());
+    }
   }
 }
