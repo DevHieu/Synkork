@@ -3,6 +3,7 @@ export interface Participant {
   userName: string;
   videoStreamID?: string;
   screenStreamID?: string;
+  audioStreamID?: string;
   videoOn: boolean;
   micOn: boolean;
   audioOn: boolean;
@@ -15,6 +16,7 @@ export interface Participant {
 
 export interface VoiceItemType {
   id: string;
+  audioId: string | undefined;
   type: "screen" | "participant";
   userID: string;
   isLocal: boolean;

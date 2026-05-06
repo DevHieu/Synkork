@@ -5,33 +5,8 @@ import { zegoMedia } from "./zegoMedia";
 import { zegoRemoteStream } from "./zegoRemoteStream";
 import { zegoLocalStream } from "./zegoLocalStream";
 import { useVoiceSpaceStore } from "@/stores/voiceSpaceStore";
-
-import type { Participant } from "@/types/VoiceSpaceParticipant";
-import type { Ref } from "vue";
-
-interface ZegoState {
-  zg: ZegoExpressEngine | null;
-  localAudioStream: any;
-  localAudioStreamID: string;
-  localVideoStream: any;
-  localVideoStreamID: string;
-  localScreenStream: any;
-  localScreenStreamID: string;
-}
-
-interface ZegoServiceOptions {
-  state: ZegoState;
-  appID: number;
-  server: string;
-  participants: Ref<Map<string, Participant>>;
-  remoteStreams: Map<string, any>;
-  videoOn: Ref<boolean>;
-  micOn: Ref<boolean>;
-  audioOn: Ref<boolean>;
-  screenOn: Ref<boolean>;
-  isMuted: Ref<boolean>;
-  isDeafen: Ref<boolean>;
-}
+import { toast } from "vue-sonner";
+import type { ZegoServiceOptions } from "@/types/ZegoType";
 
 export function useZego({
   state,
@@ -172,6 +147,7 @@ export function useZego({
               p.screenOn = data.screenOn;
               p.muted = data.muted ?? p.muted;
               p.deafen = data.deafen ?? p.deafen;
+              p.audioStreamID = data.audioId ?? p.audioStreamID;
               participants.value = new Map(participants.value);
             }
             console.log(participants.value);
@@ -191,6 +167,12 @@ export function useZego({
               useVoiceSpaceStore().toggleAudio(data.deafen, true);
             }
 
+            break;
+          }
+
+          case "KICK_MEMBER": {
+            toast.info("Bạn đã bị kick ra khỏi cuộc trò chuyện");
+            useVoiceSpaceStore().leaveRoom();
             break;
           }
 

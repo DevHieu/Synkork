@@ -8,9 +8,9 @@ import {
   MoreHorizontal,
   Mic,
   Volume2,
-  Video,
   VideoOff,
   PhoneOff,
+  ShieldOff,
 } from "lucide-vue-next";
 import {
   DropdownMenu,
@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useVoiceSpaceStore } from "@/stores/voiceSpaceStore";
+import { storeToRefs } from "pinia";
 
 const props = defineProps<{
   item: VoiceItemType;
@@ -40,6 +41,9 @@ const getInitials = (name: string) =>
         .slice(0, 2)
     : "?";
 
+const { toggleVideo, toggleAudio, toggleMic } = useVoiceSpaceStore();
+const { mutedList } = storeToRefs(useVoiceSpaceStore());
+
 const handleMuteUser = (userId: string, type: "ROOM_MUTE" | "ROOM_DEAFEN") => {
   // Lấy trạng thái hiện tại rồi đảo ngược
   const currentMuted = type === "ROOM_MUTE" ? props.item.muted : null;
@@ -51,6 +55,16 @@ const handleMuteUser = (userId: string, type: "ROOM_MUTE" | "ROOM_DEAFEN") => {
   };
 
   useVoiceSpaceStore().toggleMuteUser(userId, type, payload);
+};
+
+const handleKickUser = (userId: string) => {
+  useVoiceSpaceStore().kickMember(userId);
+};
+
+const handleMutePerson = (audioId: string | undefined) => {
+  if (!audioId) return;
+
+  useVoiceSpaceStore().toggleAudioUser(audioId);
 };
 </script>
 
@@ -107,16 +121,22 @@ const handleMuteUser = (userId: string, type: "ROOM_MUTE" | "ROOM_DEAFEN") => {
       <div
         v-if="!item.micOn"
         class="bg-destructive/80 rounded-full p-2"
-        :class="!item.muted ? 'bg-secondary/80' : 'bg-destructive/80'"
+        :class="!item.muted ? 'bg-ring/80' : 'bg-destructive/80'"
       >
         <MicOff class="h-4 w-4 text-destructive-foreground" />
       </div>
       <div
         v-if="!item.audioOn"
         class="bg-destructive/80 rounded-full p-2"
-        :class="!item.deafen ? 'bg-secondary/80' : 'bg-destructive/80'"
+        :class="!item.deafen ? 'bg-ring/80' : 'bg-destructive/80'"
       >
         <VolumeX class="h-4 w-4 text-destructive-foreground" />
+      </div>
+      <div
+        v-if="mutedList.has(item.audioId ?? '')"
+        class="rounded-full p-2 bg-secondary/80"
+      >
+        <MicOff class="h-4 w-4 text-destructive-foreground" />
       </div>
     </div>
 
@@ -139,61 +159,76 @@ const handleMuteUser = (userId: string, type: "ROOM_MUTE" | "ROOM_DEAFEN") => {
           </div>
           <DropdownMenuSeparator />
           <template v-if="item.isLocal">
-            <DropdownMenuItem class="gap-2">
+            <DropdownMenuItem class="gap-2" @click="() => toggleMic()">
               <Mic v-if="!item.micOn" class="h-4 w-4" />
               <MicOff v-else class="h-4 w-4" />
               {{ item.micOn ? "Tắt mic" : "Bật mic" }}
             </DropdownMenuItem>
-            <DropdownMenuItem class="gap-2">
+            <DropdownMenuItem class="gap-2" @click="() => toggleAudio()">
               <Volume2 v-if="!item.audioOn" class="h-4 w-4" />
               <VolumeX v-else class="h-4 w-4" />
               {{ item.audioOn ? "Tắt âm thanh" : "Bật âm thanh" }}
             </DropdownMenuItem>
-            <DropdownMenuItem v-if="item.type === 'participant'" class="gap-2">
-              <Video v-if="!item.videoOn" class="h-4 w-4" />
-              <VideoOff v-else class="h-4 w-4" />
-              {{ item.videoOn ? "Tắt camera" : "Bật camera" }}
-            </DropdownMenuItem>
           </template>
           <template v-else>
-            <DropdownMenuItem class="gap-2">
-              <VolumeX class="h-4 w-4" />
-              Tắt âm thanh
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
             <DropdownMenuItem
               class="gap-2"
-              :class="
-                item.muted
-                  ? 'text-amber-500 focus:text-amber-500'
-                  : 'text-destructive focus:text-destructive'
-              "
-              @click="handleMuteUser(item.userID, 'ROOM_MUTE')"
+              @click="() => handleMutePerson(item.audioId)"
             >
-              <ShieldOff v-if="item.muted" class="h-4 w-4" />
-              <MicOff v-else class="h-4 w-4" />
-              {{ item.muted ? "Gỡ tắt mic" : "Tắt mic người này" }}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              class="gap-2"
-              :class="
-                item.deafen
-                  ? 'text-amber-500 focus:text-amber-500'
-                  : 'text-destructive focus:text-destructive'
-              "
-              @click="handleMuteUser(item.userID, 'ROOM_DEAFEN')"
-            >
-              <ShieldOff v-if="item.deafen" class="h-4 w-4" />
+              <Volume2
+                v-if="mutedList.has(item.audioId ?? '')"
+                class="h-4 w-4"
+              />
               <VolumeX v-else class="h-4 w-4" />
-              {{ item.deafen ? "Gỡ tắt âm thanh" : "Tắt âm thanh người này" }}
+              {{
+                mutedList.has(item.audioId ?? "")
+                  ? "Bật âm thanh"
+                  : "Tắt âm thanh"
+              }}
             </DropdownMenuItem>
             <DropdownMenuItem
-              class="gap-2 text-destructive focus:text-destructive"
+              v-if="item.videoOn"
+              class="gap-2"
+              @click="() => toggleVideo()"
             >
-              <PhoneOff class="h-4 w-4" />
-              Kick khỏi phòng
+              <VideoOff class="h-4 w-4" />
+              Tắt camera
             </DropdownMenuItem>
           </template>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            class="gap-2"
+            :class="
+              item.muted
+                ? 'text-amber-500 focus:text-amber-500'
+                : 'text-destructive focus:text-destructive'
+            "
+            @click="handleMuteUser(item.userID, 'ROOM_MUTE')"
+          >
+            <ShieldOff v-if="item.muted" class="h-4 w-4" />
+            <MicOff v-else class="h-4 w-4" />
+            {{ item.muted ? "Gỡ tắt mic" : "Tắt mic người này" }}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            class="gap-2"
+            :class="
+              item.deafen
+                ? 'text-amber-500 focus:text-amber-500'
+                : 'text-destructive focus:text-destructive'
+            "
+            @click="handleMuteUser(item.userID, 'ROOM_DEAFEN')"
+          >
+            <ShieldOff v-if="item.deafen" class="h-4 w-4" />
+            <VolumeX v-else class="h-4 w-4" />
+            {{ item.deafen ? "Gỡ tắt âm thanh" : "Tắt âm thanh người này" }}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            class="gap-2 text-destructive focus:text-destructive"
+            @click="() => handleKickUser(item.userID)"
+          >
+            <PhoneOff class="h-4 w-4" />
+            Kick khỏi phòng
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

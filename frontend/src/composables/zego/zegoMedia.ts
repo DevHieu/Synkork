@@ -31,6 +31,12 @@ export function zegoMedia(
     }
   };
 
+  const muteAudioUser = async (audioId: string, isMute: boolean) => {
+    if (!state.zg) return;
+
+    state.zg.mutePlayStreamAudio(audioId, isMute);
+  };
+
   const broadcastMediaState = (roomID: string) => {
     if (!state.zg) return;
 
@@ -42,6 +48,7 @@ export function zegoMedia(
       screenOn: screenOn.value,
       muted: isMuted.value,
       deafen: isDeafen.value,
+      audioId: state.localAudioStreamID,
     });
     state.zg.sendCustomCommand(roomID, payload, []); // param thứ 3 là userId muốn gửi tới. Để trống thì gửi hết mọi người
   };
@@ -64,6 +71,14 @@ export function zegoMedia(
     if (!state.zg) return;
     const data = JSON.stringify(payload);
     console.log("media activated ", roomId, userId, data);
+    state.zg.sendCustomCommand(roomId, data, [userId]);
+  };
+
+  const kickMember = (roomId: string, userId: string) => {
+    if (!state.zg) return;
+
+    const data = JSON.stringify({ type: "KICK_MEMBER" });
+
     state.zg.sendCustomCommand(roomId, data, [userId]);
   };
 
@@ -126,5 +141,7 @@ export function zegoMedia(
     requestMediaStates,
     replayAllStreamToDOM,
     roomMutedUserRequest,
+    kickMember,
+    muteAudioUser,
   };
 }

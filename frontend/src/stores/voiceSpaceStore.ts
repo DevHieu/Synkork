@@ -1,7 +1,7 @@
 import { useRoomMemberStore } from "./roomMemberStore";
 import { storeToRefs } from "pinia";
 import { defineStore } from "pinia";
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, reactive } from "vue";
 import { ZegoExpressEngine } from "zego-express-engine-webrtc";
 import type { Participant } from "@/types/VoiceSpaceParticipant";
 import { useUserStore } from "@/stores/userStore";
@@ -46,6 +46,7 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
   const participantList = computed(() =>
     Array.from(participants.value.values()),
   );
+  const mutedList = reactive(new Map<string, boolean>());
 
   const roomMemberStore = useRoomMemberStore();
   const { isMuted: mutedStore, isDeafen: deafenStore } =
@@ -237,7 +238,10 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     // Cái này y chang như trên mic
     const userStore = useUserStore();
     const me = participants.value.get(userStore.user?.id!);
-    if (me) me.audioOn = audioOn.value;
+    if (me) {
+      me.audioOn = audioOn.value;
+      me.audioStreamID = zegoState.localAudioStreamID;
+    }
 
     zego.media.broadcastMediaState(currentSpaceId.value!);
   };
@@ -292,9 +296,7 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
       deafen: boolean | null;
     },
   ) => {
-    console.log("what the fack");
-
-    console.log(zegoState.zg);
+    console.log("what the fack - voiceSpaceStore");
     console.log(currentRoomId.value);
 
     if (!zegoState.zg || !currentRoomId.value) return;
@@ -308,10 +310,32 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     zego.media.roomMutedUserRequest(currentSpaceId.value!, userId, payload);
   };
 
+  const kickMember = (userId: string) => {
+    if (!zegoState.zg || !currentSpaceId.value) return;
+
+    zego.media.kickMember(currentSpaceId.value, userId);
+  };
+
+  // User A ko muốn nghe tiếng của User B -> Ý là vậy á. Mà ko biết đặt tên sao cho hợp lí
+  const toggleAudioUser = (audioId: string) => {
+    if (!zegoState.zg || !currentSpaceId.value) return;
+
+    let isMute = true;
+    if (mutedList.has(audioId)) {
+      isMute = false;
+      mutedList.delete(audioId);
+    } else {
+      mutedList.set(audioId, true);
+    }
+
+    zego.media.muteAudioUser(audioId, isMute);
+  };
+
   return {
     currentSpaceId,
     participants,
     participantList,
+    mutedList,
     videoOn,
     micOn,
     audioOn,
@@ -329,5 +353,7 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     getParticipantsForSpace,
     getAudioTracks,
     toggleMuteUser,
+    kickMember,
+    toggleAudioUser,
   };
 });

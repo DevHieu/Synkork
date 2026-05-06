@@ -30,6 +30,7 @@ const voiceList = computed((): VoiceItemType[] => {
     .filter((p) => p.screenOn)
     .map((p) => ({
       id: `screen-${p.userID}`,
+      audioId: p.audioStreamID,
       type: "screen" as const,
       userID: p.userID,
       isLocal: p.isLocal,
@@ -43,6 +44,7 @@ const voiceList = computed((): VoiceItemType[] => {
 
   const participants = participantList.value.map((p) => ({
     id: `participant-${p.userID}`,
+    audioId: p.audioStreamID,
     type: "participant" as const,
     userID: p.userID,
     isLocal: p.isLocal,
