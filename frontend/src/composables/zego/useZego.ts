@@ -176,6 +176,11 @@ export function useZego({
             break;
           }
 
+          case "STOP_SCREEN": {
+            useVoiceSpaceStore().toggleShareScreen();
+            break;
+          }
+
           default:
             break;
         }

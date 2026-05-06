@@ -46,7 +46,7 @@ const getInitials = (name: string) =>
         </div>
       </div>
       <div
-        class="absolute bottom-1 left-1 right-1 z-10 text-[10px] bg-black/50 px-1.5 py-0.5 rounded text-white truncate flex items-center gap-1"
+        class="absolute bottom-1 left-1 right-1 z-10 text-[10px] px-1.5 py-0.5 rounded text-foreground truncate flex items-center gap-1"
       >
         <MonitorUp v-if="tile.type === 'screen'" class="h-2.5 w-2.5 shrink-0" />
         {{ tile.isLocal ? "Bạn" : tile.userName }}

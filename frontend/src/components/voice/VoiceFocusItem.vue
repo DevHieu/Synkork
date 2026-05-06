@@ -1,7 +1,12 @@
 <script setup lang="ts">
-import { MonitorUp } from "lucide-vue-next";
+import { MonitorUp, MoreHorizontal } from "lucide-vue-next";
 import type { User } from "@/types/User";
 import type { VoiceItemType } from "@/types/VoiceSpaceParticipant";
+import DropdownMenu from "../ui/dropdown-menu/DropdownMenu.vue";
+import DropdownMenuTrigger from "../ui/dropdown-menu/DropdownMenuTrigger.vue";
+import VoiceDropdownMenu from "./VoiceDropdownMenu.vue";
+import { useRoomMemberStore } from "@/stores/roomMemberStore";
+import { storeToRefs } from "pinia";
 
 const props = defineProps<{
   focusedTile: VoiceItemType;
@@ -12,6 +17,8 @@ const emit = defineEmits<{
   minimize: [];
   "register-ref": [tileId: string, el: HTMLElement];
 }>();
+
+const { canManage } = storeToRefs(useRoomMemberStore());
 
 const getInitials = (name: string) =>
   name
@@ -31,7 +38,7 @@ const getInitials = (name: string) =>
   >
     <div
       v-if="focusedTile.type === 'participant' && !focusedTile.videoOn"
-      class="absolute inset-0 flex flex-col items-center justify-center gap-3 z-[1]"
+      class="absolute inset-0 flex flex-col items-center justify-center gap-3 z-1"
     >
       <img
         v-if="focusedTile.isLocal && user?.avatarUrl"
@@ -51,7 +58,7 @@ const getInitials = (name: string) =>
     </div>
 
     <div
-      class="absolute bottom-2 left-2 z-10 bg-black/50 backdrop-blur-sm text-xs px-2 py-1 rounded-md text-white flex items-center gap-1"
+      class="absolute bottom-2 left-2 z-10 bg-black/50 backdrop-blur-sm text-xs px-2 py-1 rounded-md ttext-foreground flex items-center gap-1"
     >
       <MonitorUp v-if="focusedTile.type === 'screen'" class="h-3 w-3" />
       {{ focusedTile.isLocal ? "Bạn" : focusedTile.userName }}
@@ -60,11 +67,28 @@ const getInitials = (name: string) =>
       >
     </div>
 
-    <button
-      @click="emit('minimize')"
-      class="absolute top-2 right-2 z-10 text-[10px] bg-black/50 hover:bg-black/70 text-white px-2 py-1 rounded-md transition-colors"
-    >
-      Thu nhỏ
-    </button>
+    <div class="absolute top-2 right-2 z-10 flex items-center gap-1">
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <button
+            class="backdrop-blur-sm rounded-md p-1 text-foreground transition-colors"
+          >
+            <MoreHorizontal class="h-5 w-5" />
+          </button>
+        </DropdownMenuTrigger>
+        <VoiceDropdownMenu
+          :item="focusedTile"
+          :is-admin="canManage"
+          @focus="emit('minimize')"
+        />
+      </DropdownMenu>
+
+      <button
+        @click="emit('minimize')"
+        class="text-[10px] bg-muted/50 hover:bg-muted/70 text-white px-2 py-1 rounded-md transition-colors"
+      >
+        Thu nhỏ
+      </button>
+    </div>
   </div>
 </template>

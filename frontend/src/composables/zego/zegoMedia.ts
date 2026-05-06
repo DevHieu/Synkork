@@ -82,6 +82,12 @@ export function zegoMedia(
     state.zg.sendCustomCommand(roomId, data, [userId]);
   };
 
+  const stopUserScreen = (roomId: string, userId: string) => {
+    if (!state.zg) return;
+    const data = JSON.stringify({ type: "STOP_SCREEN" });
+    state.zg.sendCustomCommand(roomId, data, [userId]);
+  };
+
   // Khi user từ giao diện call sang các space khác. Thì giao diện sẽ thay đổi -> các element, DOM cảu screen sẽ mất.
   // Vì zego render các cái thành phần stream bằng các id của element và mình đang làm khi publishStream mới thì mới tạo DOM -> zego mới render được
 
@@ -137,11 +143,12 @@ export function zegoMedia(
   return {
     muteMicro,
     muteAllRemoteAudio,
+    muteAudioUser,
     broadcastMediaState,
     requestMediaStates,
     replayAllStreamToDOM,
     roomMutedUserRequest,
     kickMember,
-    muteAudioUser,
+    stopUserScreen,
   };
 }

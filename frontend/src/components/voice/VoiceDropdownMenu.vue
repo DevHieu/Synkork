@@ -184,6 +184,13 @@ const handleMutePerson = (audioId: string | undefined) => {
         <DropdownMenuSeparator />
         <DropdownMenuItem
           class="gap-2 text-destructive focus:text-destructive"
+          @click="useVoiceSpaceStore().stopUserScreen(item.userID)"
+        >
+          <MonitorOff class="h-4 w-4" />
+          Dừng chia sẻ màn hình
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          class="gap-2 text-destructive focus:text-destructive"
           @click="handleKickUser(item.userID)"
         >
           <PhoneOff class="h-4 w-4" />

@@ -317,6 +317,11 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     zego.media.kickMember(currentSpaceId.value, userId);
   };
 
+  const stopUserScreen = (userId: string) => {
+    if (!zegoState.zg || !currentSpaceId.value) return;
+    zego.media.stopUserScreen(currentSpaceId.value, userId);
+  };
+
   // User A ko muốn nghe tiếng của User B -> Ý là vậy á. Mà ko biết đặt tên sao cho hợp lí
   const toggleAudioUser = (audioId: string) => {
     if (!zegoState.zg || !currentSpaceId.value) return;
@@ -355,6 +360,7 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     getAudioTracks,
     toggleMuteUser,
     kickMember,
+    stopUserScreen,
     toggleAudioUser,
   };
 });
