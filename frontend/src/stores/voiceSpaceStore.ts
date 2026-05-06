@@ -157,6 +157,7 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     currentSpaceId.value = null;
     isInRoom.value = false;
     videoOn.value = false;
+    screenOn.value = false;
     audioOn.value = true;
 
     zego.utils.playNotificationSound("leave");

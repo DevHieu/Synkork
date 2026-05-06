@@ -92,7 +92,7 @@ export function zegoLocalStream(
       state.localScreenStream = await state.zg.createZegoStream({
         videoBitrate: 1500,
         screen: {
-          audio: true,
+          audio: false,
           video: {
             quality: 4,
             frameRate: 15,
