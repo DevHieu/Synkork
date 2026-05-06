@@ -28,22 +28,22 @@ watch(() => props.show, (isOpen) => {
 
 <template>
   <div>
-    <label class="block text-sm text-gray-400 mb-1.5 font-medium">Người tham gia</label>
+    <label class="block text-sm text-muted-foreground mb-1.5 font-medium">Người tham gia</label>
     <div class="flex flex-col gap-2">
       <div class="flex gap-2">
         <input v-model="attendeeInput" @keyup.enter="addAttendee" @keydown.enter.prevent type="text"
           placeholder="Nhập email và ấn Enter hoặc nút thêm..."
-          class="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-all text-sm" />
+          class="flex-1 bg-muted border border-border rounded-lg px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm" />
         <button type="button" @click="addAttendee"
-          class="bg-white/10 text-white px-3 py-2 rounded-lg hover:bg-white/20 transition-all">
+          class="bg-muted text-foreground px-3 py-2 rounded-lg hover:bg-muted/80 transition-all">
           <Plus :size="16" />
         </button>
       </div>
       <div v-if="attendees.length > 0" class="flex flex-wrap gap-2 mt-1">
         <div v-for="(email, idx) in attendees" :key="idx"
-          class="flex items-center gap-1.5 bg-teal-500/20 text-teal-300 px-2 py-1 rounded-md text-xs border border-teal-500/20">
+          class="flex items-center gap-1.5 bg-primary/20 text-primary px-2 py-1 rounded-md text-xs border border-primary/20">
           <span>{{ email }}</span>
-          <button type="button" @click="removeAttendee(idx)" class="hover:text-white transition-colors">
+          <button type="button" @click="removeAttendee(idx)" class="hover:text-primary/80 transition-colors">
             <X :size="10" />
           </button>
         </div>

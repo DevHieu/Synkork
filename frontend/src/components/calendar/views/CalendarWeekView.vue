@@ -61,15 +61,15 @@ const isSelected = (date: dayjs.Dayjs) => date.isSame(props.selectedDate, "day")
           @click="emit('selectDate', date)"
           :class="[
             'text-center p-2 rounded-t-lg cursor-pointer transition-colors',
-            isToday(date) ? 'bg-teal-600/30' : 'bg-white/5',
-            isSelected(date) ? 'ring-1 ring-teal-500' : '',
+            isToday(date) ? 'bg-primary/20' : 'bg-muted',
+            isSelected(date) ? 'ring-1 ring-primary' : '',
           ]"
         >
-          <div class="text-xs text-gray-400">{{ dayNames[date.day()] }}</div>
+          <div class="text-xs text-muted-foreground">{{ dayNames[date.day()] }}</div>
           <div
             :class="[
               'text-lg font-bold',
-              isToday(date) ? 'text-teal-400' : 'text-white',
+              isToday(date) ? 'text-primary' : 'text-foreground',
             ]"
           >
             {{ date.date() }}
@@ -77,23 +77,23 @@ const isSelected = (date: dayjs.Dayjs) => date.isSame(props.selectedDate, "day")
         </div>
 
         <!-- Events List -->
-        <div class="flex-1 bg-white/5 rounded-b-lg p-1.5 space-y-1">
+        <div class="flex-1 bg-muted rounded-b-lg p-1.5 space-y-1">
           <div
             v-for="event in getEventsForDate(date)"
             :key="event.id"
             @click="emit('editEvent', event)"
-            class="bg-teal-600/20 rounded p-1.5 cursor-pointer hover:bg-teal-600/30 transition-colors border-l-2 border-teal-500"
+            class="bg-primary/20 rounded p-1.5 cursor-pointer hover:bg-primary/30 transition-colors border-l-2 border-primary"
           >
-            <p class="text-xs font-medium text-white truncate">
+            <p class="text-xs font-medium text-foreground truncate">
               {{ event.title }}
             </p>
-            <p class="text-xs text-teal-300">
+            <p class="text-xs text-primary">
               {{ event.startTime.substring(0, 5) }}
             </p>
           </div>
           <div
             v-if="getEventsForDate(date).length === 0"
-            class="text-center text-gray-600 text-xs mt-4"
+            class="text-center text-muted-foreground text-xs mt-4"
           >
             —
           </div>
@@ -106,7 +106,7 @@ const isSelected = (date: dayjs.Dayjs) => date.isSame(props.selectedDate, "day")
 <style scoped>
 .overflow-y-auto {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  scrollbar-color: var(--border) transparent;
 }
 .overflow-y-auto::-webkit-scrollbar {
   width: 4px;

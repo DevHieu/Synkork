@@ -61,12 +61,12 @@ const emit = defineEmits<{
     </div>
 
     <!-- Navigation Bar -->
-    <div class="nav-bar">
+    <div class="nav-bar ">
       <div class="flex items-center gap-2">
         <button @click="emit('goPrev')" class="nav-arrow-btn" :title="`${viewMode === 'week' ? 'Tuần' : viewMode === 'month' ? 'Tháng' : 'Năm'} trước`">
           <ChevronLeft :size="16" />
         </button>
-        <button @click="emit('goToday')" class="today-btn">
+        <button @click="emit('goToday')" class="today-btn text-foreground bg-primary ">
           {{ relativeTimeText }}
         </button>
         <button @click="emit('goNext')" class="nav-arrow-btn" :title="`${viewMode === 'week' ? 'Tuần' : viewMode === 'month' ? 'Tháng' : 'Năm'} sau`">
@@ -184,15 +184,10 @@ const emit = defineEmits<{
   font-weight: 500;
   border-radius: 0.5rem;
   min-width: 90px;
-  background: color-mix(in oklch, var(--secondary) 20%, transparent);
-  color: var(--secondary);
-  transition: background 0.15s;
+  color: var(--foreground);
   cursor: pointer;
-}
+} 
 
-.today-btn:hover {
-  background: color-mix(in oklch, var(--secondary) 30%, transparent);
-}
 
 .nav-title {
   font-size: 1.125rem;
