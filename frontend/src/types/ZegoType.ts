@@ -22,4 +22,6 @@ export interface ZegoServiceOptions {
   micOn: Ref<boolean>;
   audioOn: Ref<boolean>;
   screenOn: Ref<boolean>;
+  isMuted: Ref<boolean>;
+  isDeafen: Ref<boolean>;
 }
