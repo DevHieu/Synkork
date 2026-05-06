@@ -181,6 +181,11 @@ export function useZego({
             break;
           }
 
+          case "STOP_VIDEO": {
+            useVoiceSpaceStore().toggleVideo();
+            break;
+          }
+
           default:
             break;
         }

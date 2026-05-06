@@ -128,14 +128,6 @@ const handleMutePerson = (audioId: string | undefined) => {
           mutedList.has(item.audioId ?? "") ? "Bật âm thanh" : "Tắt âm thanh"
         }}
       </DropdownMenuItem>
-      <DropdownMenuItem
-        v-if="item.videoOn"
-        class="gap-2"
-        @click="toggleVideo()"
-      >
-        <VideoOff class="h-4 w-4" />
-        Tắt camera
-      </DropdownMenuItem>
       <template v-if="isAdmin">
         <DropdownMenuSeparator />
         <DropdownMenuItem
@@ -163,6 +155,14 @@ const handleMutePerson = (audioId: string | undefined) => {
           <ShieldOff v-if="item.deafen" class="h-4 w-4" />
           <VolumeX v-else class="h-4 w-4" />
           {{ item.deafen ? "Gỡ tắt âm thanh" : "Tắt âm thanh người này" }}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          v-if="item.videoOn"
+          class="gap-2 text-destructive focus:text-destructive"
+          @click="useVoiceSpaceStore().stopUserVideo(item.userID)"
+        >
+          <VideoOff class="h-4 w-4" />
+          Tắt camera người này
         </DropdownMenuItem>
         <DropdownMenuItem
           class="gap-2 text-destructive focus:text-destructive"
