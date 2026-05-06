@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
 public interface RoomRepository extends JpaRepository<RoomEntity, UUID> {
     List<RoomEntity> findAllByOwnerId(UUID userId);
 
-    @Query("SELECT r FROM RoomEntity r JOIN r.roomMembers roomMembers WHERE roomMembers.user.id = :userId ORDER BY roomMembers.joinedAt DESC")
+    @Query("SELECT r FROM RoomEntity r JOIN r.roomMembers roomMembers WHERE roomMembers.user.id = :userId AND r.type = 'GROUP' ORDER BY roomMembers.joinedAt DESC")
     List<RoomEntity> findRoomMembersJoined(@Param("userId") UUID userId);
 
     Optional<RoomEntity> findByInviteCode(String inviteCode);

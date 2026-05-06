@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.synkork.backend.modules.collaboration.task.dto.CardDTO;
+import com.synkork.backend.modules.collaboration.task.dto.CardMovePayload;
 import com.synkork.backend.modules.collaboration.task.dto.CardRequest;
 import com.synkork.backend.modules.collaboration.task.dto.MoveCardRequest;
 
@@ -74,12 +75,11 @@ public class CardController {
     }
 
     @PatchMapping("/{cardId}/move")
-    public ResponseEntity<Void> moveCard(@PathVariable String cardId, @PathVariable String spaceId, @RequestBody MoveCardRequest req){
+    public ResponseEntity<Void> moveCard(@PathVariable String cardId, @PathVariable String spaceId, @RequestBody MoveCardRequest req) {
         UUID cardUUID = UUID.fromString(cardId);
+        CardMovePayload payload = cardService.moveCard(cardUUID, req);
 
-        CardDTO movedCard = cardService.moveCard(cardUUID, req); 
-
-        messagingTemplate.convertAndSend("/topic/space/" + spaceId + "/card/move", movedCard);
+        messagingTemplate.convertAndSend("/topic/space/" + spaceId + "/card/move", payload);
 
         return ResponseEntity.noContent().build();
     }

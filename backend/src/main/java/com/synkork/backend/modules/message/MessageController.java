@@ -71,6 +71,18 @@ public class MessageController {
         return  ResponseEntity.ok(messages);
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<MessagePageDTO> searchMessages(
+            @PathVariable String spaceId,
+            @RequestParam String keyword,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "5") int limit
+    ) {
+        UUID spaceUUID = UUID.fromString(spaceId);
+        UUID cursorUUID = cursor != null ? UUID.fromString(cursor) : null;
+        return ResponseEntity.ok(messageService.searchMessages(spaceUUID, keyword, cursorUUID, limit));
+    }
+
     @PostMapping("/file")
     public ResponseEntity<?> createMessageFile(
             @RequestParam List<MultipartFile> fileList,
@@ -82,12 +94,8 @@ public class MessageController {
         UUID spaceUUID = UUID.fromString(spaceId);
         UUID replyToUUID = replyToId != null ? UUID.fromString(replyToId) : null;
 
-        List<MessageDTO> messages = messageService.sendFileMessage(spaceUUID, userPrinciple.getId(), replyToUUID, fileList);
-
-        // Broadcast từng message qua socket
-        messages.forEach(msg -> {
-            messagingTemplate.convertAndSend("/topic/space/" + spaceId + "/messages", msg);
-        });
+        messageService.sendFileMessage(spaceUUID, userPrinciple.getId(), replyToUUID, fileList);
+        // Broadcast file trong service luôn
 
         return ResponseEntity.ok().build();
     }

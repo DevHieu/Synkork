@@ -75,25 +75,20 @@ const jumpToReply = () => {
   messageStore.jumpToMessage(props.message.spaceId, props.message.replyTo.id);
 };
 
-const openAttachment = async () => {
-  if (!props.message.attachmentUrl) return;
-  if (props.message.type === "FILE") {
-    const res = await fetch(props.message.attachmentUrl);
-    const blob = await res.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = blobUrl;
-    a.download = props.message.attachmentName ?? "file";
-    a.click();
-    URL.revokeObjectURL(blobUrl);
-  } else {
-    window.open(props.message.attachmentUrl, "_blank");
-  }
-};
-
 const deleteFailedMessage = () => {
   messageStore.dismissFailedMessage([props.message.id]);
 };
+
+// Tách nội dung tin nhắn thành các phần text và link để hiển thị đúng
+const parsedContent = computed(() => {
+  if (!props.message.content) return [];
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = props.message.content.split(urlRegex);
+  return parts.map((part) => ({
+    text: part,
+    isLink: /^https?:\/\/[^\s]+$/.test(part),
+  }));
+});
 </script>
 
 <template>
@@ -231,7 +226,19 @@ const deleteFailedMessage = () => {
 
         <template v-else>
           <div v-if="props.message.content">
-            <span class="text-foreground/90">{{ props.message.content }}</span>
+            <!-- Check xem tin nhắn có chứa link trong đấy ko -->
+            <template v-for="(part, i) in parsedContent" :key="i">
+              <a
+                v-if="part.isLink"
+                :href="part.text"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-primary underline underline-offset-2 hover:text-primary/80 break-all"
+                >{{ part.text }}
+              </a>
+              <span v-else class="text-foreground/90">{{ part.text }}</span>
+            </template>
+
             <span
               v-if="props.message.edited"
               class="text-[10px] text-muted-foreground ml-1"
@@ -244,7 +251,6 @@ const deleteFailedMessage = () => {
             :type="props.message.type"
             :attachment-url="props.message.attachmentUrl"
             :attachment-name="props.message.attachmentName"
-            @open="openAttachment"
           />
         </template>
       </div>

@@ -37,7 +37,7 @@ public class RoomEntity extends BaseEntity {
     private String inviteCode;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id", columnDefinition = "BINARY(16)")
+    @JoinColumn(name = "owner_id", columnDefinition = "BINARY(16)", nullable = true)
     private UserEntity owner;
 
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL)

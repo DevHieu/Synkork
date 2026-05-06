@@ -25,3 +25,18 @@ export const kickMember = async (memberId: string, roomId: string) => {
 
   return res.data;
 };
+
+export const muteAudio = async (
+  roomId: string,
+  memberId: string,
+  payload: { muted: boolean | null; deafen: boolean | null },
+) => {
+  console.log("Service");
+
+  const res = await axiosClient.patch(
+    `/api/rooms/${roomId}/members/${memberId}/mute`,
+    payload,
+  );
+
+  return res;
+};

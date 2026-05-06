@@ -8,8 +8,11 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(
@@ -22,7 +25,9 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class FriendRequestEntity extends BaseEntity {
+public class FriendRequestEntity extends BaseEntity {  // ← extends BaseEntity
+
+    // Xóa id, createdAt, updatedAt — đã có trong BaseEntity
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sender_id", nullable = false)
@@ -33,6 +38,7 @@ public class FriendRequestEntity extends BaseEntity {
     private UserEntity receiver;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private FriendRequestStatus status;
 
     @Column(columnDefinition = "TEXT")

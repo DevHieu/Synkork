@@ -5,7 +5,7 @@ import com.synkork.backend.modules.room.dto.RoomDto;
 import com.synkork.backend.modules.room.dto.RoomReviewResponse;
 import com.synkork.backend.modules.roomMember.RoomMemberService;
 import com.synkork.backend.modules.space.SpaceService;
-import com.synkork.backend.modules.space.dto.CreateSpaceDto;
+import com.synkork.backend.modules.space.dto.CreateSpaceRequest;
 import com.synkork.backend.security.UserPrinciple;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.transaction.Transactional;
@@ -49,7 +49,7 @@ public class RoomController {
                     "OWNER"
             );
 
-            CreateSpaceDto space = new CreateSpaceDto("Chung", "CHAT");
+            CreateSpaceRequest space = new CreateSpaceRequest("Chung", "CHAT");
 
             spaceService.createSpace(space, roomEntity.getId());
 

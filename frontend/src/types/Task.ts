@@ -31,3 +31,11 @@ export interface TaskMoveEvent {
     oldIndex: number;
   };
 }
+
+// Thêm type
+export interface CardMovePayload {
+    targetColumnId: string
+    sourceColumnId: string | null
+    targetCards: CardEvent[]
+    sourceCards: CardEvent[] | null
+}

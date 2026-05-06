@@ -5,10 +5,14 @@ import com.synkork.backend.common.utils.FileService;
 import com.synkork.backend.modules.room.dto.CreateRoomDto;
 import com.synkork.backend.modules.room.dto.RoomDto;
 import com.synkork.backend.modules.room.dto.RoomReviewResponse;
+import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
 import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
 import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
+import com.synkork.backend.modules.space.SpaceEntity;
+import com.synkork.backend.modules.space.SpaceService;
+import com.synkork.backend.modules.space.dto.CreateSpaceRequest;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +42,8 @@ public class RoomService {
 
     @Autowired
     SimpMessagingTemplate messagingTemplate;
+    @Autowired
+    private SpaceService spaceService;
 
     private String generateInviteCode() {
         String chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -133,5 +139,16 @@ public class RoomService {
         return room.getInviteCode();
     }
 
+    public UUID createDMRoom(UserEntity sender, UserEntity receiver) {
+        RoomEntity room = new RoomEntity();
+        room.setType(RoomTypeEnum.DM);
+        RoomEntity roomSaved = roomRepository.save(room);
 
+        roomMemberRepository.save(RoomMemberEntity.builder().id(null).room(room).user(sender).build());
+        roomMemberRepository.save(RoomMemberEntity.builder().id(null).room(room).user(receiver).build());
+
+        SpaceEntity space = spaceService.createSpace(new CreateSpaceRequest("DM", "CHAT"), roomSaved.getId());
+
+        return space.getId();
+    }
 }

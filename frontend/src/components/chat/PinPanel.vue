@@ -2,7 +2,7 @@
 import { ref, computed } from "vue";
 import { storeToRefs } from "pinia";
 import { useMessageStore } from "@/stores/messageStore";
-import { Pin } from "lucide-vue-next";
+import { Pin, Search } from "lucide-vue-next";
 
 const props = defineProps<{
   spaceId: string;
@@ -17,7 +17,7 @@ const filtered = computed(() => {
   if (!searchQuery.value.trim()) return pinnedMessages.value;
   const q = searchQuery.value.toLowerCase();
   return pinnedMessages.value.filter((m) =>
-    m.content.toLowerCase().includes(q),
+    m.content?.toLowerCase().includes(q),
   );
 });
 
@@ -56,16 +56,7 @@ const loadMore = async () => {
         class="flex items-center gap-1.5 rounded-md px-2.5 h-7 bg-background/60 border"
         style="border-color: var(--border)"
       >
-        <svg
-          class="w-3 h-3 shrink-0 text-muted-foreground"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          viewBox="0 0 24 24"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
+        <Search class="w-3.5 h-3.5 text-foreground" />
         <input
           v-model="searchQuery"
           placeholder="Tìm trong ghim..."
@@ -153,7 +144,11 @@ const loadMore = async () => {
           <p
             class="text-[13px] text-muted-foreground leading-relaxed line-clamp-3 group-hover:text-foreground transition-colors"
           >
-            {{ msg.content }}
+            {{
+              msg.content
+                ? msg.content
+                : (msg.attachmentName ?? "Tin nhắn không có nội dung")
+            }}
           </p>
 
           <!-- Unpin -->

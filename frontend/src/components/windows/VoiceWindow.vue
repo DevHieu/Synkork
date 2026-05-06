@@ -13,7 +13,7 @@ import ControlBar from "../voice/ControlBar.vue";
 import VoiceHeader from "../voice/VoiceHeader.vue";
 
 const route = useRoute();
-const spaceId = route.params.spaceId as string;
+const spaceId = ref(route.params.spaceId as string);
 
 const voiceSpaceStore = useVoiceSpaceStore();
 const { participantList } = storeToRefs(voiceSpaceStore);
@@ -37,6 +37,8 @@ const voiceList = computed((): VoiceItemType[] => {
       videoOn: false,
       micOn: true,
       audioOn: true,
+      muted: p.muted,
+      deafen: p.deafen,
     }));
 
   const participants = participantList.value.map((p) => ({
@@ -48,6 +50,8 @@ const voiceList = computed((): VoiceItemType[] => {
     videoOn: p.videoOn,
     micOn: p.micOn,
     audioOn: p.audioOn,
+    muted: p.muted,
+    deafen: p.deafen,
   }));
 
   // Xếp screen lên trước để ưu tiên screen sẽ ưu tiên hiện trước
@@ -130,7 +134,9 @@ const handleStreamReady = (e: Event) => {
   if (!tile) return;
 
   nextTick(() => {
-    syncVideoToItem(containerId, itemRefs.value[tile.id]);
+    const el = itemRefs.value[tile.id];
+    if (!el) return;
+    syncVideoToItem(containerId, el);
   });
 };
 
@@ -145,11 +151,14 @@ const getVideoContainerId = (item: VoiceItemType) => {
 onMounted(async () => {
   window.addEventListener("zego:stream-ready", handleStreamReady);
 
-  if (voiceSpaceStore.isInRoom && voiceSpaceStore.currentSpaceId === spaceId) {
+  if (
+    voiceSpaceStore.isInRoom &&
+    voiceSpaceStore.currentSpaceId === spaceId.value
+  ) {
     await voiceSpaceStore.replayAllStreamsToDOM();
     syncAll();
   } else {
-    await voiceSpaceStore.joinRoom(spaceId);
+    await voiceSpaceStore.joinRoom(spaceId.value);
   }
 });
 
@@ -162,7 +171,7 @@ onUnmounted(() => {
 // Khi relooad trang lúc đang ở voice space -> Vừa vào khi user được fetch dữ liệu xong sẽ tự động join vào
 watch(user, async (newUser) => {
   if (newUser && !voiceSpaceStore.isInRoom)
-    await voiceSpaceStore.joinRoom(spaceId);
+    await voiceSpaceStore.joinRoom(spaceId.value);
 });
 
 // Đổi phòng khác thì set mấy cái này về null

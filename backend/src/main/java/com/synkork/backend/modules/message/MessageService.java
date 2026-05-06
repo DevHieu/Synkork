@@ -11,6 +11,7 @@ import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
 import com.synkork.backend.modules.space.SpaceEntity;
 import com.synkork.backend.modules.space.SpaceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,12 +26,14 @@ public class MessageService {
 
     @Autowired
     MessageRepository messageRepository;
-
     @Autowired
     SpaceRepository spaceRepository;
 
     @Autowired
     private RoomMemberRepository roomMemberRepository;
+
+    @Autowired
+    private SimpMessagingTemplate simpMessagingTemplate;
 
     public MessagePageDTO getMessagesBySpaceId(UUID spaceId, UUID cursor, boolean isUp, int limit) {
         if (cursor == null) {
@@ -156,6 +159,18 @@ public class MessageService {
         return returnPageDto(pinnedList, nextCursor, null, hasMore, false); // Danh sách pin ko cần làm infinite scroll 2 chiều nên cho before là null luôn
     }
 
+    public MessagePageDTO searchMessages(UUID spaceId, String keyword, UUID cursor, int limit) {
+        List<MessageDTO> messages = cursor == null
+                ? messageRepository.searchFirstPage(spaceId, keyword, limit + 1)
+                : messageRepository.searchNextPage(spaceId, keyword, cursor, limit + 1);
+
+        boolean hasMore = messages.size() > limit;
+        if (hasMore) messages = messages.subList(0, limit);
+        UUID beforeCursor = hasMore ? messages.getLast().getId() : null;
+
+        return returnPageDto(messages, beforeCursor, null, hasMore, false);
+    }
+
     public MessagePageDTO findAround(UUID spaceUUID, UUID messageUUID, int limit) {
 
         List<MessageEntity> before = messageRepository.findBeforeMessage(spaceUUID, messageUUID, limit + 1);
@@ -214,7 +229,7 @@ public class MessageService {
     }
 
 
-    public List<MessageDTO> sendFileMessage(UUID spaceId, UUID userId, UUID replyToId, List<MultipartFile> fileList) {
+    public void sendFileMessage(UUID spaceId, UUID userId, UUID replyToId, List<MultipartFile> fileList) {
         SpaceEntity space = spaceRepository.findById(spaceId).orElseThrow();
         MessageEntity replyTo = replyToId != null ? messageRepository.findById(replyToId).orElse(null) : null;
 
@@ -222,9 +237,7 @@ public class MessageService {
                 .findByUserIdAndRoom_IdWithUser(userId, space.getRoom().getId())
                 .orElseThrow(() -> new IllegalArgumentException("User is not a member of this room"));
 
-        List<MessageDTO> result = new ArrayList<>();
-
-        // Gửi từng file message, không có content, không có replyTo
+        // Gửi từng file message
         for (MultipartFile file : fileList) {
             boolean isImage = file.getContentType() != null && file.getContentType().startsWith("image/");
             FileUploaded uploaded = isImage
@@ -242,9 +255,10 @@ public class MessageService {
             fileMessage.setAttachmentName(uploaded.originalName());
             fileMessage.setReplyTo(replyTo);
 
-            result.add(new MessageDTO(messageRepository.save(fileMessage)));
-        }
+            MessageDTO dto = new MessageDTO(messageRepository.save(fileMessage));
 
-        return result;
+            simpMessagingTemplate.convertAndSend("/topic/space/" + spaceId + "/messages", dto);
+        }
     }
+
 }

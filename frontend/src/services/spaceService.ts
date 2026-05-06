@@ -10,6 +10,31 @@ export const createSpace = async (roomId: string, spaceData: {}) => {
   return res.data;
 };
 
+export const getSpaceById = async (spaceId: string) => {
+  // Cái roomId đang để null vì cái hàm này chỉ dùng để join DM space, mà DM space thì không có roomId, Nên để vậy luôn
+  const res = await axiosClient.get(`/api/rooms/null/spaces/${spaceId}`);
+  return res.data;
+};
+
+export const updateSpace = async (
+  roomId: string,
+  spaceId: string,
+  spaceData: {},
+) => {
+  const res = await axiosClient.put(
+    `/api/rooms/${roomId}/spaces/${spaceId}`,
+    spaceData,
+  );
+  return res.data;
+};
+
+export const deleteSpace = async (roomId: string, spaceId: string) => {
+  const res = await axiosClient.delete(
+    `/api/rooms/${roomId}/spaces/${spaceId}`,
+  );
+  return res.data;
+};
+
 export const getZegoToken = async (userId: string) => {
   const res = await axiosClient.get(`/api/zego/token/${userId}`);
   console.log("token: " + res.data);

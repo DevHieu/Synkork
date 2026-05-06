@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.roomMember;
 
 import com.synkork.backend.modules.roomMember.dto.ChangeAuthorityDTO;
+import com.synkork.backend.modules.roomMember.dto.MuteRequest;
 import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
 import com.synkork.backend.security.UserPrinciple;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,5 +65,13 @@ public class RoomMemberController {
         messagingTemplate.convertAndSendToUser(targetEmail, "/queue/kick", roomId);
 
         return  ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{memberId}/mute")
+    public ResponseEntity<Void> muteRoomMembers(@PathVariable String roomId, @PathVariable String memberId, @RequestBody MuteRequest muteRequest) {
+
+        roomMemberService.toogleMuteMembers(roomId, memberId, muteRequest);
+
+        return ResponseEntity.ok().build();
     }
 }

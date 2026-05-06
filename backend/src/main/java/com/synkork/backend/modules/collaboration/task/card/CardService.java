@@ -12,12 +12,12 @@ import org.springframework.stereotype.Service;
 import com.synkork.backend.modules.collaboration.task.column.ColumnEntity;
 import com.synkork.backend.modules.collaboration.task.column.ColumnRepository;
 import com.synkork.backend.modules.collaboration.task.dto.CardDTO;
+import com.synkork.backend.modules.collaboration.task.dto.CardMovePayload;
 import com.synkork.backend.modules.collaboration.task.dto.CardRequest;
 import com.synkork.backend.modules.collaboration.task.dto.MoveCardRequest;
 import com.synkork.backend.modules.user.UserRepository;
 
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 
 @Service
 public class CardService {
@@ -92,16 +92,17 @@ public class CardService {
     }
 
     @Transactional
-    public CardDTO moveCard(UUID cardId, MoveCardRequest req) {
-
+    public CardMovePayload moveCard(UUID cardId, MoveCardRequest req) {
         CardEntity card = cardRepository.findById(cardId)
             .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
             
         ColumnEntity oldCol = card.getColumn();
         ColumnEntity newCol = columnRepository.findById(req.getTargetColumnId())
-        .orElseThrow(() -> new RuntimeException("Cột đích không tồn tại"));
+            .orElseThrow(() -> new RuntimeException("Cột đích không tồn tại"));
 
-        if(oldCol.getId().equals(req.getTargetColumnId())){
+        boolean isSameColumn = oldCol.getId().equals(req.getTargetColumnId());
+
+        if (isSameColumn) {
             handleSameColumnMove(newCol, card, req.getNewPosition());
         } else {
             handleCrossColumnMove(oldCol, newCol, card, req.getNewPosition());
@@ -109,10 +110,23 @@ public class CardService {
 
         card.setColumn(newCol);
         card.setPosition(req.getNewPosition());
-
         cardRepository.save(card);
-        
-        return new CardDTO(card);
+        cardRepository.flush();
+
+        List<CardDTO> targetCards = cardRepository
+            .findByColumn_IdOrderByPositionAsc(newCol.getId())
+            .stream().map(CardDTO::new).toList();
+
+        List<CardDTO> sourceCards = null;
+        UUID sourceColumnId = null;
+        if (!isSameColumn) {
+            sourceColumnId = oldCol.getId();
+            sourceCards = cardRepository
+                .findByColumn_IdOrderByPositionAsc(oldCol.getId())
+                .stream().map(CardDTO::new).toList();
+        }
+
+        return new CardMovePayload(newCol.getId(), sourceColumnId, targetCards, sourceCards);
     }
 
     private void handleSameColumnMove(ColumnEntity column, CardEntity card, int newPosition) {

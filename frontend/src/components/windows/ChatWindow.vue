@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from "vue";
+import { ref, watch, onMounted, onUnmounted, computed } from "vue";
 import { chatSocket } from "@/services/websocket/chatSocket";
 import { useRoute } from "vue-router";
 import { useSpaceStore } from "@/stores/spaceStore";
 import { useMessageStore } from "@/stores/messageStore";
+import { useFriendStore } from "@/stores/friendStore";
 import { storeToRefs } from "pinia";
 
 import ChatHeader from "@/components/chat/ChatHeader.vue";
@@ -22,6 +23,16 @@ const messageStore = useMessageStore();
 const { messages, beforeHasMore, afterHasMore, replyingTo } =
   storeToRefs(messageStore);
 
+const friendStore = useFriendStore();
+const dmFriend = computed(() => {
+  if (!isDM.value) return null;
+  return (
+    friendStore.friends.find(
+      (f) => f.conversationId === currentSpace.value?.id,
+    ) ?? null
+  );
+});
+
 const memberOpen = ref(true);
 const toggleMembers = () => {
   memberOpen.value = !memberOpen.value;
@@ -33,6 +44,8 @@ const togglePins = () => {
   pinOpen.value = !pinOpen.value;
   memberOpen.value = false;
 };
+
+const isDM = computed(() => currentSpace.value?.roomType === "DM");
 
 onMounted(() => {
   if (currentSpace.value?.id) {
@@ -67,8 +80,11 @@ watch(currentSpace, (space, prevSpace) => {
   <div class="flex flex-col h-screen overflow-hidden">
     <ChatHeader
       :space-name="currentSpace?.name ?? ''"
+      :space-id="spaceId"
       :member-open="memberOpen"
       :pin-open="pinOpen"
+      :dm-friend="dmFriend"
+      :is-dm="isDM"
       @toggle-members="toggleMembers"
       @toggle-pins="togglePins"
       @search="(q) => console.log('search:', q)"
@@ -83,6 +99,8 @@ watch(currentSpace, (space, prevSpace) => {
           :afterHasMore="afterHasMore"
           :spaceId="currentSpace?.id ?? ''"
           :space-name="currentSpace?.name ?? ''"
+          :is-dm="isDM"
+          :friendName="dmFriend?.name"
         />
         <MessageInput
           :spaceId="currentSpace?.id ?? ''"
@@ -103,6 +121,7 @@ watch(currentSpace, (space, prevSpace) => {
 
       <!-- Member Sidebar -->
       <div
+        v-if="!isDM"
         class="flex-none border-l h-full overflow-hidden transition-all duration-300 ease-in-out"
         :style="{
           width: memberOpen ? '250px' : '0px',

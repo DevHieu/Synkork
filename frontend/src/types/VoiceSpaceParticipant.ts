@@ -9,6 +9,8 @@ export interface Participant {
   screenOn: boolean;
   isLocal: boolean;
   avatarUrl?: string;
+  muted: boolean;
+  deafen: boolean;
 }
 
 export interface VoiceItemType {
@@ -20,4 +22,6 @@ export interface VoiceItemType {
   videoOn: boolean;
   micOn: boolean;
   audioOn: boolean;
+  muted: boolean;
+  deafen: boolean;
 }
