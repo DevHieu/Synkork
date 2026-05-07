@@ -59,6 +59,7 @@ const emit = defineEmits<{
         
                 <TaskCard
                     :card="card"
+                    :column-name="column.name"
                     @edit="emit('editCard', column.id, card)"
                     @delete="emit('deleteCard', column.id, card.id)"
                 />

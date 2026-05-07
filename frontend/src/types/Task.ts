@@ -7,6 +7,7 @@ export interface CardEvent {
   createdAt?: string;
   date?: string;
   user?: { name: string };
+  
 }
 
 export interface ColumnEvent {

@@ -15,7 +15,7 @@ import CardDetailDialog from '@/components/dialog/task/CardDetailDialog.vue'
 
 const targetCard = ref<CardEvent | null>(null)
 
-const props = defineProps<{ card: CardEvent }>()
+const props = defineProps<{ card: CardEvent, columnName: string }>()
 
 const emit = defineEmits<{
     edit: [card: CardEvent]
@@ -27,16 +27,15 @@ const { currentSpace } = storeToRefs(spaceStore);
 const isCardDetailOpen = ref(false)
 
 const openDetail = () => {
-    targetCard.value= props.card
     isCardDetailOpen.value = true
 }
 
-const saveInDetail = async (data: { title: string, description: string }) => {
+const saveInDetail = async (updatedCard: CardEvent ) => {
     try {
         const payload = {
             columnId: props.card.columnId,
-            title: data.title,
-            description: data.description,
+            title: updatedCard.title,
+            description: updatedCard.description,
         }
         await updateCard(currentSpace.value.id, props.card.id, payload)
    
@@ -82,5 +81,5 @@ const saveInDetail = async (data: { title: string, description: string }) => {
         </div>
     </Card>
 
-    <CardDetailDialog v-model:open="isCardDetailOpen" :card="targetCard" @save="saveInDetail"/>
+    <CardDetailDialog v-model:open="isCardDetailOpen" :card="props.card" @save="saveInDetail" :column-name="props.columnName"/>
 </template>
