@@ -3,6 +3,7 @@ package com.synkork.backend.modules.auth;
 import com.synkork.backend.modules.auth.dto.LoginRequest;
 import com.synkork.backend.modules.auth.dto.RegisterRequest;
 import com.synkork.backend.modules.auth.dto.ResetPasswordRequest;
+import com.synkork.backend.modules.user.enums.RoleEnum;
 import com.synkork.backend.modules.verification.VerificationService;
 import com.synkork.backend.security.JwtService;
 import jakarta.servlet.http.Cookie;
@@ -72,11 +73,12 @@ public class AuthController {
                                                HttpServletResponse response) {
         String username = jwtService.extractUserName(refreshToken);
         String userId = jwtService.extractClaim(refreshToken, claims -> claims.get("userId", String.class));
+        RoleEnum role = jwtService.extractClaim(refreshToken, claims -> claims.get("role", RoleEnum.class));
         if (username != null && jwtService.validateRefreshToken(refreshToken)) {
             System.out.println("generating");
-            String newAccessToken = jwtService.generateToken(userId, username, "ACCESS");
+            String newAccessToken = jwtService.generateToken(userId, username, role, "ACCESS");
 
-            String newRefreshToken = jwtService.generateToken(userId, username, "REFRESH");
+            String newRefreshToken = jwtService.generateToken(userId, username, role, "REFRESH");
 
             jwtService.saveRefreshToken(newRefreshToken, response);
 
