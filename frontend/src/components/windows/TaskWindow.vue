@@ -8,7 +8,7 @@ import { taskSocket } from '@/services/websocket/taskSocket'
 import { getAllColumns, createColumn, updateColumn, deleteColumn, moveColumn } from '@/services/task/columnService'
 import { createCard, updateCard, deleteCard, moveCard } from '@/services/task/cardService'
 import { useSpaceStore } from "@/stores/spaceStore";
-// import { useUserStore } from '@/stores/userStore'
+import { useUserStore } from '@/stores/userStore'
 import { storeToRefs } from "pinia";
 import { socketService } from '@/services/websocket/socketService';
 import type { CardEvent, ColumnEvent, TaskMoveEvent, CardMovePayload } from "@/types/Task";
@@ -28,8 +28,8 @@ const spaceId = route.params.spaceId as string;
 
 const spaceStore = useSpaceStore();
 const { currentSpace } = storeToRefs(spaceStore);
-// const userStore = useUserStore();
-// const { user } = storeToRefs(userStore);
+const userStore = useUserStore();
+const { user } = storeToRefs(userStore);
 
 const isColumnDialogOpen = ref(false)
 const editingCol = ref<ColumnEvent | null>(null)
@@ -138,6 +138,11 @@ const handleSaveCard = async (data: { title: string, description: string }) => {
             columnId: targetColumnId.value,
             title: data.title,
             description: data.description,
+            createdBy: {          
+                id: user.value.id,
+                name: user.value.name,
+                avatar: user.value.avatar ?? null
+            }
         }
 
         if (editingCard.value) {

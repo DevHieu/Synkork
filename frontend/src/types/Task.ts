@@ -5,9 +5,16 @@ export interface CardEvent {
   columnId: string;
   position: number;
   createdAt?: string;
-  date?: string;
-  user?: { name: string };
   
+  createdBy: UserSummary 
+  assignees: UserSummary[] 
+  
+}
+
+export interface UserSummary {
+  id: string
+  name: string
+  avatar: string | null
 }
 
 export interface ColumnEvent {

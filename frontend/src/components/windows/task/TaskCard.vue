@@ -44,7 +44,17 @@ const saveInDetail = async (updatedCard: CardEvent ) => {
     }
 }
 
-
+const getInitials = (name: string | undefined) => {
+  if (!name) return '?'
+  
+  const parts = name.trim().split(' ')
+  if (parts.length === 1) {
+    return parts[0].substring(0, 2).toUpperCase() // Trả về 2 chữ đầu nếu tên chỉ có 1 từ
+  }
+  
+  // Lấy chữ cái đầu của từ đầu tiên và từ cuối cùng
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
 </script>
 
 <template>
@@ -57,10 +67,10 @@ const saveInDetail = async (updatedCard: CardEvent ) => {
             <p class="text-slate-500 text-xs line-clamp-2">{{ card.description }}</p>
             <div class="flex justify-between items-center mt-2">
                 <div class="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center text-[10px] font-bold text-orange-600">
-                    {{ card.user?.name || 'V' }}
+                    {{ getInitials(card.createdBy?.name) }}
                 </div>
                 <span class="text-[10px] text-slate-400 font-medium">
-                    {{ card.createdAt || card.date }}
+                    {{ card.createdBy?.name ?? 'Không rõ' }}
                 </span>
             </div>
         </div>
