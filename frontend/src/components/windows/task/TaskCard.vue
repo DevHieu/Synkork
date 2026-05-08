@@ -13,13 +13,12 @@ import { updateCard } from '@/services/task/cardService'
 
 import CardDetailDialog from '@/components/dialog/task/CardDetailDialog.vue'
 
-const targetCard = ref<CardEvent | null>(null)
-
 const props = defineProps<{ card: CardEvent, columnName: string }>()
 
 const emit = defineEmits<{
     edit: [card: CardEvent]
     delete: [cardId: string]
+    deleteInDetail: [cardId: string]
 }>()
 
 const spaceStore = useSpaceStore();
@@ -63,25 +62,42 @@ const getInitials = (name: string | undefined) => {
         @click="openDetail"
     >
         <div class="flex flex-col gap-2">
-            <p class="font-bold text-sm pr-10">{{ card.title }}</p>
-            <p class="text-slate-500 text-xs line-clamp-2">{{ card.description }}</p>
+            <div class="pr-10">
+                <h3 class="font-bold text-sm leading-tight text-foreground break-words">
+                    {{ card.title }}
+                </h3>
+            </div>
+            <p v-if="card.description" class="text-slate-500 text-xs line-clamp-2 leading-relaxed">
+                {{ card.description }}
+            </p>
             <div class="flex justify-between items-center mt-2">
-                <div class="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center text-[10px] font-bold text-orange-600">
+                <div :title="card.createdBy?.name" 
+                    class="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center text-[10px] font-bold text-orange-600 cursor-pointer">
                     {{ getInitials(card.createdBy?.name) }}
                 </div>
                 <span class="text-[10px] text-slate-400 font-medium">
-                    {{ card.createdBy?.name ?? 'Không rõ' }}
+                    {{
+                        card.createdAt
+                            ? new Date(card.createdAt).toLocaleString('vi-VN', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            })
+                            : 'Không rõ'
+                    }}
                 </span>
             </div>
         </div>
 
         <div class="absolute top-3 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button
+            <!-- <Button
                 variant="ghost" size="icon" class="h-6 w-6"
                 @click.stop="emit('edit', card)"
             >
                 <Pencil class="w-3 h-3" />
-            </Button>
+            </Button> -->
             <Button
                 variant="ghost" size="icon" class="h-6 w-6 text-red-400"
                 @click.stop="emit('delete', card.id)"
@@ -91,5 +107,5 @@ const getInitials = (name: string | undefined) => {
         </div>
     </Card>
 
-    <CardDetailDialog v-model:open="isCardDetailOpen" :card="props.card" @save="saveInDetail" :column-name="props.columnName"/>
+    <CardDetailDialog v-model:open="isCardDetailOpen" :card="props.card" @save="saveInDetail" :column-name="props.columnName" @delete="emit('deleteInDetail', card.id)"/>
 </template>

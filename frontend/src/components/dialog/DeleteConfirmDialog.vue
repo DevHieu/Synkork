@@ -38,7 +38,7 @@ const handleConfirm = () => {
 <template>
   <Dialog :open="open" 
   @update:open="(val) => emit('update:open', val)">
-    <DialogContent class="sm:max-w-md">
+    <DialogContent class="sm:max-w-md z-[9999]">
       <DialogHeader class="flex flex-col items-center gap-3">
         <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
           <AlertTriangle class="w-6 h-6 text-red-500" />

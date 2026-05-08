@@ -1,11 +1,20 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Calendar as CalendarIcon, UserPlus, Trash2, AlignLeft, CreditCard } from 'lucide-vue-next'
+import { 
+  Calendar as CalendarIcon, 
+  UserPlus, 
+  Trash2, 
+  AlignLeft, 
+  CreditCard,
+  X,
+  Settings2,
+  Clock
+} from 'lucide-vue-next'
 import type { CardEvent } from '@/types/Task'
 
 const props = defineProps<{
@@ -39,93 +48,93 @@ const saveDescription = () => {
 const handleTitleKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
 }
-
 </script>
 
 <template>
   <Dialog :open="open" @update:open="$emit('update:open', $event)">
-    <DialogContent class="max-w-[768px] p-0 gap-0 overflow-hidden border-border shadow-2xl bg-background text-foreground">
+    <DialogContent class="max-w-2xl p-0 overflow-hidden border-none shadow-2xl bg-background rounded-xl">
       
-      <div class="px-6 py-5 bg-card dark:bg-muted/20 border-b border-border transition-colors">
-        <div class="flex gap-4 items-start me-2">
-          <CreditCard class="mt-1.5 text-muted-foreground" :size="20" />
-          <div class="flex-1">
-            <input 
-              v-model="form.title"
-              class="w-full text-xl font-bold bg-transparent border-2 border-transparent rounded-md px-1 -ml-1 focus:border-primary focus:bg-background/50 transition-all outline-none"
-              @blur="saveTitle" 
-              @keydown="handleTitleKeydown"
-            />
-            <p class="text-sm text-muted-foreground mt-1 px-1 font-medium">
-              Trong danh sách <span class="underline cursor-pointer hover:text-primary transition-colors">{{ columnName ?? ' ' }}</span>
-            </p>
-          </div>
+      <div class="flex items-center justify-between px-6 py-3 bg-muted/20 border-b border-border/50">
+        <div class="flex items-center gap-2 text-muted-foreground">
+          <CreditCard :size="16" />
+          <span class="text-xs font-medium uppercase tracking-wider">Chi tiết thẻ</span>
         </div>
+        <Button 
+          variant="ghost" 
+          size="sm"
+          @click.stop="emit('delete', card)" 
+          class="h-8 text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors mr-5"
+        >
+          <Trash2 :size="14" class="mr-1" />
+          <span class="text-xs">Xóa thẻ</span>
+        </Button>
       </div>
 
-      <div class="p-6 grid grid-cols-1 md:grid-cols-[1fr_180px] gap-8 bg-background">
-        
-        <div class="space-y-6">
-          <div class="flex flex-col gap-3">
-            <Label class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground ml-9">Thành viên</Label>
-            <div class="flex items-center gap-2 ml-9">
-              <Avatar class="h-8 w-8 ring-2 ring-background shadow-sm">
-                <AvatarFallback class="text-[10px] bg-primary text-primary-foreground font-bold">JD</AvatarFallback>
-              </Avatar>
-              <Button variant="secondary" size="icon" class="h-8 w-8 rounded-full bg-secondary text-secondary-foreground hover:opacity-80">
-                <UserPlus :size="14" />
-              </Button>
-            </div>
-          </div>
-
-          <div class="flex flex-col gap-3">
-            <Label class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground ml-9">Hạn hoàn thành</Label>
-            <div class="ml-9 flex items-center">
-               <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-secondary/30 text-xs font-semibold text-foreground border border-border cursor-pointer hover:bg-secondary/50 transition-colors">
-                  <CalendarIcon :size="14" class="text-primary" />
-                  Chưa thiết lập
-               </span>
-            </div>
-          </div>
-
-          <div class="flex flex-col gap-3 pt-2">
-            <div class="flex items-center gap-3">
-              <AlignLeft :size="20" class="text-muted-foreground" />
-              <Label class="text-base font-bold">Mô tả</Label>
-            </div>
-            <div class="ml-8">
-              <Textarea 
-                v-model="form.description"
-                placeholder="Thêm mô tả chi tiết hơn..."
-                class="min-h-[150px] bg-card dark:bg-muted/30 border-border focus-visible:ring-2 focus-visible:ring-primary shadow-inner resize-none text-sm leading-relaxed"
-                @blur="saveDescription"
-              />
-            </div>
+      <div class="p-8 space-y-8">
+        <!-- Title & Breadcrumb -->
+        <div class="space-y-1">
+          <input 
+            v-model="form.title"
+            class="w-full text-2xl font-bold bg-transparent border-none p-0 focus:ring-0 focus:outline-none placeholder:text-muted-foreground/40"
+            placeholder="Tiêu đề thẻ..."
+            @blur="saveTitle" 
+            @keydown="handleTitleKeydown"
+          />
+          <div class="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>Trong mục</span>
+            <span class="px-2 py-0.5 rounded bg-secondary text-secondary-foreground font-medium text-xs">
+              {{ columnName }}
+            </span>
           </div>
         </div>
 
-        <div class="space-y-6">
+        <!-- Metadata Grid (Gọn gàng trên 1 dòng) -->
+        <div class="grid grid-cols-2 gap-8 py-2">
           <div class="space-y-2">
-            <Label class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block px-1">Thêm vào thẻ</Label>
-            <Button variant="secondary" class="w-full justify-start gap-2 h-9 bg-secondary/50 hover:bg-secondary text-foreground font-semibold border-none">
-              <UserPlus :size="14" class="text-primary" /> Thành viên
-            </Button>
-            <Button variant="secondary" class="w-full justify-start gap-2 h-9 bg-secondary/50 hover:bg-secondary text-foreground font-semibold border-none">
-              <CalendarIcon :size="14" class="text-primary" /> Ngày hết hạn
-            </Button>
+            <Label class="text-[11px] font-semibold uppercase text-muted-foreground">Người thực hiện</Label>
+            <div class="flex items-center gap-3 group cursor-pointer">
+              <Avatar class="h-8 w-8 ring-2 ring-offset-2 ring-transparent group-hover:ring-primary/20 transition-all">
+                <AvatarFallback class="bg-primary/10 text-primary text-[10px] font-bold">JD</AvatarFallback>
+              </Avatar>
+              <span class="text-sm font-medium text-foreground/80 group-hover:text-primary transition-colors">John Doe</span>
+              <UserPlus :size="14" class="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
           </div>
 
-          <div class="space-y-2 pt-2">
-            <Label class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block px-1">Thao tác</Label>
-            <Button 
-              variant="ghost" 
-              class="w-full justify-start gap-2 h-9 text-red-500 hover:text-red-600 hover:bg-red-500/10 font-semibold transition-all"
-            >
-              <Trash2 :size="14" /> Xóa thẻ
-            </Button>
+          <div class="space-y-2">
+            <Label class="text-[11px] font-semibold uppercase text-muted-foreground">Hạn chót</Label>
+            <div class="flex items-center gap-2 text-sm font-medium text-foreground/80 hover:text-primary cursor-pointer group transition-colors">
+              <CalendarIcon :size="16" class="text-muted-foreground group-hover:text-primary" />
+              <span>Chưa thiết lập</span>
+            </div>
           </div>
         </div>
+
+        <!-- Description -->
+        <div class="space-y-3 pt-4 border-t border-border/50">
+          <div class="flex items-center gap-2 text-foreground/70">
+            <AlignLeft :size="18" />
+            <span class="text-sm font-semibold">Mô tả</span>
+          </div>
+          <Textarea 
+            v-model="form.description"
+            placeholder="Nội dung chi tiết..."
+            class="min-h-[180px] w-full text-base bg-transparent border-none focus-visible:ring-0 p-0 resize-none leading-relaxed placeholder:text-muted-foreground/30 shadow-none"
+            @blur="saveDescription"
+          />
+        </div>
       </div>
+
+      <!-- Footer Info -->
+      <div class="px-8 py-4 bg-muted/5 flex justify-between items-center border-t border-border/30">
+        <p class="text-[10px] text-muted-foreground italic">
+          * Tự động lưu khi bạn hoàn tất chỉnh sửa
+        </p>
+        <div class="flex gap-2">
+           <!-- Có thể thêm các tag nhỏ ở đây nếu cần -->
+        </div>
+      </div>
+
     </DialogContent>
   </Dialog>
 </template>

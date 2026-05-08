@@ -19,6 +19,7 @@ import DeleteConfirmDialog from '../dialog/DeleteConfirmDialog.vue'
 import CardFormDialog from '@/components/dialog/task/CardFormDialog.vue'    
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { create } from 'domain'
 
 const columns = ref<ColumnEvent[]>([])
 const isSocketConnected = ref(false)
@@ -57,6 +58,12 @@ const executeDelete = async () => {
     } catch (e) {
         console.error("Lỗi:", e)
     }
+}
+
+const deleteCardInDetail = async (columnId: string, cardId: string) => {
+    deleteType.value = 'card'
+    deleteData.value = { columnId, cardId }
+    if(deleteData.value) await deleteCard(currentSpace.value.id, deleteData.value.cardId)
 }
 
 //-------------- Column ---------------
@@ -345,6 +352,7 @@ const clearAll = async () => {
                             @edit-card="openEditCardDialog"
                             @delete-card="confirmDeleteCard"
                             @card-move="onCardMove"
+                            @delete-card-in-detail="deleteCardInDetail"
                         />
                     </template>
                 </draggable>
