@@ -1,5 +1,7 @@
 package com.synkork.backend.modules.collaboration.task.card;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -34,6 +36,8 @@ public class CardService {
          UUID columnId = req.getColumnId();
         ColumnEntity column = columnRepository.findById(columnId)
                 .orElseThrow(() -> new RuntimeException("Cột không tồn tại"));
+            
+        
 
         // Cách lấy position ngắn gọn hơn: đếm số lượng card hiện có
         int nextPosition = cardRepository.findByColumn_IdOrderByPositionAsc(columnId).size();
@@ -47,6 +51,7 @@ public class CardService {
         card.setCreatedBy(userRepository.findByEmail(creatorEmail)
                     .orElseThrow(() -> new RuntimeException("User không tồn tại")));
 
+        card.setCreatedAt(LocalDateTime.now());
 
         CardEntity savedCard = cardRepository.save(card);
         return new CardDTO(savedCard);

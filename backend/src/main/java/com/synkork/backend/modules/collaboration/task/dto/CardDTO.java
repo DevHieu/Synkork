@@ -54,5 +54,6 @@ public class CardDTO {
                 e.getCreatedBy().getAvatarId()     // null nếu chưa có
             );
         }
+        this.createdAt = e.getCreatedAt();
     }
 }
