@@ -25,6 +25,7 @@ import {
 } from "../ui/tooltip";
 
 import AddRoomDialog from "@/components/dialog/RoomDialog/AddRoomDialog.vue";
+import type { Room } from "@/types/Room";
 
 const dialogOpen = ref(false);
 
@@ -56,7 +57,7 @@ const initCurrentRoom = async () => {
   if (!route.fullPath.includes("/rooms/")) return; // Không phải thì chim cúc
 
   const roomId = route.params.roomId as string;
-  const roomItem = rooms.value.find((room: any) => room.id === roomId);
+  const roomItem = rooms.value.find((room: Room) => room.id === roomId);
   if (!roomItem) return;
 
   const spaceId = route.params.spaceId as string;
@@ -65,14 +66,10 @@ const initCurrentRoom = async () => {
 
 const setSpaceOpen = inject<(val: boolean) => void>("setSpaceOpen");
 
-const selectRoom = async (roomItem: any, spaceId?: string) => {
+const selectRoom = async (roomItem: Room, spaceId?: string) => {
   activeItem.value = roomItem;
   setSpaceOpen?.(true);
   await roomStore.changeRoom(roomItem, spaceId);
-};
-
-const openAddRoomModal = () => {
-  console.log("Open add room modal");
 };
 </script>
 

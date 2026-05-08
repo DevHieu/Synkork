@@ -7,6 +7,7 @@ import { storeToRefs } from "pinia";
 import router from "@/routers";
 import type { Room } from "@/types/Room";
 import { socketService } from "@/services/websocket/socketService";
+import { roomSocket } from "@/services/websocket/roomSocket";
 
 export const useRoomsStore = defineStore("rooms", {
   state: () => ({
@@ -26,10 +27,23 @@ export const useRoomsStore = defineStore("rooms", {
       }
     },
 
+    connectRoomSocket(roomId: string) {
+      roomSocket.subscribeRoomUpdate(roomId, (room) => {
+        const target = this.rooms.find((item) => item.id === roomId);
+        if (target) {
+          console.log("upda");
+
+          Object.assign(target, room);
+        }
+      });
+    },
+
     // Nhận spaceId để check xem khi đổi room có cần redirect đến space nào không
-    async changeRoom(room: any, spaceId?: string) {
+    async changeRoom(room: Room, spaceId?: string) {
       this.currentRoom = room;
       socketService.unsubscribeAll(); // Hủy tất cả subscription cũ khi đổi room để tránh nhận dữ liệu của phòng trước đó vào
+
+      this.connectRoomSocket(room.id);
 
       const spaceStore = useSpaceStore();
       await spaceStore.fetchSpacesByRoomId(room.id);

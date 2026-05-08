@@ -1,13 +1,17 @@
 package com.synkork.backend.modules.room;
 
 import com.synkork.backend.common.dtos.FileUploaded;
+import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.common.utils.FileService;
+import com.synkork.backend.common.utils.PermissionService;
 import com.synkork.backend.modules.room.dto.CreateRoomDto;
 import com.synkork.backend.modules.room.dto.RoomDto;
 import com.synkork.backend.modules.room.dto.RoomReviewResponse;
+import com.synkork.backend.modules.room.dto.UpdateRoomDto;
 import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
+import com.synkork.backend.modules.roomMember.RoomMemberService;
 import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
 import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
 import com.synkork.backend.modules.space.SpaceEntity;
@@ -22,7 +26,6 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -35,6 +38,9 @@ public class RoomService {
     UserRepository userRepository;
 
     @Autowired
+    RoomMemberService roomMemberService;
+
+    @Autowired
     RoomMemberRepository roomMemberRepository;
 
     @Autowired
@@ -42,6 +48,7 @@ public class RoomService {
 
     @Autowired
     SimpMessagingTemplate messagingTemplate;
+
     @Autowired
     private SpaceService spaceService;
 
@@ -59,7 +66,7 @@ public class RoomService {
         return roomRepository.findById(uuid).orElseThrow(() -> new RuntimeException("Room không tồn tại!"));
     }
 
-    public Optional<RoomEntity> createRoom(CreateRoomDto roomData) {
+    public RoomEntity createRoom(CreateRoomDto roomData) {
         RoomEntity roomEntity = new RoomEntity();
 
         roomEntity.setName(roomData.name());
@@ -82,7 +89,33 @@ public class RoomService {
             roomEntity.setOwner(userRepository.getReferenceById(ownerId));
         }
 
-        return Optional.of(roomRepository.save(roomEntity));
+        return roomRepository.save(roomEntity);
+    }
+
+    public RoomEntity updateRoom(UUID roomId, UpdateRoomDto roomData) {
+
+        UUID requesterId = AuthUtils.getCurrentUserId();
+        PermissionService.requirePermission(roomId, requesterId, RoomMemberRoleEnum.OWNER, RoomMemberRoleEnum.ADMIN);
+
+        RoomEntity room = this.findById(roomId);
+
+        room.setName(roomData.name());
+        room.setDescription(roomData.description());
+
+        if (roomData.imageFile() != null) {
+
+            // Xóa ảnh cũ
+            String avatarId = room.getAvatarId();
+            if (avatarId != null && !avatarId.isEmpty()) {
+                imageService.deleteFile(avatarId, "image");
+            }
+
+            FileUploaded avatar = imageService.uploadImage(roomData.imageFile(), "roomAvatar");
+            room.setAvatarUrl(avatar.url());
+            room.setAvatarId(avatar.publicId());
+        }
+
+        return roomRepository.save(room);
     }
 
     public List<RoomEntity> findRoomUserJoined(@NonNull UUID userId) {
@@ -99,7 +132,6 @@ public class RoomService {
                 .build();
     }
 
-    // Return Room để tao làm khi join phòng xong sẽ tự vào room vừa gia nhập
     public RoomDto joinRoom(String code, UUID userId) {
         RoomEntity room = roomRepository.findByInviteCode(code).orElseThrow(() -> new RuntimeException("Link mời không tồn tại"));
 
@@ -130,8 +162,7 @@ public class RoomService {
 
     // Reset invite code
     public String resetInviteCode(String roomId) {
-        RoomEntity room = roomRepository.findById(UUID.fromString(roomId))
-                .orElseThrow(() -> new RuntimeException("Room không tồn tại"));
+        RoomEntity room = this.findById(UUID.fromString(roomId));
 
         room.setInviteCode(generateInviteCode());
         roomRepository.save(room);

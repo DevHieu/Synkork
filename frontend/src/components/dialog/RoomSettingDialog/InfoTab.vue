@@ -1,16 +1,13 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import { Camera } from "lucide-vue-next";
+import { updateRoomInfo } from "@/services/roomService";
 
 const props = defineProps<{ room: any }>();
-const emit = defineEmits<{
-  save: [data: { name: string; description: string; avatarUrl: string }];
-}>();
 
-// Local state để edit
 const roomName = ref(props.room?.name ?? "");
 const roomDescription = ref(props.room?.description ?? "");
-const avatarUrl = ref(props.room?.avatarUrl ?? "");
+const selectedFile = ref<File | null>(null);
 const avatarPreview = ref(props.room?.avatarUrl ?? "");
 
 // Sync lại khi room thay đổi
@@ -19,7 +16,7 @@ watch(
   (val) => {
     roomName.value = val?.name ?? "";
     roomDescription.value = val?.description ?? "";
-    avatarUrl.value = val?.avatarUrl ?? "";
+    selectedFile.value = null;
     avatarPreview.value = val?.avatarUrl ?? "";
   },
 );
@@ -32,27 +29,22 @@ const openFilePicker = () => fileInput.value?.click();
 const handleFileChange = (e: Event) => {
   const file = (e.target as HTMLInputElement).files?.[0];
   if (!file) return;
-
-  // Preview local
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    avatarPreview.value = ev.target?.result as string;
-  };
-  reader.readAsDataURL(file);
-
-  (e.target as HTMLInputElement).value = "";
+  selectedFile.value = file;
+  avatarPreview.value = URL.createObjectURL(file);
 };
 
 const isSaving = ref(false);
 
 const handleSaveInfo = async () => {
   isSaving.value = true;
-  await new Promise((r) => setTimeout(r, 800));
-  emit("save", {
+  const data = {
     name: roomName.value,
     description: roomDescription.value,
-    avatarUrl: avatarUrl.value,
-  });
+    imageFile: selectedFile.value ?? undefined,
+  };
+
+  await updateRoomInfo(props.room.id, data);
+
   isSaving.value = false;
 };
 </script>
