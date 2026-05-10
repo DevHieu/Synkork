@@ -15,6 +15,9 @@ import com.synkork.backend.modules.collaboration.task.dto.CardDTO;
 import com.synkork.backend.modules.collaboration.task.dto.CardMovePayload;
 import com.synkork.backend.modules.collaboration.task.dto.CardRequest;
 import com.synkork.backend.modules.collaboration.task.dto.MoveCardRequest;
+import com.synkork.backend.modules.roomMember.RoomMemberEntity;
+import com.synkork.backend.modules.roomMember.RoomMemberRepository;
+import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
 
 import jakarta.transaction.Transactional;
@@ -31,9 +34,12 @@ public class CardService {
     @Autowired
     private ColumnRepository columnRepository;
 
+    @Autowired
+    private RoomMemberRepository roomMemberRepository;
+
     @Transactional
     public CardDTO createCard(UUID spaceId, String creatorEmail, CardRequest req) {
-         UUID columnId = req.getColumnId();
+        UUID columnId = req.getColumnId();
         ColumnEntity column = columnRepository.findById(columnId)
                 .orElseThrow(() -> new RuntimeException("Cột không tồn tại"));
             
@@ -47,11 +53,20 @@ public class CardService {
         card.setTitle(req.getTitle());
         card.setPosition(nextPosition);
         card.setDescription(req.getDescription() != null ? req.getDescription() : "");
-
-        card.setCreatedBy(userRepository.findByEmail(creatorEmail)
-                    .orElseThrow(() -> new RuntimeException("User không tồn tại")));
-
         card.setCreatedAt(LocalDateTime.now());
+
+        UUID roomId = column.getSpace().getRoom().getId();
+        card.setCreatedBy(
+            roomMemberRepository.findByUser_EmailAndRoom_Id(creatorEmail, roomId)
+                .orElseThrow(() -> new RuntimeException("User không phải member của room này"))
+        );
+
+        if (req.getAssigneeIds() != null && !req.getAssigneeIds().isEmpty()) {
+            List<RoomMemberEntity> assignees = roomMemberRepository.findAllById(req.getAssigneeIds());
+            card.setAssignees(assignees);
+        }
+
+        
 
         CardEntity savedCard = cardRepository.save(card);
         return new CardDTO(savedCard);
@@ -62,12 +77,43 @@ public class CardService {
         CardEntity card = cardRepository.findById(cardId)
                 .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
 
-        card.setTitle(req.getTitle());
-        card.setDescription(req.getDescription() != null ? req.getDescription() : "");
+        if(req.getTitle() != null){
+            card.setTitle(req.getTitle());
+        }
+
+        if(req.getDescription() != null){
+            card.setDescription(req.getDescription());
+        }
+        
+        System.out.println("assigneeIds từ request: " + req.getAssigneeIds());
+        System.out.println("isEmpty check: " + (req.getAssigneeIds() != null && !req.getAssigneeIds().isEmpty()));
+
+        if (req.getAssigneeIds() != null && !req.getAssigneeIds().isEmpty()) {
+            List<RoomMemberEntity> assignees = roomMemberRepository.findAllById(req.getAssigneeIds());
+            System.out.println("Users tìm được: " + assignees.stream().map(u -> u.getId().toString()).toList());
+            card.setAssignees(assignees);
+        }
 
         CardEntity updatedCard = cardRepository.save(card);
         return new CardDTO(updatedCard);
     }
+
+    // @Transactional
+    // public void updateMember(UUID cardId, CardRequest req){
+    //     CardEntity card = cardRepository.findById(cardId)
+    //             .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
+
+    //     card.setTitle(req.getTitle());
+    //     card.setDescription(req.getDescription() != null ? req.getDescription() : "");
+
+    //     if (req.getAssigneeIds() != null) {
+    //         List<UserEntity> assignees = userRepository.findAllById(req.getAssigneeIds());
+    //         card.setAssignees(assignees);
+    //     }
+
+    //     CardEntity updatedCard = cardRepository.save(card);
+    //     return new CardDTO(updatedCard);
+    // }
 
     @Transactional
     public void deleteCard(UUID cardId) {
@@ -88,6 +134,7 @@ public class CardService {
         }
     }
 
+    @Transactional
     public CardDTO getCardById(UUID cardUUID) {
         CardEntity card = cardRepository.findById(cardUUID)
                 .orElseThrow(() -> new RuntimeException("Card không tồn tại"));

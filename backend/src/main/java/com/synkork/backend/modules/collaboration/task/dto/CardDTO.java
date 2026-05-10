@@ -1,10 +1,13 @@
 package com.synkork.backend.modules.collaboration.task.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import com.synkork.backend.modules.collaboration.task.card.CardEntity;
+import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -19,22 +22,29 @@ public class CardDTO {
     private UUID spaceId;
     private UUID columnId;
 
-    private UUID assigneeId;
+    // private UUID assigneeId;
     
-    private Set<UUID> assigneeIds;
+    // private Set<UUID> assigneeIds;
 
-    private UserSummary createdBy;
+    private List<MemberSummaryDTO> assignees;
 
-    @Data
-    @AllArgsConstructor
-    public static class UserSummary {
-        private UUID id;
-        private String name;
-        private String avatar;
-    }
+    private MemberSummaryDTO createdBy;
     
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    @Data 
+    public class MemberSummaryDTO {
+        private UUID id;      // memberId
+        private String name;
+        private String avatarUrl;
+        
+        public MemberSummaryDTO(RoomMemberEntity e) {
+            this.id = e.getId();
+            this.name = e.getUser().getDisplayName(); // hoặc field tương ứng
+            this.avatarUrl = e.getUser().getAvatarUrl();
+        }
+    }
 
     public CardDTO(CardEntity e) {
         this.id = e.getId();
@@ -43,17 +53,18 @@ public class CardDTO {
         this.position = e.getPosition();
         this.spaceId = e.getColumn().getSpace().getId();
         this.columnId = e.getColumn().getId();
-        if (e.getAssignee() != null) {
-            this.assigneeId = e.getAssignee().getId();
-        }
+        // if (e.getAssignee() != null) {
+        //     this.assigneeId = e.getAssignee().getId();
+        // }
+
+        this.assignees = e.getAssignees().stream()
+                .map(MemberSummaryDTO::new)
+                .collect(Collectors.toList());
 
         if (e.getCreatedBy() != null) {
-            this.createdBy = new UserSummary(
-                e.getCreatedBy().getId(),
-                e.getCreatedBy().getDisplayName(),      // hoặc getFullName() tùy entity
-                e.getCreatedBy().getAvatarId()     // null nếu chưa có
-            );
+            this.createdBy = new MemberSummaryDTO(e.getCreatedBy());
         }
+
         this.createdAt = e.getCreatedAt();
     }
 }

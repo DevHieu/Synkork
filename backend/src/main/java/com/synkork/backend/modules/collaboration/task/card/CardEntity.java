@@ -1,6 +1,8 @@
 package com.synkork.backend.modules.collaboration.task.card;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import org.hibernate.annotations.UuidGenerator;
@@ -9,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.synkork.backend.common.base.BaseEntity;
 import com.synkork.backend.modules.collaboration.task.column.ColumnEntity;
+import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -38,15 +41,23 @@ public class CardEntity extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assignee_id", columnDefinition = "BINARY(16)")
-    private UserEntity assignee;
+    // @ManyToOne(fetch = FetchType.LAZY)
+    // @JoinColumn(name = "assignee_id", columnDefinition = "BINARY(16)")
+    // private UserEntity assignee;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "card_assignees",
+        joinColumns = @JoinColumn(name = "card_id"),
+        inverseJoinColumns = @JoinColumn(name = "room_member_id")
+    )
+    private List<RoomMemberEntity> assignees = new ArrayList<>();
 
     private int position;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false, columnDefinition = "BINARY(16)")
-    private UserEntity createdBy;
+    private RoomMemberEntity createdBy;
 
     //thêm
     @Column(name = "created_at")

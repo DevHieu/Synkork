@@ -1,5 +1,6 @@
 package com.synkork.backend.modules.collaboration.task.dto;
 
+import java.util.List;
 import java.util.UUID;
 
 import lombok.AllArgsConstructor;
@@ -14,4 +15,6 @@ public class CardRequest {
     private String title;
     private String description;
     private UUID userId;
+
+    private List<UUID> assigneeIds;
 }
