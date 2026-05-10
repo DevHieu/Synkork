@@ -6,15 +6,28 @@ export interface CardEvent {
   position: number;
   createdAt?: string;
   
-  createdBy: UserSummary 
-  assignees: UserSummary[] 
+  createdBy: MemberSummary 
+  assignees: MemberSummary[]
   
 }
 
 export interface UserSummary {
   id: string
   name: string
-  avatar: string | null
+  avatarUrl: string | undefined
+}
+
+export interface MemberSummary {
+  id: string
+  name: string
+  avatarUrl?: string
+}
+
+export interface SpaceMemberDTO {
+    id: string
+    name: string
+    avatarUrl: string | null
+    role: string
 }
 
 export interface ColumnEvent {

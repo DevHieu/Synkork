@@ -15,7 +15,6 @@ const emit = defineEmits<{
     editCard: [columnId: string, card: CardEvent]
     deleteCard: [columnId: string, cardId: string]
     cardMove: [event: TaskMoveEvent, columnId: string]
-    deleteCardInDetail: [columnId: string, cardId: string]
 }>()
 </script>
 
@@ -63,7 +62,7 @@ const emit = defineEmits<{
                     :column-name="column.name"
                     @edit="emit('editCard', column.id, card)"
                     @delete="emit('deleteCard', column.id, card.id)"
-                    @delete-in-detail="emit('deleteCardInDetail', column.id, card.id)"
+                    :column-id="column.id"
                 />
             </template>
         </draggable>

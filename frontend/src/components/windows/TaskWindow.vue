@@ -19,9 +19,13 @@ import DeleteConfirmDialog from '../dialog/DeleteConfirmDialog.vue'
 import CardFormDialog from '@/components/dialog/task/CardFormDialog.vue'    
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { create } from 'domain'
 
-const columns = ref<ColumnEvent[]>([])
+import { useTaskStore } from "@/stores/taskStore";
+
+const taskStore = useTaskStore();
+const { columns } = storeToRefs(taskStore);
+
+// const columns = ref<ColumnEvent[]>([])
 const isSocketConnected = ref(false)
 
 const route = useRoute();
@@ -42,29 +46,33 @@ const isSaving = ref(false)
 const targetColumnId = ref<string>('')
 
 const isDeleteOpen = ref(false)
-const deleteType = ref('')
+const deleteType = ref<'column' | 'card'>('column')
 const deleteData = ref<{cardId: string, columnId: string} | null>(null)
 
 const executeDelete = async () => {
-    try {
-        if (deleteType.value === 'column' && deleteData.value) {
-            await deleteColumn(currentSpace.value.id, deleteData.value.columnId)
-            columns.value = columns.value.filter(c => c.id !== deleteData.value?.columnId) // ← .columnId
-        } else if (deleteType.value === 'card' && deleteData.value) {
-            await deleteCard(currentSpace.value.id, deleteData.value.cardId)
-        }
-        isDeleteOpen.value = false
-        deleteData.value = null
-    } catch (e) {
-        console.error("Lỗi:", e)
-    }
+    taskStore.delete(deleteType.value, spaceId, deleteData.value)
+
+    isDeleteOpen.value = false
+    deleteData.value = null
+
+    // try {
+    //     if (deleteType.value === 'column' && deleteData.value) {
+    //         await deleteColumn(currentSpace.value.id, deleteData.value.columnId)
+    //         columns.value = columns.value.filter(c => c.id !== deleteData.value?.columnId) // ← .columnId
+    //     } else if (deleteType.value === 'card' && deleteData.value) {
+    //         await deleteCard(currentSpace.value.id, deleteData.value.cardId)
+    //     }
+        
+    // } catch (e) {
+    //     console.error("Lỗi:", e)
+    // }
 }
 
-const deleteCardInDetail = async (columnId: string, cardId: string) => {
-    deleteType.value = 'card'
-    deleteData.value = { columnId, cardId }
-    if(deleteData.value) await deleteCard(currentSpace.value.id, deleteData.value.cardId)
-}
+// const deleteCardInDetail = async (columnId: string, cardId: string) => {
+//     deleteType.value = 'card'
+//     deleteData.value = { columnId, cardId }
+//     if(deleteData.value) await deleteCard(currentSpace.value.id, deleteData.value.cardId)
+// }
 
 //-------------- Column ---------------
 const openAddColumnDialog = () => {
@@ -117,13 +125,7 @@ const onColumnMove = async (event: TaskMoveEvent) => {
 }
 
 const fetchColumns = async (spaceId: string) => {
-    try {
-        const res = await getAllColumns(spaceId);
-        columns.value = res.data;
-        console.log(res.data);
-    } catch (e) {
-        console.error("Lỗi tải cột:", e)
-    }
+    taskStore.fetchTasks(spaceId)
 }
 
 // -------------- Card ---------------
@@ -144,12 +146,7 @@ const handleSaveCard = async (data: { title: string, description: string }) => {
         const payload = {
             columnId: targetColumnId.value,
             title: data.title,
-            description: data.description,
-            createdBy: {          
-                id: user.value.id,
-                name: user.value.name,
-                avatar: user.value.avatar ?? null
-            }
+            description: data.description
         }
 
         if (editingCard.value) {
@@ -352,7 +349,7 @@ const clearAll = async () => {
                             @edit-card="openEditCardDialog"
                             @delete-card="confirmDeleteCard"
                             @card-move="onCardMove"
-                            @delete-card-in-detail="deleteCardInDetail"
+                            
                         />
                     </template>
                 </draggable>

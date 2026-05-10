@@ -59,6 +59,8 @@ export const useRoomMemberStore = defineStore("roomMember", {
       this.currentAuthority =
         this.members.find((m) => m.username === username)?.role ?? "MEMBER";
     },
+
+    
   },
 
   getters: {
@@ -76,6 +78,15 @@ export const useRoomMemberStore = defineStore("roomMember", {
       return [...state.members].sort(
         (a, b) => order.indexOf(a.role) - order.indexOf(b.role),
       );
+    },
+
+    searchMembers: (state) => (query: string) => {
+        if (!query.trim()) return state.members
+        const q = query.toLowerCase()
+        return state.members.filter(m =>
+            m.displayName?.toLowerCase().includes(q) ||
+            m.username?.toLowerCase().includes(q)
+        )
     },
   },
 });

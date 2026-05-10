@@ -10,7 +10,7 @@ export const createCard = async (spaceId: string, data: { columnId: string; titl
     return res.data;
 }
 
-export const updateCard = async (spaceId: string, cardId: string, data: { title: string; description: string }) => {
+export const updateCard = async (spaceId: string | null, cardId: string | null, data: { title: string | null; description: string | null; assigneeIds?: string[]}) => {
     const res = await axiosClient.put(`/api/space/${spaceId}/card/${cardId}`, data);
     return res.data;
 }
@@ -22,5 +22,10 @@ export const deleteCard = async (spaceId: string, cardId: string) => {
 
 export const moveCard = async (spaceId: string, cardId: string, moveData: { targetColumnId: string; newPosition: number }) => {
     const res = await axiosClient.patch(`/api/space/${spaceId}/card/${cardId}/move`, moveData);
+    return res.data;
+}
+
+export const getSpaceMembers = async (spaceId: string) => {
+    const res = await axiosClient.get(`/api/space/${spaceId}/members`);
     return res.data;
 }
