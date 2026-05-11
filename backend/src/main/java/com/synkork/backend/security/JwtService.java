@@ -9,6 +9,7 @@ import java.util.function.Function;
 import javax.crypto.SecretKey;
 
 import com.synkork.backend.modules.auth.dto.JwtResponse;
+import com.synkork.backend.modules.user.enums.RoleEnum;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,9 +28,11 @@ public class JwtService {
     @Value("${jwt.secret}")
     private String secretkey = "";
 
-    public String generateToken(String userId, String username, String type) {
+    public String generateToken(String userId, String username, RoleEnum role, String type) {
+        String roleString = role.toString();
+
         long duration = type.equals("ACCESS")
-                ? TimeUnit.SECONDS.toMillis(15) // Access key hết hạn sau 15p
+                ? TimeUnit.MINUTES.toMillis(1) // Access key hết hạn sau 15p
                 : TimeUnit.DAYS.toMillis(7); // Refresh key thì 7 ngày
 
         Date now = new Date();
@@ -38,6 +41,7 @@ public class JwtService {
         Map<String, Object> claims = new HashMap<>();
         claims.put("type", type);
         claims.put("userId", userId);
+        claims.put("role", roleString);
         return Jwts.builder()
                 .claims()
                 .add(claims)
@@ -97,9 +101,9 @@ public class JwtService {
         }
     }
 
-    public String generateJwtToken(String userId, String username, HttpServletResponse response) {
-        String accessToken = this.generateToken(userId, username, "ACCESS");
-        String refreshToken = this.generateToken(userId, username, "REFRESH");
+    public String generateJwtToken(String userId, String username, RoleEnum role, HttpServletResponse response) {
+        String accessToken = this.generateToken(userId, username, role, "ACCESS");
+        String refreshToken = this.generateToken(userId, username, role, "REFRESH");
 
         this.saveRefreshToken(refreshToken, response);
 

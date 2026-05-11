@@ -1,19 +1,26 @@
 import { defineStore } from "pinia";
-import { getAllSpacesFromRoomId } from "@/services/spaceService";
+import { getAllSpacesFromRoomId, getSpaceById } from "@/services/spaceService";
 import { spaceSocket } from "@/services/websocket/spaceSocket";
 import router from "@/routers";
 import { socketService } from "@/services/websocket/socketService";
 
+import { useUserStore } from "./userStore";
+import { useRoomMemberStore } from "./roomMemberStore";
+import { storeToRefs } from "pinia";
+import type { Space } from "@/types/Space";
+import { toast } from "vue-sonner";
+import { watch } from "vue";
+
 export const useSpaceStore = defineStore("spaces", {
   state: () => ({
-    currentSpace: null as any | null,
-    chatSpaces: [] as any[],
-    voiceSpaces: [] as any[],
-    noteSpaces: [] as any[],
-    calendarSpaces: [] as any[],
-    taskSpaces: [] as any[],
+    currentSpace: null as Space | null,
+    chatSpaces: [] as Space[],
+    voiceSpaces: [] as Space[],
+    noteSpaces: [] as Space[],
+    calendarSpaces: [] as Space[],
+    taskSpaces: [] as Space[],
 
-    currentVoiceSpace: null as any | null,
+    currentVoiceSpace: null as Space | null,
     loading: false,
   }),
 
@@ -68,69 +75,116 @@ export const useSpaceStore = defineStore("spaces", {
     },
 
     async changeSpace(index: number, type: string) {
+      let space: Space | null = null;
+
       switch (type) {
         case "CHAT":
-          this.currentSpace = this.chatSpaces[index];
+          space = this.chatSpaces[index] ?? null;
           break;
         case "VOICE":
-          this.currentSpace = this.voiceSpaces[index];
+          space = this.voiceSpaces[index] ?? null;
           break;
         case "NOTE":
-          this.currentSpace = this.noteSpaces[index];
+          space = this.noteSpaces[index] ?? null;
           break;
         case "CALENDAR":
-          this.currentSpace = this.calendarSpaces[index];
+          space = this.calendarSpaces[index] ?? null;
           break;
         case "TASK":
-          this.currentSpace = this.taskSpaces[index];
+          space = this.taskSpaces[index] ?? null;
           break;
-        default:
-          this.currentSpace = null;
       }
 
+      if (!checkPermission(space)) {
+        toast.error("Bạn không có quyền truy cập vào space này.");
+        return;
+      }
+
+      this.currentSpace = space;
+
       router.push(
-        `/rooms/${type.toLowerCase()}/${router.currentRoute.value.params.roomId}/${
-          this.currentSpace?.id
-        }`,
+        `/rooms/${type.toLowerCase()}/${router.currentRoute.value.params.roomId}/${space?.id}`,
       );
     },
 
     // Hàm này dùng để đổi space khi đã có spaceId (ví dụ khi đổi room mà URL đã có spaceId)
     async changeSpaceById(spaceId: string, spaceType: string) {
+      // Đợi cái quyền hiện tại của user load xong thì mới chạy tiếp. Vì bên dưới có check quyền vào phòng
+      const memberStore = useRoomMemberStore();
+      if (memberStore.loading || !memberStore.currentAuthority) {
+        await new Promise<void>((resolve) => {
+          const unwatch = watch(
+            () => memberStore.currentAuthority,
+            (val) => {
+              if (val) {
+                unwatch();
+                resolve();
+              }
+            },
+          );
+        });
+      }
+
+      let space: Space | null = null;
+
       switch (spaceType.toUpperCase()) {
         case "CHAT":
-          this.currentSpace =
-            this.chatSpaces.find((space) => space.id === spaceId) || null;
+          space = this.chatSpaces.find((s) => s.id === spaceId) ?? null;
           break;
         case "VOICE":
-          this.currentSpace =
-            this.voiceSpaces.find((space) => space.id === spaceId) || null;
+          space = this.voiceSpaces.find((s) => s.id === spaceId) ?? null;
           break;
         case "NOTE":
-          this.currentSpace =
-            this.noteSpaces.find((space) => space.id === spaceId) || null;
+          space = this.noteSpaces.find((s) => s.id === spaceId) ?? null;
           break;
         case "CALENDAR":
-          this.currentSpace =
-            this.calendarSpaces.find((space) => space.id === spaceId) || null;
+          space = this.calendarSpaces.find((s) => s.id === spaceId) ?? null;
           break;
         case "TASK":
-          this.currentSpace =
-            this.taskSpaces.find((space) => space.id === spaceId) || null;
+          space = this.taskSpaces.find((s) => s.id === spaceId) ?? null;
           break;
         default:
-          this.currentSpace = null;
+          space = null;
       }
 
-      if (this.currentSpace === null) {
-        this.currentSpace = this.chatSpaces[0];
+      if (!checkPermission(space)) {
+        toast.error("Bạn không có quyền truy cập vào space này.");
+
+        if (!this.currentSpace || this.currentSpace.id === spaceId) {
+          this.currentSpace = this.chatSpaces[0] ?? null;
+          router.push(
+            `/rooms/chat/${router.currentRoute.value.params.roomId}/${
+              this.chatSpaces[0]?.id || ""
+            }`,
+          );
+        }
+
+        return;
       }
 
-      router.push(
-        `/rooms/chat/${router.currentRoute.value.params.roomId}/${
-          this.chatSpaces[0]?.id || ""
-        }`,
-      );
+      if (space === null) {
+        this.currentSpace = this.chatSpaces[0] ?? null;
+        router.push(
+          `/rooms/chat/${router.currentRoute.value.params.roomId}/${
+            this.chatSpaces[0]?.id || ""
+          }`,
+        );
+        return;
+      }
+
+      this.currentSpace = space;
+    },
+
+    async joinDMSpace(spaceId: string) {
+      try {
+        this.loading = true;
+        useRoomMemberStore().clearMembers();
+        this.currentSpace = await getSpaceById(spaceId);
+      } catch (error) {
+        toast.error("Không thể tham gia phòng chat này.");
+      } finally {
+        this.loading = false;
+      }
     },
 
     addSpaceToArray(space: any) {
@@ -210,3 +264,17 @@ export const useSpaceStore = defineStore("spaces", {
     },
   },
 });
+
+function checkPermission(space: Space | null) {
+  const { user } = storeToRefs(useUserStore());
+  const { currentAuthority } = storeToRefs(useRoomMemberStore());
+
+  console.log("user: " + currentAuthority.value);
+
+  if (!user.value || !space) return false;
+
+  if (currentAuthority.value === "MEMBER" && space.restricted === true)
+    return false;
+
+  return true;
+}

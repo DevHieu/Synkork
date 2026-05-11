@@ -23,6 +23,6 @@ const delegatedProps = reactiveOmit(props, "class");
       )
     "
   >
-    <slot />
+    <img src="/assets/DauChim.png" alt="dauchim" />
   </AvatarFallback>
 </template>

@@ -15,6 +15,8 @@ public class RoomMemberDto {
     private String username;
     private String avatarUrl;
     private RoomMemberRoleEnum role;
+    private boolean muted;
+    private boolean deafen;
 
     public RoomMemberDto(RoomMemberEntity entity) {
         this.memberId = entity.getId();
@@ -22,6 +24,8 @@ public class RoomMemberDto {
         this.username = entity.getUser().getUsername();
         this.avatarUrl = entity.getUser().getAvatarUrl();
         this.role = entity.getRole();
+        this.muted = entity.isMuted();
+        this.deafen = entity.isDeafen();
     }
 
     public RoomMemberDto(String displayName, String username, String avatarUrl, RoomMemberRoleEnum role) {

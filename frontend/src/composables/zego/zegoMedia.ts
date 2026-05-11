@@ -10,12 +10,15 @@ export function zegoMedia(
   micOn: Ref<boolean>,
   audioOn: Ref<boolean>,
   screenOn: Ref<boolean>,
+  isMuted: Ref<boolean>,
+  isDeafen: Ref<boolean>,
 ) {
   const utils = zegoUtils(participants);
 
   // Tắt micro
   const muteMicro = async (mute: boolean) => {
     if (!state.zg) return;
+
     state.zg.muteMicrophone(mute);
   };
 
@@ -28,6 +31,12 @@ export function zegoMedia(
     }
   };
 
+  const muteAudioUser = async (audioId: string, isMute: boolean) => {
+    if (!state.zg) return;
+
+    state.zg.mutePlayStreamAudio(audioId, isMute);
+  };
+
   const broadcastMediaState = (roomID: string) => {
     if (!state.zg) return;
 
@@ -37,6 +46,9 @@ export function zegoMedia(
       micOn: micOn.value,
       audioOn: audioOn.value,
       screenOn: screenOn.value,
+      muted: isMuted.value,
+      deafen: isDeafen.value,
+      audioId: state.localAudioStreamID,
     });
     state.zg.sendCustomCommand(roomID, payload, []); // param thứ 3 là userId muốn gửi tới. Để trống thì gửi hết mọi người
   };
@@ -45,6 +57,41 @@ export function zegoMedia(
     if (!state.zg) return;
     const payload = JSON.stringify({ type: "request_state" }); // Truyền type vậy để callback còn phân biệt mà xử lí
     state.zg.sendCustomCommand(roomID, payload, []);
+  };
+
+  const roomMutedUserRequest = (
+    roomId: string,
+    userId: string,
+    payload: {
+      type: "ROOM_MUTE" | "ROOM_DEAFEN";
+      muted: boolean | null;
+      deafen: boolean | null;
+    },
+  ) => {
+    if (!state.zg) return;
+    const data = JSON.stringify(payload);
+    console.log("media activated ", roomId, userId, data);
+    state.zg.sendCustomCommand(roomId, data, [userId]);
+  };
+
+  const kickMember = (roomId: string, userId: string) => {
+    if (!state.zg) return;
+
+    const data = JSON.stringify({ type: "KICK_MEMBER" });
+
+    state.zg.sendCustomCommand(roomId, data, [userId]);
+  };
+
+  const stopUserScreen = (roomId: string, userId: string) => {
+    if (!state.zg) return;
+    const data = JSON.stringify({ type: "STOP_SCREEN" });
+    state.zg.sendCustomCommand(roomId, data, [userId]);
+  };
+
+  const stopUserVideo = (roomId: string, userId: string) => {
+    if (!state.zg) return;
+    const data = JSON.stringify({ type: "STOP_VIDEO" });
+    state.zg.sendCustomCommand(roomId, data, [userId]);
   };
 
   // Khi user từ giao diện call sang các space khác. Thì giao diện sẽ thay đổi -> các element, DOM cảu screen sẽ mất.
@@ -60,14 +107,14 @@ export function zegoMedia(
 
     // Check xem trạng thái hiện tại của local
     if (state.localVideoStream) {
-      utils.ensureHiddenContainer("local-video-container");
+      utils.createHiddenContainer("local-video-container");
       state.zg
         .createLocalStreamView(state.localVideoStream)
         .play("local-video-container");
     }
 
     if (state.localScreenStream) {
-      utils.ensureHiddenContainer("screen-sharing-container");
+      utils.createHiddenContainer("screen-sharing-container");
       state.zg
         .createLocalStreamView(state.localScreenStream)
         .play("screen-sharing-container");
@@ -79,7 +126,7 @@ export function zegoMedia(
         // Nếu id là video -> render video
         const userId = utils.findUserByStreamID(streamId, "video");
         if (userId) {
-          utils.ensureHiddenContainer(`remote-video-${userId}`);
+          utils.createHiddenContainer(`remote-video-${userId}`);
           state.zg
             .createRemoteStreamView(remoteStream)
             .play(`remote-video-${userId}`);
@@ -88,7 +135,7 @@ export function zegoMedia(
         // Và ngược lại (screen)
         const userId = utils.findUserByStreamID(streamId, "screen");
         if (userId) {
-          utils.ensureHiddenContainer(`remote-screen-${userId}`);
+          utils.createHiddenContainer(`remote-screen-${userId}`);
           state.zg
             .createRemoteStreamView(remoteStream)
             .play(`remote-screen-${userId}`);
@@ -102,8 +149,13 @@ export function zegoMedia(
   return {
     muteMicro,
     muteAllRemoteAudio,
+    muteAudioUser,
     broadcastMediaState,
     requestMediaStates,
     replayAllStreamToDOM,
+    roomMutedUserRequest,
+    kickMember,
+    stopUserScreen,
+    stopUserVideo,
   };
 }

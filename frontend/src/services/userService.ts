@@ -11,3 +11,9 @@ export const getUserInfo = async () => {
     throw error;
   }
 };
+
+export const getUserInfoByUsername = async (username: string) => {
+  const res = await axiosClient.get(`/api/users/${username}`);
+
+  return res.data;
+};

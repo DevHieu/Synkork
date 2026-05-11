@@ -22,6 +22,32 @@ export const createRoom = async (roomData: {
   return response.data;
 };
 
+export const updateRoomInfo = async (
+  roomId: string,
+  roomData: {
+    name: string;
+    description: string;
+    imageFile?: File;
+  },
+) => {
+  const formData = new FormData();
+  formData.append("name", roomData.name);
+  formData.append("description", roomData.description);
+  if (roomData.imageFile) {
+    formData.append("imageFile", roomData.imageFile);
+  }
+  const response = await axiosClient.put(`/api/rooms/${roomId}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
+};
+
+export const deleteRoom = async (roomId: string) => {
+  const res = await axiosClient.delete(`/api/rooms/${roomId}`);
+
+  return res.data;
+};
+
 export const getInviteCode = async (roomId: string) => {
   const res = await axiosClient.get(`/api/rooms/${roomId}/invites`);
   return res.data;

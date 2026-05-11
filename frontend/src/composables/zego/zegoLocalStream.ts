@@ -32,7 +32,7 @@ export function zegoLocalStream(
       // Có cái setTimeout này là để cách thời gian 1 chút để chắc chắn là video đã sẵn sàng
       await new Promise((r) => setTimeout(r, 100));
 
-      utils.ensureHiddenContainer("local-video-container"); // Tạo container ẩn
+      utils.createHiddenContainer("local-video-container"); // Tạo container ẩn
 
       // Sau đó cho play cái stream mới tạo bên trên trong element vừa tạo
       state.zg
@@ -111,7 +111,7 @@ export function zegoLocalStream(
       // Có cái setTimeout này là để cách thời gian 1 chút để chắc chắn là video đã sẵn sàng
       await new Promise((r) => setTimeout(r, 100));
 
-      utils.ensureHiddenContainer("screen-sharing-container");
+      utils.createHiddenContainer("screen-sharing-container");
 
       state.zg
         .createLocalStreamView(state.localScreenStream)

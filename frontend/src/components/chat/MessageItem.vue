@@ -12,6 +12,7 @@ import { useMessageStore } from "@/stores/messageStore";
 import { useUserStore } from "@/stores/userStore";
 import { storeToRefs } from "pinia";
 import DeleteConfirmDialog from "@/components/dialog/DeleteConfirmDialog.vue";
+import UserInfoPopover from "../dialog/UserInfoPopover.vue";
 
 const props = defineProps<{
   message: Message;
@@ -78,6 +79,17 @@ const jumpToReply = () => {
 const deleteFailedMessage = () => {
   messageStore.dismissFailedMessage([props.message.id]);
 };
+
+// Tách nội dung tin nhắn thành các phần text và link để hiển thị đúng
+const parsedContent = computed(() => {
+  if (!props.message.content) return [];
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = props.message.content.split(urlRegex);
+  return parts.map((part) => ({
+    text: part,
+    isLink: /^https?:\/\/[^\s]+$/.test(part),
+  }));
+});
 </script>
 
 <template>
@@ -97,15 +109,19 @@ const deleteFailedMessage = () => {
   >
     <!-- Avatar -->
     <div class="w-10 shrink-0">
-      <Avatar v-if="!isGrouped || props.message.replyTo" class="h-10 w-10">
-        <AvatarImage
-          v-if="props.message.sender?.avatarUrl"
-          :src="props.message.sender.avatarUrl"
-        />
-        <AvatarFallback class="bg-primary">
-          {{ props.message.sender?.displayName?.charAt(0).toUpperCase() }}
-        </AvatarFallback>
-      </Avatar>
+      <UserInfoPopover
+        :username="props.message.sender?.username"
+        v-if="!isGrouped || props.message.replyTo"
+      >
+        <Avatar class="h-10 w-10">
+          <AvatarImage
+            v-if="props.message.sender?.avatarUrl"
+            :src="props.message.sender.avatarUrl"
+          />
+          <AvatarFallback class="bg-primary"> </AvatarFallback>
+        </Avatar>
+      </UserInfoPopover>
+
       <span
         v-else
         class="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 flex justify-center items-center h-full"
@@ -215,7 +231,19 @@ const deleteFailedMessage = () => {
 
         <template v-else>
           <div v-if="props.message.content">
-            <span class="text-foreground/90">{{ props.message.content }}</span>
+            <!-- Check xem tin nhắn có chứa link trong đấy ko -->
+            <template v-for="(part, i) in parsedContent" :key="i">
+              <a
+                v-if="part.isLink"
+                :href="part.text"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-primary underline underline-offset-2 hover:text-primary/80 break-all"
+                >{{ part.text }}
+              </a>
+              <span v-else class="text-foreground/90">{{ part.text }}</span>
+            </template>
+
             <span
               v-if="props.message.edited"
               class="text-[10px] text-muted-foreground ml-1"

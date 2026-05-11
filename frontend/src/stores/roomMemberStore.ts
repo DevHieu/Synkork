@@ -9,6 +9,8 @@ export const useRoomMemberStore = defineStore("roomMember", {
     members: [] as Member[],
     loading: false,
     currentAuthority: null as string | null,
+    isMuted: false,
+    isDeafen: false,
   }),
 
   actions: {
@@ -19,7 +21,7 @@ export const useRoomMemberStore = defineStore("roomMember", {
         );
         if (idx !== -1) {
           this.members[idx] = member;
-          this.setCurrentAuthority(username); // Có đổi quyền thì cái quyền hiện tại sẽ thay đổi
+          this.setInfo(username); // Có đổi quyền thì cái quyền hiện tại sẽ thay đổi
         }
       });
 
@@ -38,15 +40,19 @@ export const useRoomMemberStore = defineStore("roomMember", {
       });
 
       userSocket.subscribeKicked();
+      userSocket.subscribeRoomDeleted();
     },
 
     async fetchMembers(roomId: string, username: string) {
       this.loading = true;
+      this.clearMembers();
       try {
+        console.log("Running");
+
         this.members = await getRoomMembers(roomId);
 
-        // Set authority sau khi fetch xong
-        this.setCurrentAuthority(username);
+        // Set thông tin sau khi fetch xong
+        this.setInfo(username);
 
         //subscribe socket
         this.subscribeSocket(roomId, username);
@@ -55,9 +61,17 @@ export const useRoomMemberStore = defineStore("roomMember", {
       }
     },
 
-    async setCurrentAuthority(username: string) {
-      this.currentAuthority =
-        this.members.find((m) => m.username === username)?.role ?? "MEMBER";
+    async setInfo(username: string) {
+      const current = this.members.find((m) => m.username === username);
+
+      this.currentAuthority = current?.role ?? "MEMBER";
+      this.isMuted = current?.muted ?? false;
+      this.isDeafen = current?.deafen ?? false;
+    },
+
+    async clearMembers() {
+      this.members = [];
+      this.currentAuthority = null;
     },
 
     

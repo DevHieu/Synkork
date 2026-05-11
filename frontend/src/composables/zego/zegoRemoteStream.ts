@@ -28,7 +28,7 @@ export function zegoRemoteStream(
     }
 
     await new Promise((r) => setTimeout(r, 100));
-    utils.ensureHiddenContainer(`remote-video-${userID}`); // Tạo container
+    utils.createHiddenContainer(`remote-video-${userID}`); // Tạo container
 
     state.zg
       .createRemoteStreamView(remoteStream)
@@ -68,7 +68,7 @@ export function zegoRemoteStream(
     }
 
     await new Promise((r) => setTimeout(r, 100));
-    utils.ensureHiddenContainer(`remote-screen-${userId}`);
+    utils.createHiddenContainer(`remote-screen-${userId}`);
 
     state.zg
       .createRemoteStreamView(screenRemoteStream)

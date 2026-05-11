@@ -23,7 +23,7 @@ const { toggleVideo, toggleAudio, toggleMic, toggleShareScreen } =
     class="shrink-0 flex items-center justify-center gap-2 px-4 py-3 border-t border-border bg-card"
   >
     <button
-      @click="toggleMic"
+      @click="() => toggleMic()"
       :class="[
         'flex flex-col items-center gap-1 px-4 py-2.5 rounded-xl text-xs font-medium transition-all',
         micOn
@@ -35,7 +35,7 @@ const { toggleVideo, toggleAudio, toggleMic, toggleShareScreen } =
       {{ micOn ? "Mic" : "Mic off" }}
     </button>
     <button
-      @click="toggleVideo"
+      @click="() => toggleVideo()"
       :class="[
         'flex flex-col items-center gap-1 px-4 py-2.5 rounded-xl text-xs font-medium transition-all',
         videoOn
@@ -50,7 +50,7 @@ const { toggleVideo, toggleAudio, toggleMic, toggleShareScreen } =
       {{ videoOn ? "Cam" : "Cam off" }}
     </button>
     <button
-      @click="toggleAudio"
+      @click="() => toggleAudio()"
       :class="[
         'flex flex-col items-center gap-1 px-4 py-2.5 rounded-xl text-xs font-medium transition-all',
         audioOn
@@ -65,7 +65,7 @@ const { toggleVideo, toggleAudio, toggleMic, toggleShareScreen } =
       {{ audioOn ? "Âm thanh" : "Tắt tiếng" }}
     </button>
     <button
-      @click="toggleShareScreen"
+      @click="() => toggleShareScreen()"
       :class="[
         'flex flex-col items-center gap-1 px-4 py-2.5 rounded-xl text-xs font-medium transition-all',
         screenOn

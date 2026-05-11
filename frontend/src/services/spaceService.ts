@@ -10,6 +10,12 @@ export const createSpace = async (roomId: string, spaceData: {}) => {
   return res.data;
 };
 
+export const getSpaceById = async (spaceId: string) => {
+  // Cái roomId đang để null vì cái hàm này chỉ dùng để join DM space, mà DM space thì không có roomId, Nên để vậy luôn
+  const res = await axiosClient.get(`/api/rooms/null/spaces/${spaceId}`);
+  return res.data;
+};
+
 export const updateSpace = async (
   roomId: string,
   spaceId: string,

@@ -49,6 +49,8 @@ export const getAroundMessage = async (
 ) => {
   const params = new URLSearchParams({ limit: limit.toString() });
 
+  console.log(params);
+
   return axiosClient.get(
     `/api/spaces/${spaceId}/messages/around/${messageId}?${params}`,
   );
@@ -65,5 +67,25 @@ export const sendFileMessage = async (spaceId: string, formData: FormData) => {
     },
   );
 
+  return res.data;
+};
+
+export const searchMessage = async (
+  spaceId: string,
+  keyword: string,
+  cursor: string | null,
+  limit: number,
+) => {
+  const params = new URLSearchParams({
+    keyword,
+    limit: limit.toString(),
+  });
+  if (cursor !== null) {
+    params.append("cursor", cursor);
+  }
+
+  const res = await axiosClient.get(
+    `/api/spaces/${spaceId}/messages/search?${params.toString()}`,
+  );
   return res.data;
 };

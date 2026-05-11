@@ -2,15 +2,12 @@ package com.synkork.backend.modules.user;
 
 import com.synkork.backend.modules.user.dto.UserInfoDto;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
 // Controller là NƠI XỬ LÝ CÁC YÊU CẦU HTTP TỪ CLIENT VÀ XỬ LÝ VỀ PHẦN TRẢ VỀ DỮ LIỆU
 // Những phần về XỬ LÍ NGHIỆP VỤ sẽ được chuyển xuống SERVICE để tách biệt rõ ràng các tầng trong ứng dụng
@@ -47,10 +44,11 @@ public class UserController {
 
     return ResponseEntity.ok(user);
   }
-  // Như cái dưới đây thì đường dẫn đầy đủ sẽ là:
-  // http:localhost:8080/api/users/{userId}
-  @GetMapping("/{userId}")
-  public String getUserById(@RequestParam String userId) {
-    return new String();
+
+  @GetMapping("/{username}")
+  public ResponseEntity<UserInfoDto> getUserById(@PathVariable String username) {
+    UserEntity entity = userService.getUserInfoByUsername(username);
+
+    return ResponseEntity.ok(new UserInfoDto(entity));
   }
 }

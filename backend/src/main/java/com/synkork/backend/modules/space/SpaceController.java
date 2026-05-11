@@ -1,8 +1,8 @@
 package com.synkork.backend.modules.space;
 
-import com.synkork.backend.modules.space.dto.CreateSpaceDTO;
+import com.synkork.backend.modules.space.dto.CreateSpaceRequest;
 import com.synkork.backend.modules.space.dto.SpaceDTO;
-import com.synkork.backend.modules.space.dto.UpdateSpaceDTO;
+import com.synkork.backend.modules.space.dto.UpdateSpaceRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -28,8 +28,13 @@ public class SpaceController {
         return ResponseEntity.ok(spaces);
     }
 
+    @GetMapping("/{spaceId}")
+    public ResponseEntity<SpaceDTO> getSpaceById(@PathVariable UUID spaceId) {
+        return ResponseEntity.ok(spaceService.getSpaceById(spaceId));
+    }
+
     @PostMapping
-    public ResponseEntity<SpaceDTO> createSpace(@PathVariable String roomId, @RequestBody CreateSpaceDTO space) {
+    public ResponseEntity<SpaceDTO> createSpace(@PathVariable String roomId, @RequestBody CreateSpaceRequest space) {
         UUID roomUUID = UUID.fromString(roomId);
 
         SpaceEntity entity = spaceService.createSpace(space, roomUUID);
@@ -41,7 +46,7 @@ public class SpaceController {
     }
 
     @PutMapping("/{spaceId}")
-    public ResponseEntity<SpaceDTO> updateSpace(@PathVariable String roomId, @PathVariable String spaceId, @RequestBody UpdateSpaceDTO space) {
+    public ResponseEntity<SpaceDTO> updateSpace(@PathVariable String roomId, @PathVariable String spaceId, @RequestBody UpdateSpaceRequest space) {
         UUID spaceUUID = UUID.fromString(spaceId);
 
         SpaceEntity entity = spaceService.updateSpace(space, spaceUUID);

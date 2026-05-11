@@ -1,23 +1,21 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { Trash2 } from "lucide-vue-next";
+import { deleteRoom } from "@/services/roomService";
 
-const emit = defineEmits<{ delete: [] }>();
+const props = defineProps<{ roomName: string; roomId: string }>();
 
-// Danger zone
 const confirmDeleteText = ref("");
 const roomNameToDelete = computed(() => props.roomName);
-const props = defineProps<{ roomName: string }>();
-const canDelete = computed(() => confirmDeleteText.value === props.roomName);
+const canDelete = computed(() => confirmDeleteText.value == props.roomName);
 
 const isDeleting = ref(false);
 
 const handleDeleteRoom = async () => {
   if (!canDelete.value) return;
   isDeleting.value = true;
-  await new Promise((r) => setTimeout(r, 1000));
+  await deleteRoom(props.roomId);
   isDeleting.value = false;
-  emit("delete");
 };
 </script>
 <template>

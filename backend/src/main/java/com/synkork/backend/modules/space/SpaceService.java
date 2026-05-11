@@ -6,8 +6,8 @@ import com.synkork.backend.modules.message.MessageRepository;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.RoomRepository;
 import com.synkork.backend.modules.space.dto.SpaceDTO;
-import com.synkork.backend.modules.space.dto.CreateSpaceDTO;
-import com.synkork.backend.modules.space.dto.UpdateSpaceDTO;
+import com.synkork.backend.modules.space.dto.CreateSpaceRequest;
+import com.synkork.backend.modules.space.dto.UpdateSpaceRequest;
 import com.synkork.backend.modules.space.enums.SpaceTypeEnum;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +37,7 @@ public class SpaceService {
 //    @Autowired
 //    private CalendarEventRepository calendarEventRepository;
 
-    public SpaceEntity createSpace(CreateSpaceDTO space, UUID roomId) {
+    public SpaceEntity createSpace(CreateSpaceRequest space, UUID roomId) {
         RoomEntity roomEntity = roomRepository.getReferenceById(roomId);
 
         SpaceEntity spaceEntity = new SpaceEntity(space.name(), SpaceTypeEnum.valueOf(space.type()), roomEntity);
@@ -49,7 +49,7 @@ public class SpaceService {
         return spaceRepository.findAllByRoomIdAsDto(roomId);
     }
 
-    public SpaceEntity updateSpace(UpdateSpaceDTO spaceDto, UUID spaceId) {
+    public SpaceEntity updateSpace(UpdateSpaceRequest spaceDto, UUID spaceId) {
         SpaceEntity space = spaceRepository.findById(spaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Space not found"));
 
@@ -83,4 +83,10 @@ public class SpaceService {
         }
     }
 
+    public SpaceDTO getSpaceById(UUID spaceId) {
+        SpaceEntity space =  spaceRepository.findById(spaceId)
+                .orElseThrow(() -> new IllegalArgumentException("Space not found"));
+
+        return new SpaceDTO(space);
+    }
 }
