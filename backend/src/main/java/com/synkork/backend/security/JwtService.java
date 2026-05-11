@@ -29,6 +29,8 @@ public class JwtService {
     private String secretkey = "";
 
     public String generateToken(String userId, String username, RoleEnum role, String type) {
+        String roleString = role.toString();
+
         long duration = type.equals("ACCESS")
                 ? TimeUnit.MINUTES.toMillis(1) // Access key hết hạn sau 15p
                 : TimeUnit.DAYS.toMillis(7); // Refresh key thì 7 ngày
@@ -39,7 +41,7 @@ public class JwtService {
         Map<String, Object> claims = new HashMap<>();
         claims.put("type", type);
         claims.put("userId", userId);
-        claims.put("role", role);
+        claims.put("role", roleString);
         return Jwts.builder()
                 .claims()
                 .add(claims)

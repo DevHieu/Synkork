@@ -5,9 +5,11 @@ import com.synkork.backend.modules.room.dto.CreateRoomDto;
 import com.synkork.backend.modules.room.dto.RoomDto;
 import com.synkork.backend.modules.room.dto.RoomReviewResponse;
 import com.synkork.backend.modules.room.dto.UpdateRoomDto;
+import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberService;
 import com.synkork.backend.modules.space.SpaceService;
 import com.synkork.backend.modules.space.dto.CreateSpaceRequest;
+import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.security.UserPrinciple;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.transaction.Transactional;
@@ -85,6 +87,22 @@ public class RoomController {
         simpMessagingTemplate.convertAndSend("/topic/rooms/" + roomId + "/update", roomDto);
 
         return ResponseEntity.ok(roomDto);
+    }
+
+    @Transactional
+    @DeleteMapping("/{roomId}")
+    public ResponseEntity<?> deleteRoom(@PathVariable String roomId) {
+        UUID roomUUID =  UUID.fromString(roomId);
+        List<UserEntity> memberList = roomMemberService.getRoomMemberByRoomId(roomUUID);
+
+        roomService.deleteRoom(roomUUID);
+
+        for (UserEntity member : memberList) {
+            simpMessagingTemplate.convertAndSendToUser(member.getEmail(), "/queue/rooms/deleted", roomId);
+        }
+
+
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/me")

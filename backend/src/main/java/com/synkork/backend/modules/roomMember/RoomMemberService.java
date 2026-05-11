@@ -119,4 +119,8 @@ public class RoomMemberService {
 
         roomMemberRepository.save(member);
     }
+
+    public List<UserEntity> getRoomMemberByRoomId(UUID roomUUID) {
+        return roomMemberRepository.findUsersByRoomId(roomUUID);
+    }
 }

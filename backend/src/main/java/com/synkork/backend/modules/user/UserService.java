@@ -49,4 +49,7 @@ public class UserService {
         return userRepository.save(existedUser);
     }
 
+    public UserEntity getUserInfoByUsername(String username) {
+        return userRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("User không tồn tại"));
+    }
 }

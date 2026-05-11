@@ -8,6 +8,7 @@ import com.synkork.backend.modules.room.dto.CreateRoomDto;
 import com.synkork.backend.modules.room.dto.RoomDto;
 import com.synkork.backend.modules.room.dto.RoomReviewResponse;
 import com.synkork.backend.modules.room.dto.UpdateRoomDto;
+import com.synkork.backend.modules.room.enums.RoomStatusEnum;
 import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
@@ -181,5 +182,14 @@ public class RoomService {
         SpaceEntity space = spaceService.createSpace(new CreateSpaceRequest("DM", "CHAT"), roomSaved.getId());
 
         return space.getId();
+    }
+
+    public void deleteRoom(UUID roomId) {
+        UUID requesterId = AuthUtils.getCurrentUserId();
+        PermissionService.requirePermission(roomId, requesterId, RoomMemberRoleEnum.OWNER);
+
+        RoomEntity room = this.findById(roomId);
+
+        room.setStatus(RoomStatusEnum.DELETED);
     }
 }

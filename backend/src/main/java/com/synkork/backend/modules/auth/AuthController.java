@@ -73,7 +73,7 @@ public class AuthController {
                                                HttpServletResponse response) {
         String username = jwtService.extractUserName(refreshToken);
         String userId = jwtService.extractClaim(refreshToken, claims -> claims.get("userId", String.class));
-        RoleEnum role = jwtService.extractClaim(refreshToken, claims -> claims.get("role", RoleEnum.class));
+        RoleEnum role = RoleEnum.valueOf(jwtService.extractClaim(refreshToken, claims -> claims.get("role", String.class)));
         if (username != null && jwtService.validateRefreshToken(refreshToken)) {
             System.out.println("generating");
             String newAccessToken = jwtService.generateToken(userId, username, role, "ACCESS");
