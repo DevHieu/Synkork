@@ -111,7 +111,7 @@ const tabs = computed(() =>
             v-if="activeTab === 'members' && canManage"
             class="flex flex-col gap-3"
           >
-            <MembersTab :roomId="currentRoom?.id" />
+            <MembersTab :roomId="currentRoom?.id ?? ''" />
           </div>
 
           <div
@@ -120,7 +120,7 @@ const tabs = computed(() =>
           >
             <DeleteTab
               :roomName="currentRoom?.name ?? ''"
-              @delete="handleClose"
+              :roomId="currentRoom?.id ?? ''"
             />
           </div>
         </div>

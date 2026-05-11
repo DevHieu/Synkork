@@ -4,6 +4,9 @@ import { SidebarHeader, SidebarContent } from "@/components/ui/sidebar";
 import { useFriendStore } from "@/stores/friendStore";
 import { storeToRefs } from "pinia";
 import { onMounted } from "vue";
+import Avatar from "../ui/avatar/Avatar.vue";
+import AvatarImage from "../ui/avatar/AvatarImage.vue";
+import AvatarFallback from "../ui/avatar/AvatarFallback.vue";
 
 const router = useRouter();
 const friendStore = useFriendStore();
@@ -73,17 +76,11 @@ onMounted(() => {
         class="flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-[var(--color-sidebar-accent)] transition"
       >
         <div class="relative">
-          <div
-            class="w-8 h-8 rounded-full bg-[var(--color-muted)] flex items-center justify-center text-xs font-bold uppercase overflow-hidden"
-          >
-            <img
-              v-if="friend.avatarUrl"
-              :src="friend.avatarUrl"
-              class="w-full h-full object-cover"
-              alt="avatar"
-            />
-            <span v-else>{{ friend.name?.substring(0, 2).toUpperCase() }}</span>
-          </div>
+          <Avatar class="h-8 w-8 text-xs font-bold uppercase">
+            <AvatarImage v-if="friend.avatarUrl" :src="friend.avatarUrl" />
+            <AvatarFallback class="bg-primary"> </AvatarFallback>
+          </Avatar>
+
           <div
             class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[var(--color-sidebar)]"
             :class="friend.isOnline ? 'bg-green-500' : 'bg-gray-400'"

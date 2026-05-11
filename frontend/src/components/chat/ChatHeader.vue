@@ -6,6 +6,7 @@ import Avatar from "../ui/avatar/Avatar.vue";
 import AvatarImage from "../ui/avatar/AvatarImage.vue";
 import AvatarFallback from "../ui/avatar/AvatarFallback.vue";
 import SearchBar from "./sub-components/SearchBar.vue";
+import UserInfoPopover from "../dialog/UserInfoPopover.vue";
 
 const props = defineProps<{
   spaceName: string;
@@ -31,12 +32,12 @@ const emit = defineEmits<{
     <div class="flex items-center gap-2 min-w-0">
       <SidebarTrigger class="-ml-1 shrink-0" />
       <template v-if="isDm && dmFriend">
-        <Avatar class="w-7 h-7 text-xs font-bold uppercase">
-          <AvatarImage v-if="dmFriend.avatarUrl" :src="dmFriend.avatarUrl" />
-          <AvatarFallback class="bg-primary">
-            {{ dmFriend.name?.substring(0, 2).toUpperCase() }}
-          </AvatarFallback>
-        </Avatar>
+        <UserInfoPopover :username="dmFriend.username">
+          <Avatar class="w-7 h-7 text-xs font-bold uppercase">
+            <AvatarImage v-if="dmFriend.avatarUrl" :src="dmFriend.avatarUrl" />
+            <AvatarFallback class="bg-primary"> </AvatarFallback>
+          </Avatar>
+        </UserInfoPopover>
         <span class="font-semibold text-[15px] truncate">{{
           dmFriend.name
         }}</span>

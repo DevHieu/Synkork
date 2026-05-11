@@ -10,6 +10,9 @@ import { useVoiceSpaceStore } from "@/stores/voiceSpaceStore";
 import { storeToRefs } from "pinia";
 import VoiceDropdownMenu from "./VoiceDropdownMenu.vue";
 import { useRoomMemberStore } from "@/stores/roomMemberStore";
+import Avatar from "../ui/avatar/Avatar.vue";
+import AvatarImage from "../ui/avatar/AvatarImage.vue";
+import AvatarFallback from "../ui/avatar/AvatarFallback.vue";
 
 const props = defineProps<{
   item: VoiceItemType;
@@ -19,16 +22,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   focus: [tileId: string];
 }>();
-
-const getInitials = (name: string) =>
-  name
-    ? name
-        .split(/[\s_-]/)
-        .map((w) => w[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
-    : "?";
 
 const { canManage } = storeToRefs(useRoomMemberStore());
 const { mutedList } = storeToRefs(useVoiceSpaceStore());
@@ -44,17 +37,14 @@ const { mutedList } = storeToRefs(useVoiceSpaceStore());
       v-if="item.type === 'participant' && !item.videoOn"
       class="absolute inset-0 flex flex-col items-center justify-center gap-3"
     >
-      <img
-        v-if="item.isLocal && user?.avatarUrl"
-        :src="user.avatarUrl"
-        class="w-16 h-16 rounded-full object-cover ring-2 ring-primary/30"
-      />
-      <div
-        v-else
-        class="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-xl font-bold text-primary-foreground"
-      >
-        {{ getInitials(item.userName) }}
-      </div>
+      <Avatar class="h-8 w-8 shrink-0">
+        <AvatarImage
+          v-if="item.isLocal && user?.avatarUrl"
+          :src="user?.avatarUrl"
+        />
+        <AvatarFallback class="text-xs"> </AvatarFallback>
+      </Avatar>
+
       <span class="text-sm text-muted-foreground font-medium">
         {{ item.userName }}
         <span v-if="item.isLocal" class="opacity-60">(Bạn)</span>

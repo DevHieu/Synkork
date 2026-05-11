@@ -3,6 +3,9 @@ import { ref } from "vue";
 import { Volume2, MicOff, VolumeX, Settings } from "lucide-vue-next";
 import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import SpaceSettingDialog from "./SpaceSettingDialog.vue";
+import Avatar from "../ui/avatar/Avatar.vue";
+import AvatarImage from "../ui/avatar/AvatarImage.vue";
+import AvatarFallback from "../ui/avatar/AvatarFallback.vue";
 
 const props = defineProps<{
   spaceId: string;
@@ -27,14 +30,6 @@ const emit = defineEmits<{
 }>();
 
 const settingOpen = ref(false);
-
-const getInitials = (name: string) =>
-  name
-    ?.split(/[\s_-]/)
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2) ?? "?";
 </script>
 
 <template>
@@ -64,17 +59,10 @@ const getInitials = (name: string) =>
         class="flex items-center gap-2 px-2 py-0.5 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-default"
       >
         <div class="relative shrink-0">
-          <img
-            v-if="p.avatarUrl"
-            :src="p.avatarUrl"
-            class="w-5 h-5 rounded-full object-cover"
-          />
-          <div
-            v-else
-            class="w-5 h-5 rounded-full bg-primary/80 flex items-center justify-center text-[9px] font-bold text-primary-foreground"
-          >
-            {{ getInitials(p.userName) }}
-          </div>
+          <Avatar class="h-6 w-6 shrink-0">
+            <AvatarImage v-if="p.avatarUrl" :src="p.avatarUrl" />
+            <AvatarFallback class="text-xs"> </AvatarFallback>
+          </Avatar>
         </div>
         <span class="truncate flex-1">
           {{ p.userName }}

@@ -12,6 +12,7 @@ import { useMessageStore } from "@/stores/messageStore";
 import { useUserStore } from "@/stores/userStore";
 import { storeToRefs } from "pinia";
 import DeleteConfirmDialog from "@/components/dialog/DeleteConfirmDialog.vue";
+import UserInfoPopover from "../dialog/UserInfoPopover.vue";
 
 const props = defineProps<{
   message: Message;
@@ -108,15 +109,19 @@ const parsedContent = computed(() => {
   >
     <!-- Avatar -->
     <div class="w-10 shrink-0">
-      <Avatar v-if="!isGrouped || props.message.replyTo" class="h-10 w-10">
-        <AvatarImage
-          v-if="props.message.sender?.avatarUrl"
-          :src="props.message.sender.avatarUrl"
-        />
-        <AvatarFallback class="bg-primary">
-          {{ props.message.sender?.displayName?.charAt(0).toUpperCase() }}
-        </AvatarFallback>
-      </Avatar>
+      <UserInfoPopover
+        :username="props.message.sender?.username"
+        v-if="!isGrouped || props.message.replyTo"
+      >
+        <Avatar class="h-10 w-10">
+          <AvatarImage
+            v-if="props.message.sender?.avatarUrl"
+            :src="props.message.sender.avatarUrl"
+          />
+          <AvatarFallback class="bg-primary"> </AvatarFallback>
+        </Avatar>
+      </UserInfoPopover>
+
       <span
         v-else
         class="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 flex justify-center items-center h-full"

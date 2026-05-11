@@ -42,6 +42,12 @@ export const updateRoomInfo = async (
   return response.data;
 };
 
+export const deleteRoom = async (roomId: string) => {
+  const res = await axiosClient.delete(`/api/rooms/${roomId}`);
+
+  return res.data;
+};
+
 export const getInviteCode = async (roomId: string) => {
   const res = await axiosClient.get(`/api/rooms/${roomId}/invites`);
   return res.data;

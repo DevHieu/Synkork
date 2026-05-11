@@ -153,7 +153,6 @@ const jumpToMessage = async (messageId: string) => {
                 <AvatarFallback
                   class="text-[10px] bg-primary text-primary-foreground"
                 >
-                  {{ msg.sender?.displayName?.substring(0, 2).toUpperCase() }}
                 </AvatarFallback>
               </Avatar>
 

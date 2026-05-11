@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { MonitorUp } from "lucide-vue-next";
 import type { VoiceItemType } from "@/types/VoiceSpaceParticipant";
+import Avatar from "../ui/avatar/Avatar.vue";
+import AvatarFallback from "../ui/avatar/AvatarFallback.vue";
 
 const props = defineProps<{
   otherPeople: VoiceItemType[];
@@ -10,16 +12,6 @@ const emit = defineEmits<{
   focus: [tileId: string];
   "register-ref": [tileId: string, el: HTMLElement];
 }>();
-
-const getInitials = (name: string) =>
-  name
-    ? name
-        .split(/[\s_-]/)
-        .map((w) => w[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
-    : "?";
 </script>
 
 <template>
@@ -39,11 +31,9 @@ const getInitials = (name: string) =>
         v-if="tile.type === 'participant' && !tile.videoOn"
         class="w-full h-full flex items-center justify-center"
       >
-        <div
-          class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground"
-        >
-          {{ getInitials(tile.userName) }}
-        </div>
+        <Avatar class="h-8 w-8"
+          ><AvatarFallback class="text-xs"> </AvatarFallback
+        ></Avatar>
       </div>
       <div
         class="absolute bottom-1 left-1 right-1 z-10 text-[10px] px-1.5 py-0.5 rounded text-foreground truncate flex items-center gap-1"
