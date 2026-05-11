@@ -1,5 +1,6 @@
 package com.synkork.backend.modules.collaboration.note;
 
+import com.synkork.backend.common.utils.AuthUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -49,9 +50,7 @@ public class NoteController {
 
     @PostMapping
     public ResponseEntity<NoteResponse> createNote(@PathVariable String spaceId, @RequestBody NoteRequest request) {
-        UserPrinciple user = (UserPrinciple) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        
-        UUID userId = user.getId();
+        UUID userId = AuthUtils.getCurrentUserId();
 
         NoteResponse response = noteService.createNote(UUID.fromString(spaceId), userId, request);
 

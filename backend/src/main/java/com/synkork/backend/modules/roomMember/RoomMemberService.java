@@ -1,5 +1,7 @@
 package com.synkork.backend.modules.roomMember;
 
+import com.synkork.backend.common.utils.AuthUtils;
+import com.synkork.backend.common.utils.PermissionService;
 import com.synkork.backend.modules.roomMember.dto.ChangeAuthorityDTO;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.roomMember.dto.MuteRequest;
@@ -9,11 +11,8 @@ import com.synkork.backend.modules.room.RoomRepository;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -29,21 +28,22 @@ public class RoomMemberService {
     @Autowired
     RoomMemberRepository roomMemberRepository;
 
+    public RoomMemberEntity getRoomMemberById(UUID memberId) {
+        return roomMemberRepository.findById(memberId)
+                .orElseThrow(() -> new RuntimeException("Member not found"));
+    }
 
-    // Hàm này để lấy ra thằng gửi request. Check xem nó có đúng cái quyền dduwwocj cho phép chưa. Chưa thì cúc
-    public RoomMemberEntity getMemberWithAuthority(UUID roomId, UUID userId, RoomMemberRoleEnum... allowedRoles) {
-        RoomMemberEntity requester = roomMemberRepository
+    public RoomMemberEntity getRoomMemberByRoomIdAndUserId(UUID roomId, UUID userId) {
+        return roomMemberRepository
                 .findByRoom_IdAndUser_Id(roomId, userId)
-                .orElseThrow(() -> new RuntimeException("Không có quyền"));
+                .orElseThrow(() -> new RuntimeException("Member not found"));
+    }
 
-        boolean hasPermission = Arrays.stream(allowedRoles)
-                .anyMatch(role -> role == requester.getRole());
-
-        if (!hasPermission) {
-            throw new RuntimeException("Không có quyền");
-        }
-
-        return requester;
+    public List<RoomMemberDto> getRoomMembers(String roomId) {
+        return roomMemberRepository.findByRoom_Id(UUID.fromString(roomId))
+                .stream()
+                .map(RoomMemberDto::new)
+                .toList();
     }
 
     public RoomMemberEntity addRoomMembers(String userId, String roomID, String role) {
@@ -69,18 +69,12 @@ public class RoomMemberService {
         return roomMemberRepository.save(roomMemberEntity);
     }
 
-    public List<RoomMemberDto> getRoomMembers(String roomId) {
-        return roomMemberRepository.findByRoom_Id(UUID.fromString(roomId))
-                .stream()
-                .map(RoomMemberDto::new)
-                .toList();
-    }
-
     public RoomMemberEntity changerAuthority(ChangeAuthorityDTO dto, UUID roomId, UUID requesterUserId) {
 
-       this.getMemberWithAuthority(roomId, requesterUserId, RoomMemberRoleEnum.OWNER);
+        PermissionService.requirePermission(roomId, requesterUserId, RoomMemberRoleEnum.OWNER);
 
-        RoomMemberEntity member = roomMemberRepository.findById(UUID.fromString(dto.memberId())).orElseThrow(() -> new RuntimeException("Không tìm thấy member"));
+        UUID memberUUID = UUID.fromString(dto.memberId());
+        RoomMemberEntity member = this.getRoomMemberById(memberUUID);
 
         if (member.getRole() == RoomMemberRoleEnum.OWNER) {
             throw new RuntimeException("Không thể đổi quyền chủ phòng");
@@ -91,11 +85,10 @@ public class RoomMemberService {
     }
 
     public String kickMember(UUID memberUUID, UUID roomUUID, UUID userId) {
-        RoomMemberEntity kicker = getMemberWithAuthority(roomUUID, userId,
-                RoomMemberRoleEnum.OWNER, RoomMemberRoleEnum.ADMIN);
+        RoomMemberEntity kicker = this.getRoomMemberByRoomIdAndUserId(roomUUID, userId);
+        PermissionService.requirePermission(kicker, RoomMemberRoleEnum.OWNER, RoomMemberRoleEnum.ADMIN);
 
-        RoomMemberEntity target = roomMemberRepository.findById(memberUUID)
-                .orElseThrow(() -> new RuntimeException("Member not found"));
+        RoomMemberEntity target = this.getRoomMemberById(memberUUID);;
 
         if (target.getRole() == RoomMemberRoleEnum.OWNER) {
             throw new RuntimeException("Cannot kick OWNER");
@@ -111,11 +104,12 @@ public class RoomMemberService {
         return target.getUser().getEmail();
     }
 
-    public void toogleMuteMembers(String roomId, String userId, MuteRequest muteRequest) {
-        UUID roomUUID =  UUID.fromString(roomId);
-        UUID memberUUID = UUID.fromString(userId);
+    public void toggleMuteMembers(UUID roomId, UUID memberId, UUID requesterId, MuteRequest muteRequest) {
 
-        RoomMemberEntity member = roomMemberRepository.findByRoom_IdAndUser_Id(roomUUID, memberUUID).orElseThrow(() -> new RuntimeException("Member not found"));
+
+        PermissionService.requirePermission(roomId, requesterId, RoomMemberRoleEnum.OWNER, RoomMemberRoleEnum.ADMIN);
+
+        RoomMemberEntity member = this.getRoomMemberByRoomIdAndUserId(roomId, memberId);
 
         if (muteRequest.muted() != null) {
             member.setMuted(muteRequest.muted());
@@ -124,5 +118,9 @@ public class RoomMemberService {
         }
 
         roomMemberRepository.save(member);
+    }
+
+    public List<UserEntity> getRoomMemberByRoomId(UUID roomUUID) {
+        return roomMemberRepository.findUsersByRoomId(roomUUID);
     }
 }

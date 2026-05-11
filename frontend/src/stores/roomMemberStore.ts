@@ -40,6 +40,7 @@ export const useRoomMemberStore = defineStore("roomMember", {
       });
 
       userSocket.subscribeKicked();
+      userSocket.subscribeRoomDeleted();
     },
 
     async fetchMembers(roomId: string, username: string) {

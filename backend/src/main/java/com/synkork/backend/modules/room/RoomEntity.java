@@ -1,8 +1,10 @@
 package com.synkork.backend.modules.room;
 
 import com.synkork.backend.common.base.BaseEntity;
+import com.synkork.backend.modules.room.enums.RoomStatusEnum;
 import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
+import com.synkork.backend.modules.space.SpaceEntity;
 import com.synkork.backend.modules.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -33,6 +35,9 @@ public class RoomEntity extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private RoomTypeEnum type = RoomTypeEnum.GROUP; // GROUP | DM
 
+    @Enumerated(EnumType.STRING)
+    private RoomStatusEnum status = RoomStatusEnum.OPEN;
+
     @Column(unique = true, nullable = true)
     private String inviteCode;
 
@@ -40,7 +45,10 @@ public class RoomEntity extends BaseEntity {
     @JoinColumn(name = "owner_id", columnDefinition = "BINARY(16)", nullable = true)
     private UserEntity owner;
 
-    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RoomMemberEntity> roomMembers;
+
+    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SpaceEntity> spaces;
 
 }

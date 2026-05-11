@@ -1,5 +1,6 @@
 package com.synkork.backend.modules.roomMember;
 
+import com.synkork.backend.modules.user.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -28,4 +29,7 @@ public interface RoomMemberRepository extends JpaRepository<RoomMemberEntity, UU
     boolean existsByRoom_IdAndUser_Id(UUID id, UUID userId);
 
     Optional<RoomMemberEntity> findByRoom_IdAndUser_Id(UUID roomId, UUID userId);
+
+    @Query("SELECT rm.user FROM RoomMemberEntity rm WHERE rm.room.id = :roomUUID")
+    List<UserEntity> findUsersByRoomId(UUID roomUUID);
 }

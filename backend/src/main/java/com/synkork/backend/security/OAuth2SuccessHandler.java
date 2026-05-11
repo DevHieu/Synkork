@@ -51,10 +51,10 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
             existedUser = userService.create(newUser);
         }
 
-        String refreshToken = jwtService.generateToken(existedUser.getId().toString(), email, "REFRESH");
+        String refreshToken = jwtService.generateToken(existedUser.getId().toString(), email, existedUser.getRole(), "REFRESH");
         jwtService.saveRefreshToken(refreshToken, response);
 
-        String accessToken = jwtService.generateToken(existedUser.getId().toString(), email, "ACCESS");
+        String accessToken = jwtService.generateToken(existedUser.getId().toString(), email, existedUser.getRole(), "ACCESS");
         response.sendRedirect(frontendUrl + "/oauth2/redirect?token=" + accessToken);
     }
 }

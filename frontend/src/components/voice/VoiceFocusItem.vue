@@ -7,6 +7,9 @@ import DropdownMenuTrigger from "../ui/dropdown-menu/DropdownMenuTrigger.vue";
 import VoiceDropdownMenu from "./VoiceDropdownMenu.vue";
 import { useRoomMemberStore } from "@/stores/roomMemberStore";
 import { storeToRefs } from "pinia";
+import Avatar from "../ui/avatar/Avatar.vue";
+import AvatarImage from "../ui/avatar/AvatarImage.vue";
+import AvatarFallback from "../ui/avatar/AvatarFallback.vue";
 
 const props = defineProps<{
   focusedTile: VoiceItemType;
@@ -19,16 +22,6 @@ const emit = defineEmits<{
 }>();
 
 const { canManage } = storeToRefs(useRoomMemberStore());
-
-const getInitials = (name: string) =>
-  name
-    ? name
-        .split(/[\s_-]/)
-        .map((w) => w[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
-    : "?";
 </script>
 
 <template>
@@ -40,17 +33,14 @@ const getInitials = (name: string) =>
       v-if="focusedTile.type === 'participant' && !focusedTile.videoOn"
       class="absolute inset-0 flex flex-col items-center justify-center gap-3 z-1"
     >
-      <img
-        v-if="focusedTile.isLocal && user?.avatarUrl"
-        :src="user.avatarUrl"
-        class="w-20 h-20 rounded-full object-cover ring-2 ring-primary/30"
-      />
-      <div
-        v-else
-        class="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-2xl font-bold text-primary-foreground"
-      >
-        {{ getInitials(focusedTile.userName) }}
-      </div>
+      <Avatar class="h-16 w-16 shrink-0">
+        <AvatarImage
+          v-if="focusedTile.isLocal && user?.avatarUrl"
+          :src="user.avatarUrl"
+        />
+        <AvatarFallback class="text-xs"> </AvatarFallback>
+      </Avatar>
+
       <span class="text-sm text-foreground/70">
         {{ focusedTile.userName }}
         <span v-if="focusedTile.isLocal" class="opacity-60">(Bạn)</span>

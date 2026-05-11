@@ -63,7 +63,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/json");
                 response.getWriter().write("{\"error\": \"TOKEN_EXPIRED\", \"message\": \"Access token has expired\"}");
-                return; // Không gọi filterChain nữa
+                return;
             } catch (Exception e) {
                 logger.error("JWT validation failed: " + e.getMessage());
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -73,6 +73,6 @@ public class JwtFilter extends OncePerRequestFilter {
             }
         }
 
-        filterChain.doFilter(request, response); // Luôn luôn phải gọi dòng này
+        filterChain.doFilter(request, response);
     }
 }
