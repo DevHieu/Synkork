@@ -1,6 +1,5 @@
 package com.synkork.backend.modules.collaboration.task.card;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -17,8 +16,6 @@ import com.synkork.backend.modules.collaboration.task.dto.CardRequest;
 import com.synkork.backend.modules.collaboration.task.dto.MoveCardRequest;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
-import com.synkork.backend.modules.user.UserEntity;
-import com.synkork.backend.modules.user.UserRepository;
 
 import jakarta.transaction.Transactional;
 
@@ -27,9 +24,6 @@ public class CardService {
 
     @Autowired
     private CardRepository cardRepository;
-
-    @Autowired
-    private UserRepository userRepository;
 
     @Autowired
     private ColumnRepository columnRepository;
@@ -43,9 +37,6 @@ public class CardService {
         ColumnEntity column = columnRepository.findById(columnId)
                 .orElseThrow(() -> new RuntimeException("Cột không tồn tại"));
             
-        
-
-        // Cách lấy position ngắn gọn hơn: đếm số lượng card hiện có
         int nextPosition = cardRepository.findByColumn_IdOrderByPositionAsc(columnId).size();
 
         CardEntity card = new CardEntity();
@@ -65,8 +56,6 @@ public class CardService {
             List<RoomMemberEntity> assignees = roomMemberRepository.findAllById(req.getAssigneeIds());
             card.setAssignees(assignees);
         }
-
-        
 
         CardEntity savedCard = cardRepository.save(card);
         return new CardDTO(savedCard);
@@ -88,7 +77,7 @@ public class CardService {
         System.out.println("assigneeIds từ request: " + req.getAssigneeIds());
         System.out.println("isEmpty check: " + (req.getAssigneeIds() != null && !req.getAssigneeIds().isEmpty()));
 
-        if (req.getAssigneeIds() != null && !req.getAssigneeIds().isEmpty()) {
+        if (req.getAssigneeIds() != null ) {
             List<RoomMemberEntity> assignees = roomMemberRepository.findAllById(req.getAssigneeIds());
             System.out.println("Users tìm được: " + assignees.stream().map(u -> u.getId().toString()).toList());
             card.setAssignees(assignees);
@@ -97,23 +86,6 @@ public class CardService {
         CardEntity updatedCard = cardRepository.save(card);
         return new CardDTO(updatedCard);
     }
-
-    // @Transactional
-    // public void updateMember(UUID cardId, CardRequest req){
-    //     CardEntity card = cardRepository.findById(cardId)
-    //             .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
-
-    //     card.setTitle(req.getTitle());
-    //     card.setDescription(req.getDescription() != null ? req.getDescription() : "");
-
-    //     if (req.getAssigneeIds() != null) {
-    //         List<UserEntity> assignees = userRepository.findAllById(req.getAssigneeIds());
-    //         card.setAssignees(assignees);
-    //     }
-
-    //     CardEntity updatedCard = cardRepository.save(card);
-    //     return new CardDTO(updatedCard);
-    // }
 
     @Transactional
     public void deleteCard(UUID cardId) {

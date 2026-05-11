@@ -41,10 +41,6 @@ public class CardEntity extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    // @ManyToOne(fetch = FetchType.LAZY)
-    // @JoinColumn(name = "assignee_id", columnDefinition = "BINARY(16)")
-    // private UserEntity assignee;
-
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "card_assignees",

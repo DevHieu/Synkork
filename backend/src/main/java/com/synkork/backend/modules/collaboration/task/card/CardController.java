@@ -2,7 +2,6 @@ package com.synkork.backend.modules.collaboration.task.card;
 
 import com.synkork.backend.security.UserPrinciple;
 
-import java.nio.file.attribute.UserPrincipal;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
