@@ -4,7 +4,7 @@ import draggable from 'vuedraggable'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import TaskCard from './TaskCard.vue'
-import type { CardEvent, ColumnEvent, TaskMoveEvent } from '@/types/Task'
+import type { ColumnEvent, TaskMoveEvent } from '@/types/Task'
 
 const props = defineProps<{ column: ColumnEvent }>()
 
@@ -12,7 +12,6 @@ const emit = defineEmits<{
     editColumn: [column: ColumnEvent]
     deleteColumn: [columnId: string]
     addCard: [columnId: string]
-    editCard: [columnId: string, card: CardEvent]
     deleteCard: [columnId: string, cardId: string]
     cardMove: [event: TaskMoveEvent, columnId: string]
 }>()
@@ -56,18 +55,15 @@ const emit = defineEmits<{
             class="flex-1 flex flex-col gap-3 overflow-y-auto min-h-[150px] p-1"
         >
             <template #item="{ element: card }">
-        
                 <TaskCard
                     :card="card"
                     :column-name="column.name"
-                    @edit="emit('editCard', column.id, card)"
                     @delete="emit('deleteCard', column.id, card.id)"
                     :column-id="column.id"
                 />
             </template>
         </draggable>
 
-        <!-- Add card button -->
         <button
             @click="emit('addCard', column.id)"
             class="mt-3 w-full py-2 flex items-center justify-center gap-1 text-slate-400 hover:text-teal-600 text-sm font-medium cursor-pointer"
