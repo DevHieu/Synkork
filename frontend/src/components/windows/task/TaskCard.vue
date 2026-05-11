@@ -109,7 +109,6 @@ const handleUpdateAssignees = async ({
                             </span>
                         </div>
 
-                        <!-- fallback nếu chưa assign ai -->
                        
                     </div>
                     <span class="text-[10px] text-slate-400 font-medium">
