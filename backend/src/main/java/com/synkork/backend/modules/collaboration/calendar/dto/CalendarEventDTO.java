@@ -1,6 +1,6 @@
 package com.synkork.backend.modules.collaboration.calendar.dto;
 
-import com.synkork.backend.modules.collaboration.calendar.CalendarEventEntity;
+import com.synkork.backend.modules.collaboration.calendar.entity.CalendarEventEntity;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

@@ -29,17 +29,22 @@ spring:
             token-uri: https://oauth2.googleapis.com/token
             user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
             user-name-attribute: sub
+
   config:
     import: optional:file:.env[.properties]
+
   servlet:
     multipart:
       max-file-size: 100MB
       max-request-size: 100MB
 
+  ai:
+    gemini:
+      api-key: ${GEMINI_API_KEY}
+
 server:
   port: 8080
   servlet:
-    # Set the context path to /api (localhost:8080/api)
     context-path: /api
 
 frontend:
@@ -61,3 +66,11 @@ cloudinary:
 zego:
   appId: ${ZEGO_APPID}
   secret: ${ZEGO_SERVER_SECRET}
+
+
+  server:
+    servlet:
+      encoding:
+        charset: UTF-8
+        enabled: true
+        force: true

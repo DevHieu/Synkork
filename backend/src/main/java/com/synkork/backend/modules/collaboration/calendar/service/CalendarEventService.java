@@ -1,6 +1,8 @@
-package com.synkork.backend.modules.collaboration.calendar;
+package com.synkork.backend.modules.collaboration.calendar.service;
 
+import com.synkork.backend.modules.collaboration.calendar.entity.CalendarEventEntity;
 import com.synkork.backend.modules.collaboration.calendar.dto.CalendarEventDTO;
+import com.synkork.backend.modules.collaboration.calendar.repository.CalendarEventRepository;
 import com.synkork.backend.modules.space.SpaceRepository;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
@@ -175,10 +177,10 @@ public class CalendarEventService {
     public CalendarEventDTO updateEvent(UUID eventId, CalendarEventDTO eventRequest, String userId) {
         // Null check cho IDE
         CalendarEventEntity calendarEvent = calendarEventRepository.findById(Objects.requireNonNull(eventId))
-                .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sự kiện"));
 
         if (!hasPermissionToEdit(calendarEvent, UUID.fromString(userId))) {
-            throw new SecurityException("Bạn không có quyền chỉnh sửa sự kiện này");
+            throw new SecurityException("Bạn không có quyền chỉnh sửa sự kiện này! Vui lòng liên hệ đến người tạo sự kiện");
         }
         eventRequest.updateEntity(calendarEvent);
         CalendarEventEntity savedEvent = calendarEventRepository.save(Objects.requireNonNull(calendarEvent));
@@ -195,7 +197,7 @@ public class CalendarEventService {
     public void deleteEvent(UUID eventId, String userId) {
         // Null check cho IDE
         CalendarEventEntity entity = calendarEventRepository.findById(Objects.requireNonNull(eventId))
-                .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sự kiện"));
 
         UUID userUUID = UUID.fromString(userId);
 

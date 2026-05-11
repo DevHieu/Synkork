@@ -1,6 +1,9 @@
-package com.synkork.backend.modules.collaboration.calendar;
+package com.synkork.backend.modules.collaboration.calendar.controller;
 
+import com.synkork.backend.modules.collaboration.calendar.repository.CalendarEventRepository;
+import com.synkork.backend.modules.collaboration.calendar.service.CalendarEventService;
 import com.synkork.backend.modules.collaboration.calendar.dto.CalendarEventDTO;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -80,7 +83,7 @@ public class CalendarEventController {
             @RequestBody CalendarEventDTO dto) {
         String userId = dto.getCreatedById();
         validateUserId(userId);
-        
+                
         CalendarEventDTO updated = calendarEventService.updateEvent(eventId, dto, userId);
         return ResponseEntity.ok(updated);
     }

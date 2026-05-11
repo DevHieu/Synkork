@@ -68,14 +68,14 @@ const hasEvent = (date: dayjs.Dayjs, monthIndex: number) => {
         v-for="m in yearMonths"
         :key="m.month"
         @click="emit('clickYearMonth', m.month)"
-        class="bg-white/5 rounded-xl p-3 cursor-pointer hover:bg-white/10 transition-all duration-200 hover:ring-1 hover:ring-teal-500/30"
+        class="bg-card rounded-xl p-3 cursor-pointer hover:bg-muted transition-all duration-200 hover:ring-1 hover:ring-primary/30"
       >
         <h4
           :class="[
             'text-sm font-semibold mb-2 text-center',
             currentDate.month() === m.month
-              ? 'text-teal-400'
-              : 'text-gray-300',
+              ? 'text-primary'
+              : 'text-foreground',
           ]"
         >
           {{ m.name }}
@@ -84,7 +84,7 @@ const hasEvent = (date: dayjs.Dayjs, monthIndex: number) => {
           <div
             v-for="dn in ['C', 'H', 'B', 'T', 'N', 'S', 'B']"
             :key="dn"
-            class="text-center text-[8px] text-gray-500 font-medium"
+            class="text-center text-[8px] text-muted-foreground font-medium"
           >
             {{ dn }}
           </div>
@@ -93,9 +93,9 @@ const hasEvent = (date: dayjs.Dayjs, monthIndex: number) => {
             :key="di"
             :class="[
               'text-center text-[10px] rounded p-px',
-              day.month() === m.month ? 'text-gray-300' : 'text-gray-600',
-              isToday(day) ? 'bg-teal-500 text-white font-bold' : '',
-              hasEvent(day, m.month) ? 'text-teal-400 font-semibold' : '',
+              day.month() === m.month ? 'text-foreground' : 'text-muted-foreground',
+              isToday(day) ? 'bg-primary text-primary-foreground font-bold' : '',
+              hasEvent(day, m.month) ? 'text-primary font-semibold' : '',
             ]"
           >
             {{ day.date() }}
@@ -109,7 +109,7 @@ const hasEvent = (date: dayjs.Dayjs, monthIndex: number) => {
 <style scoped>
 .overflow-y-auto {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  scrollbar-color: var(--border) transparent;
 }
 .overflow-y-auto::-webkit-scrollbar {
   width: 4px;

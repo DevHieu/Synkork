@@ -265,6 +265,36 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     return Array.from(participants.value.values());
   };
 
+  // 
+  const getAudioStreamsByParticipant = () => {
+  const participantStreams = [];
+
+  // Lấy stream của bản thân
+  if (zegoState.localAudioStream) {
+    participantStreams.push({
+       userId: useUserStore().user?.id || "me",
+      userName: useUserStore().user?.username || "Me",
+      stream: new MediaStream(zegoState.localAudioStream.getAudioTracks())
+    });
+  }
+  // Lấy stream của những người khác
+  remoteStreams.forEach((p) => {
+    if (!p.isLocal) {
+      const stream = remoteStreams.get(p.userID);
+      if (stream) {
+        participantStreams.push({
+          userId: p.userID,
+          userName: p.userName,
+          stream: new MediaStream(stream.getAudioTracks())
+        });
+      }
+    }
+
+  });
+
+  return participantStreams;
+}
+
   const getAudioTracks = (): MediaStreamTrack[] => {
     const tracks: MediaStreamTrack[] = [];
 
@@ -362,6 +392,7 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     toggleShareScreen,
     replayAllStreamsToDOM,
     getParticipantsForSpace,
+    getAudioStreamsByParticipant, 
     getAudioTracks,
     toggleMuteUser,
     kickMember,

@@ -35,7 +35,6 @@ const {
   goNext,
   goPrev,
   goToday,
-  jumpDate,
   selectDate,
   setYearMonth,
   createEvent,
@@ -135,7 +134,7 @@ const executeDelete = async () => {
     <!-- Component quản lý thanh công cụ -->
     <CalendarToolbar v-model:view-mode="viewMode" :current-space-name="currentSpace?.name" :header-title="headerTitle"
       :relative-time-text="relativeTimeText" @go-prev="goPrev" @go-next="goNext" @go-today="goToday"
-      @jump-date="jumpDate" @open-create-dialog="openCreateDialog" />
+      @open-create-dialog="openCreateDialog" />
 
     <!-- Main Content -->
     <div class="flex-1 overflow-hidden flex relative">

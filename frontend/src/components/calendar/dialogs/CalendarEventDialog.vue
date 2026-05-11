@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { watch } from "vue";
+import { AlertTriangle } from "lucide-vue-next";
 import type { CalendarEvent } from "@/types/CalendarEvent";
 import CalendarWarningDialog from "./CalendarWarningDialog.vue";
 import EventTimeSection from "../sub-components/EventTimeSection.vue";
@@ -73,11 +74,11 @@ const handleSubmit = (): void => {
 
       <!-- Dialog -->
       <div
-        class="relative bg-zinc-900 rounded-2xl shadow-2xl border border-white/10 w-full max-w-md mx-4 flex flex-col max-h-[90vh] overflow-hidden">
+        class="relative bg-card rounded-2xl shadow-2xl border border-border w-full max-w-md mx-4 flex flex-col max-h-[90vh] overflow-hidden">
 
         <!-- Header -->
-        <div class="p-6 pb-4 border-b border-white/5 bg-zinc-900/50 backdrop-blur-md sticky top-0 z-10">
-          <h2 class="text-lg font-semibold text-white">
+        <div class="p-6 pb-4 border-b border-border bg-card/50 backdrop-blur-md sticky top-0 z-10">
+          <h2 class="text-lg font-semibold text-foreground">
             {{ isEditing ? "Chỉnh sửa sự kiện" : "Thêm sự kiện mới" }}
           </h2>
         </div>
@@ -87,17 +88,17 @@ const handleSubmit = (): void => {
           <div class="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar">
 
             <!-- Tiêu đề -->
-            <div>
-              <label class="block text-sm text-gray-400 mb-1.5 font-medium">Tiêu đề *</label>
+            <div class="bg-muted/50 p-1 rounded-xl">
+              <label class="block text-sm text-muted-foreground mb-1.5 font-medium">Tiêu đề *</label>
               <input v-model="formData.title" type="text" required placeholder="Nhập tiêu đề sự kiện..."
-                class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-all text-sm" />
+                class="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm" />
             </div>
 
             <!-- Mô tả -->
-            <div>
-              <label class="block text-sm text-gray-400 mb-1.5 font-medium">Mô tả</label>
+            <div class="bg-muted/50 p-1 rounded-xl">
+              <label class="block text-sm text-muted-foreground mb-1.5 font-medium">Mô tả</label>
               <textarea v-model="formData.description" rows="3" placeholder="Mô tả chi tiết sự kiện..."
-                class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 resize-none text-sm transition-all" />
+                class="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary resize-none text-sm transition-all" />
             </div>
 
             <!-- Ngày & Giờ Section -->
@@ -119,14 +120,14 @@ const handleSubmit = (): void => {
 
             <!-- Cảnh báo trùng giờ -->
             <div v-if="conflictEvents.length > 0"
-              class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 shadow-lg shadow-amber-500/5">
-              <div class="flex items-center gap-2.5 text-amber-400 text-sm font-semibold mb-2">
-                <i class="pi pi-exclamation-triangle" />
+              class="bg-accent/10 border border-accent/30 rounded-xl p-4 shadow-lg shadow-accent/5">
+              <div class="flex items-center gap-2.5 text-accent text-sm font-semibold mb-2">
+                <AlertTriangle :size="14" />
                 Trùng giờ với {{ conflictEvents.length }} sự kiện:
               </div>
-              <ul class="text-xs text-amber-300/70 space-y-1.5 ml-6">
+              <ul class="text-xs text-accent/70 space-y-1.5 ml-6">
                 <li v-for="c in conflictEvents" :key="c.id" class="list-disc leading-relaxed">
-                  <span class="font-bold text-amber-400/90">{{ c.title }}</span><br />
+                  <span class="font-bold text-accent/90">{{ c.title }}</span><br />
                   <span class="text-[10px] italic">({{ c.startTime.substring(0, 5) }} - {{ c.endTime.substring(0, 5)
                     }})</span>
                 </li>
@@ -148,24 +149,24 @@ const handleSubmit = (): void => {
             />
 
             <!-- Cho phép chỉnh sửa -->
-            <div class="flex items-center gap-3 py-1">
+            <div class="flex items-center border-border gap-3 py-1">
               <label class="relative inline-flex items-center cursor-pointer">
                 <input v-model="formData.allowEditAll" type="checkbox" class="sr-only peer" />
                 <div
-                  class="w-9 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-teal-600" />
+                  class="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-primary-foreground after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-primary-foreground after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary" />
               </label>
-              <span class="text-sm text-gray-300 font-medium">Cho phép mọi người chỉnh sửa</span>
+              <span class="text-sm text-foreground font-medium">Cho phép mọi người chỉnh sửa</span>
             </div>
 
           </div>
 
           <!-- Footer actions -->
           <div
-            class="p-6 pt-4 border-t border-white/5 flex gap-2 justify-end bg-zinc-900/50 backdrop-blur-md sticky bottom-0 z-10 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.3)]">
+            class="p-6 pt-4 border-t border-border flex gap-2 justify-end bg-card/50 backdrop-blur-md sticky bottom-0 z-10 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.3)]">
             <button type="button" @click="emit('update:show', false)"
-              class="px-5 py-2.5 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-all text-sm font-medium">Hủy</button>
+              class="px-5 py-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent transition-all text-sm font-medium">Hủy</button>
             <button type="submit"
-              class="px-6 py-2.5 bg-teal-600 text-white rounded-xl hover:bg-teal-700 hover:shadow-lg hover:shadow-teal-500/20 active:scale-95 transition-all text-sm font-bold">{{
+              class="px-6 create-btn py-2.5 bg-primary text-primary-foreground rounded-xl hover:bg-primary/80 hover:shadow-lg hover:shadow-primary/20 active:scale-95 transition-all text-sm font-bold">{{
                 isEditing ? "Cập nhật" : "Tạo sự kiện" }}</button>
           </div>
         </form>
@@ -182,12 +183,17 @@ const handleSubmit = (): void => {
   width: 5px;
 }
 
+.create-btn {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+background: var(--border);
   border-radius: 10px;
 }
 

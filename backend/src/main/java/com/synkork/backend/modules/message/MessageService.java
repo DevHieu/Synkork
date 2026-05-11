@@ -1,7 +1,11 @@
 package com.synkork.backend.modules.message;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.google.api.client.json.Json;
 import com.synkork.backend.common.dtos.FileUploaded;
 import com.synkork.backend.common.utils.FileService;
+import com.synkork.backend.common.utils.llmService;
 import com.synkork.backend.modules.message.dto.MessageDTO;
 import com.synkork.backend.modules.message.dto.MessagePageDTO;
 import com.synkork.backend.modules.message.dto.ReplyPreviewDTO;
@@ -14,6 +18,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -28,7 +38,10 @@ public class MessageService {
     MessageRepository messageRepository;
     @Autowired
     SpaceRepository spaceRepository;
-
+    @Autowired
+    private llmService LLMService;
+    @Autowired
+    private ObjectMapper objectMapper;
     @Autowired
     private RoomMemberRepository roomMemberRepository;
 
@@ -98,6 +111,33 @@ public class MessageService {
                     .stream()
                     .findFirst()
                     .ifPresent(dto::setReplyTo);
+        }
+
+        // LLM 100% AI Code for AI Sug (")>
+        String messageContent = dto.getContent();
+
+        if (messageContent != null && !messageContent.trim().isEmpty()) {
+            CompletableFuture.runAsync(()->{
+                try {
+                    String jsonRepsone = LLMService.detectEventFromMessage(messageContent);
+
+                    JsonNode rootNode = objectMapper.readTree(jsonRepsone);
+
+                    if (rootNode.has("hasEnvent") && rootNode.get("hasEnvent").asBoolean()) {
+                        String suggestionPayload = rootNode.toString();
+                        String privateChannel = "/topic/user/" + senderId + "/suggestions";
+                        simpMessagingTemplate.convertAndSend(privateChannel, suggestionPayload);
+
+                    }
+
+                } catch (JsonMappingException e) {
+                    System.err.println("Lỗi khi phân tích tin nhắn bằng LLM: " + e.getMessage());
+                } catch (JsonProcessingException e) {
+                    System.err.println("Lỗi khi phân tích tin nhắn bằng LLM: " + e.getMessage());
+                }  catch (Exception e) {
+                    System.err.println("Lỗi khi phân tích tin nhắn bằng LLM: " + e.getMessage());
+                }
+            });
         }
 
         return dto;
