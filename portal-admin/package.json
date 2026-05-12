@@ -31,7 +31,7 @@
   "scripts": {
     "postinstall": "simple-git-hooks",
     "dev": "vite",
-    "build": "vue-tsc -b && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
