@@ -1,5 +1,6 @@
 package com.synkork.backend.modules.friend;
 
+import com.synkork.backend.config.WebSocketEventListener;
 import com.synkork.backend.modules.friend.dto.FriendDto;
 import com.synkork.backend.modules.friend.dto.FriendRequestDto;
 import jakarta.transaction.Transactional;
@@ -20,6 +21,9 @@ public class FriendController {
 
     @Autowired
     SimpMessagingTemplate messagingTemplate;
+
+    @Autowired
+    WebSocketEventListener webSocketEventListener;
 
     //  GỬI LỜI MỜI
     @PostMapping("/request")
@@ -87,8 +91,11 @@ public class FriendController {
                 f.getFriend().getDisplayName() != null
                         ? f.getFriend().getDisplayName()
                         : f.getFriend().getUsername(),
+                f.getFriend().getUsername(),
                 f.getFriend().getAvatarUrl(),
-                "offline"
+                webSocketEventListener.isOnline(f.getFriend().getId()),
+                f.getConversationId()
+
         )).toList();
 
         return ResponseEntity.ok(dtos);

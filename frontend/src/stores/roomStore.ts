@@ -1,4 +1,9 @@
-import { createRoom, getUserRooms, joinRoom } from "@/services/roomService";
+import {
+  createRoom,
+  getUserRooms,
+  joinRoom,
+  deleteRoom,
+} from "@/services/roomService";
 import { defineStore } from "pinia";
 import { useRoomMemberStore } from "./roomMemberStore";
 import { useSpaceStore } from "./spaceStore";
@@ -6,6 +11,9 @@ import { useUserStore } from "./userStore";
 import { storeToRefs } from "pinia";
 import router from "@/routers";
 import type { Room } from "@/types/Room";
+import { socketService } from "@/services/websocket/socketService";
+import { roomSocket } from "@/services/websocket/roomSocket";
+import { toast } from "vue-sonner";
 
 export const useRoomsStore = defineStore("rooms", {
   state: () => ({
@@ -25,9 +33,21 @@ export const useRoomsStore = defineStore("rooms", {
       }
     },
 
+    connectRoomSocket(roomId: string) {
+      roomSocket.subscribeRoomUpdate(roomId, (room) => {
+        const target = this.rooms.find((item) => item.id === roomId);
+        if (target) {
+          Object.assign(target, room);
+        }
+      });
+    },
+
     // Nhận spaceId để check xem khi đổi room có cần redirect đến space nào không
-    async changeRoom(room: any, spaceId?: string) {
+    async changeRoom(room: Room, spaceId?: string) {
       this.currentRoom = room;
+      socketService.unsubscribeAll(); // Hủy tất cả subscription cũ khi đổi room để tránh nhận dữ liệu của phòng trước đó vào
+
+      this.connectRoomSocket(room.id);
 
       const spaceStore = useSpaceStore();
       await spaceStore.fetchSpacesByRoomId(room.id);
@@ -63,8 +83,6 @@ export const useRoomsStore = defineStore("rooms", {
 
         roomData.ownerId = (user.value as any).id;
 
-        console.log("Creating room with data:", roomData);
-
         const newRoom = await createRoom(roomData);
 
         this.rooms.unshift(newRoom);
@@ -83,10 +101,13 @@ export const useRoomsStore = defineStore("rooms", {
     },
 
     async leaveRoom(roomId: string) {
-      this.rooms = this.rooms.filter((room) => room.id !== roomId);
+      if (this.currentRoom?.id === roomId) {
+        this.currentRoom = null;
+        router.push("/me");
+        toast.error("Phòng đã bị xóa");
+      }
 
-      this.currentRoom = null;
-      router.push("/me");
+      this.rooms = this.rooms.filter((room) => room.id !== roomId);
     },
   },
 });

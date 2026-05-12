@@ -2,12 +2,11 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/synkork?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
     username: ${DB_USERNAME:root}
-    # password: ${DB_PASSWORD:123}
     password: ${DB_PASSWORD:123}
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -32,6 +31,10 @@ spring:
             user-name-attribute: sub
   config:
     import: optional:file:.env[.properties]
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
 
 server:
   port: 8080
@@ -42,6 +45,8 @@ server:
 frontend:
   client:
     url: ${FRONTEND_URL:http://localhost:5173}
+  admin:
+    url: ${ADMIN_PORTAL_URL:http://localhost:5174}
 
 jwt:
   secret: CFGSc60ez6n093BbLoqk1BdPFa02l26UBAjKvFGAw3Q

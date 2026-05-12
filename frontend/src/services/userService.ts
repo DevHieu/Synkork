@@ -12,6 +12,12 @@ export const getUserInfo = async () => {
   }
 };
 
+export const getUserInfoByUsername = async (username: string) => {
+  const res = await axiosClient.get(`/api/users/${username}`);
+
+  return res.data;
+};
+
 export const userService = {
   async getMe() {
     const res = await axiosClient.get("/api/users/me")

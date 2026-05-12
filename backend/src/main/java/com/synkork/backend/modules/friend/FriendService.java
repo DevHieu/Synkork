@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.friend;
 
 import com.synkork.backend.modules.friend.enums.FriendRequestStatus;
+import com.synkork.backend.modules.room.RoomService;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,9 @@ public class FriendService {
     @Autowired
     private UserRepository userRepo;
 
+    @Autowired
+    private RoomService roomService;
+
     // Gửi lời mời kết bạn
     public void sendRequest(UUID senderId, UUID receiverId, String message) {
         UserEntity sender = userRepo.findById(senderId)
@@ -42,12 +46,15 @@ public class FriendService {
     }
 
     // Chấp nhận lời mời
+    @Transactional
     public List<String> acceptRequest(UUID requestId) {
         FriendRequestEntity req = requestRepo.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy lời mời"));
 
-        friendRepo.save(new FriendEntity(null, req.getSender(), req.getReceiver(), null));
-        friendRepo.save(new FriendEntity(null, req.getReceiver(), req.getSender(), null));
+        UUID conversationId = roomService.createDMRoom(req.getSender(), req.getReceiver());
+
+        friendRepo.save(new FriendEntity(null, req.getSender(), req.getReceiver(), conversationId, null));
+        friendRepo.save(new FriendEntity(null, req.getReceiver(), req.getSender(), conversationId, null));
 
         requestRepo.delete(req);
 
@@ -159,5 +166,10 @@ public class FriendService {
         return userRepo.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"))
                 .getId();
+    }
+
+    public List<String> getFriendEmails(String userId) {
+        UUID userUUID = UUID.fromString(userId);
+        return friendRepo.findFriendEmailByUserId(userUUID);
     }
 }

@@ -15,7 +15,7 @@ import NoteWindow from "@/components/windows/NoteWindow.vue";
 import TaskWindow from "@/components/windows/TaskWindow.vue";
 import CalendarWindowLayout from "@/components/windows/CalendarWindowLayout.vue";
 
-import FriendPage from '@/pages/FriendPage.vue'
+import FriendPage from "@/pages/FriendPage.vue";
 import MePage from "@/pages/MePage.vue";
 
 import PersonLayout from "@/layouts/PersonLayout.vue";
@@ -59,6 +59,10 @@ const routes = [
             path: "friends",
             component: FriendPage,
           },
+          {
+            path: ":spaceId",
+            component: ChatWindow,
+          },
         ],
       },
       {
@@ -88,6 +92,7 @@ const routes = [
           {
             path: "task/:roomId/:spaceId",
             component: TaskWindow,
+            props: true,
             meta: { spaceType: "TASK" },
           },
         ],

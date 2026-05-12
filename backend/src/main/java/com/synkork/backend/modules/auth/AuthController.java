@@ -1,11 +1,9 @@
 package com.synkork.backend.modules.auth;
 
-import com.synkork.backend.common.utils.EmailService;
-import com.synkork.backend.common.utils.ImageService;
-import com.synkork.backend.modules.auth.dto.JwtResponse;
 import com.synkork.backend.modules.auth.dto.LoginRequest;
 import com.synkork.backend.modules.auth.dto.RegisterRequest;
 import com.synkork.backend.modules.auth.dto.ResetPasswordRequest;
+import com.synkork.backend.modules.user.enums.RoleEnum;
 import com.synkork.backend.modules.verification.VerificationService;
 import com.synkork.backend.security.JwtService;
 import jakarta.servlet.http.Cookie;
@@ -15,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
@@ -76,11 +73,12 @@ public class AuthController {
                                                HttpServletResponse response) {
         String username = jwtService.extractUserName(refreshToken);
         String userId = jwtService.extractClaim(refreshToken, claims -> claims.get("userId", String.class));
+        RoleEnum role = RoleEnum.valueOf(jwtService.extractClaim(refreshToken, claims -> claims.get("role", String.class)));
         if (username != null && jwtService.validateRefreshToken(refreshToken)) {
             System.out.println("generating");
-            String newAccessToken = jwtService.generateToken(userId, username, "ACCESS");
+            String newAccessToken = jwtService.generateToken(userId, username, role, "ACCESS");
 
-            String newRefreshToken = jwtService.generateToken(userId, username, "REFRESH");
+            String newRefreshToken = jwtService.generateToken(userId, username, role, "REFRESH");
 
             jwtService.saveRefreshToken(newRefreshToken, response);
 

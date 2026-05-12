@@ -9,6 +9,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.nio.file.AccessDeniedException;
+
 // Mỗi lần xử lí các request hay logic đồ á thì mình sẽ có thể dính mấy cái lỗi exceotion đúng không
 // Thì ỗi lần như thế mình lại phải viết try catch thì nó rất mất cng và code cũng không sạch
 // File này được đẻ ra để xử lí vấn đề đó. Chỉ cần có lỗi thì nó sẽ nhảy vào ây, tìm lỗi và nó sẽ xử lí theo code trong này
@@ -45,5 +47,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body("Access token has expired");
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<String> handleAccessDenied(AccessDeniedException e) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(e.getMessage());
     }
 }

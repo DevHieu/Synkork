@@ -46,16 +46,6 @@ const getRoleLabel = (role: string) => {
   return "Thành viên";
 };
 
-const getInitials = (name: string) => {
-  if (!name) return "?";
-  return name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-};
-
 const handleKick = (username: string) => {
   const member = members.value.find((m) => m.username === username);
   if (!member) return;
@@ -124,9 +114,7 @@ const handleChangeRole = async (memberId: string, newRole: string) => {
             v-if="member.avatarUrl"
             :src="member.avatarUrl ?? undefined"
           />
-          <AvatarFallback class="text-xs font-bold">
-            {{ getInitials(member.displayName || member.username) }}
-          </AvatarFallback>
+          <AvatarFallback class="text-xs font-bold"> </AvatarFallback>
         </Avatar>
 
         <!-- Info -->

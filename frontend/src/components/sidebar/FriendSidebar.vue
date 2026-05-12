@@ -1,32 +1,37 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
-import { SidebarHeader, SidebarContent } from "@/components/ui/sidebar"
-import { useFriendStore } from "@/stores/useFriendStore"
-import { storeToRefs } from "pinia"
-import { onMounted } from "vue"
+import { useRouter } from "vue-router";
+import { SidebarHeader, SidebarContent } from "@/components/ui/sidebar";
+import { useFriendStore } from "@/stores/friendStore";
+import { storeToRefs } from "pinia";
+import { onMounted } from "vue";
+import Avatar from "../ui/avatar/Avatar.vue";
+import AvatarImage from "../ui/avatar/AvatarImage.vue";
+import AvatarFallback from "../ui/avatar/AvatarFallback.vue";
 
-const router = useRouter()
-const store = useFriendStore()
+const router = useRouter();
+const friendStore = useFriendStore();
 
-const { friends, loading, friendCount } = storeToRefs(store)
+const { friends, loading, friendCount } = storeToRefs(friendStore);
 
 onMounted(() => {
-  store.fetchFriends()
-})
+  friendStore.fetchFriends();
+});
 </script>
 
 <template>
-  <SidebarHeader class="gap-3.5 border-b p-3">
+  <SidebarHeader class="gap-3.5 border-b px-4 py-3">
     <div class="flex w-full items-center justify-between">
       <input
         type="text"
         placeholder="Tìm bạn..."
-        class="w-full rounded-lg border px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+        class="w-full rounded-lg border px-2 py-1 pb-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
       />
     </div>
   </SidebarHeader>
 
-  <SidebarContent class="mt-5 bg-[var(--color-sidebar)] text-[var(--color-sidebar-foreground)]">
+  <SidebarContent
+    class="mt-5 bg-[var(--color-sidebar)] text-[var(--color-sidebar-foreground)]"
+  >
     <div class="p-2 space-y-1">
       <div
         @click="router.push('/me/friends')"
@@ -34,15 +39,21 @@ onMounted(() => {
       >
         Bạn bè
       </div>
-      <div class="p-2 rounded cursor-pointer hover:bg-[var(--color-sidebar-accent)]">
+      <div
+        class="p-2 rounded cursor-pointer hover:bg-[var(--color-sidebar-accent)]"
+      >
         Ghi chú
       </div>
-      <div class="p-2 rounded cursor-pointer hover:bg-[var(--color-sidebar-accent)]">
+      <div
+        class="p-2 rounded cursor-pointer hover:bg-[var(--color-sidebar-accent)]"
+      >
         Lịch
       </div>
     </div>
 
-    <div class="px-3 mt-3 text-xs text-[var(--color-muted-foreground)] uppercase">
+    <div
+      class="px-3 mt-3 text-xs text-[var(--color-muted-foreground)] uppercase"
+    >
       Bạn bè — {{ friendCount }}
     </div>
 
@@ -50,7 +61,10 @@ onMounted(() => {
       Đang tải danh sách...
     </div>
 
-    <div v-else-if="friends.length === 0" class="px-5 py-3 text-sm text-muted-foreground">
+    <div
+      v-else-if="friends.length === 0"
+      class="px-5 py-3 text-sm text-muted-foreground"
+    >
       Chưa có bạn bè nào.
     </div>
 
@@ -58,15 +72,19 @@ onMounted(() => {
       <div
         v-for="friend in friends"
         :key="friend.id"
-        class="flex items-center gap-2 p-2 rounded cursor-pointer
-        hover:bg-[var(--color-sidebar-accent)] transition"
+        @click="router.push(`/me/${friend.conversationId}`)"
+        class="flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-[var(--color-sidebar-accent)] transition"
       >
         <div class="relative">
-          <div class="w-8 h-8 rounded-full bg-[var(--color-muted)] flex items-center justify-center text-xs font-bold uppercase overflow-hidden">
-            <img v-if="friend.avatarUrl" :src="friend.avatarUrl" class="w-full h-full object-cover" alt="avatar" />
-            <span v-else>{{ friend.name?.substring(0, 2).toUpperCase() }}</span>
-          </div>
-          <div class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[var(--color-sidebar)] bg-green-500" />
+          <Avatar class="h-8 w-8 text-xs font-bold uppercase">
+            <AvatarImage v-if="friend.avatarUrl" :src="friend.avatarUrl" />
+            <AvatarFallback class="bg-primary"> </AvatarFallback>
+          </Avatar>
+
+          <div
+            class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[var(--color-sidebar)]"
+            :class="friend.isOnline ? 'bg-green-500' : 'bg-gray-400'"
+          />
         </div>
 
         <span class="text-sm truncate">{{ friend.name }}</span>

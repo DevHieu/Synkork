@@ -6,15 +6,36 @@ export const userSocket = {
   subscribeKicked() {
     const roomStore = useRoomsStore();
 
-    console.log(
-      "[userSocket] subscribeKicked called, connected:",
-      socketService.isConnected(),
+    return socketService.subscribe(
+      "/user/queue/kick",
+      (roomId: string) => {
+        toast.error("Bạn đã bị đuổi khỏi phòng");
+        roomStore.leaveRoom(roomId);
+      },
+      { persistent: true },
     );
+  },
 
-    return socketService.subscribe("/user/queue/kick", (roomId: string) => {
-      console.log("[userSocket] kicked from room:", roomId);
-      toast.error("Bạn đã bị xóa khỏi phòng");
-      roomStore.leaveRoom(roomId);
-    });
+  subscribeFriendOnlineStatus(
+    callback: (payload: { userId: string; isOnline: boolean }) => void,
+  ) {
+    return socketService.subscribe(
+      "/user/queue/friends/online-status",
+      (payload: { userId: string; isOnline: boolean }) => {
+        callback(payload);
+      },
+      { persistent: true },
+    );
+  },
+
+  subscribeRoomDeleted() {
+    const roomStore = useRoomsStore();
+    return socketService.subscribe(
+      "/user/queue/rooms/deleted",
+      (roomId: string) => {
+        roomStore.leaveRoom(roomId);
+      },
+      { persistent: true },
+    );
   },
 };

@@ -17,6 +17,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -31,6 +32,9 @@ public class SecurityConfig {
     @Value("${frontend.client.url}")
     private String frontendUrl;
 
+    @Value("${frontend.admin.url}")
+    private String adminUrl;
+
     @Autowired
     private JwtFilter jwtFilter;
 
@@ -39,6 +43,9 @@ public class SecurityConfig {
 
     @Autowired
     JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
+    @Autowired
+    AccessDeniedHandler accessDeniedHandler;
 
     @Autowired
     OAuth2SuccessHandler  oAuth2SuccessHandler;
@@ -51,11 +58,15 @@ public class SecurityConfig {
                         // Thêm dòng này vào đầu danh sách requestMatchers
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/public/**", "/auth/**", "/ws/**").permitAll()
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .oauth2Login(oauth -> oauth
                         .successHandler(oAuth2SuccessHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler)
+                )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
@@ -71,12 +82,9 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(frontendUrl));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT","PATCH", "DELETE", "OPTIONS"));
-
-        // Sửa dòng này thành "*" để cho phép tất cả các loại Header
-        configuration.setAllowedHeaders(Arrays.asList("*"));
-
+        configuration.setAllowedOrigins(Arrays.asList(frontendUrl, adminUrl)); //Bypass cho url frontend
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 

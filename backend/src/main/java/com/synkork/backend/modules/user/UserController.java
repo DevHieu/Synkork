@@ -47,11 +47,12 @@ public class UserController {
 
     return ResponseEntity.ok(user);
   }
-  // Như cái dưới đây thì đường dẫn đầy đủ sẽ là:
-  // http:localhost:8080/api/users/{userId}
-  @GetMapping("/{userId}")
-  public String getUserById(@RequestParam String userId) {
-    return new String();
+
+  @GetMapping("/{username}")
+  public ResponseEntity<UserInfoDto> getUserById(@PathVariable String username) {
+    UserEntity entity = userService.getUserInfoByUsername(username);
+
+    return ResponseEntity.ok(new UserInfoDto(entity));
   }
 
   // Cập nhật displayName / username

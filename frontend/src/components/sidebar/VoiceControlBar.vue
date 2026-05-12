@@ -20,15 +20,12 @@ import {
 defineProps<{ collapsed?: boolean }>();
 
 const voiceSpaceStore = useVoiceSpaceStore();
-const { micOn, audioOn, isInRoom, isJoining } = storeToRefs(voiceSpaceStore);
-const { toggleMic, toggleAudio } = voiceSpaceStore;
+const { micOn, audioOn, isInRoom, isJoining, screenOn } =
+  storeToRefs(voiceSpaceStore);
+const { toggleMic, toggleAudio, toggleShareScreen } = voiceSpaceStore;
 
 const leaveRoom = async () => {
   await voiceSpaceStore.leaveRoom();
-};
-
-const shareScreen = () => {
-  console.log("Sharinggg.....");
 };
 </script>
 
@@ -36,18 +33,15 @@ const shareScreen = () => {
   <div v-if="isInRoom || isJoining" class="border-b">
     <!-- ══ JOINING: Loading state ══ -->
     <template v-if="isJoining && !isInRoom">
-      <!-- Collapsed -->
       <div v-if="collapsed" class="w-full flex justify-center py-3">
         <Loader2 class="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
 
-      <!-- Expanded -->
       <div v-else class="px-3 py-2">
         <div class="flex items-center gap-2 mb-2">
           <Loader2 class="h-3.5 w-3.5 animate-spin text-muted-foreground" />
           <span class="text-xs text-muted-foreground">Đang kết nối...</span>
         </div>
-        <!-- Disabled controls (skeleton) -->
         <div class="flex items-center gap-1 opacity-40 pointer-events-none">
           <button
             class="flex-1 flex items-center justify-center py-1.5 rounded-md hover:bg-muted"
@@ -65,7 +59,7 @@ const shareScreen = () => {
             <MonitorUp class="h-4 w-4" />
           </button>
           <button
-            class="flex-1 flex items-center justify-center py-1.5 rounded-md bg-red-500/15 text-red-400"
+            class="flex-1 flex items-center justify-center py-1.5 rounded-md bg-destructive/15 text-destructive"
           >
             <PhoneOff class="h-4 w-4" />
           </button>
@@ -75,7 +69,7 @@ const shareScreen = () => {
 
     <!-- ══ IN ROOM: Full controls ══ -->
     <template v-else>
-      <!-- Collapsed: 1 nút + popover -->
+      <!-- Collapsed -->
       <Popover v-if="collapsed">
         <PopoverTrigger as-child>
           <button
@@ -98,12 +92,12 @@ const shareScreen = () => {
           </p>
           <div class="flex flex-col gap-1">
             <button
-              @click="toggleMic"
+              @click="() => toggleMic()"
               :class="[
                 'flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors w-full',
                 micOn
                   ? 'hover:bg-muted'
-                  : 'text-red-400 bg-red-500/10 hover:bg-red-500/20',
+                  : 'text-destructive bg-destructive/10 hover:bg-destructive/20',
               ]"
             >
               <Mic v-if="micOn" class="h-4.5 w-4.5" />
@@ -111,12 +105,12 @@ const shareScreen = () => {
               {{ micOn ? "Tắt mic" : "Bật mic" }}
             </button>
             <button
-              @click="toggleAudio"
+              @click="() => toggleAudio()"
               :class="[
                 'flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors w-full',
                 audioOn
                   ? 'hover:bg-muted'
-                  : 'text-red-400 bg-red-500/10 hover:bg-red-500/20',
+                  : 'text-destructive bg-destructive/10 hover:bg-destructive/20',
               ]"
             >
               <Volume2 v-if="audioOn" class="h-4.5 w-4.5" />
@@ -124,15 +118,20 @@ const shareScreen = () => {
               {{ audioOn ? "Tắt tiếng" : "Bật tiếng" }}
             </button>
             <button
-              @click="shareScreen"
-              class="flex items-center gap-2 px-2 py-1.5 rounded-md text-xs hover:bg-muted transition-colors w-full"
+              @click="() => toggleShareScreen()"
+              :class="[
+                'flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors w-full',
+                screenOn
+                  ? 'bg-primary/15 hover:bg-primary/25 text-primary'
+                  : 'bg-muted hover:bg-accent text-foreground',
+              ]"
             >
               <MonitorUp class="h-4.5 w-4.5" />
-              Chia sẻ màn hình
+              {{ screenOn ? "Dừng chia sẻ" : "Chia sẻ màn hình" }}
             </button>
             <button
               @click="leaveRoom"
-              class="flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-colors w-full"
+              class="flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-destructive bg-destructive/10 hover:bg-destructive/20 transition-colors w-full"
             >
               <PhoneOff class="h-4.5 w-4.5" />
               Rời phòng
@@ -141,61 +140,58 @@ const shareScreen = () => {
         </PopoverContent>
       </Popover>
 
-      <!-- Expanded: full bar -->
+      <!-- Expanded -->
       <div v-else class="px-3 py-2">
-        <div
-          class="flex items-center justify-between mb-2 cursor-pointer hover:opacity-80 transition"
-          @click="shareScreen"
-        >
-          <div class="flex items-center gap-2">
-            <span class="relative flex h-2 w-2">
-              <span
-                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"
-              />
-              <span
-                class="relative inline-flex rounded-full h-2 w-2 bg-green-500"
-              />
-            </span>
-            <span class="text-xs text-green-500 font-medium">Đang kết nối</span>
-          </div>
+        <div class="flex items-center gap-2 mb-2">
+          <span class="relative flex h-2 w-2">
+            <span
+              class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"
+            />
+            <span
+              class="relative inline-flex rounded-full h-2 w-2 bg-green-500"
+            />
+          </span>
+          <span class="text-xs text-green-500 font-medium">Đang kết nối</span>
         </div>
         <div class="flex items-center gap-1">
           <button
-            @click="toggleMic"
+            @click="() => toggleMic()"
             :class="[
               'flex-1 flex items-center justify-center py-1.5 rounded-md transition-colors',
               micOn
                 ? 'hover:bg-muted text-foreground'
-                : 'bg-red-500/15 hover:bg-red-500/25 text-red-400',
+                : 'bg-destructive/15 hover:bg-destructive/25 text-destructive',
             ]"
           >
-            <Mic v-if="micOn" class="h-4 w-4" /><MicOff
-              v-else
-              class="h-4 w-4"
-            />
+            <Mic v-if="micOn" class="h-4 w-4" />
+            <MicOff v-else class="h-4 w-4" />
           </button>
           <button
-            @click="toggleAudio"
+            @click="() => toggleAudio()"
             :class="[
               'flex-1 flex items-center justify-center py-1.5 rounded-md transition-colors',
               audioOn
                 ? 'hover:bg-muted text-foreground'
-                : 'bg-red-500/15 hover:bg-red-500/25 text-red-400',
+                : 'bg-destructive/15 hover:bg-destructive/25 text-destructive',
             ]"
           >
-            <Volume2 v-if="audioOn" class="h-4 w-4" /><VolumeX
-              v-else
-              class="h-4 w-4"
-            />
+            <Volume2 v-if="audioOn" class="h-4 w-4" />
+            <VolumeX v-else class="h-4 w-4" />
           </button>
           <button
-            class="flex-1 flex items-center justify-center py-1.5 rounded-md hover:bg-muted text-foreground transition-colors"
+            @click="() => toggleShareScreen()"
+            :class="[
+              'flex-1 flex items-center justify-center py-1.5 rounded-md transition-colors',
+              screenOn
+                ? 'bg-primary/15 hover:bg-primary/25 text-primary'
+                : 'bg-muted hover:bg-accent text-foreground',
+            ]"
           >
             <MonitorUp class="h-4 w-4" />
           </button>
           <button
             @click="leaveRoom"
-            class="flex-1 flex items-center justify-center py-1.5 rounded-md bg-red-500/15 hover:bg-red-500/25 text-red-400 transition-colors"
+            class="flex-1 flex items-center justify-center py-1.5 rounded-md bg-destructive/15 hover:bg-destructive/25 text-destructive transition-colors"
           >
             <PhoneOff class="h-4 w-4" />
           </button>

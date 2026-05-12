@@ -5,6 +5,8 @@ import java.util.UUID;
 public record FriendDto(
         UUID id,
         String name,
+        String username,
         String avatarUrl,
-        String status
+        boolean isOnline,
+        UUID conversationId
 ) {}

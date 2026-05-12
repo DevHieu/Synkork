@@ -1,147 +1,135 @@
 <script setup lang="ts">
-import { ref, nextTick, watch, onMounted, onUnmounted } from "vue";
-import { socketService } from "@/services/websocket/socketService";
+import { ref, watch, onMounted, onUnmounted, computed } from "vue";
 import { chatSocket } from "@/services/websocket/chatSocket";
-
-import { getChatFromSpaceId } from "@/services/chatService";
 import { useRoute } from "vue-router";
 import { useSpaceStore } from "@/stores/spaceStore";
+import { useMessageStore } from "@/stores/messageStore";
+import { useFriendStore } from "@/stores/friendStore";
 import { storeToRefs } from "pinia";
 
 import ChatHeader from "@/components/chat/ChatHeader.vue";
 import MessageList from "@/components/chat/MessageList.vue";
 import MessageInput from "@/components/chat/MessageInput.vue";
-import type { Message } from "@/types/Message";
-import MemberSidebar from "../sidebar/MemberSidebar.vue";
+import MemberPanel from "@/components/chat/MemberPanel.vue";
+import PinPanel from "@/components/chat/PinPanel.vue";
 
 const route = useRoute();
-const spaceId = route.params.spaceId as string;
+const spaceId = ref(route.params.spaceId as string);
 
 const spaceStore = useSpaceStore();
 const { currentSpace } = storeToRefs(spaceStore);
 
+const messageStore = useMessageStore();
+const { messages, beforeHasMore, afterHasMore, replyingTo } =
+  storeToRefs(messageStore);
+
+const friendStore = useFriendStore();
+const dmFriend = computed(() => {
+  if (!isDM.value) return null;
+  return (
+    friendStore.friends.find(
+      (f) => f.conversationId === currentSpace.value?.id,
+    ) ?? null
+  );
+});
+
 const memberOpen = ref(true);
-const toggleMembers = () => (memberOpen.value = !memberOpen.value);
-
-const messages = ref<Message[]>([]);
-const newMessage = ref("");
-const messageContainer = ref<HTMLElement | null>(null);
-
-const size = 50;
-const page = 0;
-
-const isSocketConnected = ref(false);
-
-const setContainerRef = (el: HTMLElement | null) => {
-  messageContainer.value = el;
+const toggleMembers = () => {
+  memberOpen.value = !memberOpen.value;
+  pinOpen.value = false;
 };
+
+const pinOpen = ref(false);
+const togglePins = () => {
+  pinOpen.value = !pinOpen.value;
+  memberOpen.value = false;
+};
+
+const isDM = computed(() => currentSpace.value?.roomType === "DM");
 
 onMounted(() => {
-  if (spaceId) {
-    isSocketConnected.value = true;
+  if (currentSpace.value?.id) {
+    joinSpace(currentSpace.value.id);
   }
 });
 
-// Xóa subscription khi rời khỏi space
 onUnmounted(() => {
-  chatSocket.leaveSpace(spaceId);
+  chatSocket.leaveSpace(spaceId.value);
 });
 
-watch(
-  [currentSpace, isSocketConnected],
-  ([space, connected]) => {
-    if (!space?.id || !connected) return;
-    joinSpace(space.id);
-  },
-  { immediate: true },
-);
-
-const joinSpace = (spaceId: string) => {
-  if (!spaceId) return;
-  messages.value = [];
-  fetchMessages(spaceId);
-  subscribeToChat(spaceId);
-};
-
-const subscribeToChat = (spaceId: string) => {
-  chatSocket.subscribeMessages(spaceId, (msg: Message) => {
-    messages.value.push(msg);
-    scrollToBottom();
-  });
-
-  chatSocket.subscribeDelete(spaceId, (messageId: string) => {
-    const index = messages.value.findIndex((m) => m.id === messageId);
-    if (index !== -1)
-      messages.value[index] = { ...messages.value[index], deleted: true };
-  });
-
-  chatSocket.subscribeUpdate(spaceId, (updatedMsg: Message) => {
-    const index = messages.value.findIndex((m) => m.id === updatedMsg.id);
-    if (index !== -1) messages.value[index] = updatedMsg;
-  });
-};
-
-const fetchMessages = async (id: string) => {
-  const chatResponse = await getChatFromSpaceId(id, page, size);
-  messages.value = chatResponse.data.content.reverse();
-  scrollToBottom();
-};
-
-const handleSendMessage = () => {
-  if (!newMessage.value.trim()) return;
-
-  chatSocket.sendMessage({
-    content: newMessage.value,
-    spaceId: currentSpace.value.id,
-  });
-
-  newMessage.value = "";
-};
-
-const scrollToBottom = async () => {
-  await nextTick();
-  if (messageContainer.value) {
-    messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
+const joinSpace = async (id: string) => {
+  if (!id) return;
+  if (currentSpace.value?.id && currentSpace.value.id !== id) {
+    chatSocket.leaveSpace(currentSpace.value.id);
   }
+  messageStore.clearAll();
+  await messageStore.fetchMessages(id, null);
+  messageStore.scrollToBottom(spaceId.value);
+  messageStore.subscribeToChat(id);
+  messageStore.fetchPinnedList(id, null);
 };
+
+watch(currentSpace, (space, prevSpace) => {
+  if (!space?.id) return;
+  if (space.id === prevSpace?.id) return; // không re-join nếu cùng space
+  joinSpace(space.id);
+});
 </script>
 
 <template>
   <div class="flex flex-col h-screen overflow-hidden">
     <ChatHeader
       :space-name="currentSpace?.name ?? ''"
+      :space-id="spaceId"
       :member-open="memberOpen"
+      :pin-open="pinOpen"
+      :dm-friend="dmFriend"
+      :is-dm="isDM"
       @toggle-members="toggleMembers"
+      @toggle-pins="togglePins"
       @search="(q) => console.log('search:', q)"
     />
 
     <div class="flex flex-1 min-w-0 overflow-hidden">
       <div class="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <MessageList :messages="messages" :container-ref="setContainerRef" />
-        <MessageInput v-model="newMessage" @send="handleSendMessage" />
+        <MessageList
+          :key="currentSpace?.id"
+          :messages="messages"
+          :beforeHasMore="beforeHasMore"
+          :afterHasMore="afterHasMore"
+          :spaceId="currentSpace?.id ?? ''"
+          :space-name="currentSpace?.name ?? ''"
+          :is-dm="isDM"
+          :friendName="dmFriend?.name"
+        />
+        <MessageInput
+          :spaceId="currentSpace?.id ?? ''"
+          :replying-to="replyingTo"
+        />
+      </div>
+
+      <div
+        class="flex-none border-l h-full overflow-hidden transition-all duration-300 ease-in-out"
+        :style="{
+          width: pinOpen ? '260px' : '0px',
+          opacity: pinOpen ? 1 : 0,
+          borderColor: 'var(--border)',
+        }"
+      >
+        <PinPanel :space-id="currentSpace?.id ?? ''" />
       </div>
 
       <!-- Member Sidebar -->
       <div
+        v-if="!isDM"
         class="flex-none border-l h-full overflow-hidden transition-all duration-300 ease-in-out"
         :style="{
           width: memberOpen ? '250px' : '0px',
           opacity: memberOpen ? 1 : 0,
           borderColor: 'var(--border)',
-          background: 'transparent',
         }"
       >
-        <div
-          class="flex-none border-l h-full overflow-hidden transition-all duration-300 ease-in-out"
-          :style="{
-            width: memberOpen ? '250px' : '0px',
-            opacity: memberOpen ? 1 : 0,
-            borderColor: 'var(--border)',
-            background: 'transparent',
-          }"
-        >
-          <MemberSidebar />
-        </div>
+        <MemberPanel />
       </div>
     </div>
   </div>

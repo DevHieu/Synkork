@@ -1,6 +1,8 @@
 package com.synkork.backend.modules.roomMember;
 
+import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.modules.roomMember.dto.ChangeAuthorityDTO;
+import com.synkork.backend.modules.roomMember.dto.MuteRequest;
 import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
 import com.synkork.backend.security.UserPrinciple;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,10 +40,10 @@ public class RoomMemberController {
 
     @PutMapping("/change-authority")
     public ResponseEntity<RoomMemberDto> changeAuthority(@PathVariable String roomId, @RequestBody ChangeAuthorityDTO dto) {
-        UserPrinciple user = (UserPrinciple) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UUID requesterId = AuthUtils.getCurrentUserId();
         UUID roomUUID = UUID.fromString(roomId);
 
-        RoomMemberEntity member = roomMemberService.changerAuthority(dto, roomUUID, user.getId());
+        RoomMemberEntity member = roomMemberService.changerAuthority(dto, roomUUID, requesterId);
         RoomMemberDto resp = new RoomMemberDto(member);
 
         messagingTemplate.convertAndSend(
@@ -53,16 +55,27 @@ public class RoomMemberController {
 
     @DeleteMapping("/{memberId}")
     public ResponseEntity<Void> deleteRoomMembers(@PathVariable String roomId, @PathVariable String memberId) {
-        UserPrinciple user = (UserPrinciple) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         UUID memberUUID = UUID.fromString(memberId);
         UUID roomUUID = UUID.fromString(roomId);
+        UUID requesterId = AuthUtils.getCurrentUserId();
 
-        String targetEmail = roomMemberService.kickMember(memberUUID, roomUUID, user.getId());
+        String targetEmail = roomMemberService.kickMember(memberUUID, roomUUID, requesterId);
 
         messagingTemplate.convertAndSend("/topic/room/" + roomId + "/members/kicked", memberId);
         // này là subscribe để đứa bị đuổi nó biết
         messagingTemplate.convertAndSendToUser(targetEmail, "/queue/kick", roomId);
 
         return  ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{memberId}/mute")
+    public ResponseEntity<Void> muteRoomMembers(@PathVariable String roomId, @PathVariable String memberId, @RequestBody MuteRequest muteRequest) {
+        UUID roomUUID =  UUID.fromString(roomId);
+        UUID memberUUID = UUID.fromString(memberId);
+        UUID requesterId = AuthUtils.getCurrentUserId();
+
+        roomMemberService.toggleMuteMembers(roomUUID, memberUUID, requesterId, muteRequest);
+
+        return ResponseEntity.ok().build();
     }
 }

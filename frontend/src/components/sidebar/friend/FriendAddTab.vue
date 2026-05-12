@@ -1,35 +1,36 @@
 <script setup lang="ts">
-import { ref } from "vue"
-import { useFriendStore } from "@/stores/useFriendStore"
+import { ref } from "vue";
+import { useFriendStore } from "@/stores/friendStore";
 
-const emit = defineEmits<{ (e: 'switchTab', tab: 'pending'): void }>()
+const emit = defineEmits<{ (e: "switchTab", tab: "pending"): void }>();
 
-const store = useFriendStore()
+const store = useFriendStore();
 
-const username = ref("")
-const isSending = ref(false)
-const sendSuccess = ref(false)
-const sendError = ref("")
+const username = ref("");
+const isSending = ref(false);
+const sendSuccess = ref(false);
+const sendError = ref("");
 
 const sendFriendRequest = async () => {
-  if (!username.value.trim()) return
+  if (!username.value.trim()) return;
 
-  isSending.value = true
-  sendSuccess.value = false
-  sendError.value = ""
+  isSending.value = true;
+  sendSuccess.value = false;
+  sendError.value = "";
 
   try {
-    await store.sendRequest(username.value.trim())
-    username.value = ""
-    sendSuccess.value = true
+    await store.sendRequest(username.value.trim());
+    username.value = "";
+    sendSuccess.value = true;
     // Chuyển sang tab pending ngay lập tức — không delay
-    emit('switchTab', 'pending')
+    emit("switchTab", "pending");
   } catch (error: any) {
-    sendError.value = typeof error === "string" ? error : "Gửi lời mời thất bại"
+    sendError.value =
+      typeof error === "string" ? error : "Gửi lời mời thất bại";
   } finally {
-    isSending.value = false
+    isSending.value = false;
   }
-}
+};
 </script>
 
 <template>
@@ -50,8 +51,7 @@ const sendFriendRequest = async () => {
         <button
           @click="sendFriendRequest"
           :disabled="isSending || !username.trim()"
-          class="bg-primary hover:bg-primary/90 disabled:bg-primary/70 disabled:cursor-not-allowed
-                 text-primary-foreground px-6 py-3 rounded-md font-medium transition"
+          class="bg-primary hover:bg-primary/90 disabled:bg-primary/70 disabled:cursor-not-allowed text-primary-foreground px-6 py-3 rounded-md font-medium transition"
         >
           <span v-if="isSending">Đang gửi...</span>
           <span v-else>Gửi Yêu Cầu</span>
