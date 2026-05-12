@@ -1,5 +1,5 @@
-<script setup>
-import { ref, watch, nextTick } from 'vue'
+<script setup lang="ts">
+import { ref, watch } from 'vue'
 
 import {
   Dialog,
@@ -12,13 +12,13 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import Card from '@/components/ui/card/Card.vue'
+import type { CardEvent } from '@/types/Task'
 
-const props = defineProps({
+const props = defineProps < {
   open: Boolean,
   columnId: String,
   taskData: CardEvent | null
-})
+} > ();
 
 const emit = defineEmits(['update:open', 'save'])
 
@@ -78,7 +78,7 @@ const handleSave = () => {
           Hủy
         </Button>
         <Button @click="handleSave" :disabled="isSaving || !form.title.trim()">
-          {{ isSaving ? 'Đang lưu...' : taskData ? 'Cập nhật' : 'Tạo thẻ' }} 
+          {{ isSaving ? 'Đang lưu...' : taskData ? 'Cập nhật' : 'Tạo thẻ' }}
         </Button>
       </DialogFooter>
     </DialogContent>
