@@ -8,6 +8,30 @@ import { createPinia } from "pinia";
 import axios from "axios";
 axios.defaults.withCredentials = true;
 
+// ── Khởi tạo theme từ localStorage TRƯỚC KHI mount ──────────
+// Phải chạy sớm nhất có thể để tránh flash trắng khi tải trang
+;(function initTheme() {
+  const html = document.documentElement
+  const savedTheme = localStorage.getItem("synkork_theme_id")
+  const savedMode  = localStorage.getItem("synkork_theme_mode") as "light" | "dark" | "system" | null
+ 
+  // Áp data-theme attribute (CSS selector [data-theme="..."] trong themes.css)
+  if (savedTheme && savedTheme !== "default") {
+    html.setAttribute("data-theme", savedTheme)
+  } else {
+    html.removeAttribute("data-theme")
+  }
+ 
+  // Áp dark / light class
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
+  const isDark =
+    savedMode === "dark" ||
+    savedMode === null ||           // chưa từng lưu → mặc định dark
+    (savedMode === "system" && prefersDark)
+ 
+  html.classList.toggle("dark", isDark)
+})()
+
 // Store management
 const pinia = createPinia();
 
