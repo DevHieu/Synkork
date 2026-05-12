@@ -5,8 +5,29 @@ export interface CardEvent {
   columnId: string;
   position: number;
   createdAt?: string;
-  date?: string;
-  user?: { name: string };
+  
+  createdBy: MemberSummary 
+  assignees: MemberSummary[]
+  
+}
+
+export interface UserSummary {
+  id: string
+  name: string
+  avatarUrl: string | undefined
+}
+
+export interface MemberSummary {
+  id: string
+  name: string
+  avatarUrl?: string
+}
+
+export interface SpaceMemberDTO {
+    id: string
+    name: string
+    avatarUrl: string | null
+    role: string
 }
 
 export interface ColumnEvent {

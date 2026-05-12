@@ -92,14 +92,14 @@ public class ColumnService {
 
         return new ColumnDTO(movingCol);
     }
-
+    @Transactional
     public ColumnDTO getColumnById(UUID columnId) {
         ColumnEntity col = columnRepository.findById(columnId)
                 .orElseThrow(() -> new RuntimeException("Cột không tồn tại!"));
 
         return new ColumnDTO(col);
     }
-
+    @Transactional
     public List<ColumnDTO> getAll(UUID spaceId){
         List<ColumnEntity> columns = columnRepository.findBySpaceIdOrderByPositionAsc(spaceId);
 

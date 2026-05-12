@@ -14,6 +14,7 @@ public interface CardRepository extends JpaRepository<CardEntity, UUID> {
     Iterable<CardEntity> findByTitleContainingIgnoreCase(String title);
     
     List<CardEntity> findByColumn_IdOrderByPositionAsc(UUID columnId);
-    List<CardEntity> findByAssigneeId(UUID userId);
+    @Query("SELECT c FROM CardEntity c JOIN c.assignees u WHERE u.id = :userId")
+    List<CardEntity> findByAssigneeId(@Param("userId") UUID userId);
     
 }
