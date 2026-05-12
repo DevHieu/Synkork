@@ -4,7 +4,9 @@ import com.synkork.backend.modules.user.dto.ChangePasswordDto;
 import com.synkork.backend.modules.user.dto.UpdateprofileDto;
 import com.synkork.backend.modules.user.dto.UserInfoDto;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.lang.NonNull;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -23,9 +25,10 @@ public class UserService {
     @Autowired
     UserRepository userRepository;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder(12);
+    }
     public List<UserEntity> findAll() {
         return userRepository.findAll();
     }
@@ -73,7 +76,6 @@ public class UserService {
 
         if (dto.username() != null && !dto.username().isBlank()) {
             String newUsername = dto.username().trim().toLowerCase();
-            // Kiểm tra username đã tồn tại chưa (ngoài chính mình)
             userRepository.findByUsername(newUsername).ifPresent(existing -> {
                 if (!existing.getId().equals(user.getId())) {
                     throw new RuntimeException("Tên đăng nhập đã được sử dụng");
@@ -85,15 +87,15 @@ public class UserService {
         return new UserInfoDto(userRepository.save(user));
     }
 
-    // Đổi mật khẩu
+    // Đổi mật khẩu — chỉ dành cho tài khoản LOCAL đã có password
     public void changePassword(ChangePasswordDto dto) {
         UserEntity user = getCurrentUser();
 
         if (user.getPassword() == null) {
-            throw new RuntimeException("Tài khoản OAuth không hỗ trợ đổi mật khẩu trực tiếp");
+            throw new RuntimeException("Tài khoản chưa có mật khẩu. Hãy dùng chức năng tạo mật khẩu.");
         }
 
-        if (!passwordEncoder.matches(dto.currentPassword(), user.getPassword())) {  // ✅ dùng field
+        if (!passwordEncoder().matches(dto.currentPassword(), user.getPassword())) {
             throw new RuntimeException("Mật khẩu hiện tại không đúng");
         }
 
@@ -101,7 +103,23 @@ public class UserService {
             throw new RuntimeException("Mật khẩu mới phải có ít nhất 6 ký tự");
         }
 
-        user.setPassword(passwordEncoder.encode(dto.newPassword()));  // ✅ dùng field
+        user.setPassword(passwordEncoder().encode(dto.newPassword()));
+        userRepository.save(user);
+    }
+
+    // Tạo mật khẩu mới — dành cho tài khoản OAuth chưa có password
+    public void createPassword(String newPassword) {
+        UserEntity user = getCurrentUser();
+
+        if (user.getPassword() != null) {
+            throw new RuntimeException("Tài khoản đã có mật khẩu. Hãy dùng chức năng đổi mật khẩu.");
+        }
+
+        if (newPassword == null || newPassword.length() < 6) {
+            throw new RuntimeException("Mật khẩu phải có ít nhất 6 ký tự");
+        }
+
+        user.setPassword(passwordEncoder().encode(newPassword));
         userRepository.save(user);
     }
 

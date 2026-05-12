@@ -65,19 +65,29 @@ public class UserController {
     }
   }
 
-  // Đổi mật khẩu
+  // Đổi mật khẩu — tài khoản LOCAL đã có password
   @PatchMapping("/me/password")
   public ResponseEntity<?> changePassword(@RequestBody ChangePasswordDto dto) {
     try {
       userService.changePassword(dto);
       return ResponseEntity.ok("Đổi mật khẩu thành công");
     } catch (Exception e) {
-      e.printStackTrace();   // ← Thêm dòng này để xem lỗi ở console server
       return ResponseEntity.badRequest().body(e.getMessage());
     }
   }
 
-  // Cập nhật avatar (nhận avatarUrl + avatarId từ frontend sau khi upload)
+  // Tạo mật khẩu lần đầu — tài khoản OAuth chưa có password
+  @PostMapping("/me/password/create")
+  public ResponseEntity<?> createPassword(@RequestBody Map<String, String> body) {
+    try {
+      String newPassword = body.get("newPassword");
+      userService.createPassword(newPassword);
+      return ResponseEntity.ok("Tạo mật khẩu thành công");
+    } catch (Exception e) {
+      return ResponseEntity.badRequest().body(e.getMessage());
+    }
+  }
+
   @PatchMapping("/me/avatar")
   public ResponseEntity<?> updateAvatar(@RequestBody Map<String, String> body) {
     try {
