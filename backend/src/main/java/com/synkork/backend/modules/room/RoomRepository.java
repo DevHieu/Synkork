@@ -1,16 +1,17 @@
 package com.synkork.backend.modules.room;
 
+import com.synkork.backend.modules.room.enums.RoomStatusEnum;
+import com.synkork.backend.modules.room.enums.RoomTypeEnum;
+import com.synkork.backend.modules.statistics.dtos.CountByDate;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
-import com.synkork.backend.modules.room.enums.RoomStatusEnum;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
 @Repository
 public interface RoomRepository extends JpaRepository<RoomEntity, UUID> {
@@ -22,4 +23,8 @@ public interface RoomRepository extends JpaRepository<RoomEntity, UUID> {
     Optional<RoomEntity> findByInviteCode(String inviteCode);
 
     List<RoomEntity> findAllByStatusAndUpdatedAtBefore(RoomStatusEnum status, LocalDateTime updatedAtBefore);
+
+    long countByType(RoomTypeEnum type);
+
+    long countByCreatedAtBetweenAndType(LocalDateTime createdAtAfter, LocalDateTime createdAtBefore, RoomTypeEnum type);
 }

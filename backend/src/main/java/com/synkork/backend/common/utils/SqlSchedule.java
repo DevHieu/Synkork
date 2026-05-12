@@ -3,6 +3,9 @@ package com.synkork.backend.common.utils;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.RoomRepository;
 import com.synkork.backend.modules.room.enums.RoomStatusEnum;
+import com.synkork.backend.modules.statistics.StatisticsEntity;
+import com.synkork.backend.modules.statistics.StatisticsRepository;
+import com.synkork.backend.modules.statistics.StatisticsService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -19,7 +22,19 @@ public class SqlSchedule {
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
+    private StatisticsRepository statisticsRepository;
+
+    @Autowired
+    private StatisticsService statisticsService;
+
+    @Autowired
     private RoomRepository roomRepository;
+
+    @Transactional
+    @Scheduled(cron = "0 16 13 * * *")
+    public void createStatistics() {
+        statisticsService.createStatistics();
+    }
 
     @Transactional
     // Giữa đêm sẽ chạy
