@@ -135,7 +135,6 @@
 					<target>21</target>
 					<release>21</release>
 					<parameters>true</parameters>
-					<!-- ⭐ QUAN TRỌNG: Thêm annotation processor paths -->
 					<annotationProcessorPaths>
 						<path>
 							<groupId>org.projectlombok</groupId>
