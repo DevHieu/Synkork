@@ -29,8 +29,9 @@ public class WebSocketEventListener {
     @Autowired
     private FriendService friendService;
 
+    public static long onlineUserCounter = 0;
     // Lưu lại các user online
-    public Map<String, String> onlineUsers = new HashMap<>();
+    public static Map<String, String> onlineUsers = new HashMap<>();
 
     @EventListener
     public void handleWebSocketConnectListener(SessionConnectEvent event) {
@@ -40,7 +41,7 @@ public class WebSocketEventListener {
             String userId = (String) headerAccessor.getSessionAttributes().get("userId");
             if (userId != null) {
                 onlineUsers.put(userId, headerAccessor.getSessionId());
-
+                onlineUserCounter++;
 
                 this.notifyFriends(userId, true);
             }

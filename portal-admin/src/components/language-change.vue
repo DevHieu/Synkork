@@ -1,0 +1,58 @@
+<script setup lang="ts">
+import type { AcceptableValue } from 'reka-ui'
+
+import { Icon } from '@iconify/vue'
+import { useI18n } from 'vue-i18n'
+
+import type { Language } from '@/plugins/i18n'
+
+import { appLocale, DEFAULT_LOCALE, SUPPORTED_LOCALES } from '@/plugins/i18n'
+
+const { locale } = useI18n()
+
+function setDefaultLanguage() {
+  locale.value = DEFAULT_LOCALE
+  appLocale.value = DEFAULT_LOCALE
+}
+
+function handleLocaleChange(val: AcceptableValue) {
+  if (typeof val !== 'string' || !SUPPORTED_LOCALES.has(val as Language)) {
+    setDefaultLanguage()
+    return
+  }
+
+  locale.value = val as Language
+  appLocale.value = val as Language
+}
+</script>
+
+<template>
+  <UiDropdownMenu>
+    <UiDropdownMenuTrigger as-child>
+      <UiButton
+        variant="outline"
+        size="icon"
+        aria-label="Change language"
+        title="Change language"
+      >
+        <Icon icon="mdi:translate" />
+        <span class="sr-only">Change language</span>
+      </UiButton>
+    </UiDropdownMenuTrigger>
+    <UiDropdownMenuContent align="end">
+      <UiDropdownMenuRadioGroup
+        v-model="locale"
+        @update:model-value="handleLocaleChange"
+      >
+        <UiDropdownMenuRadioItem value="en">
+          <Icon icon="flag:us-4x3" />
+          <span>English</span>
+        </UiDropdownMenuRadioItem>
+        <UiDropdownMenuRadioItem value="vi">
+          <Icon icon="flag:vn-4x3" />
+          <span>Tiếng việt</span>
+        </UiDropdownMenuRadioItem>
+      </UiDropdownMenuRadioGroup>
+    </UiDropdownMenuContent>
+  </UiDropdownMenu>
+</template>
