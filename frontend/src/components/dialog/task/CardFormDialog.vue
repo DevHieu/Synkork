@@ -1,5 +1,5 @@
-<script setup>
-import { ref, watch, nextTick } from 'vue'
+<script setup lang="ts">
+import { ref, watch } from 'vue'
 
 import {
   Dialog,
@@ -12,13 +12,14 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import Card from '@/components/ui/card/Card.vue'
 
-const props = defineProps({
-  open: Boolean,
-  columnId: String,
+import type { CardEvent } from '@/types/Task'
+
+const props = defineProps<{
+  open: boolean,
+  columnId: string,
   taskData: CardEvent | null
-})
+}>()
 
 const emit = defineEmits(['update:open', 'save'])
 

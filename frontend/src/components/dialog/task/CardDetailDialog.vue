@@ -25,9 +25,31 @@ const taskStore = useTaskStore()
 const searchQuery = ref('')
 const showDropdown = ref(false)
 
-const form = ref({ title: '', description: '' })
+const form = ref({ title: '', description: '', dueDate: '' })
 
 const localAssignees = ref<MemberSummary[]>([])
+
+const getStatus = (dueDate?: string) => {
+
+  if (!dueDate) return null
+
+  const now = new Date()
+  const due = new Date(dueDate)
+
+  const diff = due.getTime() - now.getTime()
+
+  if (diff < 0) {
+    return 'OVERDUE'
+  }
+
+  if (diff <= 24 * 60 * 60 * 1000) {
+    return 'DUE_SOON'
+  }
+
+  return 'NORMAL'
+}
+
+const status = computed(() => getStatus(form.value.dueDate))
 
 const props = defineProps<{
   open: boolean, card: CardEvent, columnName: string
@@ -37,7 +59,12 @@ const emit = defineEmits(['update:open', 'save'])
 
 const emitSave = () => {
   if (!form.value.title.trim()) return
-    emit('save', { ...props.card, title: form.value.title.trim(), description: form.value.description.trim(), assignees: localAssignees.value
+  const formattedDueDate = form.value.dueDate
+  ? `${form.value.dueDate}:00`
+  : null
+    emit('save', { ...props.card, title: form.value.title.trim(), 
+      description: form.value.description.trim(), assignees: localAssignees.value,
+      dueDate: formattedDueDate
   })
 }
 
@@ -93,9 +120,15 @@ const isAssigned = (memberId: string) =>
 watch(() => props.open, (newVal) => {
   localAssignees.value = [...(props.card.assignees ?? [])]
   if (newVal && props.card) {
+    let formattedDate = ''
+
+    if (props.card.dueDate) {
+      formattedDate = props.card.dueDate.slice(0, 16)
+    }
     form.value = {
       title: props.card.title || '',
-      description: props.card.description || ''
+      description: props.card.description || '',
+      dueDate: formattedDate
     }
   }
   searchQuery.value = ''
@@ -191,13 +224,31 @@ watch(() => props.open, (newVal) => {
           </div>
 
           <div class="space-y-2">
-            <Label class="text-[11px] font-semibold uppercase text-muted-foreground">Hạn chót</Label>
-            <div
-              class="flex items-center gap-2 text-sm font-medium text-foreground/80 hover:text-primary cursor-pointer group transition-colors">
-              <CalendarIcon :size="16" class="text-muted-foreground group-hover:text-primary" />
-              <span>Chưa thiết lập</span>
-            </div>
-          </div>
+  <Label class="text-[11px] font-semibold uppercase text-muted-foreground">Hạn chót</Label>
+  <div class="flex items-center gap-2">
+    <CalendarIcon :size="16" class="text-muted-foreground" />
+    <input
+      v-model="form.dueDate"
+      type="datetime-local"
+      class="text-sm bg-transparent border-none outline-none text-foreground/80 cursor-pointer hover:text-primary transition-colors"
+      @change="handleSave"
+    />
+  </div>
+  <span v-if="status === 'OVERDUE'" class="text-red-500">
+  🔴 Quá hạn
+</span>
+
+<span v-else-if="status === 'DUE_SOON'" class="text-yellow-500">
+  🟡 Sắp đến hạn
+</span>
+  <button
+    v-if="form.dueDate"
+    @click="form.dueDate = ''; handleSave()"
+    class="text-[10px] text-muted-foreground hover:text-red-500 transition-colors flex items-center gap-1"
+  >
+    <X :size="10" /> Xóa hạn
+  </button>
+</div>
         </div>
 
         <!-- Description -->

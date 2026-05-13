@@ -39,7 +39,9 @@ const saveInDetail = async (updatedCard: CardEvent) => {
             props.columnId, 
             updatedCard.title, 
             updatedCard.description, 
-            updatedCard.assignees?.map(a => a.id) ?? [])
+            updatedCard.assignees?.map(a => a.id) ?? [],
+            updatedCard.dueDate 
+        )
 
     } catch (error) {
         console.error("Lỗi:", error)
