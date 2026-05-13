@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.synkork.backend.modules.collaboration.task.card.CardEntity;
 
 import lombok.Data;
@@ -25,6 +26,8 @@ public class CardDTO {
     
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime dueDate;
 
     public CardDTO(CardEntity e) {
         this.id = e.getId();
@@ -43,5 +46,7 @@ public class CardDTO {
         }
 
         this.createdAt = e.getCreatedAt();
+
+        this.dueDate = e.getDueDate();
     }
 }
