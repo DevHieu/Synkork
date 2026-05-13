@@ -63,8 +63,10 @@ public class AuthController {
         try {
             authService.register(request);
             return ResponseEntity.status(HttpStatus.CREATED).body("Đăng ký thành công, vui lòng kiểm tra email để xác thực tài khoản");
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        } catch (ResponseStatusException e) {
+            return ResponseEntity
+                    .status(e.getStatusCode())
+                    .body(e.getReason());
         }
     }
 
