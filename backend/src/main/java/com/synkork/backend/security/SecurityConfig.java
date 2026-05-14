@@ -1,7 +1,5 @@
 package com.synkork.backend.security;
 
-import java.util.Arrays;
-
 import com.synkork.backend.exception.JwtAuthenticationEntryPoint;
 import com.synkork.backend.filter.JwtFilter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +20,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
 
 // Đây sẽ là lớp cấu hình bảo mật cho ứng dụng
 @EnableMethodSecurity
@@ -48,7 +48,7 @@ public class SecurityConfig {
     AccessDeniedHandler accessDeniedHandler;
 
     @Autowired
-    OAuth2SuccessHandler  oAuth2SuccessHandler;
+    OAuth2SuccessHandler oAuth2SuccessHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -58,7 +58,8 @@ public class SecurityConfig {
                         // Thêm dòng này vào đầu danh sách requestMatchers
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/public/**", "/auth/**", "/ws/**").permitAll()
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/admin/**").permitAll() // Để tạm để test các chức năng của admin
+//                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .oauth2Login(oauth -> oauth
                         .successHandler(oAuth2SuccessHandler))
@@ -71,13 +72,18 @@ public class SecurityConfig {
         return http.build();
     }
 
-  @Bean
-  public AuthenticationManager authenticationManager() throws Exception {
-    DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-    authProvider.setUserDetailsService(userDetailsService);
-    authProvider.setPasswordEncoder(new BCryptPasswordEncoder(12));
-    return new ProviderManager(authProvider);
-  }
+    @Bean
+    public BCryptPasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder(12);
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager() throws Exception {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return new ProviderManager(authProvider);
+    }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
