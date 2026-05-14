@@ -6,6 +6,7 @@ import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.enums.PlanEnum;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
@@ -50,6 +51,10 @@ public class UserSubscriptionEntity {
     private LocalDateTime expiresAt;
 
     private LocalDateTime cancelledAt;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
 
     @Column(nullable = false)
     private boolean autoRenew = true;

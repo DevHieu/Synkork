@@ -1,9 +1,4 @@
-import {
-  createRoom,
-  getUserRooms,
-  joinRoom,
-  deleteRoom,
-} from "@/services/roomService";
+import { createRoom, getUserRooms, joinRoom } from "@/services/roomService";
 import { defineStore } from "pinia";
 import { useRoomMemberStore } from "./roomMemberStore";
 import { useSpaceStore } from "./spaceStore";

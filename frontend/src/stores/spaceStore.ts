@@ -21,7 +21,7 @@ export const useSpaceStore = defineStore("spaces", {
     taskSpaces: [] as Space[],
 
     currentVoiceSpace: null as Space | null,
-    loading: false,
+    loading: true,
   }),
 
   actions: {
@@ -187,7 +187,7 @@ export const useSpaceStore = defineStore("spaces", {
       }
     },
 
-    addSpaceToArray(space: any) {
+    async addSpaceToArray(space: any) {
       switch (space.type.toUpperCase()) {
         case "CHAT":
           this.chatSpaces.push(space);
@@ -207,15 +207,23 @@ export const useSpaceStore = defineStore("spaces", {
       }
     },
 
-    removeSpaceFromArray(spaceId: string) {
+    async removeSpaceFromArray(spaceId: string) {
       this.chatSpaces = this.chatSpaces.filter((s) => s.id !== spaceId);
       this.voiceSpaces = this.voiceSpaces.filter((s) => s.id !== spaceId);
       this.noteSpaces = this.noteSpaces.filter((s) => s.id !== spaceId);
       this.calendarSpaces = this.calendarSpaces.filter((s) => s.id !== spaceId);
       this.taskSpaces = this.taskSpaces.filter((s) => s.id !== spaceId);
 
+      const { useVoiceSpaceStore } = await import("@/stores/voiceSpaceStore");
+      const { currentSpaceId } = storeToRefs(useVoiceSpaceStore());
+
+      if (currentSpaceId.value === spaceId) {
+        await useVoiceSpaceStore().leaveRoom();
+      }
+
       if (this.currentSpace?.id === spaceId) {
-        this.currentSpace = null;
+        this.changeSpaceById(spaceId, "CHAT");
+
         router.push(
           `/rooms/chat/${router.currentRoute.value.params.roomId}/${
             this.chatSpaces[0]?.id || ""
@@ -224,7 +232,7 @@ export const useSpaceStore = defineStore("spaces", {
       }
     },
 
-    updateSpaceToArray(space: any) {
+    async updateSpaceToArray(space: any) {
       switch (space.type.toUpperCase()) {
         case "CHAT":
           const chatIndex = this.chatSpaces.findIndex((s) => s.id === space.id);
@@ -261,6 +269,18 @@ export const useSpaceStore = defineStore("spaces", {
           }
           break;
       }
+    },
+  },
+
+  getters: {
+    isExisted: (state) => (spaceId: string) => {
+      return (
+        state.chatSpaces.some((s) => s.id === spaceId) ||
+        state.voiceSpaces.some((s) => s.id === spaceId) ||
+        state.noteSpaces.some((s) => s.id === spaceId) ||
+        state.calendarSpaces.some((s) => s.id === spaceId) ||
+        state.taskSpaces.some((s) => s.id === spaceId)
+      );
     },
   },
 });

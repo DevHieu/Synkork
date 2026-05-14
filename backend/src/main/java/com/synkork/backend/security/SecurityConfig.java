@@ -32,6 +32,9 @@ public class SecurityConfig {
     @Value("${frontend.client.url}")
     private String frontendUrl;
 
+    @Value("${frontend.admin.url}")
+    private String adminUrl;
+
     @Autowired
     private JwtFilter jwtFilter;
 
@@ -79,7 +82,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(frontendUrl)); //Bypass cho url frontend
+        configuration.setAllowedOrigins(Arrays.asList(frontendUrl, adminUrl)); //Bypass cho url frontend
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
         configuration.setAllowCredentials(true);

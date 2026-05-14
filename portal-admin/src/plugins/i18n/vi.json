@@ -1,0 +1,113 @@
+{
+  "premium": {
+    "premium": "Cao cấp",
+    "UpgradeNow": "Nâng cấp ngay"
+  },
+  "marketing": {
+    "hero": {
+      "learnPeople": "Hơn 1K+ người đã tham gia",
+      "getMore": "Nhận thêm",
+      "title": "Bạn có dám dùng 365 ngày để chứng kiến một sự thay đổi hoàn toàn?",
+      "subtitle": "Chiếc đồng hồ cát của thời gian đang vang dội như sấm. Khi sự tích lũy vượt qua điểm giới hạn, mọi sáng tối bạn cố gắng sẽ hóa thành biển sao!"
+    },
+    "features": {
+      "title": "Tính năng",
+      "feature1": {
+        "title": "Sử dụng công nghệ hiện đại",
+        "description": "Thư viện component hiện đại hơn, tự do tùy chỉnh từng component"
+      },
+      "feature2": {
+        "title": "Dễ dàng triển khai",
+        "description": "Triển khai lên server chỉ với một cú nhấp, không cần cấu hình phức tạp"
+      },
+      "feature3": {
+        "title": "Mã nguồn mở",
+        "description": "Mọi dòng code đều mã nguồn mở, bạn có thể tự do chỉnh sửa và mở rộng"
+      },
+      "feature4": {
+        "title": "Hỗ trợ cộng đồng",
+        "description": "Bạn có thể tìm kiếm sự trợ giúp từ cộng đồng và chia sẻ kinh nghiệm"
+      }
+    },
+    "evaluation": {
+      "title": "Đánh giá",
+      "subtitle": "Các đánh giá này là dữ liệu mô phỏng, không phải dữ liệu thực tế"
+    },
+    "pricingPlans": {
+      "title": "Gói giá",
+      "subtitle": "Chọn gói phù hợp với bạn",
+      "buy": "Mua ngay",
+      "hobby": {
+        "title": "Cơ bản",
+        "description": "Phù hợp cho người mới bắt đầu",
+        "price": "399",
+        "discount": "599",
+        "unit": "$",
+        "billing": {
+          "cycle": "",
+          "period": ""
+        },
+        "features": {
+          "feature1": "Sử dụng một phần mã nguồn website",
+          "feature2": "Nhận cập nhật công nghệ mới nhất",
+          "feature3": "Hơn 100 component",
+          "feature4": "Hơn 100 trang"
+        }
+      },
+      "starter": {
+        "title": "Khởi đầu",
+        "description": "Phù hợp cho người mới bắt đầu",
+        "price": "599",
+        "discount": "899",
+        "unit": "$",
+        "billing": {
+          "cycle": "",
+          "period": ""
+        },
+        "features": {
+          "feature1": "Sử dụng toàn bộ mã nguồn website",
+          "feature2": "Đọc tài liệu trực tuyến chất lượng",
+          "feature3": "Nhận cập nhật công nghệ mới nhất",
+          "feature4": "Hơn 200 component",
+          "feature5": "Hơn 200 trang"
+        }
+      },
+      "business": {
+        "title": "Doanh nghiệp",
+        "description": "Phù hợp cho người mới bắt đầu",
+        "price": "199",
+        "discount": "399",
+        "unit": "$",
+        "billing": {
+          "cycle": "",
+          "period": ""
+        },
+        "features": {
+          "feature1": "Sử dụng toàn bộ mã nguồn website",
+          "feature2": "Đọc tài liệu trực tuyến chất lượng",
+          "feature3": "Nhận cập nhật công nghệ mới nhất",
+          "feature4": "Hơn 200 component",
+          "feature5": "Hơn 200 trang",
+          "feature6": "Hỗ trợ trợ lý riêng"
+        }
+      }
+    },
+    "setup": {
+      "title": "Thiết lập",
+      "subtitle": "Chỉ mất 3 phút để bắt đầu sử dụng"
+    }
+  },
+  "login": "Đăng nhập",
+  "email": "Email",
+  "password": "Mật khẩu",
+  "download": "Tải xuống",
+  "logout": "Đăng xuất",
+  "forgotPassword": "Quên mật khẩu?",
+  "register": "Đăng ký",
+  "forgotPasswordPage": {
+    "continue": "Tiếp tục"
+  },
+  "homePage": {
+    "searchKeyWords": "Tìm kiếm menu"
+  }
+}
