@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { watch, ref, inject } from "vue";
-import { Command, Plus } from "lucide-vue-next";
+import { Plus } from "lucide-vue-next";
 import {
   Sidebar,
   SidebarContent,
@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { useUserStore } from "@/stores/userStore";
 import { useRoomsStore } from "@/stores/roomStore";
+import { useThemeStore } from "@/stores/themeStore";
 import { storeToRefs } from "pinia";
 import {
   Tooltip,
@@ -43,6 +44,7 @@ const userStore = useUserStore();
 const { user } = storeToRefs(userStore);
 const roomStore = useRoomsStore();
 const { rooms } = storeToRefs(roomStore);
+const themeStore = useThemeStore()
 
 watch(
   () => user.value?.id,
@@ -97,7 +99,9 @@ const selectRoom = async (roomItem: Room, spaceId?: string) => {
                         ? 'bg-primary'
                         : 'bg-muted'
                         ">
-                      <Command class="size-8" />
+
+                      <img src="/assets/DauChim.png" alt="dauchim" class="size-8 transition-all duration-200"
+                        :class="{ 'invert': themeStore.isDark }" />
                     </div>
                   </RouterLink>
                 </SidebarMenuButton>
