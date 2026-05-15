@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.collaboration.note.dto;
 
 import java.util.UUID;
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 import lombok.Data;
@@ -26,6 +27,8 @@ public class NoteResponse {
     private Integer posY;
     private Integer width;
     private Integer height;
+    private Instant reminderAt;
+    private Boolean reminderSent;
 
     public NoteResponse(NoteEntity note) {
         this.id = note.getId();
@@ -35,9 +38,13 @@ public class NoteResponse {
         this.color = note.getColor();
         this.createdAt = note.getCreatedAt();
         this.updatedAt = note.getUpdatedAt();
-        this.posX   = note.getPosX();
-        this.posY   = note.getPosY();
-        this.width  = note.getWidth();
+        this.posX = note.getPosX();
+        this.posY = note.getPosY();
+        this.width = note.getWidth();
         this.height = note.getHeight();
+        this.reminderAt = note.getReminderAt();
+        this.reminderSent = note.getReminderSent();
+        this.displayName = note.getCreatedBy().getDisplayName();
+        this.avatarUrl = note.getCreatedBy().getAvatarUrl();
     }
 }
