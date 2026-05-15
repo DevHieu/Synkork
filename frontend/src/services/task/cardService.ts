@@ -10,7 +10,7 @@ export const createCard = async (spaceId: string, data: { columnId: string; titl
     return res.data;
 }
 
-export const updateCard = async (spaceId: string | null, cardId: string | null, data: { title: string | null; description: string | null; assigneeIds?: string[]}) => {
+export const updateCard = async (spaceId: string | null, cardId: string | null, data: { title: string | null; description: string | null; assigneeIds?: string[], dueDate?: string }) => {
     const res = await axiosClient.put(`/api/space/${spaceId}/card/${cardId}`, data);
     return res.data;
 }
