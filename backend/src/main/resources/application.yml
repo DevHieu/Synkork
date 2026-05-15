@@ -4,9 +4,21 @@ spring:
     username: ${DB_USERNAME:huynhtrunghieu}
     password: ${DB_PASSWORD:123}
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${GMAIL_USERNAME:huynhtrunghieu@gmail.com}
+    password: ${GMAIL_PASSWORD:Hieu21012006}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -35,7 +47,6 @@ spring:
 server:
   port: 8080
   servlet:
-    # Set the context path to /api (localhost:8080/api)
     context-path: /api
 
 frontend:

@@ -11,6 +11,8 @@ export interface Note {
   posY: number
   width: number
   height: number
+  reminderAt: string | null     
+  reminderSent: boolean | null  
 }
 
 export interface NoteRequest {
@@ -23,4 +25,5 @@ export interface NoteRequest {
   posY?: number
   width?: number
   height?: number
+  reminderAt?: string | null  
 }
