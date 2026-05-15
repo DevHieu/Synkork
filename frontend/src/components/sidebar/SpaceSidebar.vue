@@ -92,8 +92,7 @@ const handleDelete = async (spaceId: string) => {
           {{ currentRoom?.name }}
         </div>
         <div class="flex gap-3.5">
-          <button v-if="canManage" @click.stop="showRoomSettingDialog = true"
-            class="transition duration-150 hover:text-foreground">
+          <button @click.stop="showRoomSettingDialog = true" class="transition duration-150 hover:text-foreground">
             <Settings class="h-5 w-5" />
           </button>
           <button @click="showInviteDialog = true"
