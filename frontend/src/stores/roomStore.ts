@@ -95,7 +95,7 @@ export const useRoomsStore = defineStore("rooms", {
       await this.changeRoom(roomInvited);
     },
 
-    async leaveRoom(roomId: string) {
+    async removeRoomFromArray(roomId: string) {
       if (this.currentRoom?.id === roomId) {
         this.currentRoom = null;
         router.push("/me");

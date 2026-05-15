@@ -19,7 +19,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -46,7 +46,8 @@ public class AuthService {
     @Autowired
     private EmailService emailService;
 
-    private BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     public String login(LoginRequest request, HttpServletResponse response) {
         UserEntity user = userRepository.findByEmail(request.getUsername())
@@ -99,7 +100,7 @@ public class AuthService {
                 .displayName(request.getFirstName() + " " + request.getLastName())
                 .username(request.getUsername())
                 .email(request.getEmail())
-                .password(encoder.encode(request.getPassword()))
+                .password(passwordEncoder.encode(request.getPassword()))
                 .status(UserStatusEnum.INACTIVE)
                 .build();
 
@@ -140,7 +141,7 @@ public class AuthService {
         UserEntity user = userRepository.findByEmail(verify.getEmail())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tài khoản không tồn tại"));
 
-        user.setPassword(encoder.encode(newPassword));
+        user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
 
         verificationService.delete(verify);
