@@ -105,4 +105,18 @@ public class NoteController {
 
         return ResponseEntity.ok(response);
     }
+
+    @PatchMapping("/{id}/reminder")
+    public ResponseEntity<NoteResponse> setReminder(
+        @PathVariable String id,
+        @PathVariable String spaceId,
+        @RequestBody NoteRequest request) {
+
+    NoteResponse response = noteService.setReminder(id, request);
+
+    messageTemplate.convertAndSend(
+        "/topic/space/" + spaceId + "/notes/update", response);
+
+    return ResponseEntity.ok(response);
+    }
 }

@@ -1,8 +1,20 @@
 spring:
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/synkork?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
-    username: ${DB_USERNAME:root}
+    username: ${DB_USERNAME:huynhtrunghieu}
     password: ${DB_PASSWORD:123}
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${GMAIL_USERNAME:huynhtrunghieu@gmail.com}
+    password: ${GMAIL_PASSWORD:Hieu21012006}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
   jpa:
     hibernate:
@@ -39,7 +51,6 @@ spring:
 server:
   port: 8080
   servlet:
-    # Set the context path to /api (localhost:8080/api)
     context-path: /api
 
 frontend:
