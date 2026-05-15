@@ -61,8 +61,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Thêm dòng này vào đầu danh sách requestMatchers
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/auth/check").authenticated()
                         .requestMatchers("/public/**", "/auth/**", "/ws/**").permitAll()
-                        .requestMatchers("/admin/**").permitAll() // Để tạm để test các chức năng của admin
+                        .requestMatchers("/admin/**").authenticated() // Để tạm để test các chức năng của admin
 //                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .oauth2Login(oauth -> oauth

@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import AuthTitle from './components/auth-title.vue'
-import GitHubButton from './components/github-button.vue'
 import GoogleButton from './components/google-button.vue'
-import PrivacyPolicyButton from './components/privacy-policy-button.vue'
-import TermsOfServiceButton from './components/terms-of-service-button.vue'
 </script>
 
 <template>
@@ -72,16 +69,8 @@ import TermsOfServiceButton from './components/terms-of-service-button.vue'
             <UiSeparator label="Or continue with" />
 
             <div class="flex flex-col items-center justify-between gap-4">
-              <GitHubButton />
               <GoogleButton />
             </div>
-
-            <UiCardDescription>
-              By creating an account, you agree to our
-              <TermsOfServiceButton />
-              and
-              <PrivacyPolicyButton />
-            </UiCardDescription>
           </div>
         </UiCardContent>
       </UiCard>
