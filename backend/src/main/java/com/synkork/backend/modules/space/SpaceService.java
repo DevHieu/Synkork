@@ -1,6 +1,6 @@
 package com.synkork.backend.modules.space;
 
-import com.synkork.backend.modules.collaboration.calendar.CalendarEventRepository;
+import com.synkork.backend.modules.collaboration.calendar.repository.CalendarEventRepository;
 import com.synkork.backend.modules.collaboration.task.column.ColumnRepository;
 import com.synkork.backend.modules.message.MessageRepository;
 import com.synkork.backend.modules.room.RoomEntity;

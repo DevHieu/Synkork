@@ -9,6 +9,7 @@ export interface CalendarEvent {
   recurrenceType?: string;
   recurrenceEndDate?: string;
   allowEditAll: boolean;
+  remindBeforeMinutes?: number;
   createdById: string;
   createdByUsername: string;
   createdByDisplayName: string;

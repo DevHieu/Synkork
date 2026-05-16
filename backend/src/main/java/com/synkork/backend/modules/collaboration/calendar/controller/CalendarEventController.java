@@ -1,6 +1,10 @@
-package com.synkork.backend.modules.collaboration.calendar;
+package com.synkork.backend.modules.collaboration.calendar.controller;
 
+import com.synkork.backend.modules.collaboration.calendar.repository.CalendarEventRepository;
+import com.synkork.backend.modules.collaboration.calendar.service.CalendarEventService;
 import com.synkork.backend.modules.collaboration.calendar.dto.CalendarEventDTO;
+import com.synkork.backend.common.utils.AuthUtils;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -56,19 +60,13 @@ public class CalendarEventController {
         return ResponseEntity.ok(conflicts);
     }
 
-    // Thêm hàm xác thực logic nhỏ gọn
-    private void validateUserId(String userId) {
-        if (userId == null || userId.isEmpty()) {
-            throw new IllegalArgumentException("User ID is required");
-        }
-    }
-
     // Tạo event mới
     @PostMapping
     public ResponseEntity<CalendarEventDTO> createEvent(@RequestBody CalendarEventDTO dto) {
-        String userId = dto.getCreatedById();
-        validateUserId(userId);
-        
+        if (dto.getSpaceId() == null || dto.getSpaceId().isEmpty()) {
+            throw new IllegalArgumentException("Space ID is required");
+        }
+        UUID userId = AuthUtils.getCurrentUserId();
         CalendarEventDTO created = calendarEventService.createEvent(dto, userId);
         return ResponseEntity.ok(created);
     }
@@ -78,20 +76,15 @@ public class CalendarEventController {
     public ResponseEntity<CalendarEventDTO> updateEvent(
             @PathVariable UUID eventId,
             @RequestBody CalendarEventDTO dto) {
-        String userId = dto.getCreatedById();
-        validateUserId(userId);
-        
+        UUID userId = AuthUtils.getCurrentUserId();
         CalendarEventDTO updated = calendarEventService.updateEvent(eventId, dto, userId);
         return ResponseEntity.ok(updated);
     }
 
     // Xóa event
     @DeleteMapping("/{eventId}")
-    public ResponseEntity<Void> deleteEvent(
-            @PathVariable UUID eventId,
-            @RequestParam String userId) {
-        validateUserId(userId);
-        
+    public ResponseEntity<Void> deleteEvent(@PathVariable UUID eventId) {
+        UUID userId = AuthUtils.getCurrentUserId();
         calendarEventService.deleteEvent(eventId, userId);
         return ResponseEntity.ok().build();
     }
