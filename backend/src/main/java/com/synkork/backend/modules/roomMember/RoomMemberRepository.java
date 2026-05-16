@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.synkork.backend.modules.collaboration.task.column.ColumnEntity;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,4 +34,8 @@ public interface RoomMemberRepository extends JpaRepository<RoomMemberEntity, UU
 
     @Query("SELECT rm.user FROM RoomMemberEntity rm WHERE rm.room.id = :roomUUID")
     List<UserEntity> findUsersByRoomId(UUID roomUUID);
+
+    // Optional<RoomMemberEntity> findByUser_Email(String creatorEmail);
+
+    Optional<RoomMemberEntity> findByUser_EmailAndRoom_Id(String creatorEmail, UUID roomId);
 }

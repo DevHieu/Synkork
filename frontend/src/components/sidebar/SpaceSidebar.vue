@@ -33,6 +33,7 @@ const {
   calendarSpaces,
   noteSpaces,
   taskSpaces,
+  loading
 } = storeToRefs(spaceStore);
 
 const showRoomSettingDialog = ref(false);
@@ -91,17 +92,11 @@ const handleDelete = async (spaceId: string) => {
           {{ currentRoom?.name }}
         </div>
         <div class="flex gap-3.5">
-          <button
-            v-if="canManage"
-            @click.stop="showRoomSettingDialog = true"
-            class="transition duration-150 hover:text-foreground"
-          >
+          <button @click.stop="showRoomSettingDialog = true" class="transition duration-150 hover:text-foreground">
             <Settings class="h-5 w-5" />
           </button>
-          <button
-            @click="showInviteDialog = true"
-            class="p-1.5 rounded-lg hover:bg-muted transition text-muted-foreground hover:text-foreground"
-          >
+          <button @click="showInviteDialog = true"
+            class="p-1.5 rounded-lg hover:bg-muted transition text-muted-foreground hover:text-foreground">
             <UserRoundPlus class="h-5 w-5" />
           </button>
         </div>
@@ -109,109 +104,46 @@ const handleDelete = async (spaceId: string) => {
     </SidebarHeader>
 
     <SidebarContent class="mt-5">
-      <SpaceGroup
-        label="KÊNH TASK"
-        :can-manage="canManage"
-        @add="openAddSpaceDialog('TASK')"
-      >
-        <SpaceItem
-          v-for="(item, index) in taskSpaces"
-          :key="item.id"
-          :space-id="item.id"
-          :space-name="item.name"
-          :is-active="currentSpace?.id === item.id"
-          :can-manage="canManage"
-          :restricted="item.restricted"
+      <SpaceGroup label="KÊNH TASK" :can-manage="canManage" @add="openAddSpaceDialog('TASK')">
+        <SpaceItem v-for="(item, index) in taskSpaces" :key="item.id" :space-id="item.id" :space-name="item.name"
+          :is-active="currentSpace?.id === item.id" :can-manage="canManage" :restricted="item.restricted"
           @click="spaceStore.changeSpace(index, 'TASK')"
-          @save="handleUpdateSpace(item.id, $event.name, $event.restricted)"
-          @delete="handleDelete(item.id)"
-        />
+          @save="handleUpdateSpace(item.id, $event.name, $event.restricted)" @delete="handleDelete(item.id)" />
       </SpaceGroup>
 
-      <SpaceGroup
-        label="KÊNH GHI CHÚ"
-        :can-manage="canManage"
-        @add="openAddSpaceDialog('NOTE')"
-      >
-        <SpaceItem
-          v-for="(item, index) in noteSpaces"
-          :key="item.id"
-          :space-id="item.id"
-          :space-name="item.name"
-          :is-active="currentSpace?.id === item.id"
-          :can-manage="canManage"
-          :restricted="item.restricted"
+      <SpaceGroup label="KÊNH GHI CHÚ" :can-manage="canManage" @add="openAddSpaceDialog('NOTE')">
+        <SpaceItem v-for="(item, index) in noteSpaces" :key="item.id" :space-id="item.id" :space-name="item.name"
+          :is-active="currentSpace?.id === item.id" :can-manage="canManage" :restricted="item.restricted"
           @click="spaceStore.changeSpace(index, 'NOTE')"
-          @save="handleUpdateSpace(item.id, $event.name, $event.restricted)"
-          @delete="handleDelete(item.id)"
-        />
+          @save="handleUpdateSpace(item.id, $event.name, $event.restricted)" @delete="handleDelete(item.id)" />
       </SpaceGroup>
 
-      <SpaceGroup
-        label="KÊNH LỊCH TRÌNH"
-        :can-manage="canManage"
-        @add="openAddSpaceDialog('CALENDAR')"
-      >
-        <SpaceItem
-          v-for="(item, index) in calendarSpaces"
-          :key="item.id"
-          :space-id="item.id"
-          :space-name="item.name"
-          :is-active="currentSpace?.id === item.id"
-          :can-manage="canManage"
-          :restricted="item.restricted"
+      <SpaceGroup label="KÊNH LỊCH TRÌNH" :can-manage="canManage" @add="openAddSpaceDialog('CALENDAR')">
+        <SpaceItem v-for="(item, index) in calendarSpaces" :key="item.id" :space-id="item.id" :space-name="item.name"
+          :is-active="currentSpace?.id === item.id" :can-manage="canManage" :restricted="item.restricted"
           @click="spaceStore.changeSpace(index, 'CALENDAR')"
-          @save="handleUpdateSpace(item.id, $event.name, $event.restricted)"
-          @delete="handleDelete(item.id)"
-        />
+          @save="handleUpdateSpace(item.id, $event.name, $event.restricted)" @delete="handleDelete(item.id)" />
       </SpaceGroup>
 
-      <SpaceGroup
-        label="KÊNH CHAT"
-        :can-manage="canManage"
-        @add="openAddSpaceDialog('CHAT')"
-      >
-        <SpaceItem
-          v-for="(item, index) in chatSpaces"
-          :key="item.id"
-          :space-id="item.id"
-          :space-name="item.name"
-          :is-active="currentSpace?.id === item.id"
-          :can-manage="canManage"
-          :restricted="item.restricted"
+      <SpaceGroup label="KÊNH CHAT" :can-manage="canManage" @add="openAddSpaceDialog('CHAT')">
+        <SpaceItem v-for="(item, index) in chatSpaces" :key="item.id" :space-id="item.id" :space-name="item.name"
+          :is-active="currentSpace?.id === item.id" :can-manage="canManage" :restricted="item.restricted"
           @click="spaceStore.changeSpace(index, 'CHAT')"
-          @save="handleUpdateSpace(item.id, $event.name, $event.restricted)"
-          @delete="handleDelete(item.id)"
-        />
+          @save="handleUpdateSpace(item.id, $event.name, $event.restricted)" @delete="handleDelete(item.id)" />
       </SpaceGroup>
 
-      <SpaceGroup
-        label="KÊNH ĐÀM THOẠI"
-        :can-manage="canManage"
-        @add="openAddSpaceDialog('VOICE')"
-      >
-        <VoiceSpaceItem
-          v-for="item in voiceSpaces"
-          :key="item.id"
-          :space-id="item.id"
-          :space-name="item.name"
-          :is-active="currentSpace?.id === item.id"
-          :can-manage="canManage"
-          :restricted="item.restricted"
+      <SpaceGroup label="KÊNH ĐÀM THOẠI" :can-manage="canManage" @add="openAddSpaceDialog('VOICE')">
+        <VoiceSpaceItem v-for="item in voiceSpaces" :key="item.id" :space-id="item.id" :space-name="item.name"
+          :is-active="currentSpace?.id === item.id" :can-manage="canManage" :restricted="item.restricted"
           :participants="voiceSpaceStore.getParticipantsForSpace(item.id) ?? []"
-          @join="voiceSpaceStore.joinRoom(item.id)"
-          @save="handleUpdateSpace(item.id, $event.name, $event.restricted)"
-          @delete="handleDelete(item.id)"
-        />
+          @join="voiceSpaceStore.joinRoom(item.id, loading)"
+          @save="handleUpdateSpace(item.id, $event.name, $event.restricted)" @delete="handleDelete(item.id)" />
       </SpaceGroup>
     </SidebarContent>
   </Sidebar>
 
-  <CreateSpaceDialog
-    v-model:open="showAddSpaceDialog"
-    :type="selectedSpaceType"
-    @created="({ name, type }) => handleCreateSpace(name, type)"
-  />
+  <CreateSpaceDialog v-model:open="showAddSpaceDialog" :type="selectedSpaceType"
+    @created="({ name, type }) => handleCreateSpace(name, type)" />
   <RoomSettingDialog v-model:open="showRoomSettingDialog" />
   <InviteDialog v-model:open="showInviteDialog" />
 </template>

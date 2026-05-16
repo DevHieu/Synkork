@@ -31,19 +31,10 @@ public class AuthController {
     @Autowired
     VerificationService verificationService;
 
-    /*
-     * Ví dụ trường hợp cần 1 DTO
-     *
-     * Trường hợp bên client gửi 1 object login gồm email và password qua body để
-     * đăng nhập (Không xài RequestParam vì bảo mật kém và ko phù hợp với object nếu
-     * to hơn)
-     *
-     * Mà nhận bằng User entity thì ko đúng vì User entity có thể có nhiều trường
-     * hơn (role, createdAt, updatedAt,...)
-     *
-     * Nên ta sẽ tạo 1 DTO LoginRequest chỉ gồm email và password để nhận dữ liệu từ
-     * client
-     */
+    @GetMapping("/check")
+    public ResponseEntity<?> checkAuth() {
+        return ResponseEntity.ok().build();
+    }
 
     @PostMapping("/login")
     public ResponseEntity<String> login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
@@ -63,8 +54,10 @@ public class AuthController {
         try {
             authService.register(request);
             return ResponseEntity.status(HttpStatus.CREATED).body("Đăng ký thành công, vui lòng kiểm tra email để xác thực tài khoản");
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        } catch (ResponseStatusException e) {
+            return ResponseEntity
+                    .status(e.getStatusCode())
+                    .body(e.getReason());
         }
     }
 

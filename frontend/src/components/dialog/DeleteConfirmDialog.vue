@@ -36,9 +36,8 @@ const handleConfirm = () => {
 </script>
 
 <template>
-  <Dialog :open="open" 
-  @update:open="(val) => emit('update:open', val)">
-    <DialogContent class="sm:max-w-md">
+  <Dialog :open="open" @update:open="(val) => emit('update:open', val)">
+    <DialogContent class="sm:max-w-md z-50">
       <DialogHeader class="flex flex-col items-center gap-3">
         <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
           <AlertTriangle class="w-6 h-6 text-red-500" />
@@ -52,18 +51,11 @@ const handleConfirm = () => {
       </DialogHeader>
 
       <DialogFooter class="flex gap-2 mt-4 sm:justify-center">
-        <Button 
-          variant="outline" 
-          @click="closeDialog" 
-          class="flex-1 rounded-xl font-bold text-slate-400 hover:bg-slate-300"
-        >
+        <Button variant="outline" @click="closeDialog"
+          class="flex-1 rounded-xl font-bold text-slate-400 hover:bg-slate-300">
           Hủy bỏ
         </Button>
-        <Button 
-          variant="destructive"
-          @click="handleConfirm" 
-          class="flex-1 font-bold rounded-xl"
-        >
+        <Button variant="destructive" @click="handleConfirm" class="flex-1 font-bold rounded-xl">
           Xóa ngay
         </Button>
       </DialogFooter>

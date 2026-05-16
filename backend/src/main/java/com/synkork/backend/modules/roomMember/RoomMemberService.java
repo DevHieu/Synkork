@@ -123,4 +123,10 @@ public class RoomMemberService {
     public List<UserEntity> getRoomMemberByRoomId(UUID roomUUID) {
         return roomMemberRepository.findUsersByRoomId(roomUUID);
     }
+
+    public void leaveRoom(UUID roomUUID, UUID requesterId) {
+        RoomMemberEntity member = this.getRoomMemberByRoomIdAndUserId(roomUUID, requesterId);
+
+        roomMemberRepository.delete(member);
+    }
 }

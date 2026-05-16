@@ -1,9 +1,11 @@
 package com.synkork.backend.modules.collaboration.task.dto;
 
 import java.time.LocalDateTime;
-import java.util.Set;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.synkork.backend.modules.collaboration.task.card.CardEntity;
 
 import lombok.Data;
@@ -18,14 +20,14 @@ public class CardDTO {
     private UUID spaceId;
     private UUID columnId;
 
-    private UUID assigneeId;
-    
-    private Set<UUID> assigneeIds;
+    private List<MemberSummaryDTO> assignees;
 
-    private UUID createdById;
+    private MemberSummaryDTO createdBy;
     
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime dueDate;
 
     public CardDTO(CardEntity e) {
         this.id = e.getId();
@@ -34,8 +36,17 @@ public class CardDTO {
         this.position = e.getPosition();
         this.spaceId = e.getColumn().getSpace().getId();
         this.columnId = e.getColumn().getId();
-        if (e.getAssignee() != null) {
-            this.assigneeId = e.getAssignee().getId();
+
+        this.assignees = e.getAssignees().stream()
+                .map(MemberSummaryDTO::new)
+                .collect(Collectors.toList());
+
+        if (e.getCreatedBy() != null) {
+            this.createdBy = new MemberSummaryDTO(e.getCreatedBy());
         }
+
+        this.createdAt = e.getCreatedAt();
+
+        this.dueDate = e.getDueDate();
     }
 }

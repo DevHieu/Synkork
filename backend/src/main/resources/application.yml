@@ -3,7 +3,7 @@ spring:
     url: ${DB_URL:jdbc:mysql://localhost:3306/synkork?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:123}
-
+    
   jpa:
     hibernate:
       ddl-auto: update
@@ -50,6 +50,8 @@ server:
 frontend:
   client:
     url: ${FRONTEND_URL:http://localhost:5173}
+  admin:
+    url: ${ADMIN_PORTAL_URL:http://localhost:5174}
 
 jwt:
   secret: CFGSc60ez6n093BbLoqk1BdPFa02l26UBAjKvFGAw3Q

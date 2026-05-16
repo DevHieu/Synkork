@@ -26,8 +26,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import InviteMemberDialog from "../InviteMemberDialog.vue";
 
 const props = defineProps<{ roomId: string }>();
+
+const showInviteDialog = ref(false);
 
 const roomMemberStore = useRoomMemberStore();
 const { members, canManage, isOwner, sortedMembers } =
@@ -73,7 +76,7 @@ const handleChangeRole = async (memberId: string, newRole: string) => {
       <p class="text-sm text-muted-foreground">
         {{ members.length }} thành viên
       </p>
-      <Button variant="outline" size="sm" class="gap-1.5">
+      <Button variant="outline" size="sm" class="gap-1.5" @click="showInviteDialog = true">
         <Users class="h-3.5 w-3.5" />
         Mời thêm
       </Button>
@@ -81,39 +84,26 @@ const handleChangeRole = async (memberId: string, newRole: string) => {
 
     <!-- Filter -->
     <div class="flex gap-1 p-1 bg-muted rounded-lg w-fit">
-      <button
-        v-for="f in [
-          { key: 'ALL', label: 'Tất cả' },
-          { key: 'OWNER', label: 'Chủ phòng' },
-          { key: 'ADMIN', label: 'Quản trị' },
-          { key: 'MEMBER', label: 'Thành viên' },
-        ]"
-        :key="f.key"
-        @click="filterRole = f.key"
-        :class="
-          filterRole === f.key
-            ? 'bg-background shadow-sm text-foreground'
-            : 'text-muted-foreground hover:text-foreground'
-        "
-        class="px-3 py-1 rounded-md text-xs font-medium transition"
-      >
+      <button v-for="f in [
+        { key: 'ALL', label: 'Tất cả' },
+        { key: 'OWNER', label: 'Chủ phòng' },
+        { key: 'ADMIN', label: 'Quản trị' },
+        { key: 'MEMBER', label: 'Thành viên' },
+      ]" :key="f.key" @click="filterRole = f.key" :class="filterRole === f.key
+        ? 'bg-background shadow-sm text-foreground'
+        : 'text-muted-foreground hover:text-foreground'
+        " class="px-3 py-1 rounded-md text-xs font-medium transition">
         {{ f.label }}
       </button>
     </div>
 
     <!-- List -->
     <div class="flex flex-col gap-1">
-      <div
-        v-for="member in filteredMembers"
-        :key="member.username"
-        class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/60 group transition"
-      >
+      <div v-for="member in filteredMembers" :key="member.username"
+        class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/60 group transition">
         <!-- Avatar -->
         <Avatar class="h-8 w-8 shrink-0">
-          <AvatarImage
-            v-if="member.avatarUrl"
-            :src="member.avatarUrl ?? undefined"
-          />
+          <AvatarImage v-if="member.avatarUrl" :src="member.avatarUrl ?? undefined" />
           <AvatarFallback class="text-xs font-bold"> </AvatarFallback>
         </Avatar>
 
@@ -128,18 +118,12 @@ const handleChangeRole = async (memberId: string, newRole: string) => {
         </div>
 
         <!-- Actions -->
-        <div
-          class="opacity-0 group-hover:opacity-100 transition flex items-center gap-1"
-        >
+        <div class="opacity-0 group-hover:opacity-100 transition flex items-center gap-1">
           <AlertDialog>
             <AlertDialogTrigger as-child>
-              <Button
-                v-if="canManage"
-                variant="ghost"
-                size="icon"
+              <Button v-if="canManage" variant="ghost" size="icon"
                 class="h-7 w-7 hover:bg-destructive/10 hover:text-destructive text-muted-foreground"
-                title="Xóa khỏi phòng"
-              >
+                title="Xóa khỏi phòng">
                 <UserMinus class="h-4 w-4" />
               </Button>
             </AlertDialogTrigger>
@@ -147,19 +131,15 @@ const handleChangeRole = async (memberId: string, newRole: string) => {
               <AlertDialogHeader>
                 <AlertDialogTitle>Xóa thành viên khỏi phòng?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  <span class="font-medium text-foreground"
-                    >@{{ member.username }}</span
-                  >
+                  <span class="font-medium text-foreground">@{{ member.username }}</span>
                   sẽ bị xóa khỏi phòng và mất toàn bộ quyền truy cập. Hành động
                   này không thể hoàn tác.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Hủy</AlertDialogCancel>
-                <AlertDialogAction
-                  class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  @click="handleKick(member.username)"
-                >
+                <AlertDialogAction class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  @click="handleKick(member.username)">
                   Xóa khỏi phòng
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -168,33 +148,23 @@ const handleChangeRole = async (memberId: string, newRole: string) => {
 
           <DropdownMenu v-if="isOwner && member.role !== 'OWNER'">
             <DropdownMenuTrigger as-child>
-              <Button
-                variant="ghost"
-                size="sm"
-                class="h-7 gap-1 text-xs text-muted-foreground"
-              >
+              <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground">
                 <Shield class="h-3.5 w-3.5" />
                 Đổi quyền
                 <ChevronDown class="h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" class="w-36">
-              <DropdownMenuItem
-                @click="handleChangeRole(member.memberId, 'OWNER')"
-                :class="member.role === 'OWNER' ? 'text-primary' : ''"
-              >
+              <DropdownMenuItem @click="handleChangeRole(member.memberId, 'OWNER')"
+                :class="member.role === 'OWNER' ? 'text-primary' : ''">
                 <Crown class="h-3.5 w-3.5 mr-2" /> Chủ phòng
               </DropdownMenuItem>
-              <DropdownMenuItem
-                @click="handleChangeRole(member.memberId, 'ADMIN')"
-                :class="member.role === 'ADMIN' ? 'text-primary' : ''"
-              >
+              <DropdownMenuItem @click="handleChangeRole(member.memberId, 'ADMIN')"
+                :class="member.role === 'ADMIN' ? 'text-primary' : ''">
                 <Shield class="h-3.5 w-3.5 mr-2" /> Quản trị
               </DropdownMenuItem>
-              <DropdownMenuItem
-                @click="handleChangeRole(member.memberId, 'MEMBER')"
-                :class="member.role === 'MEMBER' ? 'text-primary' : ''"
-              >
+              <DropdownMenuItem @click="handleChangeRole(member.memberId, 'MEMBER')"
+                :class="member.role === 'MEMBER' ? 'text-primary' : ''">
                 <Users class="h-3.5 w-3.5 mr-2" /> Thành viên
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -202,17 +172,12 @@ const handleChangeRole = async (memberId: string, newRole: string) => {
         </div>
 
         <!-- Badge -->
-        <Badge
-          variant="outline"
-          class="shrink-0 gap-1 text-xs font-medium"
-          :class="
-            member.role === 'OWNER'
-              ? 'border-amber-300 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700'
-              : member.role === 'ADMIN'
-                ? 'border-blue-300 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700'
-                : 'border-transparent'
-          "
-        >
+        <Badge variant="outline" class="shrink-0 gap-1 text-xs font-medium" :class="member.role === 'OWNER'
+          ? 'border-amber-300 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700'
+          : member.role === 'ADMIN'
+            ? 'border-blue-300 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700'
+            : 'border-transparent'
+          ">
           <Crown v-if="member.role === 'OWNER'" class="h-2.5 w-2.5" />
           <Shield v-else-if="member.role === 'ADMIN'" class="h-2.5 w-2.5" />
           {{ getRoleLabel(member.role) }}
@@ -221,12 +186,10 @@ const handleChangeRole = async (memberId: string, newRole: string) => {
 
       <Separator v-if="filteredMembers.length > 0" class="my-1" />
 
-      <p
-        v-if="filteredMembers.length === 0"
-        class="text-sm text-muted-foreground text-center py-6"
-      >
+      <p v-if="filteredMembers.length === 0" class="text-sm text-muted-foreground text-center py-6">
         Không có thành viên nào
       </p>
     </div>
   </div>
+  <InviteMemberDialog v-model:open="showInviteDialog" />
 </template>

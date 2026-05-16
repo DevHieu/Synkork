@@ -55,3 +55,14 @@ export const updatePosition = async (
   )
   return res.data
 }
+export const setReminder = async (
+  spaceId: string,
+  id: string,
+  reminderAt: string | null
+) => {
+  const res = await axiosClient.patch(
+    `/api/spaces/${spaceId}/notes/${id}/reminder`,
+    { reminderAt }
+  )
+  return res.data
+}
