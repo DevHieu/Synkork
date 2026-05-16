@@ -122,8 +122,9 @@ public class MessageService {
                     String jsonRepsone = LLMService.detectEventFromMessage(messageContent);
 
                     JsonNode rootNode = objectMapper.readTree(jsonRepsone);
-
-                    if (rootNode.has("hasEnvent") && rootNode.get("hasEnvent").asBoolean()) {
+                          
+                    // 
+                    if (rootNode.has("hasEvent") && rootNode.get("hasEvent").asBoolean()) {
                         String suggestionPayload = rootNode.toString();
                         String privateChannel = "/topic/user/" + senderId + "/suggestions";
                         simpMessagingTemplate.convertAndSend(privateChannel, suggestionPayload);

@@ -28,23 +28,23 @@ watch(() => props.show, (isOpen) => {
 
 <template>
   <div>
-    <label class="block text-sm text-muted-foreground mb-1.5 font-medium">Người tham gia</label>
+    <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2">Người tham gia</label>
     <div class="flex flex-col gap-2">
-      <div class="flex gap-2">
+      <div class="flex gap-0">
         <input v-model="attendeeInput" @keyup.enter="addAttendee" @keydown.enter.prevent type="text"
-          placeholder="Nhập email và ấn Enter hoặc nút thêm..."
-          class="flex-1 bg-muted border border-border rounded-lg px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm" />
+          placeholder="NHẬP EMAIL VÀ ẤN ENTER..."
+          class="flex-1 bg-background border-2 border-r-0 border-border px-3 py-2 text-foreground font-mono text-xs uppercase placeholder-muted-foreground focus:outline-none focus:border-primary transition-colors" />
         <button type="button" @click="addAttendee"
-          class="bg-muted text-foreground px-3 py-2 rounded-lg hover:bg-muted/80 transition-all">
+          class="bg-primary text-primary-foreground border-2 border-primary px-4 py-2 hover:bg-background hover:text-primary transition-colors">
           <Plus :size="16" />
         </button>
       </div>
-      <div v-if="attendees.length > 0" class="flex flex-wrap gap-2 mt-1">
+      <div v-if="attendees.length > 0" class="flex flex-wrap gap-2 mt-2">
         <div v-for="(email, idx) in attendees" :key="idx"
-          class="flex items-center gap-1.5 bg-primary/20 text-primary px-2 py-1 rounded-md text-xs border border-primary/20">
+          class="flex items-center gap-1.5 bg-muted/30 text-foreground px-2 py-1 border-2 border-border text-xs font-mono">
           <span>{{ email }}</span>
-          <button type="button" @click="removeAttendee(idx)" class="hover:text-primary/80 transition-colors">
-            <X :size="10" />
+          <button type="button" @click="removeAttendee(idx)" class="text-muted-foreground hover:text-destructive transition-colors ml-1">
+            <X :size="12" />
           </button>
         </div>
       </div>

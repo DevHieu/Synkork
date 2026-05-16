@@ -2,7 +2,7 @@
 import { watch } from "vue";
 import { AlertTriangle } from "lucide-vue-next";
 import type { CalendarEvent } from "@/types/CalendarEvent";
-import CalendarWarningDialog from "./CalendarWarningDialog.vue";
+import CalendarNotificationDialog from "./CalendarNotificationDialog.vue";
 import EventTimeSection from "../sub-components/EventTimeSection.vue";
 import EventRecurrenceSection from "../sub-components/EventRecurrenceSection.vue";
 import EventAttendeesSection from "../sub-components/EventAttendeesSection.vue";
@@ -74,31 +74,31 @@ const handleSubmit = (): void => {
 
       <!-- Dialog -->
       <div
-        class="relative bg-card rounded-2xl shadow-2xl border border-border w-full max-w-md mx-4 flex flex-col max-h-[90vh] overflow-hidden">
+        class="relative bg-background rounded-none shadow-2xl border-2 border-border w-full max-w-md mx-4 flex flex-col max-h-[90vh] overflow-hidden">
 
         <!-- Header -->
-        <div class="p-6 pb-4 border-b border-border bg-card/50 backdrop-blur-md sticky top-0 z-10">
-          <h2 class="text-lg font-semibold text-foreground">
+        <div class="p-6 pb-4 border-b-2 border-border bg-background sticky top-0 z-10">
+          <h2 class="text-lg font-mono font-bold uppercase tracking-widest text-primary">
             {{ isEditing ? "Chỉnh sửa sự kiện" : "Thêm sự kiện mới" }}
           </h2>
         </div>
 
         <form @submit.prevent="handleSubmit" class="flex flex-col flex-1 min-h-0">
           <!-- Scrollable body -->
-          <div class="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar">
+          <div class="flex-1 overflow-y-auto p-6 space-y-5 calendar-scrollbar">
 
             <!-- Tiêu đề -->
-            <div class="bg-muted/50 p-1 rounded-xl">
-              <label class="block text-sm text-muted-foreground mb-1.5 font-medium">Tiêu đề *</label>
-              <input v-model="formData.title" type="text" required placeholder="Nhập tiêu đề sự kiện..."
-                class="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm" />
+            <div class="bg-background border-2 border-border p-3">
+              <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2">TIÊU ĐỀ *</label>
+              <input v-model="formData.title" type="text" required placeholder="NHẬP TIÊU ĐỀ SỰ KIỆN..."
+                class="w-full bg-background border-2 border-border px-3 py-2.5 font-mono text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-colors uppercase" />
             </div>
 
             <!-- Mô tả -->
-            <div class="bg-muted/50 p-1 rounded-xl">
-              <label class="block text-sm text-muted-foreground mb-1.5 font-medium">Mô tả</label>
-              <textarea v-model="formData.description" rows="3" placeholder="Mô tả chi tiết sự kiện..."
-                class="w-full bg-background border border-border rounded-lg px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary resize-none text-sm transition-all" />
+            <div class="bg-background border-2 border-border p-3">
+              <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2">MÔ TẢ</label>
+              <textarea v-model="formData.description" rows="3" placeholder="MÔ TẢ CHI TIẾT SỰ KIỆN..."
+                class="w-full bg-background border-2 border-border px-3 py-2 font-mono text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary resize-none transition-colors uppercase" />
             </div>
 
             <!-- Ngày & Giờ Section -->
@@ -120,16 +120,15 @@ const handleSubmit = (): void => {
 
             <!-- Cảnh báo trùng giờ -->
             <div v-if="conflictEvents.length > 0"
-              class="bg-accent/10 border border-accent/30 rounded-xl p-4 shadow-lg shadow-accent/5">
-              <div class="flex items-center gap-2.5 text-accent text-sm font-semibold mb-2">
+              class="bg-accent/10 border-2 border-accent p-4 shadow-[4px_4px_0px_0px_var(--color-accent)]">
+              <div class="flex items-center gap-2.5 text-accent text-[10px] font-mono font-bold uppercase tracking-widest mb-2">
                 <AlertTriangle :size="14" />
-                Trùng giờ với {{ conflictEvents.length }} sự kiện:
+                TRÙNG GIỜ VỚI {{ conflictEvents.length }} SỰ KIỆN:
               </div>
-              <ul class="text-xs text-accent/70 space-y-1.5 ml-6">
-                <li v-for="c in conflictEvents" :key="c.id" class="list-disc leading-relaxed">
-                  <span class="font-bold text-accent/90">{{ c.title }}</span><br />
-                  <span class="text-[10px] italic">({{ c.startTime.substring(0, 5) }} - {{ c.endTime.substring(0, 5)
-                    }})</span>
+              <ul class="text-xs font-mono text-accent/80 space-y-1.5 ml-6">
+                <li v-for="c in conflictEvents" :key="c.id" class="list-disc leading-relaxed uppercase">
+                  <span class="font-bold text-accent">{{ c.title }}</span><br />
+                  <span class="text-[10px] italic">({{ c.startTime.substring(0, 5) }} - {{ c.endTime.substring(0, 5) }})</span>
                 </li>
               </ul>
             </div>
@@ -149,55 +148,42 @@ const handleSubmit = (): void => {
             />
 
             <!-- Cho phép chỉnh sửa -->
-            <div class="flex items-center border-border gap-3 py-1">
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input v-model="formData.allowEditAll" type="checkbox" class="sr-only peer" />
-                <div
-                  class="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-primary-foreground after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-primary-foreground after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary" />
-              </label>
-              <span class="text-sm text-foreground font-medium">Cho phép mọi người chỉnh sửa</span>
+            <div class="flex items-center gap-3 py-2 border-2 border-border bg-background p-3">
+              <input v-model="formData.allowEditAll" type="checkbox" class="w-4 h-4 bg-background border-2 border-border text-primary focus:ring-0 focus:ring-offset-0 rounded-none cursor-pointer" />
+              <span class="text-[10px] font-mono font-bold text-foreground uppercase tracking-widest cursor-pointer select-none" @click="formData.allowEditAll = !formData.allowEditAll">CHO PHÉP MỌI NGƯỜI CHỈNH SỬA</span>
             </div>
 
           </div>
 
           <!-- Footer actions -->
           <div
-            class="p-6 pt-4 border-t border-border flex gap-2 justify-end bg-card/50 backdrop-blur-md sticky bottom-0 z-10 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.3)]">
+            class="p-6 pt-4 border-t-2 border-border flex gap-2 justify-end bg-background sticky bottom-0 z-10">
             <button type="button" @click="emit('update:show', false)"
-              class="px-5 py-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent transition-all text-sm font-medium">Hủy</button>
+              class="px-5 py-2.5 bg-background border-2 border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-all font-mono text-xs font-bold uppercase tracking-widest">HỦY</button>
             <button type="submit"
-              class="px-6 create-btn py-2.5 bg-primary text-primary-foreground rounded-xl hover:bg-primary/80 hover:shadow-lg hover:shadow-primary/20 active:scale-95 transition-all text-sm font-bold">{{
-                isEditing ? "Cập nhật" : "Tạo sự kiện" }}</button>
+              class="px-6 py-2.5 bg-primary text-primary-foreground border-2 border-primary hover:bg-background hover:text-primary transition-all font-mono text-xs font-bold uppercase tracking-widest" style="box-shadow: 4px 4px 0px 0px var(--color-primary);">
+              {{ isEditing ? "CẬP NHẬT" : "TẠO SỰ KIỆN" }}
+            </button>
           </div>
         </form>
       </div>
     </div>
 
     <!-- Warning dialog -->
-    <CalendarWarningDialog v-model:show="showWarning" :message="warningMessage" />
+    <CalendarNotificationDialog 
+      v-model:show="showWarning" 
+      type="warning"
+      title="CẢNH BÁO"
+      :message="warningMessage" 
+      confirm-text="ĐÃ HIỂU"
+      @confirm="showWarning = false"
+    />
   </Teleport>
 </template>
 
 <style scoped>
-.custom-scrollbar::-webkit-scrollbar {
-  width: 5px;
-}
-
 .create-btn {
   background: var(--primary);
   color: var(--primary-foreground);
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-background: var(--border);
-  border-radius: 10px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
 }
 </style>

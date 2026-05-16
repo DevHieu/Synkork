@@ -12,11 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class CalendarEventService {
@@ -40,7 +36,6 @@ public class CalendarEventService {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
-    // Đồng bộ thay đổi lịch theo thời gian thực
     private void broadcastCalendarUpdate(String spaceId, String action, CalendarEventDTO event) {
         Map<String, Object> payload = new HashMap<>();
         payload.put("action", action);
@@ -50,21 +45,19 @@ public class CalendarEventService {
 
     // Lấy tất cả event theo spaceId
     public List<CalendarEventDTO> getEventsBySpaceId(UUID spaceId) {
-        List<CalendarEventEntity> events = calendarEventRepository
-                .findBySpaceId(Objects.requireNonNull(spaceId, "SpaceID null"));
-        List<CalendarEventDTO> result = new java.util.ArrayList<>();
-        for (int i = 0; i < events.size(); i++) {
-            result.add(new CalendarEventDTO(events.get(i)));
+        List<CalendarEventEntity> events = calendarEventRepository.findBySpaceId(spaceId);
+        List<CalendarEventDTO> result = new ArrayList<>();
+        for (CalendarEventEntity event : events) {
+            result.add(new CalendarEventDTO(event));
         }
         return result;
     }
 
     // Danh sách sự kiện trong khoảng thời gian
     public List<CalendarEventDTO> getEventsByDateRange(UUID spaceId, LocalDate start, LocalDate end) {
-
         List<CalendarEventEntity> targetEvents = calendarEventRepository
                 .findBySpaceIdAndEventDateLessThanEqual(Objects.requireNonNull(spaceId, "SpaceID null"), end);
-        List<CalendarEventDTO> expandedResults = new java.util.ArrayList<>();
+        List<CalendarEventDTO> expandedResults = new ArrayList<>();
 
         for (CalendarEventEntity event : targetEvents) {
             if (isNonRecurring(event)) {
@@ -91,7 +84,7 @@ public class CalendarEventService {
 
     private List<CalendarEventDTO> expandRecurringEvent(CalendarEventEntity event, LocalDate rangeStart,
             LocalDate rangeEnd) {
-        List<CalendarEventDTO> instances = new java.util.ArrayList<>();
+        List<CalendarEventDTO> instances = new ArrayList<>();
         LocalDate currentOccurrence = event.getEventDate();
         LocalDate recurrenceLimit = calculateRecurrenceLimit(event);
 
@@ -155,11 +148,11 @@ public class CalendarEventService {
     }
 
     // Tạo event mới
-    public CalendarEventDTO createEvent(CalendarEventDTO eventRequest, String creatorId) {
-        validateEventTime(eventRequest);
+    public CalendarEventDTO createEvent(CalendarEventDTO eventRequest, UUID creatorId) {
+        // validateEventTime(eventRequest); // Bỏ comment để cho phép tạo sự kiện ở quá khứ
 
         // Tận dụng hàm có sẵn getReferenceById để lấy trực tiếp Proxy mà không cần Select DB
-        UserEntity creator = userRepository.getReferenceById(UUID.fromString(creatorId));
+        UserEntity creator = userRepository.getReferenceById(creatorId);
 
         CalendarEventEntity calendarEvent = new CalendarEventEntity();
         eventRequest.updateEntity(calendarEvent);
@@ -174,12 +167,12 @@ public class CalendarEventService {
     }
 
     // Cập nhật event (kiểm tra quyền: creator hoặc allowEditAll)
-    public CalendarEventDTO updateEvent(UUID eventId, CalendarEventDTO eventRequest, String userId) {
+    public CalendarEventDTO updateEvent(UUID eventId, CalendarEventDTO eventRequest, UUID userId) {
         // Null check cho IDE
         CalendarEventEntity calendarEvent = calendarEventRepository.findById(Objects.requireNonNull(eventId))
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sự kiện"));
 
-        if (!hasPermissionToEdit(calendarEvent, UUID.fromString(userId))) {
+        if (!hasPermissionToEdit(calendarEvent, userId)) {
             throw new SecurityException("Bạn không có quyền chỉnh sửa sự kiện này! Vui lòng liên hệ đến người tạo sự kiện");
         }
         eventRequest.updateEntity(calendarEvent);
@@ -194,14 +187,12 @@ public class CalendarEventService {
     }
 
     // Xóa event (chỉ creator)
-    public void deleteEvent(UUID eventId, String userId) {
+    public void deleteEvent(UUID eventId, UUID userId) {
         // Null check cho IDE
         CalendarEventEntity entity = calendarEventRepository.findById(Objects.requireNonNull(eventId))
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sự kiện"));
 
-        UUID userUUID = UUID.fromString(userId);
-
-        if (!entity.getCreatedBy().getId().equals(userUUID)) {
+        if (!entity.getCreatedBy().getId().equals(userId)) {
             throw new SecurityException("Bạn không có quyền xóa sự kiện này");
         }
 
@@ -216,10 +207,9 @@ public class CalendarEventService {
             UUID excludeEventId) {
         // Liệt kê mọi sự kiện trong ngày (bao gồm sự kiện lặp) để tìm trùng lặp
         List<CalendarEventDTO> dayEvents = getEventsByDateRange(spaceId, date, date);
-        List<CalendarEventDTO> conflicts = new java.util.ArrayList<>();
+        List<CalendarEventDTO> conflicts = new ArrayList<>();
 
-        for (int i = 0; i < dayEvents.size(); i++) {
-            CalendarEventDTO event = dayEvents.get(i);
+        for (CalendarEventDTO event : dayEvents) {
             if (excludeEventId != null && event.getId().equals(excludeEventId)) {
                 continue;
             }

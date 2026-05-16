@@ -26,34 +26,34 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="toolbar-root">
+  <div class="flex flex-col border-b-2 border-border bg-background">
     <!-- Header -->
-    <div class="toolbar-header">
-      <div class="flex items-center gap-3">
-        <SidebarTrigger class="-ml-1" />
-        <span class="toolbar-title">
-          <CalendarDays class="toolbar-title-icon" />
+    <div class="flex items-center justify-between px-4 py-3 border-b-2 border-border">
+      <div class="flex items-center gap-4">
+        <SidebarTrigger class="-ml-1 rounded-none border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground" />
+        <span class="font-mono text-lg font-bold uppercase tracking-widest flex items-center gap-2 text-foreground">
+          <CalendarDays class="w-5 h-5 text-primary" />
           {{ currentSpaceName }}
         </span>
       </div>
 
       <!-- View Mode Switcher -->
-      <div class="view-switcher">
+      <div class="flex border-2 border-border bg-background">
         <button
           @click="emit('update:viewMode', 'week')"
-          :class="['view-btn', viewMode === 'week' ? 'view-btn--active' : '']"
+          :class="['px-4 py-1 text-xs font-mono uppercase tracking-wider font-bold transition-colors border-r-2 border-border', viewMode === 'week' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted text-muted-foreground hover:text-foreground']"
         >
           Tuần
         </button>
         <button
           @click="emit('update:viewMode', 'month')"
-          :class="['view-btn', viewMode === 'month' ? 'view-btn--active' : '']"
+          :class="['px-4 py-1 text-xs font-mono uppercase tracking-wider font-bold transition-colors border-r-2 border-border', viewMode === 'month' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted text-muted-foreground hover:text-foreground']"
         >
           Tháng
         </button>
         <button
           @click="emit('update:viewMode', 'year')"
-          :class="['view-btn', viewMode === 'year' ? 'view-btn--active' : '']"
+          :class="['px-4 py-1 text-xs font-mono uppercase tracking-wider font-bold transition-colors', viewMode === 'year' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted text-muted-foreground hover:text-foreground']"
         >
           Năm
         </button>
@@ -61,157 +61,29 @@ const emit = defineEmits<{
     </div>
 
     <!-- Navigation Bar -->
-    <div class="nav-bar ">
-      <div class="flex items-center gap-2">
-        <button @click="emit('goPrev')" class="nav-arrow-btn" :title="`${viewMode === 'week' ? 'Tuần' : viewMode === 'month' ? 'Tháng' : 'Năm'} trước`">
+    <div class="flex items-center justify-between px-4 py-2 bg-muted/30">
+      <div class="flex items-center gap-1">
+        <button @click="emit('goPrev')" class="w-8 h-8 flex items-center justify-center border-2 border-border text-muted-foreground hover:border-primary hover:bg-primary hover:text-primary-foreground transition-colors" :title="`${viewMode === 'week' ? 'Tuần' : viewMode === 'month' ? 'Tháng' : 'Năm'} trước`">
           <ChevronLeft :size="16" />
         </button>
-        <button @click="emit('goToday')" class="today-btn text-foreground bg-primary ">
+        <button @click="emit('goToday')" class="px-4 py-1 h-8 flex items-center justify-center border-2 border-border font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground hover:border-primary hover:bg-primary hover:text-primary-foreground transition-colors">
           {{ relativeTimeText }}
         </button>
-        <button @click="emit('goNext')" class="nav-arrow-btn" :title="`${viewMode === 'week' ? 'Tuần' : viewMode === 'month' ? 'Tháng' : 'Năm'} sau`">
+        <button @click="emit('goNext')" class="w-8 h-8 flex items-center justify-center border-2 border-border text-muted-foreground hover:border-primary hover:bg-primary hover:text-primary-foreground transition-colors" :title="`${viewMode === 'week' ? 'Tuần' : viewMode === 'month' ? 'Tháng' : 'Năm'} sau`">
           <ChevronRight :size="16" />
         </button>
       </div>
 
-      <span class="nav-title">{{ headerTitle }}</span>
+      <span class="font-mono text-sm font-bold uppercase tracking-widest text-primary">{{ headerTitle }}</span>
 
-      <button @click="emit('openCreateDialog')" class="create-btn">
+      <button @click="emit('openCreateDialog')" class="flex items-center gap-2 px-4 py-1 h-8 bg-primary text-primary-foreground border-2 border-primary font-mono text-xs font-bold uppercase tracking-wider hover:bg-background hover:text-primary transition-colors">
         <Plus :size="14" />
         Thêm sự kiện
       </button>
     </div>
-
-
   </div>
 </template>
 
 <style scoped>
-/* ── Root ──────────────────────────────────────────────── */
-.toolbar-root {
-  display: flex;
-  flex-direction: column;
-  background: transparent;
-}
-
-/* ── Header ────────────────────────────────────────────── */
-.toolbar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.toolbar-title {
-  font-weight: 600;
-  font-size: 1.125rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--foreground);
-}
-
-.toolbar-title-icon {
-  display: block;
-  flex-shrink: 0;
-  color: var(--primary);
-  width: 18px;
-  height: 18px;
-}
-
-/* ── View Switcher ─────────────────────────────────────── */
-.view-switcher {
-  display: flex;
-  border-radius: 0.5rem;
-  overflow: hidden;
-  border: 1px solid var(--border);
-}
-
-.view-btn {
-  padding: 0.375rem 0.75rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: background 0.2s, color 0.2s;
-  color: var(--muted-foreground);
-  background: transparent;
-  cursor: pointer;
-}
-
-.view-btn:hover {
-  background: color-mix(in oklch, var(--foreground) 8%, transparent);
-}
-
-.view-btn--active {
-  background: var(--primary);
-  color: var(--primary-foreground);
-}
-
-.view-btn--active:hover {
-  background: var(--primary);
-}
-
-/* ── Navigation Bar ────────────────────────────────────── */
-.nav-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.nav-arrow-btn {
-  width: 2rem;
-  height: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0.5rem;
-  color: var(--muted-foreground);
-  background: transparent;
-  transition: background 0.15s, color 0.15s;
-  cursor: pointer;
-}
-
-.nav-arrow-btn:hover {
-  background: color-mix(in oklch, var(--foreground) 8%, transparent);
-  color: var(--foreground);
-}
-
-.today-btn {
-  padding: 0.375rem 0.75rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  border-radius: 0.5rem;
-  min-width: 90px;
-  color: var(--foreground);
-  cursor: pointer;
-} 
-
-
-.nav-title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--foreground);
-}
-
-.create-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.375rem 1rem;
-  background: var(--primary);
-  color: var(--primary-foreground);
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: opacity 0.15s;
-  cursor: pointer;
-}
-
-.create-btn:hover {
-  opacity: 0.88;
-}
-
-
+/* Industrial / Utilitarian styling applied mostly via Tailwind classes. */
 </style>

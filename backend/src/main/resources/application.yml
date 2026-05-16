@@ -69,7 +69,6 @@ zego:
   appId: ${ZEGO_APPID}
   secret: ${ZEGO_SERVER_SECRET}
 
-
   server:
     servlet:
       encoding:

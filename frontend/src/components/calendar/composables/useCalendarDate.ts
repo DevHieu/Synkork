@@ -35,6 +35,12 @@ export function useCalendarDate() {
     viewMode.value = "month";
   };
 
+  // Helpers dùng chung cho các view
+  const dayNames = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+  const dayNamesLong = ["CN", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
+  const isToday = (date: dayjs.Dayjs) => date.isSame(dayjs(), "day");
+  const isSelected = (date: dayjs.Dayjs) => date.isSame(selectedDate.value, "day");
+
   // Tiêu đề header
   const headerTitle = computed(() => {
     if (viewMode.value === "week") {
@@ -87,5 +93,9 @@ export function useCalendarDate() {
     goToday,
     selectDate,
     setYearMonth,
+    dayNames,
+    dayNamesLong,
+    isToday,
+    isSelected,
   };
 }

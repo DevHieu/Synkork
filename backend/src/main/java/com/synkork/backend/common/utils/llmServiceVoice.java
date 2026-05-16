@@ -1,5 +1,7 @@
 package com.synkork.backend.common.utils;
 
+import com.synkork.backend.common.dtos.FileUploaded;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -7,13 +9,18 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/collaboration/voice-summary")
+@RequestMapping("/collaboration/voice-summary")
 public class llmServiceVoice {
 
-    private final String UPLOAD_DIR = "src/main/resources/uploads/voice/";
+    @Autowired
+    private llmMeetingService meetingService;
+
+    @Autowired
+    private FileService fileService;
 
     @PostMapping("/upload")
     public ResponseEntity<?> uploadVoice(
@@ -23,28 +30,26 @@ public class llmServiceVoice {
             @RequestParam("roomId") String roomId) {
 
         try {
-            // Tạo thư mục trong resources nếu chưa tồn tại
-            File dir = new File(UPLOAD_DIR);
-            if (!dir.exists()) {
-                dir.mkdirs();
-            }
+            // 1. Upload file lên Cloudinary thông qua FileService
+            FileUploaded uploaded = fileService.uploadFile(file, "synkork/voice-notes/" + roomId);
+            String fileUrl = uploaded.url(); // Record accessor
+            String publicId = uploaded.publicId(); // Record accessor
 
-            // Đặt tên file kèm thời gian để tránh trùng
-            String fileName = String.format("%s_%s_%s.webm", roomId, userId, System.currentTimeMillis());
-            File destination = new File(dir.getAbsolutePath() + File.separator + fileName);
+            // 2. Xử lý chuyển đổi âm thanh (STT) và tóm tắt (Summary) trực tiếp từ MultipartFileư
+            String transcript = meetingService.transcribeAudio(file);
+            String summaryJson = meetingService.summarizeMeeting(transcript);
 
-            // 3Lưu file
-            file.transferTo(destination);
+            // 3. Trả về kết quả cho frontend
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Xử lý voice thành công");
+            response.put("fileUrl", fileUrl);
+            response.put("publicId", publicId);
+            response.put("transcript", transcript);
+            response.put("analysis", summaryJson);
 
-            System.out.println("=== Đã nhận voice thành công ===");
-            System.out.println("User: " + userName);
-            System.out.println("Room: " + roomId);
-            System.out.println("Saved to: " + destination.getAbsolutePath());
-
-            return ResponseEntity.ok("File uploaded successfully to resources: " + fileName);
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body("Error uploading file: " + e.getMessage());
+            return ResponseEntity.status(500).body("Lỗi xử lý file voice: " + e.getMessage());
         }
     }
 }

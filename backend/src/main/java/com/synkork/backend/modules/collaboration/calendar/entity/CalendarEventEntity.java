@@ -14,19 +14,19 @@ import java.time.LocalTime;
 @Entity
 @Table(name="calendar_events")
 @Getter
-@Data
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class CalendarEventEntity extends BaseEntity {
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "space_id", nullable = false, columnDefinition = "BINARY(16)")
+
+    @ManyToOne( fetch = FetchType.LAZY)
+    @JoinColumn(name= "space_id", nullable = false, columnDefinition = "BINARY(16)")
     private SpaceEntity space;
 
     @Column(nullable = false)
     private String title;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(nullable = false)
     private String description;
 
     @Column(nullable = false)
@@ -38,16 +38,14 @@ public class CalendarEventEntity extends BaseEntity {
     @Column(nullable = false)
     private LocalTime endTime;
 
-    private String recurrenceType; // NONE, DAILY, WEEKLY
+    private String recurrenceType;
     private LocalDate recurrenceEndDate;
 
     private boolean allowEditAll;
     private Integer remindBeforeMinutes;
 
-//    private boolean allowEditAll = true;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by", nullable = false, columnDefinition = "BINARY(16)")
+    @JoinColumn(name="created_by",nullable = false, columnDefinition = "BINARY(16)")
     private UserEntity createdBy;
 
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL)
@@ -55,4 +53,6 @@ public class CalendarEventEntity extends BaseEntity {
 
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL)
     private List<EventAttachmentEntity> attachments;
+
+
 }

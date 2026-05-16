@@ -1,14 +1,10 @@
 package com.synkork.backend.modules.collaboration.calendar.entity;
 
+import com.synkork.backend.common.base.BaseEntity;
 import com.synkork.backend.modules.collaboration.calendar.enums.AttachmentTypeEnum;
 import com.synkork.backend.modules.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UuidGenerator;
-
-import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name = "event_attachments")
@@ -16,13 +12,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class EventAttachmentEntity {
-
-    @Id
-    @UuidGenerator(style = UuidGenerator.Style.TIME)
-    @Column(columnDefinition = "BINARY(16)")
-    private UUID id;
+public class EventAttachmentEntity extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "event_id", nullable = false, columnDefinition = "BINARY(16)")
@@ -43,8 +33,4 @@ public class EventAttachmentEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private AttachmentTypeEnum type;
-
-    @CreationTimestamp
-    @Column(updatable = false)
-    private LocalDateTime uploadedAt;
 }

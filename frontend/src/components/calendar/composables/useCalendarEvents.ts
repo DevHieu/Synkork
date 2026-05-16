@@ -88,7 +88,7 @@ export function useCalendarEvents(
   };
 
   const deleteEvent = async (id: string) => {
-    await apiDeleteEvent(id, currentUserId);
+    await apiDeleteEvent(id, unref(currentUserId));
     await fetchEvents();
   };
 

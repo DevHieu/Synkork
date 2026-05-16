@@ -8,6 +8,9 @@ const props = defineProps<{
   selectedDate: dayjs.Dayjs;
   events: CalendarEvent[];
   currentUserId: string;
+  dayNames: string[];
+  isToday: (date: dayjs.Dayjs) => boolean;
+  isSelected: (date: dayjs.Dayjs) => boolean;
 }>();
 
 const emit = defineEmits<{
@@ -15,9 +18,6 @@ const emit = defineEmits<{
   (e: "editEvent", event: CalendarEvent): void;
   (e: "deleteEvent", event: CalendarEvent): void;
 }>();
-
-// Cấu hình
-const dayNames = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
 /**
  * Tính toán các ngày hiển thị trong tháng bao gồm cả ngày đệm từ tháng trước và sau (tổng 6 tuần)
@@ -75,9 +75,6 @@ const hasEvent = (date: dayjs.Dayjs) => {
   return false;
 };
 
-// Các hàm kiểm tra trạng thái ngày
-const isToday = (date: dayjs.Dayjs) => date.isSame(dayjs(), "day");
-const isSelected = (date: dayjs.Dayjs) => date.isSame(props.selectedDate, "day");
 const isCurrentMonth = (date: dayjs.Dayjs) => date.month() === props.currentDate.month();
 
 // Kiểm tra quyền hạn
@@ -91,140 +88,148 @@ const canDelete = (event: CalendarEvent) => {
 </script>
 
 <template>
-  <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
+  <div class="flex-1 flex flex-col md:flex-row overflow-hidden bg-background text-foreground">
     <!-- Lưới lịch -->
-    <div class="flex-1 flex flex-col overflow-hidden p-3">
-      <!-- Tiêu đề các thứ -->
-      <div class="grid grid-cols-7 gap-1 mb-1">
-        <div
-          v-for="day in dayNames"
-          :key="day"
-          class="text-center text-xs font-semibold text-muted-foreground py-1"
-        >
-          {{ day }}
+    <div class="flex-1 flex flex-col overflow-hidden p-4 md:pr-0">
+      <div class="border-2 border-border flex-1 flex flex-col bg-background">
+        <!-- Tiêu đề các thứ -->
+        <div class="grid grid-cols-7 border-b-2 border-border bg-muted text-muted-foreground">
+          <div
+            v-for="day in dayNames"
+            :key="day"
+            class="text-center text-[10px] sm:text-xs font-mono font-bold uppercase tracking-widest py-2 border-r-2 last:border-r-0 border-border"
+          >
+            {{ day }}
+          </div>
         </div>
-      </div>
 
-      <!-- Lưới các ngày -->
-      <div class="grid grid-cols-7 gap-1 flex-1">
-        <div
-          v-for="(date, idx) in monthDays"
-          :key="idx"
-          @click="emit('selectDate', date)"
-          :class="[
-            'relative rounded-lg p-1 cursor-pointer transition-all duration-200 flex flex-col items-center',
-            'hover:bg-muted',
-            isSelected(date) ? 'bg-primary/20 ring-1 ring-primary' : '',
-            isToday(date) ? 'ring-1 ring-primary/50' : '',
-            !isCurrentMonth(date) ? 'opacity-30' : '',
-          ]"
-        >
-          <span
+        <!-- Lưới các ngày -->
+        <div class="grid grid-cols-7 flex-1">
+          <div
+            v-for="(date, idx) in monthDays"
+            :key="idx"
+            @click="emit('selectDate', date)"
             :class="[
-              'text-sm font-medium w-7 h-7 flex items-center justify-center rounded-full',
-              isToday(date)
-                ? 'bg-primary text-primary-foreground'
-                : 'text-foreground',
+              'relative p-2 cursor-pointer transition-all flex flex-col items-start border-b-2 border-r-2 border-border hover:bg-muted/50',
+              (idx + 1) % 7 === 0 ? 'border-r-0' : '',
+              idx >= monthDays.length - 7 ? 'border-b-0' : '',
+              isSelected(date) ? 'bg-primary/5 ring-inset ring-2 ring-primary' : '',
+              !isCurrentMonth(date) ? 'opacity-40 bg-muted/20' : '',
             ]"
           >
-            {{ date.date() }}
-          </span>
-          <!-- Chấm chỉ báo sự kiện -->
-          <div v-if="hasEvent(date)" class="flex gap-0.5 mt-0.5">
-            <span
-              v-for="n in Math.min(getEventsForDate(date).length, 3)"
-              :key="n"
-              class="w-1.5 h-1.5 rounded-full bg-primary"
-            ></span>
+            <div class="flex justify-between w-full items-start">
+              <span
+                :class="[
+                  'text-xs font-mono font-bold flex items-center justify-center p-1 min-w-[24px]',
+                  isToday(date)
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-foreground',
+                ]"
+              >
+                {{ date.date() }}
+              </span>
+            </div>
+            <!-- Chấm chỉ báo sự kiện -->
+            <div v-if="hasEvent(date)" class="flex gap-1 mt-auto pt-2 flex-wrap w-full">
+              <span
+                v-for="n in Math.min(getEventsForDate(date).length, 3)"
+                :key="n"
+                class="w-full h-1.5 bg-primary border border-primary/20"
+              ></span>
+              <span v-if="getEventsForDate(date).length > 3" class="text-[9px] font-mono font-bold text-primary mt-0.5 ml-0.5">
+                +{{ getEventsForDate(date).length - 3 }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Danh sách sự kiện ngày đã chọn (Bên phải) -->
-    <div class="w-full md:w-80 border-t md:border-t-0 md:border-l border-border flex flex-col overflow-hidden">
-      <div class="px-4 py-3 border-b border-border">
-        <h3 class="font-semibold text-foreground">
-          {{ selectedDate.format("DD/MM/YYYY") }}
-        </h3>
-        <p class="text-xs text-muted-foreground">
-          {{ selectedDateEvents.length }} sự kiện
-        </p>
+    <div class="w-full md:w-96 border-l-2 border-border flex flex-col overflow-hidden bg-background md:ml-4">
+      <div class="px-5 py-4 border-b-2 border-border bg-muted flex justify-between items-end">
+        <div>
+          <h3 class="font-mono font-bold text-xl tracking-widest uppercase leading-none text-primary">
+            {{ selectedDate.format("DD/MM/YYYY") }}
+          </h3>
+          <p class="text-[10px] font-mono font-bold opacity-80 mt-2 uppercase tracking-widest text-muted-foreground">
+            [{{ selectedDateEvents.length }} SỰ KIỆN]
+          </p>
+        </div>
       </div>
-      <div class="flex-1 overflow-y-auto px-3 py-2 space-y-2">
+      <div class="flex-1 overflow-y-auto p-4 space-y-4 calendar-scrollbar">
         <div
           v-if="selectedDateEvents.length === 0"
-          class="text-center text-muted-foreground text-sm mt-8"
+          class="text-center font-mono text-sm uppercase tracking-widest text-muted-foreground mt-8 border-2 border-dashed border-muted-foreground p-8"
         >
-          Không có sự kiện nào
+          KHÔNG CÓ SỰ KIỆN
         </div>
         <div
           v-for="event in selectedDateEvents"
           :key="event.id"
-          class="group bg-card rounded-xl p-4 hover:bg-muted transition-all duration-300 border border-border hover:border-primary/30 shadow-lg"
+          class="group bg-background border-2 border-border p-0 hover:border-primary hover:translate-x-1 hover:-translate-y-1 transition-all duration-200 text-foreground"
+          style="box-shadow: 4px 4px 0px 0px var(--color-primary);"
         >
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex-1 min-w-0 space-y-3">
-              <!-- Tiêu đề -->
-              <div>
-                <div class="flex items-center gap-2 mb-1">
-                  <div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
-                  <span class="text-[10px] font-bold text-primary/80 uppercase tracking-widest">Tiêu đề</span>
-                </div>
-                <h4 class="font-semibold text-foreground text-sm leading-tight wrap-break-word">
-                  {{ event.title }}
-                </h4>
-              </div>
+          <!-- Header Event -->
+          <div class="px-4 py-2 border-b-2 border-border bg-muted/50 flex justify-between items-center group-hover:bg-primary/5 transition-colors">
+            <div class="flex items-center gap-2">
+              <div class="w-2 h-2 bg-primary"></div>
+              <span class="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest group-hover:text-primary transition-colors">ID: {{ event.id?.substring(0, 6) || 'SYS' }}</span>
+            </div>
+            <!-- Actions -->
+            <div class="flex gap-2">
+              <button
+                v-if="canEdit(event)"
+                @click.stop="emit('editEvent', event)"
+                class="text-foreground hover:text-muted-foreground transition-colors"
+                title="Chỉnh sửa"
+              >
+                <i class="pi pi-pencil text-xs"></i>
+              </button>
+              <button
+                v-if="canDelete(event)"
+                @click.stop="emit('deleteEvent', event)"
+                class="text-foreground hover:text-destructive transition-colors"
+                title="Xóa"
+              >
+                <i class="pi pi-trash text-xs"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div class="p-4 space-y-4">
+            <!-- Tiêu đề -->
+            <div>
+              <h4 class="font-mono font-bold text-foreground text-base leading-tight uppercase">
+                {{ event.title }}
+              </h4>
+            </div>
 
-              <!-- Thời gian -->
-              <div class="flex items-center gap-4">
-                <div class="flex flex-col">
-                  <span class="text-[10px] font-medium text-muted-foreground uppercase">Thời gian</span>
-                  <div class="flex items-center gap-1.5 text-xs text-primary font-medium mt-0.5">
-                    <i class="pi pi-clock text-[10px]"></i>
-                    {{ event.startTime.substring(0, 5) }} - {{ event.endTime.substring(0, 5) }}
+            <!-- Thời gian -->
+            <div class="flex flex-col border-l-4 border-primary pl-3">
+              <span class="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-wider">THỜI GIAN</span>
+              <div class="font-mono text-sm font-bold mt-1 text-primary">
+                {{ event.startTime.substring(0, 5) }} &rarr; {{ event.endTime.substring(0, 5) }}
+              </div>
+            </div>
+
+            <!-- Mô tả -->
+            <div v-if="event.description" class="border-t-2 border-dashed border-border pt-3">
+              <span class="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-wider">CHI TIẾT</span>
+              <p class="text-xs font-mono text-muted-foreground mt-1 leading-relaxed bg-muted/30 p-3 border-l-2 border-border">
+                {{ event.description }}
+              </p>
+            </div>
+
+            <!-- Người tạo -->
+            <div class="pt-3 border-t-2 border-border flex items-center justify-between">
+              <div class="flex flex-col">
+                <span class="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-wider">NGƯỜI TẠO</span>
+                <div class="flex items-center gap-2 mt-1">
+                  <div class="w-5 h-5 bg-muted flex items-center justify-center border border-border">
+                    <i class="pi pi-user text-[10px] text-muted-foreground"></i>
                   </div>
-                </div>
-              </div>
-
-              <!-- Mô tả -->
-              <div v-if="event.description">
-                <span class="text-[10px] font-medium text-muted-foreground uppercase">Mô tả</span>
-                <p class="text-xs text-foreground mt-1 leading-relaxed line-clamp-3 bg-muted p-2 rounded-lg border border-border italic">
-                  {{ event.description }}
-                </p>
-              </div>
-
-              <!-- Người tạo -->
-              <div class="pt-2 border-t border-border flex items-center justify-between">
-                <div class="flex flex-col">
-                  <span class="text-[10px] font-medium text-muted-foreground uppercase">Người tạo</span>
-                  <div class="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-1">
-                    <div class="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center border border-primary/20">
-                      <i class="pi pi-user text-[10px] text-primary"></i>
-                    </div>
-                    <span class="truncate max-w-[120px]">{{ event.createdByDisplayName }}</span>
-                  </div>
-                </div>
-
-                <!-- Hành động (Hiện khi hover trên Desktop) -->
-                <div class="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300">
-                  <button
-                    v-if="canEdit(event)"
-                    @click.stop="emit('editEvent', event)"
-                    class="p-2 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary/20 text-muted-foreground hover:text-primary transition-colors"
-                    title="Chỉnh sửa"
-                  >
-                    <i class="pi pi-pencil text-xs"></i>
-                  </button>
-                  <button
-                    v-if="canDelete(event)"
-                    @click.stop="emit('deleteEvent', event)"
-                    class="p-2 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors shadow-inner"
-                    title="Xóa"
-                  >
-                    <i class="pi pi-trash text-xs"></i>
-                  </button>
+                  <span class="font-mono text-xs font-bold uppercase truncate max-w-[150px]">{{ event.createdByDisplayName }}</span>
                 </div>
               </div>
             </div>
@@ -236,18 +241,5 @@ const canDelete = (event: CalendarEvent) => {
 </template>
 
 <style scoped>
-.overflow-y-auto {
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-}
-.overflow-y-auto::-webkit-scrollbar {
-  width: 4px;
-}
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
+/* Scoped styles can remain empty, relying on Tailwind */
 </style>

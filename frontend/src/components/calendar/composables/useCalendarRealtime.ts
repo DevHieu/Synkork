@@ -47,7 +47,6 @@ export function useCalendarRealtime(
 
       unsubscribeCurrent();
 
-      // Dispatch map: O(1) lookup, d\u1ec5 m\u1edf r\u1ed9ng action m\u1edbi
       const handlers: Record<string, (ev: CalendarEvent) => void> = {
         CREATED: (ev) => {
           if (!events.value.find((e) => e.id === ev.id)) events.value.push(ev);
@@ -67,8 +66,4 @@ export function useCalendarRealtime(
     },
     { immediate: true }
   );
-
-  return {
-    isSocketReady,
-  };
 }

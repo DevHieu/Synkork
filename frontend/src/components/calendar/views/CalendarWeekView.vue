@@ -7,15 +7,15 @@ const props = defineProps<{
   currentDate: dayjs.Dayjs;
   selectedDate: dayjs.Dayjs;
   events: CalendarEvent[];
+  dayNames: string[];
+  isToday: (date: dayjs.Dayjs) => boolean;
+  isSelected: (date: dayjs.Dayjs) => boolean;
 }>();
 
 const emit = defineEmits<{
   (e: "selectDate", date: dayjs.Dayjs): void;
   (e: "editEvent", event: CalendarEvent): void;
 }>();
-
-// Tên các thứ trong tuần
-const dayNames = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
 // Tính toán các ngày trong tuần hiện tại
 const weekDays = computed(() => {
@@ -42,34 +42,32 @@ const getEventsForDate = (date: dayjs.Dayjs) => {
   result.sort((a, b) => a.startTime.localeCompare(b.startTime));
   return result;
 };
-
-// Các hàm kiểm tra trạng thái ngày
-const isToday = (date: dayjs.Dayjs) => date.isSame(dayjs(), "day");
-const isSelected = (date: dayjs.Dayjs) => date.isSame(props.selectedDate, "day");
 </script>
-
+ư
 <template>
-  <div class="flex-1 overflow-y-auto p-3">
-    <div class="grid grid-cols-7 gap-2">
+  <div class="flex-1 overflow-y-auto p-4 calendar-scrollbar bg-background text-foreground">
+    <div class="grid grid-cols-7 border-2 border-border bg-background">
       <div
         v-for="(date, idx) in weekDays"
         :key="idx"
-        class="flex flex-col h-full min-h-[400px]"
+        :class="['flex flex-col h-full min-h-[400px] border-r-2 border-border last:border-r-0']"
       >
         <!-- Day Header -->
         <div
           @click="emit('selectDate', date)"
           :class="[
-            'text-center p-2 rounded-t-lg cursor-pointer transition-colors',
-            isToday(date) ? 'bg-primary/20' : 'bg-muted',
-            isSelected(date) ? 'ring-1 ring-primary' : '',
+            'text-center p-3 border-b-2 border-border cursor-pointer transition-colors',
+            isToday(date) ? 'bg-primary text-primary-foreground' : 'bg-muted/30 hover:bg-muted/80',
+            isSelected(date) ? 'ring-inset ring-2 ring-primary bg-primary/5' : '',
           ]"
         >
-          <div class="text-xs text-muted-foreground">{{ dayNames[date.day()] }}</div>
+          <div :class="['text-[10px] font-mono font-bold uppercase tracking-widest', isToday(date) ? 'text-primary-foreground/80' : 'text-muted-foreground']">
+            {{ dayNames[date.day()] }}
+          </div>
           <div
             :class="[
-              'text-lg font-bold',
-              isToday(date) ? 'text-primary' : 'text-foreground',
+              'text-xl font-mono font-bold mt-1',
+              isToday(date) ? 'text-primary-foreground' : 'text-foreground',
             ]"
           >
             {{ date.date() }}
@@ -77,25 +75,26 @@ const isSelected = (date: dayjs.Dayjs) => date.isSame(props.selectedDate, "day")
         </div>
 
         <!-- Events List -->
-        <div class="flex-1 bg-muted rounded-b-lg p-1.5 space-y-1">
+        <div class="flex-1 bg-background p-2 space-y-2">
           <div
             v-for="event in getEventsForDate(date)"
             :key="event.id"
             @click="emit('editEvent', event)"
-            class="bg-primary/20 rounded p-1.5 cursor-pointer hover:bg-primary/30 transition-colors border-l-2 border-primary"
+            class="bg-muted/50 border-2 border-border p-2 cursor-pointer hover:border-primary hover:translate-x-0.5 hover:-translate-y-0.5 transition-all text-foreground"
+            style="box-shadow: 2px 2px 0px 0px var(--color-primary);"
           >
-            <p class="text-xs font-medium text-foreground truncate">
+            <p class="text-xs font-mono font-bold truncate uppercase text-primary">
               {{ event.title }}
             </p>
-            <p class="text-xs text-primary">
+            <p class="text-[10px] font-mono font-bold mt-1">
               {{ event.startTime.substring(0, 5) }}
             </p>
           </div>
           <div
             v-if="getEventsForDate(date).length === 0"
-            class="text-center text-muted-foreground text-xs mt-4"
+            class="text-center font-mono text-muted-foreground text-[10px] uppercase mt-4"
           >
-            —
+            KHÔNG SỰ KIỆN
           </div>
         </div>
       </div>
@@ -104,11 +103,4 @@ const isSelected = (date: dayjs.Dayjs) => date.isSame(props.selectedDate, "day")
 </template>
 
 <style scoped>
-.overflow-y-auto {
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-}
-.overflow-y-auto::-webkit-scrollbar {
-  width: 4px;
-}
 </style>

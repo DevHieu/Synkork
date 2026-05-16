@@ -12,9 +12,11 @@ import { socketService } from "@/services/websocket/socketService";
 import { useUserStore } from "@/stores/userStore";
 import { storeToRefs } from "pinia";
 import { ref, provide, watch } from "vue";
+import { useVoiceSpaceStore } from "@/stores/voiceSpaceStore";
 
 const userStore = useUserStore();
 const { user } = storeToRefs(userStore);
+const voiceSpaceStore = useVoiceSpaceStore();
 
 const spaceOpen = ref(true);
 
