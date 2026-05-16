@@ -8,7 +8,7 @@ import { useUserStore } from "@/stores/userStore";
 import { getZegoToken } from "@/services/spaceService";
 import router from "@/routers";
 import { useLocalStorage } from "@vueuse/core";
-import { useSpaceStore } from "@/stores/spaceStore";
+
 import axiosClient from "@/lib/axiosClient";
 
 import { useZego } from "@/composables/zego/useZego";
