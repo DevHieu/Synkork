@@ -256,7 +256,6 @@
   background: var(--muted-foreground);
 }
 
-/* Firefox */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
