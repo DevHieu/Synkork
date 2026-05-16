@@ -1,20 +1,55 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import SidebarTrigger from "../ui/sidebar/SidebarTrigger.vue";
 import { FileText, Volume2 } from "lucide-vue-next";
 import { useVoiceSpaceStore } from "@/stores/voiceSpaceStore";
 import { useRoute } from "vue-router";
-import { storeToRefs } from "pinia";
+
+const isRecording = ref(false);
+let recorder: MediaRecorder | null = null;
+let chunks: Blob[] = [];
 
 const route = useRoute();
 const voiceSpaceStore = useVoiceSpaceStore();
-const { isRecording } = storeToRefs(voiceSpaceStore);
 
 const handleSummary = () => {
+  // Đang record → dừng lại
   if (isRecording.value) {
-    voiceSpaceStore.stopRecording();
-  } else {
-    voiceSpaceStore.startRecording();
+    recorder?.stop();
+    isRecording.value = false;
+    return;
   }
+
+  const tracks = voiceSpaceStore.getAudioTracks();
+  if (tracks.length === 0) {
+    alert("Chưa có audio nào trong phòng!");
+    return;
+  }
+
+  // Truyền tracks vào đây chứ không để rỗng
+  const audioStream = new MediaStream(tracks);
+  recorder = new MediaRecorder(audioStream, { mimeType: "audio/mp4" });
+  chunks = [];
+
+  recorder.ondataavailable = (e) => {
+    if (e.data.size > 0) chunks.push(e.data);
+  };
+
+  // Đoạn này là khi nhấn dừng thì mình sẽ xử lí với backend và AI ở đây. Hienej tại đang để là dowload file về để test tạm
+  recorder.onstop = async () => {
+    const blob = new Blob(chunks, { type: "audio/webm" });
+
+    // Test: download ra nghe thử xem có record được không
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "meeting.webm";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  recorder.start(5000);
+  isRecording.value = true;
 };
 </script>
 

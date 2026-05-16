@@ -9,8 +9,6 @@ import { getZegoToken } from "@/services/spaceService";
 import router from "@/routers";
 import { useLocalStorage } from "@vueuse/core";
 
-import axiosClient from "@/lib/axiosClient";
-
 import { useZego } from "@/composables/zego/useZego";
 import { muteAudio } from "@/services/roomMemberService";
 import { toast } from "vue-sonner";
@@ -78,59 +76,6 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     isMuted,
     isDeafen,
   });
-
-  // --- Voice Recording & Summary Logic ---
-  const isRecording = ref(false);
-  const activeRecorders = ref<{ userId: string; recorder: MediaRecorder; chunks: Blob[] }[]>([]);
-
-  const startRecording = () => {
-    if (isRecording.value) return;
-    
-    const streams = getAudioStreamsByParticipant();
-    streams.forEach(({ userId, userName, stream }) => {
-      const chunks: Blob[] = [];
-      const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-      
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data);
-      };
-      
-      recorder.onstop = async () => {
-        const blob = new Blob(chunks, { type: "audio/webm" });
-        await uploadVoiceToBackend(blob, userId, userName);
-      };
-
-      recorder.start(5000);
-      activeRecorders.value.push({ userId, recorder, chunks });
-    });
-    
-    isRecording.value = true;
-    console.log("[VoiceStore] Bắt đầu tự động ghi âm...");
-  };
-
-  const stopRecording = () => {
-    if (!isRecording.value) return;
-    
-    activeRecorders.value.forEach(item => item.recorder.stop());
-    activeRecorders.value = [];
-    isRecording.value = false;
-    console.log("[VoiceStore] Đã dừng ghi âm.");
-  };
-
-  const uploadVoiceToBackend = async (blob: Blob, userId: string, userName: string) => {
-    const formData = new FormData();
-    formData.append("file", blob, `${userId}.webm`);
-    formData.append("userId", userId);
-    formData.append("userName", userName);
-    formData.append("roomId", router.currentRoute.value.params.roomId as string);
-
-    try {
-      await axiosClient.post("/api/collaboration/voice-summary/upload", formData);
-      console.log(`[VoiceStore] Đã gửi voice của ${userName} thành công.`);
-    } catch (error) {
-      console.error(`[VoiceStore] Lỗi gửi voice của ${userName}:`, error);
-    }
-  };
 
   // Cần thêm roomId để làm chức năng mute tiếng user toàn phòng
   const joinRoom = async (spaceId: string, spaceLoading: boolean) => {
@@ -200,23 +145,12 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
       await zego.local.publishAudioStream();
       zego.utils.playNotificationSound("join");
       zego.media.requestMediaStates(spaceId);
-
-      // Tự động bật ghi âm khi join
-      setTimeout(() => {
-        startRecording();
-      }, 2000); // Chờ 2s để stream ổn định
     }
   };
 
   const leaveRoom = async () => {
     isJoining.value = false;
     if (!zegoState.zg || !isInRoom.value) return;
-
-    // Nếu đang ghi âm thì đánh dấu để tự động thông báo tóm tắt sau khi thoát
-    const hadRecording = isRecording.value;
-    
-    // Dừng ghi âm trước khi out
-    stopRecording();
 
     zego.local.stopVideoStream();
     zego.local.stopAudioStream();
@@ -233,13 +167,6 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     audioOn.value = true;
 
     zego.utils.playNotificationSound("leave");
-
-    // Tự động thông báo tóm tắt nếu trước đó có ghi âm
-    if (hadRecording) {
-      toast.success("AI đang tóm tắt cuộc họp. Kết quả sẽ hiển thị trong chốc lát!", {
-        description: "Chúng tôi sẽ gửi thông báo cho bạn khi hoàn tất."
-      });
-    }
 
     if (router.currentRoute.value.path.includes("/rooms/voice")) {
       await useSpaceStore().changeSpace(0, "CHAT");
@@ -344,36 +271,6 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     return Array.from(participants.value.values());
   };
 
-  // 
-  const getAudioStreamsByParticipant = () => {
-    const participantStreams = [];
-
-    // Lấy stream của bản thân
-    if (zegoState.localAudioStream) {
-      participantStreams.push({
-        userId: useUserStore().user?.id || "me",
-        userName: useUserStore().user?.username || "Me",
-        stream: new MediaStream(zegoState.localAudioStream.getAudioTracks())
-      });
-    }
-
-    // Lấy stream của những người khác từ map remoteStreams
-    participants.value.forEach((p) => {
-      if (!p.isLocal) {
-        const stream = remoteStreams.get(p.userID);
-        if (stream) {
-          participantStreams.push({
-            userId: p.userID,
-            userName: p.userName,
-            stream: new MediaStream(stream.getAudioTracks())
-          });
-        }
-      }
-    });
-
-    return participantStreams;
-  }
-
   const getAudioTracks = (): MediaStreamTrack[] => {
     const tracks: MediaStreamTrack[] = [];
 
@@ -462,7 +359,6 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     screenOn,
     isInRoom,
     isJoining,
-    isRecording,
 
     joinRoom,
     leaveRoom,
@@ -472,14 +368,11 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     toggleShareScreen,
     replayAllStreamsToDOM,
     getParticipantsForSpace,
-    getAudioStreamsByParticipant, 
     getAudioTracks,
     toggleMuteUser,
     kickMember,
     stopUserScreen,
     toggleAudioUser,
     stopUserVideo,
-    startRecording,
-    stopRecording,
   };
 });

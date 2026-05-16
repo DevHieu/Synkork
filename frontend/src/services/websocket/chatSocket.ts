@@ -63,8 +63,4 @@ export const chatSocket = {
       callback,
     );
   },
-
-
-
-  
 };
