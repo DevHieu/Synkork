@@ -22,4 +22,5 @@ public interface RoomRepository extends JpaRepository<RoomEntity, UUID> {
     Optional<RoomEntity> findByInviteCode(String inviteCode);
 
     List<RoomEntity> findAllByStatusAndUpdatedAtBefore(RoomStatusEnum status, LocalDateTime updatedAtBefore);
+    
 }

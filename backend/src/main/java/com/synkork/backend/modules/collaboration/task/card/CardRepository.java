@@ -29,4 +29,11 @@ public interface CardRepository extends JpaRepository<CardEntity, UUID> {
     WHERE c.dueDate IS NOT NULL
 """)
 List<CardEntity> findAllWithAssignees();
+
+@Query("""
+    SELECT c.column.space.room.id
+    FROM CardEntity c
+    WHERE c.id = :cardId
+""")
+UUID findRoomIdByCardId(@Param("cardId") UUID cardId);
 }

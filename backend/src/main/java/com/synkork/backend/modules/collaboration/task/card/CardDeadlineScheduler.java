@@ -3,11 +3,14 @@ package com.synkork.backend.modules.collaboration.task.card;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.synkork.backend.common.utils.EmailService;
 import com.synkork.backend.modules.collaboration.task.card.enums.CardStatus;
+import com.synkork.backend.modules.notification.NotificationService;
+import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -16,8 +19,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CardDeadlineScheduler {
 
-    private final CardRepository cardRepository;
-    private final EmailService emailService;
+    @Autowired
+    private CardRepository cardRepository;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @Scheduled(fixedRate = 10000)
     @Transactional
@@ -40,6 +49,15 @@ public class CardDeadlineScheduler {
 
                 overdueCards.add(card);
                 card.setOverdueMailSent(true);
+
+                for (RoomMemberEntity member : card.getAssignees()) {
+
+                    notificationService.sendCardOverDueNotification(
+                            null,
+                            member.getUser(),
+                            card.getId(),
+                            card.getColumn().getSpace().getId());
+                }
             }
 
             if (status == CardStatus.DUE_SOON &&
@@ -47,6 +65,15 @@ public class CardDeadlineScheduler {
 
                 dueSoonCards.add(card);
                 card.setDueSoonMailSent(true);
+
+                for (RoomMemberEntity member : card.getAssignees()) {
+
+                    notificationService.sendCardDueSoonNotification(
+                            null,
+                            member.getUser(),
+                            card.getId(),
+                            card.getColumn().getSpace().getId());
+                }
             }
         }
 

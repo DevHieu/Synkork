@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.friend;
 
 import com.synkork.backend.modules.friend.enums.FriendRequestStatus;
+import com.synkork.backend.modules.notification.NotificationService;
 import com.synkork.backend.modules.room.RoomService;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
@@ -25,6 +26,8 @@ public class FriendService {
 
     @Autowired
     private RoomService roomService;
+
+    @Autowired NotificationService notificationService;
 
     // Gửi lời mời kết bạn
     public void sendRequest(UUID senderId, UUID receiverId, String message) {
@@ -152,6 +155,8 @@ public class FriendService {
         req.setReceiver(receiver);
         req.setStatus(FriendRequestStatus.PENDING);
         requestRepo.save(req);
+
+        notificationService.sendAddFriendNotification(sender, receiver, senderId);
 
         // Trả về email de lam socket
         return receiver.getEmail();
