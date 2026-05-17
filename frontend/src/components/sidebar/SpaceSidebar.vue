@@ -20,6 +20,7 @@ import VoiceSpaceItem from "@/components/space/VoiceSpaceItem.vue";
 import CreateSpaceDialog from "@/components/dialog/CreateSpaceDialog.vue";
 import RoomSettingDialog from "@/components/dialog/RoomSettingDialog/index.vue";
 import InviteDialog from "@/components/dialog/InviteMemberDialog.vue";
+import Notification from "@/components/notification/NotificationBell.vue";
 
 const roomStore = useRoomsStore();
 const spaceStore = useSpaceStore();
@@ -98,6 +99,7 @@ const handleDelete = async (spaceId: string) => {
           >
             <Settings class="h-5 w-5" />
           </button>
+          <Notification />
           <button
             @click="showInviteDialog = true"
             class="p-1.5 rounded-lg hover:bg-muted transition text-muted-foreground hover:text-foreground"
