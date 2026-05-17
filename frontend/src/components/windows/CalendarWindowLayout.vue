@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useSpaceStore } from "@/stores/spaceStore";
 import { useUserStore } from "@/stores/userStore";
 import { storeToRefs } from "pinia";
@@ -11,7 +11,8 @@ import CalendarWeekView from "@/components/calendar/views/CalendarWeekView.vue";
 import CalendarYearView from "@/components/calendar/views/CalendarYearView.vue";
 import CalendarEventDialog from "@/components/calendar/dialogs/CalendarEventDialog.vue";
 import CalendarToolbar from "@/components/calendar/sub-components/CalendarToolbar.vue";
-import CalendarDeleteDialog from "@/components/calendar/dialogs/CalendarDeleteDialog.vue";
+import CalendarNotificationDialog from "@/components/calendar/dialogs/CalendarNotificationDialog.vue";
+import type { NotificationType } from "@/components/calendar/dialogs/CalendarNotificationDialog.vue";
 
 // Store state
 const spaceStore = useSpaceStore();
@@ -35,13 +36,16 @@ const {
   goNext,
   goPrev,
   goToday,
-  jumpDate,
   selectDate,
   setYearMonth,
   createEvent,
   updateEvent,
   deleteEvent,
   checkConflicts,
+  dayNames,
+  dayNamesLong,
+  isToday,
+  isSelected,
 } = useCalendar(spaceIdRef, currentUserId);
 
 // Event modal state
@@ -57,16 +61,58 @@ const initialFormData = ref({
   allowEditAll: false,
 });
 
+// Điều hướng bằng bàn phím
+const handleKeyDown = (e: KeyboardEvent) => {
+  // Không điều hướng nếu đang mở dialog hoặc đang nhập liệu
+  if (showDialog.value || notificationState.value.show) return;
+  
+  const target = e.target as HTMLElement;
+  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+    return;
+  }
+
+  if (e.key === 'ArrowRight') {
+    e.preventDefault();
+    e.stopPropagation();
+    goNext();
+  } else if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    e.stopPropagation();
+    goPrev();
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown);
+});
+
 // Mở chức năng thêm sự kiện
 const openCreateDialog = () => {
   isEditing.value = false;
   editingEventId.value = undefined;
+  
+  const now = new Date();
+  
+  now.setHours(now.getHours() + 1);
+  const startH = now.getHours().toString().padStart(2, '0');
+  const startM = now.getMinutes().toString().padStart(2, '0');
+  const startTime = `${startH}:${startM}`;
+  
+  now.setHours(now.getHours() + 1);
+  const endH = now.getHours().toString().padStart(2, '0');
+  const endM = now.getMinutes().toString().padStart(2, '0');
+  const endTime = `${endH}:${endM}`;
+
   initialFormData.value = {
     title: "",
     description: "",
     eventDate: selectedDate.value.format("YYYY-MM-DD"),
-    startTime: "09:00",
-    endTime: "10:00",
+    startTime,
+    endTime,
     allowEditAll: false,
   };
   showDialog.value = true;
@@ -87,6 +133,18 @@ const openEditDialog = (event: CalendarEvent) => {
   showDialog.value = true;
 };
 
+// State cho Notification (Errors, v.v.)
+const notificationState = ref({
+  show: false,
+  type: "info" as NotificationType,
+  title: "",
+  message: "",
+});
+
+const showNotification = (type: NotificationType, title: string, message: string) => {
+  notificationState.value = { show: true, type, title, message };
+};
+
 // Submit lưu sự kiện
 const handleSaveEvent = async (data: any) => {
   try {
@@ -96,36 +154,51 @@ const handleSaveEvent = async (data: any) => {
       await createEvent(data);
     }
     showDialog.value = false;
-  } catch (err) {
+  } catch (err: any) {
     console.error("Lỗi khi lưu sự kiện:", err);
-    alert("Có lỗi xảy ra khi lưu sự kiện!");
+    const msg = err.response?.data || "CÓ LỖI XẢY RA KHI LƯU SỰ KIỆN!";
+    showNotification("error", "LỖI LƯU SỰ KIỆN", msg);
   }
 };
 
-// Delete modal state
-const showDeleteEventDialog = ref(false);
-const eventToDelete = ref<CalendarEvent | null>(null);
+// Delete modal state (Dùng Notification Dialog)
 const isDeletingEvent = ref(false);
+const eventToDelete = ref<CalendarEvent | null>(null);
 
 // Chuẩn bị xoá sự kiện
 const handleDeleteEvent = (event: CalendarEvent) => {
   eventToDelete.value = event;
-  showDeleteEventDialog.value = true;
+  showNotification(
+    "delete", 
+    "XÓA SỰ KIỆN", 
+    `BẠN CÓ CHẮC CHẮN MUỐN XÓA SỰ KIỆN "<span class="text-foreground font-bold">${event.title}</span>" KHÔNG?<br/><br/>HÀNH ĐỘNG NÀY KHÔNG THỂ HOÀN TÁC.`
+  );
 };
 
 // Submit xoá sự kiện
 const executeDelete = async () => {
-  if (!eventToDelete.value) return;
+  if (!eventToDelete.value) {
+    notificationState.value.show = false;
+    return;
+  }
   isDeletingEvent.value = true;
   try {
     await deleteEvent(eventToDelete.value.id);
-    showDeleteEventDialog.value = false;
+    notificationState.value.show = false;
     eventToDelete.value = null;
   } catch (err) {
     console.error("Lỗi khi xóa sự kiện:", err);
-    alert("Có lỗi xảy ra khi xóa sự kiện!");
+    showNotification("error", "LỖI", "CÓ LỖI XẢY RA KHI XÓA SỰ KIỆN!");
   } finally {
     isDeletingEvent.value = false;
+  }
+};
+
+const handleNotificationConfirm = () => {
+  if (notificationState.value.type === 'delete') {
+    executeDelete();
+  } else {
+    notificationState.value.show = false;
   }
 };
 </script>
@@ -135,7 +208,7 @@ const executeDelete = async () => {
     <!-- Component quản lý thanh công cụ -->
     <CalendarToolbar v-model:view-mode="viewMode" :current-space-name="currentSpace?.name" :header-title="headerTitle"
       :relative-time-text="relativeTimeText" @go-prev="goPrev" @go-next="goNext" @go-today="goToday"
-      @jump-date="jumpDate" @open-create-dialog="openCreateDialog" />
+      @open-create-dialog="openCreateDialog" />
 
     <!-- Main Content -->
     <div class="flex-1 overflow-hidden flex relative">
@@ -144,23 +217,30 @@ const executeDelete = async () => {
       </div>
 
       <CalendarMonthView v-if="viewMode === 'month'" :current-date="currentDate" :selected-date="selectedDate"
-        :events="events" :current-user-id="currentUserId" @select-date="selectDate" @edit-event="openEditDialog"
+        :events="events" :current-user-id="currentUserId" :day-names="dayNamesLong" :is-today="isToday"
+        :is-selected="isSelected" @select-date="selectDate" @edit-event="openEditDialog"
         @delete-event="handleDeleteEvent" />
 
       <CalendarWeekView v-if="viewMode === 'week'" :current-date="currentDate" :selected-date="selectedDate"
-        :events="events" @select-date="selectDate" @edit-event="openEditDialog" />
+        :events="events" :day-names="dayNamesLong" :is-today="isToday" :is-selected="isSelected" @select-date="selectDate"
+        @edit-event="openEditDialog" />
 
-      <CalendarYearView v-if="viewMode === 'year'" :current-date="currentDate" :events="events"
+      <CalendarYearView v-if="viewMode === 'year'" :current-date="currentDate" :events="events" :is-today="isToday"
         @click-year-month="setYearMonth" />
     </div>
 
-    <!-- Event Dialog -->
     <CalendarEventDialog v-model:show="showDialog" :is-editing="isEditing" :initial-data="initialFormData"
       :check-conflicts="checkConflicts" :editing-event-id="editingEventId" @save="handleSaveEvent" />
 
-    <!-- Modal Xóa Sự Kiện đã được trích xuất -->
-    <CalendarDeleteDialog v-model:show="showDeleteEventDialog" :event-to-delete="eventToDelete"
-      :is-deleting-event="isDeletingEvent" @execute-delete="executeDelete" />
+    <!-- Unified Notification Dialog -->
+    <CalendarNotificationDialog 
+      v-model:show="notificationState.show" 
+      :type="notificationState.type"
+      :title="notificationState.title"
+      :message="notificationState.message"
+      :is-loading="isDeletingEvent"
+      @confirm="handleNotificationConfirm" 
+    />
   </div>
 </template>
 

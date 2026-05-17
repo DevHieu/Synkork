@@ -47,24 +47,23 @@ export function useCalendarRealtime(
 
       unsubscribeCurrent();
 
-      // Hook payload Create/Update/Delete
-      sub = subscribeCalendarSpace(spaceId, (payload: any) => {
-        const { action, event } = payload;
-        if (action === "CREATED") {
-          if (!events.value.find((e) => e.id === event.id)) events.value.push(event);
-        } else if (action === "UPDATED") {
-          const idx = events.value.findIndex((e) => e.id === event.id);
-          if (idx !== -1) events.value[idx] = event;
-          else events.value.push(event);
-        } else if (action === "DELETED") {
-          events.value = events.value.filter((e) => e.id !== event.id);
-        }
+      const handlers: Record<string, (ev: CalendarEvent) => void> = {
+        CREATED: (ev) => {
+          if (!events.value.find((e) => e.id === ev.id)) events.value.push(ev);
+        },
+        UPDATED: (ev) => {
+          const idx = events.value.findIndex((e) => e.id === ev.id);
+          if (idx !== -1) events.value[idx] = ev; else events.value.push(ev);
+        },
+        DELETED: (ev) => {
+          events.value = events.value.filter((e) => e.id !== ev.id);
+        },
+      };
+
+      sub = subscribeCalendarSpace(spaceId, ({ action, event }: any) => {
+        handlers[action]?.(event);
       });
     },
     { immediate: true }
   );
-
-  return {
-    isSocketReady,
-  };
 }

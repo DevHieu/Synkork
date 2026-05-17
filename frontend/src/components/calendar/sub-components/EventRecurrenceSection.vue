@@ -1,9 +1,18 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
+import { Ban, RefreshCw, CalendarPlus, Calendar, Star, Info } from "lucide-vue-next";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
 
 dayjs.locale("vi");
+
+const recurrenceOptions = [
+  { val: "NONE",    label: "Không", icon: Ban },
+  { val: "DAILY",   label: "Ngày",  icon: RefreshCw },
+  { val: "WEEKLY",  label: "Tuần",  icon: CalendarPlus },
+  { val: "MONTHLY", label: "Tháng", icon: Calendar },
+  { val: "YEARLY",  label: "Năm",   icon: Star },
+];
 
 const props = defineProps<{
   initialType: string;
@@ -54,24 +63,18 @@ watch(() => props.initialEndDate, (val) => recurrenceEndDate.value = val);
 </script>
 
 <template>
-  <div class="space-y-4 p-4 bg-zinc-800/40 rounded-2xl border border-white/5 shadow-inner">
+  <div class="space-y-4 p-4 bg-background border-2 border-border border-dashed">
     <div>
-      <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Chế độ lặp lại</label>
-      <div class="grid grid-cols-5 gap-1.5 bg-black/20 p-1 rounded-xl border border-white/5">
-        <button v-for="opt in [
-          { val: 'NONE', label: 'Không', icon: 'pi pi-ban' },
-          { val: 'DAILY', label: 'Ngày', icon: 'pi pi-sync' },
-          { val: 'WEEKLY', label: 'Tuần', icon: 'pi pi-calendar-plus' },
-          { val: 'MONTHLY', label: 'Tháng', icon: 'pi pi-calendar' },
-          { val: 'YEARLY', label: 'Năm', icon: 'pi pi-star' },
-        ]" :key="opt.val" type="button" @click="recurrenceType = opt.val" :class="[
-            'flex flex-col items-center gap-1.5 py-2 px-1 rounded-lg transition-all duration-300',
+      <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-3">CHẾ ĐỘ LẶP LẠI</label>
+      <div class="grid grid-cols-5 gap-0 border-2 border-border bg-background">
+        <button v-for="opt in recurrenceOptions" :key="opt.val" type="button" @click="recurrenceType = opt.val" :class="[
+            'flex flex-col items-center gap-1.5 py-3 px-1 border-r-2 border-border last:border-r-0 transition-colors',
             recurrenceType === opt.val
-              ? 'bg-teal-600 text-white shadow-lg shadow-teal-500/20'
-              : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+              ? 'bg-primary text-primary-foreground'
+              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
           ]">
-          <i :class="[opt.icon, 'text-sm']" />
-          <span class="text-[9px] font-bold uppercase">{{ opt.label }}</span>
+          <component :is="opt.icon" :size="16" />
+          <span class="text-[10px] font-mono font-bold uppercase tracking-wider">{{ opt.label }}</span>
         </button>
       </div>
     </div>
@@ -80,19 +83,19 @@ watch(() => props.initialEndDate, (val) => recurrenceEndDate.value = val);
       enter-from-class="transform -translate-y-2 opacity-0" enter-to-class="transform translate-y-0 opacity-100"
       leave-active-class="transition duration-200 ease-in" leave-from-class="transform translate-y-0 opacity-100"
       leave-to-class="transform -translate-y-2 opacity-0">
-      <div v-if="recurrenceType !== 'NONE'" class="space-y-4 pt-1">
-        <div class="flex items-start gap-2.5 px-3 py-2 bg-teal-500/10 rounded-lg border border-teal-500/20">
-          <i class="pi pi-info-circle text-teal-400 mt-0.5 text-xs" />
-          <p class="text-[11px] text-teal-300/90 leading-relaxed font-medium">{{ recurrenceSummary }}</p>
+      <div v-if="recurrenceType !== 'NONE'" class="space-y-4 pt-2">
+        <div class="flex items-start gap-2.5 px-3 py-3 bg-muted/20 border-l-4 border-primary">
+          <Info :size="14" class="text-primary mt-0.5 flex-shrink-0" />
+          <p class="text-xs font-mono text-foreground leading-relaxed">{{ recurrenceSummary }}</p>
         </div>
         <div>
-          <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Ngày kết thúc</label>
+          <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2">NGÀY KẾT THÚC</label>
           <div class="relative group">
             <input v-model="recurrenceEndDate" type="date"
-              class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-all text-sm" />
+              class="w-full bg-background border-2 border-border px-3 pr-36 py-2.5 font-mono text-sm text-foreground focus:outline-none focus:border-primary transition-colors uppercase" />
             <div v-if="!recurrenceEndDate"
-              class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[10px] text-gray-500 italic">
-              Mặc định: 1 năm
+              class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+              MẶC ĐỊNH: 1 NĂM
             </div>
           </div>
         </div>

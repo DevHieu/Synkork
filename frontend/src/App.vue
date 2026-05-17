@@ -21,7 +21,7 @@ onMounted(async () => {
 
 <template>
   <!-- Hiện thông báo ấy mà -->
-  <Toaster position="top-center" richColors :theme="mode" />
+  <Toaster position="top-center" richColors />
 
   <RouterView />
 </template>

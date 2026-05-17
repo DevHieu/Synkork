@@ -105,7 +105,6 @@ export function useEventForm(
   return {
     formData,
     conflictEvents,
-    isCheckingConflict,
     warningMessage,
     showWarning,
     validate,

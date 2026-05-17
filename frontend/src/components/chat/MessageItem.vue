@@ -95,53 +95,34 @@ const parsedContent = computed(() => {
 <template>
   <div v-if="isDifferentDay" class="flex items-center gap-3 my-6 px-4">
     <div class="flex-1 h-px bg-border/50"></div>
-    <span
-      class="text-[10px] uppercase font-bold text-muted-foreground tracking-wider"
-    >
+    <span class="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
       {{ dayjs(props.message.createdAt).format("DD MMMM, YYYY") }}
     </span>
     <div class="flex-1 h-px bg-border/50"></div>
   </div>
 
-  <div
-    :id="`message-${props.message.id}`"
-    class="relative group flex gap-3 p-2 mx-2 rounded-lg transition-colors hover:bg-secondary/20 mb-2"
-  >
+  <div :id="`message-${props.message.id}`"
+    class="relative group flex gap-3 p-2 mx-2 rounded-lg transition-colors hover:bg-secondary/20 mb-2">
     <!-- Avatar -->
     <div class="w-10 shrink-0">
-      <UserInfoPopover
-        :username="props.message.sender?.username"
-        v-if="!isGrouped || props.message.replyTo"
-      >
-        <Avatar class="h-10 w-10">
-          <AvatarImage
-            v-if="props.message.sender?.avatarUrl"
-            :src="props.message.sender.avatarUrl"
-          />
+      <UserInfoPopover :username="props.message.sender?.username" v-if="!isGrouped || props.message.replyTo">
+        <Avatar class="h-10 w-10 cursor-pointer">
+          <AvatarImage v-if="props.message.sender?.avatarUrl" :src="props.message.sender.avatarUrl" />
           <AvatarFallback class="bg-primary"> </AvatarFallback>
         </Avatar>
       </UserInfoPopover>
 
-      <span
-        v-else
-        class="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 flex justify-center items-center h-full"
-      >
+      <span v-else
+        class="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 flex justify-center items-center h-full">
         {{ dayjs(props.message.createdAt).format("HH:mm") }}
       </span>
     </div>
 
     <!-- Content -->
     <div class="flex-1 min-w-0">
-      <ReplyQuote
-        v-if="props.message.replyTo"
-        :reply-to="props.message.replyTo"
-        @jump="jumpToReply"
-      />
+      <ReplyQuote v-if="props.message.replyTo" :reply-to="props.message.replyTo" @jump="jumpToReply" />
 
-      <div
-        v-if="!isGrouped || props.message.replyTo"
-        class="flex items-center gap-2 mb-1"
-      >
+      <div v-if="!isGrouped || props.message.replyTo" class="flex items-center gap-2 mb-1">
         <span class="font-bold text-sm" :class="senderNameColor">
           {{ props.message.sender?.displayName }}
         </span>
@@ -152,24 +133,14 @@ const parsedContent = computed(() => {
 
       <!-- Edit mode -->
       <div v-if="isEditing" class="mt-1">
-        <textarea
-          v-model="editContent"
+        <textarea v-model="editContent"
           class="w-full bg-background border border-primary/30 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-          rows="2"
-          @keydown.enter.exact.prevent="handleSaveEdit"
-          @keydown.esc="handleCancelEdit"
-        />
+          rows="2" @keydown.enter.exact.prevent="handleSaveEdit" @keydown.esc="handleCancelEdit" />
         <div class="flex gap-2 mt-1 text-[11px]">
-          <button
-            @click="handleSaveEdit"
-            class="text-primary hover:underline font-medium"
-          >
+          <button @click="handleSaveEdit" class="text-primary hover:underline font-medium">
             Lưu thay đổi
           </button>
-          <button
-            @click="handleCancelEdit"
-            class="text-muted-foreground hover:underline"
-          >
+          <button @click="handleCancelEdit" class="text-muted-foreground hover:underline">
             Hủy
           </button>
         </div>
@@ -177,53 +148,34 @@ const parsedContent = computed(() => {
 
       <div v-else class="text-sm leading-relaxed wrap-break-word">
         <template v-if="props.message.deleted">
-          <span class="text-muted-foreground italic text-xs"
-            >{{
-              props.message.type === "TEXT" ? "Tin nhắn" : "Tệp đính kèm"
-            }}
-            đã bị xóa</span
-          >
+          <span class="text-muted-foreground italic text-xs">{{
+            props.message.type === "TEXT" ? "Tin nhắn" : "Tệp đính kèm"
+          }}
+            đã bị xóa</span>
         </template>
 
         <template v-else-if="props.message.sending || props.message.failed">
           <div class="flex items-center gap-2">
-            <FileAttachment
-              v-if="props.message.type !== 'TEXT'"
-              :type="props.message.type"
-              :attachment-url="props.message.attachmentUrl ?? ''"
-              :attachment-name="props.message.attachmentName"
-              :sending="true"
-            />
+            <FileAttachment v-if="props.message.type !== 'TEXT'" :type="props.message.type"
+              :attachment-url="props.message.attachmentUrl ?? ''" :attachment-name="props.message.attachmentName"
+              :sending="true" />
           </div>
 
-          <div
-            v-if="props.message.sending"
-            class="flex items-center gap-1 mt-1"
-          >
-            <span
-              class="w-2 h-2 rounded-full bg-muted-foreground/50 animate-pulse"
-            />
+          <div v-if="props.message.sending" class="flex items-center gap-1 mt-1">
+            <span class="w-2 h-2 rounded-full bg-muted-foreground/50 animate-pulse" />
             <span class="text-[10px] text-muted-foreground">Đang gửi...</span>
           </div>
 
-          <div
-            v-else-if="props.message.failed"
-            class="flex items-center gap-2 mt-1"
-          >
+          <div v-else-if="props.message.failed" class="flex items-center gap-2 mt-1">
             <span class="text-[10px] text-red-400 flex items-center gap-1">
               <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fill-rule="evenodd"
+                <path fill-rule="evenodd"
                   d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                  clip-rule="evenodd"
-                />
+                  clip-rule="evenodd" />
               </svg>
               Gửi thất bại
             </span>
-            <button
-              @click="deleteFailedMessage()"
-              class="text-[10px] text-muted-foreground hover:underline"
-            >
+            <button @click="deleteFailedMessage()" class="text-[10px] text-muted-foreground hover:underline">
               Xóa
             </button>
           </div>
@@ -233,56 +185,31 @@ const parsedContent = computed(() => {
           <div v-if="props.message.content">
             <!-- Check xem tin nhắn có chứa link trong đấy ko -->
             <template v-for="(part, i) in parsedContent" :key="i">
-              <a
-                v-if="part.isLink"
-                :href="part.text"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="text-primary underline underline-offset-2 hover:text-primary/80 break-all"
-                >{{ part.text }}
+              <a v-if="part.isLink" :href="part.text" target="_blank" rel="noopener noreferrer"
+                class="text-primary underline underline-offset-2 hover:text-primary/80 break-all">{{ part.text }}
               </a>
               <span v-else class="text-foreground/90">{{ part.text }}</span>
             </template>
 
-            <span
-              v-if="props.message.edited"
-              class="text-[10px] text-muted-foreground ml-1"
-              >(đã chỉnh sửa)</span
-            >
+            <span v-if="props.message.edited" class="text-[10px] text-muted-foreground ml-1">(đã chỉnh sửa)</span>
           </div>
 
-          <FileAttachment
-            v-if="props.message.type !== 'TEXT' && props.message.attachmentUrl"
-            :type="props.message.type"
-            :attachment-url="props.message.attachmentUrl"
-            :attachment-name="props.message.attachmentName"
-          />
+          <FileAttachment v-if="props.message.type !== 'TEXT' && props.message.attachmentUrl" :type="props.message.type"
+            :attachment-url="props.message.attachmentUrl" :attachment-name="props.message.attachmentName" />
         </template>
       </div>
     </div>
 
     <!-- Actions -->
-    <div
-      class="absolute right-4 -top-4 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-    >
-      <MessageActions
-        v-if="!isEditing && !props.message.deleted"
-        :isSender="isFullAction"
-        :isPinned="props.message.pinned"
-        @reply="handleReply"
-        @edit="handleEdit"
-        @delete="isDeleteOpen = true"
-        @pin="handlePin"
-      />
+    <div class="absolute right-4 -top-4 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+      <MessageActions v-if="!isEditing && !props.message.deleted" :isSender="isFullAction"
+        :isPinned="props.message.pinned" @reply="handleReply" @edit="handleEdit" @delete="isDeleteOpen = true"
+        @pin="handlePin" />
     </div>
   </div>
 
-  <DeleteConfirmDialog
-    v-model:open="isDeleteOpen"
-    title="Xóa tin nhắn này?"
-    description="Bạn không thể khôi phục tin nhắn này sau khi xóa."
-    @confirm="handleDelete"
-  />
+  <DeleteConfirmDialog v-model:open="isDeleteOpen" title="Xóa tin nhắn này?"
+    description="Bạn không thể khôi phục tin nhắn này sau khi xóa." @confirm="handleDelete" />
 </template>
 
 <style scoped>
@@ -294,6 +221,7 @@ const parsedContent = computed(() => {
   0% {
     background-color: var(--primary);
   }
+
   100% {
     background-color: transparent;
   }

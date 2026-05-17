@@ -1,10 +1,13 @@
 package com.synkork.backend.modules.user;
 
+import com.synkork.backend.modules.user.dto.ChangePasswordDto;
+import com.synkork.backend.modules.user.dto.UpdateprofileDto;
 import com.synkork.backend.modules.user.dto.UserInfoDto;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -50,5 +53,51 @@ public class UserController {
     UserEntity entity = userService.getUserInfoByUsername(username);
 
     return ResponseEntity.ok(new UserInfoDto(entity));
+  }
+
+  // Cập nhật displayName / username
+  @PatchMapping("/me")
+  public ResponseEntity<?> updateProfile(@RequestBody UpdateprofileDto dto) {
+    try {
+      UserInfoDto updated = userService.updateProfile(dto);
+      return ResponseEntity.ok(updated);
+    } catch (Exception e) {
+      return ResponseEntity.badRequest().body(e.getMessage());
+    }
+  }
+
+  // Đổi mật khẩu — tài khoản LOCAL đã có password
+  @PatchMapping("/me/password")
+  public ResponseEntity<?> changePassword(@RequestBody ChangePasswordDto dto) {
+    try {
+      userService.changePassword(dto);
+      return ResponseEntity.ok("Đổi mật khẩu thành công");
+    } catch (Exception e) {
+      return ResponseEntity.badRequest().body(e.getMessage());
+    }
+  }
+
+  // Tạo mật khẩu lần đầu — tài khoản OAuth chưa có password
+  @PostMapping("/me/password/create")
+  public ResponseEntity<?> createPassword(@RequestBody Map<String, String> body) {
+    try {
+      String newPassword = body.get("newPassword");
+      userService.createPassword(newPassword);
+      return ResponseEntity.ok("Tạo mật khẩu thành công");
+    } catch (Exception e) {
+      return ResponseEntity.badRequest().body(e.getMessage());
+    }
+  }
+
+  @PatchMapping("/me/avatar")
+  public ResponseEntity<?> updateAvatar(@RequestBody Map<String, String> body) {
+    try {
+      String avatarUrl = body.get("avatarUrl");
+      String avatarId = body.get("avatarId");
+      UserInfoDto updated = userService.updateAvatar(avatarUrl, avatarId);
+      return ResponseEntity.ok(updated);
+    } catch (Exception e) {
+      return ResponseEntity.badRequest().body(e.getMessage());
+    }
   }
 }

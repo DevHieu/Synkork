@@ -70,9 +70,8 @@ export function useCalendarEvents(
       createdById: unref(currentUserId)
     };
     if (id) payload.id = id;
-    if (payload.recurrenceType === 'NONE') {
-      delete payload.recurrenceEndDate;
-    } else if (!payload.recurrenceEndDate) {
+    // Xóa recurrenceEndDate khi không áp dụng
+    if (payload.recurrenceType === 'NONE' || !payload.recurrenceEndDate) {
       delete payload.recurrenceEndDate;
     }
     return payload;
@@ -89,7 +88,7 @@ export function useCalendarEvents(
   };
 
   const deleteEvent = async (id: string) => {
-    await apiDeleteEvent(id, currentUserId);
+    await apiDeleteEvent(id, unref(currentUserId));
     await fetchEvents();
   };
 
