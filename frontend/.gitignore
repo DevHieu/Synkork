@@ -43,3 +43,6 @@ coverage/
 
 # TypeScript cache
 *.tsbuildinfo
+
+# Cache local cua npm khi chay lenh trong frontend
+.npm-cache/
