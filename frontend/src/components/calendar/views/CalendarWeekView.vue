@@ -43,6 +43,8 @@ const getEventsForDate = (date: dayjs.Dayjs) => {
   result.sort((a, b) => a.startTime.localeCompare(b.startTime));
   return result;
 };
+
+// View tuần render trực tiếp từ mảng event đã được store đồng bộ sẵn.
 </script>
 <template>
   <ScrollArea class="calendar-scroll-area min-h-0 flex-1">

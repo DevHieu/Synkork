@@ -39,6 +39,7 @@ public interface RoomMemberRepository extends JpaRepository<RoomMemberEntity, UU
 
     @Query("SELECT rm FROM RoomMemberEntity rm JOIN FETCH rm.user WHERE rm.user.email = :email AND rm.room.id = :roomId")
     Optional<RoomMemberEntity> findByUser_EmailAndRoom_Id(
+            // Query này fetch luôn user để tránh lỗi lazy khi dựng DTO tin nhắn.
             @Param("email") String email,
             @Param("roomId") UUID roomId
     );

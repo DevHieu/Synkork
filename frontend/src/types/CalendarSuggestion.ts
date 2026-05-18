@@ -1,4 +1,5 @@
 export interface MessageEventSuggestion {
+  // Payload suggestion nhận trực tiếp từ websocket theo từng message.
   messageId: string;
   hasEvent: boolean;
   title: string | null;
@@ -9,6 +10,7 @@ export interface MessageEventSuggestion {
 }
 
 export interface SuggestedEventDraft {
+  // Draft đã được áp fallback đầy đủ để mở form calendar ngay.
   title: string;
   description: string;
   eventDate: string;
@@ -18,6 +20,7 @@ export interface SuggestedEventDraft {
 }
 
 export interface CalendarChannelOption {
+  // Dùng cho dialog chọn kênh lịch trước khi điều hướng.
   roomId: string;
   roomName: string;
   spaceId: string;

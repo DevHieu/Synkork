@@ -261,6 +261,7 @@
   scrollbar-color: var(--border) transparent;
 }
 
+/* Giữ scrollbar của khu vực calendar khác nhẹ hơn scrollbar global. */
 .calendar-scroll-area [data-slot="scroll-area-scrollbar"] {
   padding: 2px;
 }

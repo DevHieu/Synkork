@@ -90,6 +90,7 @@ const messageSuggestion = computed<MessageEventSuggestion | null>(() => {
   return messageStore.suggestionsByMessageId[props.message.id] ?? null;
 });
 
+// Nếu message có suggestion hợp lệ thì coi như đang ở trạng thái hover.
 const shouldHighlightSuggestion = computed(
   () => messageSuggestion.value?.hasEvent === true,
 );

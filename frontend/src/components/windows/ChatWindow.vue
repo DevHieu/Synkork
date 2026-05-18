@@ -95,6 +95,7 @@ const handleOpenSuggestion = (messageId: string) => {
     return;
   }
 
+  // Mở dialog chọn kênh từ đúng suggestion đã được cache theo message.
   calendarSuggestionStore.openChannelDialog(suggestion);
 };
 

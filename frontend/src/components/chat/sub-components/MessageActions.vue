@@ -9,6 +9,8 @@ const props = defineProps<{
   showSuggestion: boolean;
   forceVisible?: boolean;
 }>();
+
+// forceVisible giúp action bar hiện sẵn khi message đã có suggestion từ LLM.
 </script>
 
 <template>

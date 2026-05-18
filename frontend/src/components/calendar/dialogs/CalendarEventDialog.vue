@@ -50,6 +50,7 @@ const onAttachmentsChange = (list: any[]) => {
   formData.value.attachments = list;
 };
 
+// Luôn reset form theo initialData mới nhất trước khi người dùng thao tác.
 // Đồng bộ trạng thái khi Dialog đóng/mở
 watch(
   () => props.show,

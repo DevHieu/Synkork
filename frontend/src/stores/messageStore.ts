@@ -86,6 +86,7 @@ export const useMessageStore = defineStore("message", {
       });
 
       chatSocket.subscribeDelete(spaceId, (messageId: string) => {
+        // Xóa mềm trong list hiện tại để UI cập nhật ngay khi backend broadcast.
         const msg = this.messages.find((m) => m.id === messageId);
         if (msg) msg.deleted = true;
 
@@ -161,6 +162,7 @@ export const useMessageStore = defineStore("message", {
           return;
         }
 
+        // Cache theo messageId để từng MessageItem tự quyết định có bật UI gợi ý hay không.
         this.suggestionsByMessageId[suggestion.messageId] = suggestion;
         console.log("[Goi y] Da luu cache cho message:", suggestion.messageId);
       });

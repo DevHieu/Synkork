@@ -57,6 +57,7 @@ watch([recurrenceType, recurrenceEndDate], () => {
   });
 });
 
+// Đồng bộ lại state khi dialog mở bằng dữ liệu khác.
 // Phản hồi: Đồng bộ khi dữ liệu bên ngoài thay đổi (ví dụ: khi mở lại dialog)
 watch(() => props.initialType, (val) => recurrenceType.value = val || "NONE");
 watch(() => props.initialEndDate, (val) => recurrenceEndDate.value = val);

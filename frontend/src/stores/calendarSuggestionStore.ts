@@ -9,6 +9,7 @@ interface PendingCalendarSuggestionDraft {
   draft: SuggestedEventDraft;
 }
 
+// Store này chỉ làm cầu nối tạm giữa chat và calendar, không lưu lâu dài.
 export const useCalendarSuggestionStore = defineStore("calendarSuggestion", {
   state: () => ({
     isChannelDialogOpen: false,

@@ -42,6 +42,7 @@ export const useRoomsStore = defineStore("rooms", {
       this.currentRoom = room;
       socketService.unsubscribeAll(); // Hủy tất cả subscription cũ khi đổi room để tránh nhận dữ liệu của phòng trước đó vào
 
+      // Cần nối lại socket của room mới trước khi điều hướng sang space bên trong.
       this.connectRoomSocket(room.id);
 
       const spaceStore = useSpaceStore();

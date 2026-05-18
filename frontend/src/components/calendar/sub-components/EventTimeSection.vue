@@ -22,6 +22,7 @@ const {
   parseTimeString, buildTimeString, adjustEndTimeIfNeeded, syncDropdownsOnFormatChange,
 } = useTimeSelector();
 
+// Gom logic đồng bộ giờ vào một hàm để dialog mở lại không bị lệch dropdown.
 // Đồng bộ trạng thái nội bộ với props khi dialog mở hoặc dữ liệu thay đổi
 const syncInternalState = () => {
   eventDate.value = props.initialDate;

@@ -19,6 +19,7 @@ public class MessageSocketController {
   @MessageMapping("/chat.sendMessage")
   public void sendMessage(@Payload MessageDTO dto, SimpMessageHeaderAccessor headerAccessor) {
 
+      // Lấy cả userId và email để service có thể fallback nếu session claim bị lệch.
       String senderId = (String) headerAccessor
               .getSessionAttributes()
               .get("userId");

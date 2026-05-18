@@ -67,6 +67,7 @@ const selectedDateEvents = computed(() => {
   return getEventsForDate(props.selectedDate);
 });
 
+// Dùng vòng lặp thường để kiểm tra nhanh hơn với danh sách event đang có.
 const hasEvent = (date: dayjs.Dayjs) => {
   const targetDate = date.format("YYYY-MM-DD");
   for (let i = 0; i < props.events.length; i++) {

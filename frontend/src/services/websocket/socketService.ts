@@ -7,6 +7,7 @@ const cookies = VueCookies as any;
 let stompClient: Client | null = null;
 const subscriptions = new Map<string, StompSubscription>();
 let connectingPromise: Promise<void> | null = null;
+// Giữ lại các kênh cần sống lâu hơn vòng đời của từng space.
 const persistentDestinations = new Set<string>();
 
 const createStompClient = (token: string, onConnected?: () => void): Client => {

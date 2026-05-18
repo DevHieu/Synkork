@@ -69,6 +69,7 @@ export const chatSocket = {
     userId: string,
     callback: (suggestion: MessageEventSuggestion) => void,
   ) {
+    // Kênh này dùng riêng cho suggestion theo user nên cần giữ persistent.
     if (!socketService.isConnected()) {
       return null;
     }

@@ -20,6 +20,7 @@ import java.util.UUID;
 
 @Repository
 public interface UserRepository extends JpaRepository<UserEntity, UUID> {
+    // Repo này được dùng để lấy user thật khi đồng bộ dữ liệu chat và calendar.
     Optional<UserEntity> findByUsername(String username); // Optional to handle user not found case
 
     Optional<UserEntity> findByEmail(String email);

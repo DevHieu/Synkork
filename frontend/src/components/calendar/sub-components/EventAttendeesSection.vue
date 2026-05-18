@@ -15,6 +15,7 @@ const emit = defineEmits<{
 const { attendees, attendeeInput, addAttendee, removeAttendee, resetAttendees } =
   useAttendees(props.initialAttendees || []);
 
+// Section này chỉ quản lý danh sách email cục bộ của form hiện tại.
 // Đồng bộ với component cha khi danh sách người tham gia thay đổi
 watch(attendees, (newList) => {
   emit("change", newList);

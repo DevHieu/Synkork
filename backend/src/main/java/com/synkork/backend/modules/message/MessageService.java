@@ -120,8 +120,8 @@ public class MessageService {
                     System.out.println("[Goi y LLM] Phan hoi tho cho message " + newMessage.getId() + ": " + jsonRepsone);
 
                     JsonNode rootNode = objectMapper.readTree(jsonRepsone);
-                          
-                    // 
+
+                    // Chỉ bắn suggestion khi LLM khẳng định đây là nội dung có thể tạo event.
                     if (rootNode.has("hasEvent") && rootNode.get("hasEvent").asBoolean()) {
                         // Bọc thêm messageId để frontend biết gợi ý này thuộc tin nhắn nào.
                         MessageSuggestionDTO suggestionPayload = MessageSuggestionDTO.fromJsonNode(

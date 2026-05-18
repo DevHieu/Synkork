@@ -58,6 +58,8 @@ const hasEvent = (date: dayjs.Dayjs, monthIndex: number) => {
   }
   return false;
 };
+
+// View năm chỉ cần biết ngày nào có event để làm chỉ báo nhanh.
 </script>
 
 <template>

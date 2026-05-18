@@ -31,6 +31,7 @@ watch(
   () => cookies.get("accessToken"),
   async (newToken) => {
     if (newToken) {
+      // Kênh suggestion là theo user nên đăng ký từ layout gốc sẽ ổn định hơn theo từng màn hình.
       await socketService.connect();
       await userStore.getUserInfo();
       // Đăng ký kênh gợi ý ngay sau khi đã có user để không phụ thuộc vào từng màn chat.

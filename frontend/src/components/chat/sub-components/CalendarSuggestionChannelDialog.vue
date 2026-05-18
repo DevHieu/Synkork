@@ -43,6 +43,7 @@ const otherRoomChannels = computed(() =>
   ),
 );
 
+// Chỉ tải lại danh sách khi dialog mở để tránh gọi thừa lúc chat render.
 const loadCalendarChannels = async () => {
   if (!rooms.value.length) {
     calendarChannels.value = [];

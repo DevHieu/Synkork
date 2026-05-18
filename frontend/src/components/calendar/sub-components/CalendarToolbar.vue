@@ -23,6 +23,8 @@ const emit = defineEmits<{
 
   (e: "openCreateDialog"): void;
 }>();
+
+// Toolbar chỉ phát sự kiện điều hướng, toàn bộ logic nằm ở layout cha.
 </script>
 
 <template>

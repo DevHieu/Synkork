@@ -8,6 +8,7 @@ const DEFAULT_EVENT_TITLE = "Sự kiện từ tin nhắn";
 const DEFAULT_MORNING_START = "07:00";
 const DEFAULT_MORNING_END = "12:00";
 
+// Chuẩn hóa time string để form calendar chỉ nhận HH:mm.
 function normalizeTimeString(time: string | null | undefined): string | null {
   if (!time) return null;
 

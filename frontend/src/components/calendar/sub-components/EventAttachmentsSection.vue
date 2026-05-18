@@ -14,6 +14,7 @@ const emit = defineEmits<{
 const { attachments, addFromFileInput, removeAttachment, resetAttachments } =
   useAttachments(props.initialAttachments || []);
 
+// Section này chỉ giữ state tạm rồi đẩy ngược lên form cha.
 // Đồng bộ với component cha khi danh sách tệp đính kèm thay đổi
 watch(attachments, (newList) => {
   emit("change", newList);

@@ -125,6 +125,7 @@ const openSuggestedCreateDialog = (draft: SuggestedEventDraft) => {
   isEditing.value = false;
   editingEventId.value = undefined;
 
+  // Draft này đã được chuẩn hóa từ suggestion trước khi chuyển sang kênh lịch.
   initialFormData.value = {
     title: draft.title,
     description: draft.description,

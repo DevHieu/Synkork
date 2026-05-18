@@ -36,6 +36,7 @@ const emit = defineEmits<{
   (e: "cancel"): void;
 }>();
 
+// Chặn đóng dialog khi đang loading để tránh mất trạng thái xác nhận.
 const handleOpenChange = (open: boolean) => {
   if (!open && props.isLoading) return; // Không cho đóng khi đang load
   emit("update:show", open);

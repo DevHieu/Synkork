@@ -20,6 +20,7 @@ public class MessageSuggestionDTO {
     private String endTime;
 
     public static MessageSuggestionDTO fromJsonNode(UUID messageId, JsonNode rootNode) {
+        // Gom payload suggestion về một DTO phẳng để frontend map theo messageId.
         return new MessageSuggestionDTO(
                 messageId,
                 rootNode.path("hasEvent").asBoolean(false),
