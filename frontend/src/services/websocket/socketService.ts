@@ -1,9 +1,8 @@
 import { Client, type StompSubscription } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import { getFreshToken } from "@/utils/auth";
-import VueCookies from "vue-cookies";
+import { getCookie, removeCookie } from "@/lib/cookies";
 
-const cookies = VueCookies as any;
 let stompClient: Client | null = null;
 const subscriptions = new Map<string, StompSubscription>();
 let connectingPromise: Promise<void> | null = null;
@@ -31,7 +30,7 @@ const createStompClient = (token: string, onConnected?: () => void): Client => {
         (event.reason ?? "").toLowerCase().includes("unauthorized");
 
       if (isUnauthorized) {
-        cookies.remove("accessToken");
+        removeCookie("accessToken");
         try {
           const freshToken = await getFreshToken();
 
@@ -59,7 +58,7 @@ export const socketService = {
     if (connectingPromise) return connectingPromise;
 
     connectingPromise = new Promise<void>(async (resolve, reject) => {
-      let token = cookies.get("accessToken");
+      let token = getCookie("accessToken");
       if (!token) {
         try {
           token = await getFreshToken();

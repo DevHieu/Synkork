@@ -1,12 +1,12 @@
 import axiosClient from "@/lib/axiosClient";
-import VueCookies from "vue-cookies";
+import { removeCookie, setCookie } from "@/lib/cookies";
 import type { LoginData } from "@/types/LoginData";
 import type { RegisterData } from "@/types/RegisterData";
 
 export const login = async (loginData: LoginData) => {
   try {
     const res = await axiosClient.post("/api/auth/login", loginData);
-    VueCookies.set("accessToken", res.data, "15m");
+    setCookie("accessToken", res.data, 60 * 60 * 15); // 15 minutes
     return res.data;
   } catch (error: any) {
     throw error;
@@ -28,7 +28,7 @@ export const logout = async () => {
   } catch (error) {
     console.error("Error during logout:", error);
   } finally {
-    VueCookies.remove("accessToken");
+    removeCookie("accessToken");
     window.location.href = "/auth";
   }
 };
