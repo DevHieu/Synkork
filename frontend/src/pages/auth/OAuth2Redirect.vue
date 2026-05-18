@@ -1,12 +1,11 @@
 <script lang="ts" setup>
 import { onMounted } from "vue";
 import { useRouter } from "vue-router";
-import VueCookies from "vue-cookies";
 
 const router = useRouter();
-const cookies = VueCookies as any;
 
 import { useUserStore } from "@/stores/userStore";
+import { setCookie } from "@/lib/cookies";
 const userStore = useUserStore();
 
 onMounted(async () => {
@@ -15,7 +14,7 @@ onMounted(async () => {
   console.log("Received token:", token);
 
   if (token) {
-    await cookies.set("accessToken", token, "15m");
+    await setCookie("accessToken", token, 60 * 60 * 15); // 15 minutes
     await userStore.getUserInfo();
     router.push("/me");
   } else {
