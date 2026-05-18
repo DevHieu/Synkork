@@ -1,5 +1,6 @@
 import { socketService } from "./socketService";
 import type { Message } from "@/types/Message";
+import type { MessageEventSuggestion } from "@/types/CalendarSuggestion";
 
 export const chatSocket = {
   // hủy subscription khi rời khỏi space để tránh nhận tin nhắn mấy phòng trước đó vào
@@ -61,6 +62,21 @@ export const chatSocket = {
     return socketService.subscribe(
       `/topic/space/${spaceId}/messages/pin`,
       callback,
+    );
+  },
+
+  subscribeSuggestions(
+    userId: string,
+    callback: (suggestion: MessageEventSuggestion) => void,
+  ) {
+    if (!socketService.isConnected()) {
+      return null;
+    }
+
+    return socketService.subscribe(
+      `/topic/user/${userId}/suggestions`,
+      callback,
+      { persistent: true },
     );
   },
 };

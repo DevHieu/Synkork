@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import dayjs from "dayjs";
 import type { CalendarEvent } from "@/types/CalendarEvent";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const props = defineProps<{
   currentDate: dayjs.Dayjs;
@@ -43,63 +44,63 @@ const getEventsForDate = (date: dayjs.Dayjs) => {
   return result;
 };
 </script>
-ư
 <template>
-  <div class="flex-1 overflow-y-auto p-4 calendar-scrollbar bg-background text-foreground">
-    <div class="grid grid-cols-7 border-2 border-border bg-background">
-      <div
-        v-for="(date, idx) in weekDays"
-        :key="idx"
-        :class="['flex flex-col h-full min-h-[400px] border-r-2 border-border last:border-r-0']"
-      >
-        <!-- Day Header -->
+  <ScrollArea class="calendar-scroll-area min-h-0 flex-1">
+    <div class="bg-transparent p-4 text-foreground">
+      <div class="grid grid-cols-7 overflow-hidden rounded-[1.5rem] border-2 border-border bg-background shadow-[0_30px_80px_-48px_var(--color-foreground)]">
         <div
-          @click="emit('selectDate', date)"
-          :class="[
-            'text-center p-3 border-b-2 border-border cursor-pointer transition-colors',
-            isToday(date) ? 'bg-primary text-primary-foreground' : 'bg-muted/30 hover:bg-muted/80',
-            isSelected(date) ? 'ring-inset ring-2 ring-primary bg-primary/5' : '',
-          ]"
+          v-for="(date, idx) in weekDays"
+          :key="idx"
+          :class="['flex flex-col h-full min-h-[400px] border-r-2 border-border last:border-r-0']"
         >
-          <div :class="['text-[10px] font-mono font-bold uppercase tracking-widest', isToday(date) ? 'text-primary-foreground/80' : 'text-muted-foreground']">
-            {{ dayNames[date.day()] }}
-          </div>
+          <!-- Day Header -->
           <div
+            @click="emit('selectDate', date)"
             :class="[
-              'text-xl font-mono font-bold mt-1',
-              isToday(date) ? 'text-primary-foreground' : 'text-foreground',
+              'cursor-pointer border-b-2 border-border p-3 text-center transition-colors',
+              isToday(date) ? 'bg-primary text-primary-foreground' : 'bg-muted/30 hover:bg-muted/70',
+              isSelected(date) ? 'bg-primary/5 ring-2 ring-inset ring-primary' : '',
             ]"
           >
-            {{ date.date() }}
+            <div :class="['text-[10px] font-mono font-bold uppercase tracking-widest', isToday(date) ? 'text-primary-foreground/80' : 'text-muted-foreground']">
+              {{ dayNames[date.day()] }}
+            </div>
+            <div
+              :class="[
+                'text-xl font-mono font-bold mt-1',
+                isToday(date) ? 'text-primary-foreground' : 'text-foreground',
+              ]"
+            >
+              {{ date.date() }}
+            </div>
           </div>
-        </div>
 
-        <!-- Events List -->
-        <div class="flex-1 bg-background p-2 space-y-2">
-          <div
-            v-for="event in getEventsForDate(date)"
-            :key="event.id"
-            @click="emit('editEvent', event)"
-            class="bg-muted/50 border-2 border-border p-2 cursor-pointer hover:border-primary hover:translate-x-0.5 hover:-translate-y-0.5 transition-all text-foreground"
-            style="box-shadow: 2px 2px 0px 0px var(--color-primary);"
-          >
-            <p class="text-xs font-mono font-bold truncate uppercase text-primary">
-              {{ event.title }}
-            </p>
-            <p class="text-[10px] font-mono font-bold mt-1">
-              {{ event.startTime.substring(0, 5) }}
-            </p>
-          </div>
-          <div
-            v-if="getEventsForDate(date).length === 0"
-            class="text-center font-mono text-muted-foreground text-[10px] uppercase mt-4"
-          >
-            KHÔNG SỰ KIỆN
+          <!-- Events List -->
+          <div class="flex flex-1 flex-col gap-2 bg-background p-3">
+            <div
+              v-for="event in getEventsForDate(date)"
+              :key="event.id"
+              @click="emit('editEvent', event)"
+              class="cursor-pointer rounded-xl border-2 border-border bg-muted/35 p-3 text-foreground shadow-[0_16px_28px_-28px_var(--color-primary)] transition-all hover:-translate-y-0.5 hover:border-primary hover:bg-background"
+            >
+              <p class="text-xs font-mono font-bold truncate uppercase text-primary">
+                {{ event.title }}
+              </p>
+              <p class="mt-2 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-mono font-bold text-primary w-fit">
+                {{ event.startTime.substring(0, 5) }}
+              </p>
+            </div>
+            <div
+              v-if="getEventsForDate(date).length === 0"
+              class="mt-4 rounded-lg border border-dashed border-border bg-muted/20 px-3 py-4 text-center font-mono text-[10px] uppercase text-muted-foreground"
+            >
+              KHÔNG SỰ KIỆN
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </ScrollArea>
 </template>
 
 <style scoped>

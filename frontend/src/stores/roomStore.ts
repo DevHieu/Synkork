@@ -38,7 +38,7 @@ export const useRoomsStore = defineStore("rooms", {
     },
 
     // Nhận spaceId để check xem khi đổi room có cần redirect đến space nào không
-    async changeRoom(room: Room, spaceId?: string) {
+    async changeRoom(room: Room, spaceId?: string, spaceType?: string) {
       this.currentRoom = room;
       socketService.unsubscribeAll(); // Hủy tất cả subscription cũ khi đổi room để tránh nhận dữ liệu của phòng trước đó vào
 
@@ -59,9 +59,12 @@ export const useRoomsStore = defineStore("rooms", {
         await spaceStore.changeSpace(0, "CHAT");
         router.push(`/rooms/chat/${room.id}/${spaceStore.currentSpace?.id}`);
       } else {
-        const spaceType = router.currentRoute.value.meta.spaceType as string; // Leeys type của space trên URL
+        // Cho phép caller chỉ định rõ loại space để điều hướng sang đúng màn hình.
+        const targetSpaceType =
+          spaceType ?? (router.currentRoute.value.meta.spaceType as string);
 
-        await spaceStore.changeSpaceById(spaceId, spaceType);
+        await spaceStore.changeSpaceById(spaceId, targetSpaceType);
+        router.push(`/rooms/${targetSpaceType.toLowerCase()}/${room.id}/${spaceId}`);
       }
     },
 

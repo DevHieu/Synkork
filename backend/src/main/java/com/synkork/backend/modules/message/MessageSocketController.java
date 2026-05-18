@@ -22,8 +22,11 @@ public class MessageSocketController {
       String senderId = (String) headerAccessor
               .getSessionAttributes()
               .get("userId");
+      String senderEmail = (String) headerAccessor
+              .getSessionAttributes()
+              .get("userEmail");
 
-      MessageDTO message = messageService.saveMessage(dto, senderId);
+      MessageDTO message = messageService.saveMessage(dto, senderId, senderEmail);
 
     messagingTemplate.convertAndSend(
         "/topic/space/" + message.getSpaceId() + "/messages",

@@ -30,8 +30,8 @@ watch(() => props.show, (isOpen) => {
     <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2">Tệp đính kèm</label>
     <div class="flex flex-col gap-2">
       <label
-        class="flex justify-center items-center w-full h-20 px-4 transition bg-muted/20 border-2 border-border border-dashed appearance-none cursor-pointer hover:border-primary hover:bg-muted/50 focus:outline-none">
-        <span class="flex items-center space-x-2">
+        class="flex h-24 w-full cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/20 px-4 transition hover:border-primary hover:bg-muted/50 focus:outline-none">
+        <span class="flex items-center gap-2">
           <i class="pi pi-upload text-muted-foreground" />
           <span class="font-mono font-bold text-muted-foreground text-xs uppercase tracking-wider">Nhấn để chọn tệp...</span>
         </span>
@@ -39,7 +39,7 @@ watch(() => props.show, (isOpen) => {
       </label>
       <div v-if="attachments.length > 0" class="flex flex-col gap-1.5 mt-2">
         <div v-for="(file, idx) in attachments" :key="idx"
-          class="flex items-center justify-between bg-background p-2 border-2 border-border text-xs">
+          class="flex items-center justify-between rounded-xl border-2 border-border bg-background p-3 text-xs shadow-[0_16px_34px_-30px_var(--color-foreground)]">
           <div class="flex items-center gap-2 truncate">
             <i class="pi pi-file text-primary" />
             <span class="font-mono font-bold text-foreground truncate">{{ file.name }}</span>

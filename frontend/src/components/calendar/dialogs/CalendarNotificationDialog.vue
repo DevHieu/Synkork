@@ -99,13 +99,13 @@ const themeClasses = computed(() => {
 <template>
   <AlertDialog :open="show" @update:open="handleOpenChange">
     <AlertDialogContent
-      class="rounded-none border-2 p-0 max-w-sm sm:max-w-[425px] overflow-hidden bg-background text-foreground shadow-2xl"
+      class="max-w-sm overflow-hidden rounded-[1.5rem] border-2 bg-background p-0 text-foreground shadow-[0_32px_100px_-48px_rgba(0,0,0,0.75)] sm:max-w-[425px]"
       :class="themeClasses.border"
     >
       <div class="p-6">
         <AlertDialogHeader class="flex flex-row items-center gap-4 space-y-0 pb-4">
           <div
-            class="flex items-center justify-center w-12 h-12 border-2"
+            class="flex size-12 items-center justify-center rounded-full border-2"
             :class="[themeClasses.border, themeClasses.bg, themeClasses.icon]"
           >
             <component :is="iconComponent" :size="24" stroke-width="2.5" />
@@ -122,12 +122,12 @@ const themeClasses = computed(() => {
         </AlertDialogDescription>
       </div>
 
-      <AlertDialogFooter class="p-4 border-t-2 bg-background flex items-center justify-end gap-2" :class="themeClasses.border">
+      <AlertDialogFooter class="flex items-center justify-end gap-3 border-t-2 bg-background p-4" :class="themeClasses.border">
         <button
           v-if="type === 'confirm' || type === 'delete'"
           :disabled="isLoading"
           @click="handleOpenChange(false)"
-          class="px-4 py-1 h-8 flex items-center justify-center border-2 border-border font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground hover:border-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+          class="flex h-10 items-center justify-center rounded-full border-2 border-border px-4 font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
         >
           {{ cancelText }}
         </button>
@@ -135,7 +135,7 @@ const themeClasses = computed(() => {
         <button
           @click="handleConfirm"
           :disabled="isLoading"
-          class="flex items-center justify-center gap-2 px-4 py-1 h-8 border-2 font-mono text-xs font-bold uppercase tracking-wider transition-colors"
+          class="flex h-10 items-center justify-center gap-2 rounded-full border-2 px-5 font-mono text-xs font-bold uppercase tracking-wider transition-colors"
           :class="themeClasses.btn"
         >
           <span v-if="isLoading" class="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin"></span>

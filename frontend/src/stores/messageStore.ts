@@ -7,7 +7,9 @@ import {
   sendFileMessage as sendFileMessageApi,
 } from "@/services/chatService";
 import { chatSocket } from "@/services/websocket/chatSocket";
+import { socketService } from "@/services/websocket/socketService";
 import type { Message } from "@/types/Message";
+import type { MessageEventSuggestion } from "@/types/CalendarSuggestion";
 import { nextTick } from "vue";
 import { useUserStore } from "./userStore";
 
@@ -33,6 +35,8 @@ export const useMessageStore = defineStore("message", {
     pinLoading: false,
 
     replyingTo: null as Message | null,
+    suggestionsByMessageId: {} as Record<string, MessageEventSuggestion>,
+    suggestionSubscriptionReady: false,
   }),
 
   actions: {
@@ -48,14 +52,32 @@ export const useMessageStore = defineStore("message", {
       this.pinnedHasMore = false;
       this.pinnedCursor = null;
       this.replyingTo = null;
+      this.suggestionsByMessageId = {};
     },
 
     subscribeToChat(spaceId: string) {
       chatSocket.subscribeMessages(spaceId, (msg: Message) => {
+        console.log("[Chat] Da nhan tin nhan tu socket:", {
+          spaceId,
+          messageId: msg.id,
+          createdAt: msg.createdAt,
+          hasCachedSuggestion: Boolean(this.suggestionsByMessageId[msg.id]),
+        });
+
         // Nếu đang jump mode thì không push tin mới vào (tránh lộn xộn)
         if (!this.isJumpMode) {
           this.messages = this.messages.filter((m) => m.id !== msg.id);
           this.messages.unshift(msg);
+          console.log("[Chat] Da chen tin nhan vao danh sach hien tai:", {
+            spaceId,
+            messageId: msg.id,
+            totalMessages: this.messages.length,
+          });
+
+          if (this.suggestionsByMessageId[msg.id]) {
+            console.log("[Goi y] Tin nhan den sau goi y va da san sang hien thi:", msg.id);
+          }
+
           if (!this.isScrollTop) {
             // Tự nhảy xuống
             nextTick(() => this.scrollToBottom(spaceId));
@@ -99,6 +121,59 @@ export const useMessageStore = defineStore("message", {
       });
     },
 
+    async subscribeToSuggestions() {
+      const currentUserId = useUserStore().user?.id;
+      if (!currentUserId) {
+        console.warn("[Goi y] Bo qua dang ky vi chua co userId hien tai");
+        return;
+      }
+
+      if (this.suggestionSubscriptionReady) {
+        console.log("[Goi y] Bo qua dang ky vi kenh goi y da san sang truoc do");
+        return;
+      }
+
+      // Luôn đảm bảo socket đã kết nối trước khi đăng ký kênh gợi ý.
+      await socketService.connect();
+      console.log("[Goi y] Socket da ket noi, bat dau dang ky kenh cho user:", currentUserId);
+
+      const subscription = chatSocket.subscribeSuggestions(currentUserId, (suggestion) => {
+        console.log("[Goi y] Da nhan payload:", suggestion);
+        console.log("[Goi y] Trang thai chat hien tai khi nhan payload:", {
+          messageCount: this.messages.length,
+          currentMessageIds: this.messages.slice(0, 5).map((message) => message.id),
+          knownSuggestionIds: Object.keys(this.suggestionsByMessageId),
+        });
+
+        // Chỉ lưu cache cho những tin nhắn đang tồn tại trong chat hiện tại.
+        const targetMessage = this.messages.find(
+          (message) => message.id === suggestion.messageId,
+        );
+        if (!targetMessage) {
+          console.warn("[Goi y] Khong tim thay tin nhan tuong ung trong chat hien tai:", {
+            suggestionMessageId: suggestion.messageId,
+            currentMessageIds: this.messages.slice(0, 10).map((message) => message.id),
+          });
+          return;
+        }
+        if (!suggestion.title && !suggestion.description) {
+          console.warn("[Goi y] Bo qua vi title va description deu rong:", suggestion);
+          return;
+        }
+
+        this.suggestionsByMessageId[suggestion.messageId] = suggestion;
+        console.log("[Goi y] Da luu cache cho message:", suggestion.messageId);
+      });
+
+      if (!subscription) {
+        console.warn("[Goi y] Dang ky that bai vi socket chua san sang");
+        return;
+      }
+
+      this.suggestionSubscriptionReady = true;
+      console.log("[Goi y] Dang ky thanh cong cho user:", currentUserId);
+    },
+
     // Load lần đầu hoặc scroll lên
     async fetchMessages(spaceId: string, cursor: string | null) {
       const res = await getChatFromSpaceId(spaceId, cursor, true, MESSAGE_SIZE);
@@ -109,6 +184,13 @@ export const useMessageStore = defineStore("message", {
       console.log(messages);
 
       this.messages = [...this.messages, ...messages];
+      console.log("[Chat] Da tai xong danh sach tin nhan:", {
+        spaceId,
+        cursor,
+        loadedCount: messages.length,
+        totalMessages: this.messages.length,
+        firstMessageId: this.messages[0]?.id ?? null,
+      });
       this.beforeHasMore = beforeHasMore;
       this.beforeCursor = beforeCursor ?? null;
     },

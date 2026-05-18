@@ -63,15 +63,15 @@ watch(() => props.initialEndDate, (val) => recurrenceEndDate.value = val);
 </script>
 
 <template>
-  <div class="space-y-4 p-4 bg-background border-2 border-border border-dashed">
+  <div class="space-y-4 rounded-xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)]">
     <div>
       <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-3">CHẾ ĐỘ LẶP LẠI</label>
-      <div class="grid grid-cols-5 gap-0 border-2 border-border bg-background">
+      <div class="grid grid-cols-5 gap-2 rounded-xl border border-border/80 bg-muted/20 p-2">
         <button v-for="opt in recurrenceOptions" :key="opt.val" type="button" @click="recurrenceType = opt.val" :class="[
-            'flex flex-col items-center gap-1.5 py-3 px-1 border-r-2 border-border last:border-r-0 transition-colors',
+            'flex flex-col items-center gap-1.5 rounded-lg px-1 py-3 transition-colors',
             recurrenceType === opt.val
               ? 'bg-primary text-primary-foreground'
-              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              : 'bg-background text-muted-foreground hover:text-foreground'
           ]">
           <component :is="opt.icon" :size="16" />
           <span class="text-[10px] font-mono font-bold uppercase tracking-wider">{{ opt.label }}</span>
@@ -84,7 +84,7 @@ watch(() => props.initialEndDate, (val) => recurrenceEndDate.value = val);
       leave-active-class="transition duration-200 ease-in" leave-from-class="transform translate-y-0 opacity-100"
       leave-to-class="transform -translate-y-2 opacity-0">
       <div v-if="recurrenceType !== 'NONE'" class="space-y-4 pt-2">
-        <div class="flex items-start gap-2.5 px-3 py-3 bg-muted/20 border-l-4 border-primary">
+        <div class="flex items-start gap-2.5 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
           <Info :size="14" class="text-primary mt-0.5 flex-shrink-0" />
           <p class="text-xs font-mono text-foreground leading-relaxed">{{ recurrenceSummary }}</p>
         </div>
@@ -92,7 +92,7 @@ watch(() => props.initialEndDate, (val) => recurrenceEndDate.value = val);
           <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2">NGÀY KẾT THÚC</label>
           <div class="relative group">
             <input v-model="recurrenceEndDate" type="date"
-              class="w-full bg-background border-2 border-border px-3 pr-36 py-2.5 font-mono text-sm text-foreground focus:outline-none focus:border-primary transition-colors uppercase" />
+              class="w-full rounded-lg border-2 border-border bg-background px-4 py-3 pr-36 font-mono text-sm uppercase text-foreground transition-colors focus:outline-none focus:border-primary" />
             <div v-if="!recurrenceEndDate"
               class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
               MẶC ĐỊNH: 1 NĂM

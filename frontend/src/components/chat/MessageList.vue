@@ -16,6 +16,10 @@ const props = defineProps<{
   friendName?: string;
 }>();
 
+const emit = defineEmits<{
+  (e: "openSuggestion", messageId: string): void;
+}>();
+
 const messageStore = useMessageStore();
 
 const isLoading = ref(false);
@@ -161,6 +165,7 @@ const processedMessages = computed(() => {
             :message="msg"
             :isGrouped="msg.isGrouped"
             :isDifferentDay="msg.isDifferentDay"
+            @open-suggestion="emit('openSuggestion', $event)"
           />
         </template>
       </div>

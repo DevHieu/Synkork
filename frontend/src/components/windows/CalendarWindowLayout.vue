@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useSpaceStore } from "@/stores/spaceStore";
 import { useUserStore } from "@/stores/userStore";
+import { useCalendarSuggestionStore } from "@/stores/calendarSuggestionStore";
 import { storeToRefs } from "pinia";
 import { useCalendar } from "@/components/calendar/composables/useCalendar";
 import type { CalendarEvent } from "@/types/CalendarEvent";
+import type { SuggestedEventDraft } from "@/types/CalendarSuggestion";
 
 import CalendarMonthView from "@/components/calendar/views/CalendarMonthView.vue";
 import CalendarWeekView from "@/components/calendar/views/CalendarWeekView.vue";
@@ -17,6 +19,7 @@ import type { NotificationType } from "@/components/calendar/dialogs/CalendarNot
 // Store state
 const spaceStore = useSpaceStore();
 const userStore = useUserStore();
+const calendarSuggestionStore = useCalendarSuggestionStore();
 const { currentSpace } = storeToRefs(spaceStore);
 const { user } = storeToRefs(userStore);
 
@@ -118,6 +121,22 @@ const openCreateDialog = () => {
   showDialog.value = true;
 };
 
+const openSuggestedCreateDialog = (draft: SuggestedEventDraft) => {
+  isEditing.value = false;
+  editingEventId.value = undefined;
+
+  initialFormData.value = {
+    title: draft.title,
+    description: draft.description,
+    eventDate: draft.eventDate,
+    startTime: draft.startTime,
+    endTime: draft.endTime,
+    allowEditAll: draft.allowEditAll,
+  };
+
+  showDialog.value = true;
+};
+
 // Mở chức năng sửa sự kiện
 const openEditDialog = (event: CalendarEvent) => {
   isEditing.value = true;
@@ -201,6 +220,20 @@ const handleNotificationConfirm = () => {
     notificationState.value.show = false;
   }
 };
+
+watch(
+  () => currentSpace.value?.id,
+  (spaceId) => {
+    if (!spaceId) return;
+
+    // Nếu có draft được chuyển sang từ chat thì mở dialog tạo event ngay khi vào đúng kênh lịch.
+    const pendingDraft = calendarSuggestionStore.consumePendingDraft(spaceId);
+    if (!pendingDraft) return;
+
+    openSuggestedCreateDialog(pendingDraft);
+  },
+  { immediate: true },
+);
 </script>
 
 <template>

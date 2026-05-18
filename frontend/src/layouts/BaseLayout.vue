@@ -10,10 +10,12 @@ import {
 } from "@/components/ui/sidebar";
 import { socketService } from "@/services/websocket/socketService";
 import { useUserStore } from "@/stores/userStore";
+import { useMessageStore } from "@/stores/messageStore";
 import { storeToRefs } from "pinia";
 import { ref, provide, watch } from "vue";
 
 const userStore = useUserStore();
+const messageStore = useMessageStore();
 const { user } = storeToRefs(userStore);
 
 const spaceOpen = ref(true);
@@ -31,6 +33,8 @@ watch(
     if (newToken) {
       await socketService.connect();
       await userStore.getUserInfo();
+      // Đăng ký kênh gợi ý ngay sau khi đã có user để không phụ thuộc vào từng màn chat.
+      await messageStore.subscribeToSuggestions();
     }
   },
   { immediate: true },

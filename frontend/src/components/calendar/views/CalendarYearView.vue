@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import dayjs from "dayjs";
 import type { CalendarEvent } from "@/types/CalendarEvent";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const props = defineProps<{
   currentDate: dayjs.Dayjs;
@@ -60,51 +61,50 @@ const hasEvent = (date: dayjs.Dayjs, monthIndex: number) => {
 </script>
 
 <template>
-  <div class="flex-1 overflow-y-auto p-4 calendar-scrollbar bg-background text-foreground">
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
-      <div
-        v-for="m in yearMonths"
-        :key="m.month"
-        @click="emit('clickYearMonth', m.month)"
-        class="bg-background border-2 border-border p-0 cursor-pointer hover:border-primary hover:translate-x-1 hover:-translate-y-1 transition-all duration-200 group"
-        style="box-shadow: 4px 4px 0px 0px var(--color-border);"
-        onmouseover="this.style.boxShadow='4px 4px 0px 0px var(--color-primary)';"
-        onmouseout="this.style.boxShadow='4px 4px 0px 0px var(--color-border)';"
-      >
-        <h4
-          :class="[
-            'text-xs font-mono font-bold uppercase tracking-widest text-center py-2 border-b-2 border-border group-hover:border-primary transition-colors',
-            currentDate.month() === m.month
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-muted text-muted-foreground group-hover:text-primary',
-          ]"
+  <ScrollArea class="calendar-scroll-area min-h-0 flex-1">
+    <div class="bg-transparent p-4 text-foreground">
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+        <div
+          v-for="m in yearMonths"
+          :key="m.month"
+          @click="emit('clickYearMonth', m.month)"
+          class="group cursor-pointer overflow-hidden rounded-[1.5rem] border-2 border-border bg-background p-0 shadow-[0_26px_60px_-44px_var(--color-foreground)] transition-all duration-200 hover:-translate-y-1 hover:border-primary"
         >
-          {{ m.name }}
-        </h4>
-        <div class="grid grid-cols-7 gap-px p-2 bg-border group-hover:bg-primary/20 transition-colors">
-          <div
-            v-for="dn in ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']"
-            :key="dn"
-            class="text-center text-[8px] font-mono font-bold text-muted-foreground bg-background py-1"
-          >
-            {{ dn }}
-          </div>
-          <div
-            v-for="(day, di) in m.days.slice(0, 42)"
-            :key="di"
+          <h4
             :class="[
-              'text-center text-[10px] font-mono p-1 bg-background flex items-center justify-center',
-              day.month() === m.month ? 'text-foreground' : 'text-muted-foreground opacity-30',
-              isToday(day) ? 'bg-primary text-primary-foreground font-bold' : '',
-              hasEvent(day, m.month) && !isToday(day) ? 'border border-primary text-primary font-bold bg-primary/5' : '',
+              'border-b-2 border-border py-3 text-center text-xs font-mono font-bold uppercase tracking-widest transition-colors group-hover:border-primary',
+              currentDate.month() === m.month
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted/45 text-muted-foreground group-hover:text-primary',
             ]"
           >
-            {{ day.date() }}
+            {{ m.name }}
+          </h4>
+          <div class="grid grid-cols-7 gap-px bg-border/60 p-3 transition-colors group-hover:bg-primary/20">
+            <div
+              v-for="dn in ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']"
+              :key="dn"
+              class="bg-background py-1 text-center text-[8px] font-mono font-bold text-muted-foreground"
+            >
+              {{ dn }}
+            </div>
+            <div
+              v-for="(day, di) in m.days.slice(0, 42)"
+              :key="di"
+              :class="[
+                'flex items-center justify-center bg-background p-1 text-center text-[10px] font-mono',
+                day.month() === m.month ? 'text-foreground' : 'text-muted-foreground opacity-30',
+                isToday(day) ? 'bg-primary text-primary-foreground font-bold shadow-[0_8px_20px_-14px_var(--color-primary)]' : '',
+                hasEvent(day, m.month) && !isToday(day) ? 'border border-primary bg-primary/5 font-bold text-primary' : '',
+              ]"
+            >
+              {{ day.date() }}
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </ScrollArea>
 </template>
 
 <style scoped>
