@@ -21,10 +21,8 @@ import MePage from "@/pages/MePage.vue";
 import PersonLayout from "@/layouts/PersonLayout.vue";
 import RoomLayout from "@/layouts/RoomLayout.vue";
 
-import VueCookies from "vue-cookies";
 import axiosClient from "@/lib/axiosClient";
-
-const cookies = VueCookies as any;
+import { getCookie, setCookie } from "@/lib/cookies";
 
 const routes = [
   {
@@ -106,8 +104,8 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach(async (to, from) => {
-  const token = cookies.get("accessToken");
+router.beforeEach(async (to) => {
+  const token = getCookie("accessToken");
 
   // Bỏ qua oauth2 redirect
   if (to.path.includes("/oauth2")) return;
@@ -121,7 +119,7 @@ router.beforeEach(async (to, from) => {
         { withCredentials: true },
       );
       const newToken = response.data;
-      cookies.set("accessToken", newToken, "15m");
+      setCookie("accessToken", newToken, 60 * 60 * 15); // 15 minutes
       return;
     } catch {
       return { path: "/auth" };
