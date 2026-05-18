@@ -197,6 +197,40 @@ export function zegoLocalStream(
     }
   };
 
+  const changeInputDevice = async (deviceId: string) => {
+    if (!state.zg || !state.localAudioStream) return;
+
+    try {
+      await state.zg.useAudioDevice(state.localAudioStream, deviceId);
+      console.log("Zego đã chuyển sang mic mới:", deviceId);
+    } catch (error) {
+      console.error("Lỗi khi Zego đổi mic đầu vào:", error);
+    }
+  };
+
+  const changeOutputDevice = async (deviceId: string) => {
+    // Đổi trực tiếp trên từng audio/video element mà Zego đã nhét vào #audio-players
+    const audioPlayers = document.getElementById("audio-players");
+    if (!audioPlayers) return;
+
+    const mediaElements = audioPlayers.querySelectorAll("audio, video");
+
+    await Promise.allSettled(
+      Array.from(mediaElements).map(async (el) => {
+        const mediaEl = el as HTMLMediaElement & {
+          setSinkId?: (id: string) => Promise<void>;
+        };
+        if (typeof mediaEl.setSinkId === "function") {
+          try {
+            await mediaEl.setSinkId(deviceId);
+          } catch (err) {
+            console.error("Lỗi setSinkId trên element:", el, err);
+          }
+        }
+      }),
+    );
+  };
+
   return {
     publishVideoStream,
     publishAudioStream,
@@ -204,5 +238,7 @@ export function zegoLocalStream(
     stopVideoStream,
     stopAudioStream,
     stopScreenStream,
+    changeInputDevice,
+    changeOutputDevice,
   };
 }

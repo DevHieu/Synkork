@@ -157,7 +157,7 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
 <template>
   <Teleport to="body">
     <Transition name="sf">
-      <div class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75" @click.self="emit('close')">
+      <div class="fixed inset-0 z-20 flex items-center justify-center bg-black/75" @click.self="emit('close')">
         <div class="flex w-[min(960px,96vw)] h-[min(660px,95vh)] overflow-hidden rounded-lg shadow-2xl">
 
           <!-- ═══ LEFT SIDEBAR ═══ -->
@@ -221,7 +221,7 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
               <h2 class="text-base font-bold text-foreground">
                 <template v-if="activeTab === 'account'">Tài Khoản Của Tôi</template>
                 <template v-else>{{settingsTabs.flatMap(g => g.items).find(i => i.id === activeTab)?.label
-                  }}</template>
+                }}</template>
               </h2>
               <Button variant="ghost" size="sm" class="gap-1.5 text-muted-foreground text-[11px]"
                 @click="emit('close')">

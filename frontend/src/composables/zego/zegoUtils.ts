@@ -1,12 +1,10 @@
 import type { Participant } from "@/types/VoiceSpaceParticipant";
+import globalAudio from "@/utils/appAudioManager";
 import type { Ref } from "vue";
 
 export function zegoUtils(participants: Ref<Map<string, Participant>>) {
   const playNotificationSound = (type: "join" | "leave") => {
-    const audio = new Audio(`/assets/sounds/${type}Sound.wav`);
-    audio.play().catch((err) => {
-      console.warn("Audio play blocked:", err);
-    });
+    globalAudio.playSystemSound(`/assets/sounds/${type}Sound.wav`);
   };
 
   // Hàm này để tạo 1 cái element để zego có thể gắn stream vào
