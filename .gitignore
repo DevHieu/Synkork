@@ -1,6 +1,7 @@
 .idea/
 skills/
 database/
+# Ignore local AI notes and private LLM working files.
 llm/
 developCode/
 # Bỏ qua file khóa skill sinh ra trên máy local.
