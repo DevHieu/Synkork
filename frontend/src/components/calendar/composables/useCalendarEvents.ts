@@ -62,12 +62,35 @@ export function useCalendarEvents(
 
   // Chuẩn hóa payload
   const formatPayload = (data: any, id?: string) => {
+    const normalizedAttendees = Array.isArray(data.attendees)
+      ? data.attendees
+          .map((email: string) => email?.trim())
+          .filter((email: string) => Boolean(email))
+      : [];
+
+    const normalizedAttachments = Array.isArray(data.attachments)
+      ? data.attachments
+          .filter((attachment: any) => attachment?.name)
+          .map((attachment: any) => ({
+            name: attachment.name,
+            size: attachment.size
+              ? attachment.file
+                ? Math.max(1, Math.ceil(attachment.size / 1024))
+                : attachment.size
+              : 0,
+            fileUrl: attachment.fileUrl ?? "",
+            type: attachment.type,
+          }))
+      : [];
+
     const payload = {
       ...data,
       startTime: data.startTime.length === 5 ? `${data.startTime}:00` : data.startTime,
       endTime: data.endTime.length === 5 ? `${data.endTime}:00` : data.endTime,
       spaceId: spaceIdRef.value,
-      createdById: unref(currentUserId)
+      createdById: unref(currentUserId),
+      attendees: normalizedAttendees,
+      attachments: normalizedAttachments,
     };
     if (id) payload.id = id;
     // Xóa recurrenceEndDate khi không áp dụng

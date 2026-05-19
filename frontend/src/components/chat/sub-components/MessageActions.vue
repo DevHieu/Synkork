@@ -23,13 +23,6 @@ const props = defineProps<{
       class="flex items-center gap-1 bg-secondary border border-border rounded-lg px-1 py-1 shadow-md"
     >
       <button
-        class="p-1.5 rounded hover:bg-primary/20 text-foreground/70 hover:text-foreground transition-colors"
-        title="Reply"
-        @click="$emit('reply')"
-      >
-        <Reply class="w-4 h-4" />
-      </button>
-      <button
         v-if="props.showSuggestion"
         class="rounded bg-primary px-2.5 py-1.5 text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
         title="Tạo sự kiện từ tin nhắn"
@@ -39,6 +32,13 @@ const props = defineProps<{
           <CalendarPlus2 class="h-4 w-4" />
           Tạo lịch
         </span>
+      </button>
+      <button
+        class="p-1.5 rounded hover:bg-primary/20 text-foreground/70 hover:text-foreground transition-colors"
+        title="Reply"
+        @click="$emit('reply')"
+      >
+        <Reply class="w-4 h-4" />
       </button>
       <button
         class="p-1.5 rounded transition-colors"

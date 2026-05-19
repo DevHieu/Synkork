@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { watch } from "vue";
-import { useAttachments } from "../composables/useAttachments";
+import { useAttachments, type Attachment } from "../composables/useAttachments";
 
 const props = defineProps<{
-  initialAttachments?: { name: string; size: number; file?: File }[];
+  initialAttachments?: Attachment[];
   show: boolean;
 }>();
 
 const emit = defineEmits<{
-  (e: "change", attachments: { name: string; size: number; file?: File }[]): void;
+  (e: "change", attachments: Attachment[]): void;
 }>();
 
 const { attachments, addFromFileInput, removeAttachment, resetAttachments } =

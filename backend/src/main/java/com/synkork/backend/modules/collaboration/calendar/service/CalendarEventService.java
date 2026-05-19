@@ -1,7 +1,11 @@
 package com.synkork.backend.modules.collaboration.calendar.service;
 
 import com.synkork.backend.modules.collaboration.calendar.entity.CalendarEventEntity;
+import com.synkork.backend.modules.collaboration.calendar.entity.EventAttachmentEntity;
+import com.synkork.backend.modules.collaboration.calendar.entity.EventAttendeeEntity;
+import com.synkork.backend.modules.collaboration.calendar.enums.AttachmentTypeEnum;
 import com.synkork.backend.modules.collaboration.calendar.dto.CalendarEventDTO;
+import com.synkork.backend.modules.collaboration.calendar.dto.CalendarEventAttachmentDTO;
 import com.synkork.backend.modules.collaboration.calendar.repository.CalendarEventRepository;
 import com.synkork.backend.modules.space.SpaceRepository;
 import com.synkork.backend.modules.user.UserEntity;
@@ -159,6 +163,7 @@ public class CalendarEventService {
         calendarEvent.setCreatedBy(creator);
         calendarEvent.setSpace(
                 spaceRepository.getReferenceById(Objects.requireNonNull(UUID.fromString(eventRequest.getSpaceId()))));
+        syncEventRelations(calendarEvent, eventRequest, creator);
 
         CalendarEventEntity savedEvent = calendarEventRepository.save(Objects.requireNonNull(calendarEvent));
         CalendarEventDTO result = new CalendarEventDTO(savedEvent);
@@ -176,6 +181,8 @@ public class CalendarEventService {
             throw new SecurityException("Bạn không có quyền chỉnh sửa sự kiện này! Vui lòng liên hệ đến người tạo sự kiện");
         }
         eventRequest.updateEntity(calendarEvent);
+        UserEntity actor = userRepository.getReferenceById(userId);
+        syncEventRelations(calendarEvent, eventRequest, actor);
         CalendarEventEntity savedEvent = calendarEventRepository.save(Objects.requireNonNull(calendarEvent));
         CalendarEventDTO result = new CalendarEventDTO(savedEvent);
         broadcastCalendarUpdate(result.getSpaceId(), "UPDATED", result);
@@ -184,6 +191,112 @@ public class CalendarEventService {
 
     private boolean hasPermissionToEdit(CalendarEventEntity event, UUID userId) {
         return event.getCreatedBy().getId().equals(userId) || event.isAllowEditAll();
+    }
+
+    private void syncEventRelations(CalendarEventEntity event, CalendarEventDTO request, UserEntity actor) {
+        event.setAttendees(buildAttendees(event, request.getAttendees()));
+        event.setAttachments(buildAttachments(event, request.getAttachments(), actor));
+    }
+
+    private List<EventAttendeeEntity> buildAttendees(CalendarEventEntity event, List<String> attendeeEmails) {
+        if (attendeeEmails == null || attendeeEmails.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<EventAttendeeEntity> attendees = new ArrayList<>();
+        List<String> missingEmails = new ArrayList<>();
+        Set<String> uniqueEmails = new LinkedHashSet<>();
+
+        for (String rawEmail : attendeeEmails) {
+            if (rawEmail == null) {
+                continue;
+            }
+
+            String email = rawEmail.trim().toLowerCase();
+            if (email.isEmpty() || !uniqueEmails.add(email)) {
+                continue;
+            }
+
+            Optional<UserEntity> matchedUser = userRepository.findByEmail(email);
+            if (matchedUser.isEmpty()) {
+                missingEmails.add(email);
+                continue;
+            }
+
+            EventAttendeeEntity attendee = new EventAttendeeEntity();
+            attendee.setEvent(event);
+            attendee.setUser(matchedUser.get());
+            attendees.add(attendee);
+        }
+
+        if (!missingEmails.isEmpty()) {
+            throw new IllegalArgumentException("Không tìm thấy người dùng cho các email: " + String.join(", ", missingEmails));
+        }
+
+        return attendees;
+    }
+
+    private List<EventAttachmentEntity> buildAttachments(
+            CalendarEventEntity event,
+            List<CalendarEventAttachmentDTO> requestAttachments,
+            UserEntity actor
+    ) {
+        if (requestAttachments == null || requestAttachments.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<EventAttachmentEntity> attachments = new ArrayList<>();
+
+        for (CalendarEventAttachmentDTO requestAttachment : requestAttachments) {
+            if (requestAttachment == null || isBlank(requestAttachment.getName())) {
+                continue;
+            }
+
+            EventAttachmentEntity attachment = new EventAttachmentEntity();
+            attachment.setEvent(event);
+            attachment.setUploadedBy(actor);
+            attachment.setFileName(requestAttachment.getName().trim());
+            attachment.setFileUrl(normalizeAttachmentUrl(requestAttachment.getFileUrl()));
+            attachment.setFileSizeKb(normalizeAttachmentSize(requestAttachment.getSize()));
+            attachment.setType(resolveAttachmentType(requestAttachment));
+            attachments.add(attachment);
+        }
+
+        return attachments;
+    }
+
+    private Integer normalizeAttachmentSize(Integer size) {
+        if (size == null || size <= 0) {
+            return 0;
+        }
+        return size;
+    }
+
+    private String normalizeAttachmentUrl(String fileUrl) {
+        return fileUrl == null ? "" : fileUrl.trim();
+    }
+
+    private AttachmentTypeEnum resolveAttachmentType(CalendarEventAttachmentDTO attachment) {
+        if (!isBlank(attachment.getType())) {
+            try {
+                return AttachmentTypeEnum.valueOf(attachment.getType().trim().toUpperCase());
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+
+        String fileName = attachment.getName().toLowerCase();
+        boolean isImage = fileName.endsWith(".png")
+                || fileName.endsWith(".jpg")
+                || fileName.endsWith(".jpeg")
+                || fileName.endsWith(".gif")
+                || fileName.endsWith(".webp")
+                || fileName.endsWith(".svg");
+
+        return isImage ? AttachmentTypeEnum.IMAGE : AttachmentTypeEnum.FILE;
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     // Xóa event (chỉ creator)

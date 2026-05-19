@@ -3,6 +3,7 @@ import { computed } from "vue";
 import dayjs from "dayjs";
 import type { CalendarEvent } from "@/types/CalendarEvent";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const props = defineProps<{
   currentDate: dayjs.Dayjs;
@@ -16,8 +17,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "selectDate", date: dayjs.Dayjs): void;
-  (e: "editEvent", event: CalendarEvent): void;
-  (e: "deleteEvent", event: CalendarEvent): void;
+  (e: "viewEvent", event: CalendarEvent): void;
 }>();
 
 /**
@@ -79,13 +79,11 @@ const hasEvent = (date: dayjs.Dayjs) => {
 
 const isCurrentMonth = (date: dayjs.Dayjs) => date.month() === props.currentDate.month();
 
-// Kiểm tra quyền hạn
-const canEdit = (event: CalendarEvent) => {
-  return event.createdById === props.currentUserId || event.allowEditAll;
-};
-
-const canDelete = (event: CalendarEvent) => {
-  return event.createdById === props.currentUserId;
+const getCreatorLabel = (event: CalendarEvent) => {
+  if (event.createdById === props.currentUserId) {
+    return "Do bạn tạo";
+  }
+  return event.createdByDisplayName || event.createdByUsername;
 };
 </script>
 
@@ -170,7 +168,8 @@ const canDelete = (event: CalendarEvent) => {
           <div
             v-for="event in selectedDateEvents"
             :key="event.id"
-            class="group rounded-xl border-2 border-border bg-background p-0 text-foreground shadow-[0_20px_42px_-32px_var(--color-primary)] transition-all duration-200 hover:-translate-y-1 hover:border-primary"
+            class="group cursor-pointer rounded-xl border-2 border-border bg-background p-0 text-foreground shadow-[0_20px_42px_-32px_var(--color-primary)] transition-all duration-200 hover:-translate-y-1 hover:border-primary"
+            @click="emit('viewEvent', event)"
           >
             <!-- Header Event -->
             <div class="flex items-center justify-between rounded-t-xl border-b-2 border-border bg-muted/40 px-4 py-3 transition-colors group-hover:bg-primary/5">
@@ -178,25 +177,7 @@ const canDelete = (event: CalendarEvent) => {
                 <div class="h-2.5 w-2.5 rounded-full bg-primary"></div>
                 <span class="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest group-hover:text-primary transition-colors">ID: {{ event.id?.substring(0, 6) || 'SYS' }}</span>
               </div>
-              <!-- Actions -->
-              <div class="flex gap-2">
-                <button
-                  v-if="canEdit(event)"
-                  @click.stop="emit('editEvent', event)"
-                  class="text-foreground hover:text-muted-foreground transition-colors"
-                  title="Chỉnh sửa"
-                >
-                  <i class="pi pi-pencil text-xs"></i>
-                </button>
-                <button
-                  v-if="canDelete(event)"
-                  @click.stop="emit('deleteEvent', event)"
-                  class="text-foreground hover:text-destructive transition-colors"
-                  title="Xóa"
-                >
-                  <i class="pi pi-trash text-xs"></i>
-                </button>
-              </div>
+              <span class="text-[10px] font-mono font-bold text-primary uppercase tracking-widest">XEM CHI TIẾT</span>
             </div>
             
             <div class="space-y-4 p-4">
@@ -228,10 +209,15 @@ const canDelete = (event: CalendarEvent) => {
                 <div class="flex flex-col">
                   <span class="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-wider">NGƯỜI TẠO</span>
                   <div class="flex items-center gap-2 mt-1">
-                    <div class="flex size-6 items-center justify-center rounded-full border border-border bg-muted">
-                      <i class="pi pi-user text-[10px] text-muted-foreground"></i>
-                    </div>
-                    <span class="font-mono text-xs font-bold uppercase truncate max-w-[150px]">{{ event.createdByDisplayName }}</span>
+                    <Avatar class="size-6 border border-border">
+                      <AvatarImage
+                        v-if="event.createdByAvatarUrl"
+                        :src="event.createdByAvatarUrl"
+                        :alt="getCreatorLabel(event)"
+                      />
+                      <AvatarFallback />
+                    </Avatar>
+                    <span class="font-mono text-xs font-bold uppercase truncate max-w-[150px]">{{ getCreatorLabel(event) }}</span>
                   </div>
                 </div>
               </div>

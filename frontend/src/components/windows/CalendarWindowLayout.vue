@@ -12,9 +12,11 @@ import CalendarMonthView from "@/components/calendar/views/CalendarMonthView.vue
 import CalendarWeekView from "@/components/calendar/views/CalendarWeekView.vue";
 import CalendarYearView from "@/components/calendar/views/CalendarYearView.vue";
 import CalendarEventDialog from "@/components/calendar/dialogs/CalendarEventDialog.vue";
+import CalendarEventViewDialog from "@/components/calendar/dialogs/CalendarEventViewDialog.vue";
 import CalendarToolbar from "@/components/calendar/sub-components/CalendarToolbar.vue";
 import CalendarNotificationDialog from "@/components/calendar/dialogs/CalendarNotificationDialog.vue";
 import type { NotificationType } from "@/components/calendar/dialogs/CalendarNotificationDialog.vue";
+import type { EventFormData } from "@/components/calendar/composables/useEventForm";
 
 // Store state
 const spaceStore = useSpaceStore();
@@ -53,21 +55,54 @@ const {
 
 // Event modal state
 const showDialog = ref(false);
+const showViewDialog = ref(false);
 const isEditing = ref(false);
 const editingEventId = ref<string | undefined>(undefined);
-const initialFormData = ref({
+const selectedEvent = ref<CalendarEvent | null>(null);
+const initialFormData = ref<EventFormData>({
   title: "",
   description: "",
   eventDate: "",
   startTime: "09:00",
   endTime: "10:00",
+  recurrenceType: "NONE",
+  recurrenceEndDate: undefined,
   allowEditAll: false,
+  attendees: [],
+  attachments: [],
+});
+
+const createInitialFormData = (overrides: Partial<EventFormData> = {}): EventFormData => ({
+  title: "",
+  description: "",
+  eventDate: "",
+  startTime: "09:00",
+  endTime: "10:00",
+  recurrenceType: "NONE",
+  recurrenceEndDate: undefined,
+  allowEditAll: false,
+  attendees: [],
+  attachments: [],
+  ...overrides,
+});
+
+const createFormDataFromEvent = (event: CalendarEvent): EventFormData => createInitialFormData({
+  title: event.title,
+  description: event.description || "",
+  eventDate: event.eventDate,
+  startTime: event.startTime.substring(0, 5),
+  endTime: event.endTime.substring(0, 5),
+  recurrenceType: event.recurrenceType || "NONE",
+  recurrenceEndDate: event.recurrenceEndDate,
+  allowEditAll: event.allowEditAll,
+  attendees: event.attendees || [],
+  attachments: event.attachments || [],
 });
 
 // Điều hướng bằng bàn phím
 const handleKeyDown = (e: KeyboardEvent) => {
   // Không điều hướng nếu đang mở dialog hoặc đang nhập liệu
-  if (showDialog.value || notificationState.value.show) return;
+  if (showDialog.value || showViewDialog.value || notificationState.value.show) return;
   
   const target = e.target as HTMLElement;
   if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
@@ -110,14 +145,11 @@ const openCreateDialog = () => {
   const endM = now.getMinutes().toString().padStart(2, '0');
   const endTime = `${endH}:${endM}`;
 
-  initialFormData.value = {
-    title: "",
-    description: "",
+  initialFormData.value = createInitialFormData({
     eventDate: selectedDate.value.format("YYYY-MM-DD"),
     startTime,
     endTime,
-    allowEditAll: false,
-  };
+  });
   showDialog.value = true;
 };
 
@@ -126,30 +158,30 @@ const openSuggestedCreateDialog = (draft: SuggestedEventDraft) => {
   editingEventId.value = undefined;
 
   // Draft này đã được chuẩn hóa từ suggestion trước khi chuyển sang kênh lịch.
-  initialFormData.value = {
+  initialFormData.value = createInitialFormData({
     title: draft.title,
     description: draft.description,
     eventDate: draft.eventDate,
     startTime: draft.startTime,
     endTime: draft.endTime,
     allowEditAll: draft.allowEditAll,
-  };
+  });
 
   showDialog.value = true;
+};
+
+const openViewDialog = (event: CalendarEvent) => {
+  selectedEvent.value = event;
+  showViewDialog.value = true;
 };
 
 // Mở chức năng sửa sự kiện
 const openEditDialog = (event: CalendarEvent) => {
   isEditing.value = true;
+  selectedEvent.value = event;
   editingEventId.value = event.id;
-  initialFormData.value = {
-    title: event.title,
-    description: event.description || "",
-    eventDate: event.eventDate,
-    startTime: event.startTime.substring(0, 5),
-    endTime: event.endTime.substring(0, 5),
-    allowEditAll: event.allowEditAll,
-  };
+  initialFormData.value = createFormDataFromEvent(event);
+  showViewDialog.value = false;
   showDialog.value = true;
 };
 
@@ -159,26 +191,101 @@ const notificationState = ref({
   type: "info" as NotificationType,
   title: "",
   message: "",
+  confirmText: "ĐỒNG Ý",
+  cancelText: "HỦY",
 });
 
-const showNotification = (type: NotificationType, title: string, message: string) => {
-  notificationState.value = { show: true, type, title, message };
+const showNotification = (
+  type: NotificationType,
+  title: string,
+  message: string,
+  options?: { confirmText?: string; cancelText?: string },
+) => {
+  notificationState.value = {
+    show: true,
+    type,
+    title,
+    message,
+    confirmText: options?.confirmText || "ĐỒNG Ý",
+    cancelText: options?.cancelText || "HỦY",
+  };
+};
+
+const isSavingEvent = ref(false);
+const pendingSavePayload = ref<{
+  isEditing: boolean;
+  eventId?: string;
+  data: EventFormData;
+} | null>(null);
+
+const buildConflictMessage = (conflicts: CalendarEvent[]) => {
+  const items = conflicts
+    .slice(0, 4)
+    .map(
+      (event) =>
+        `<li><span class="text-foreground font-bold">${event.title}</span> (${event.startTime.substring(0, 5)} - ${event.endTime.substring(0, 5)})</li>`,
+    )
+    .join("");
+  const moreCount = conflicts.length - 4;
+  const moreMessage = moreCount > 0 ? `<p class="mt-2">VÀ ${moreCount} SỰ KIỆN KHÁC.</p>` : "";
+
+  return `
+    <p>CÓ ${conflicts.length} LỊCH ĐANG BỊ TRÙNG THỜI GIAN.</p>
+    <ul class="mt-3 ml-5 list-disc space-y-1">${items}</ul>
+    ${moreMessage}
+    <p class="mt-3">BẠN VẪN MUỐN LƯU SỰ KIỆN NÀY KHÔNG?</p>
+  `;
+};
+
+const persistEvent = async (payload: { isEditing: boolean; eventId?: string; data: EventFormData }) => {
+  isSavingEvent.value = true;
+  try {
+    if (payload.isEditing && payload.eventId) {
+      await updateEvent(payload.eventId, payload.data);
+    } else {
+      await createEvent(payload.data);
+    }
+    showDialog.value = false;
+    showViewDialog.value = false;
+    notificationState.value.show = false;
+    pendingSavePayload.value = null;
+  } catch (err: any) {
+    console.error("Lỗi khi lưu sự kiện:", err);
+    pendingSavePayload.value = null;
+    const msg = err.response?.data || "CÓ LỖI XẢY RA KHI LƯU SỰ KIỆN!";
+    showNotification("error", "LỖI LƯU SỰ KIỆN", msg);
+  } finally {
+    isSavingEvent.value = false;
+  }
 };
 
 // Submit lưu sự kiện
-const handleSaveEvent = async (data: any) => {
-  try {
-    if (isEditing.value && editingEventId.value) {
-      await updateEvent(editingEventId.value, data);
-    } else {
-      await createEvent(data);
-    }
-    showDialog.value = false;
-  } catch (err: any) {
-    console.error("Lỗi khi lưu sự kiện:", err);
-    const msg = err.response?.data || "CÓ LỖI XẢY RA KHI LƯU SỰ KIỆN!";
-    showNotification("error", "LỖI LƯU SỰ KIỆN", msg);
+const handleSaveEvent = async (data: EventFormData) => {
+  const payload = {
+    isEditing: isEditing.value,
+    eventId: editingEventId.value,
+    data,
+  };
+
+  const conflicts = await checkConflicts(
+    data.eventDate,
+    data.startTime,
+    data.endTime,
+    payload.isEditing ? payload.eventId : undefined,
+  );
+
+  if (conflicts.length > 0) {
+    pendingSavePayload.value = payload;
+    showNotification(
+      "confirm",
+      "LỊCH BỊ TRÙNG",
+      buildConflictMessage(conflicts),
+      { confirmText: "VẪN LƯU", cancelText: "HỦY" },
+    );
+    return;
   }
+
+  await persistEvent(payload);
 };
 
 // Delete modal state (Dùng Notification Dialog)
@@ -187,6 +294,7 @@ const eventToDelete = ref<CalendarEvent | null>(null);
 
 // Chuẩn bị xoá sự kiện
 const handleDeleteEvent = (event: CalendarEvent) => {
+  showViewDialog.value = false;
   eventToDelete.value = event;
   showNotification(
     "delete", 
@@ -217,6 +325,24 @@ const executeDelete = async () => {
 const handleNotificationConfirm = () => {
   if (notificationState.value.type === 'delete') {
     executeDelete();
+    return;
+  }
+
+  if (notificationState.value.type === 'confirm' && pendingSavePayload.value) {
+    persistEvent(pendingSavePayload.value);
+    return;
+  }
+
+  notificationState.value.show = false;
+};
+
+const handleNotificationCancel = () => {
+  if (notificationState.value.type === "confirm") {
+    pendingSavePayload.value = null;
+  }
+
+  if (notificationState.value.type === "delete") {
+    eventToDelete.value = null;
   } else {
     notificationState.value.show = false;
   }
@@ -252,19 +378,26 @@ watch(
 
       <CalendarMonthView v-if="viewMode === 'month'" :current-date="currentDate" :selected-date="selectedDate"
         :events="events" :current-user-id="currentUserId" :day-names="dayNamesLong" :is-today="isToday"
-        :is-selected="isSelected" @select-date="selectDate" @edit-event="openEditDialog"
-        @delete-event="handleDeleteEvent" />
+        :is-selected="isSelected" @select-date="selectDate" @view-event="openViewDialog" />
 
       <CalendarWeekView v-if="viewMode === 'week'" :current-date="currentDate" :selected-date="selectedDate"
         :events="events" :day-names="dayNamesLong" :is-today="isToday" :is-selected="isSelected" @select-date="selectDate"
-        @edit-event="openEditDialog" />
+        @view-event="openViewDialog" />
 
       <CalendarYearView v-if="viewMode === 'year'" :current-date="currentDate" :events="events" :is-today="isToday"
         @click-year-month="setYearMonth" />
     </div>
 
+    <CalendarEventViewDialog
+      v-model:show="showViewDialog"
+      :event="selectedEvent"
+      :current-user-id="currentUserId"
+      @edit="openEditDialog"
+      @delete="handleDeleteEvent"
+    />
+
     <CalendarEventDialog v-model:show="showDialog" :is-editing="isEditing" :initial-data="initialFormData"
-      :check-conflicts="checkConflicts" :editing-event-id="editingEventId" @save="handleSaveEvent" />
+      @save="handleSaveEvent" />
 
     <!-- Unified Notification Dialog -->
     <CalendarNotificationDialog 
@@ -272,8 +405,11 @@ watch(
       :type="notificationState.type"
       :title="notificationState.title"
       :message="notificationState.message"
-      :is-loading="isDeletingEvent"
+      :confirm-text="notificationState.confirmText"
+      :cancel-text="notificationState.cancelText"
+      :is-loading="isDeletingEvent || isSavingEvent"
       @confirm="handleNotificationConfirm" 
+      @cancel="handleNotificationCancel"
     />
   </div>
 </template>

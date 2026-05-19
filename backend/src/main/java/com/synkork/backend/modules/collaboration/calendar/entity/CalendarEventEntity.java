@@ -48,10 +48,10 @@ public class CalendarEventEntity extends BaseEntity {
     @JoinColumn(name="created_by",nullable = false, columnDefinition = "BINARY(16)")
     private UserEntity createdBy;
 
-    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EventAttendeeEntity> attendees;
 
-    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EventAttachmentEntity> attachments;
 
 

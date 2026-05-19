@@ -6,3 +6,4 @@ llm/
 developCode/
 # Bỏ qua file khóa skill sinh ra trên máy local.
 skills-lock.json
+docs/

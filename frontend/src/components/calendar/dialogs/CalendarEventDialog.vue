@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { watch } from "vue";
-import { AlertTriangle } from "lucide-vue-next";
-import type { CalendarEvent } from "@/types/CalendarEvent";
+import { CalendarPlus2, Pencil, X } from "lucide-vue-next";
+import { Button } from "@/components/ui/button";
 import CalendarNotificationDialog from "./CalendarNotificationDialog.vue";
 import EventTimeSection from "../sub-components/EventTimeSection.vue";
 import EventRecurrenceSection from "../sub-components/EventRecurrenceSection.vue";
@@ -14,8 +14,6 @@ const props = defineProps<{
   show: boolean;
   isEditing: boolean;
   initialData: EventFormData;
-  checkConflicts: (date: string, start: string, end: string, excludeId?: string) => Promise<CalendarEvent[]>;
-  editingEventId?: string;
 }>();
 
 const emit = defineEmits<{
@@ -25,10 +23,10 @@ const emit = defineEmits<{
 
 // Logic điều khiển Form
 const {
-  formData, conflictEvents,
+  formData,
   warningMessage, showWarning,
   validate, resetForm,
-} = useEventForm(props.initialData, props.checkConflicts, props.isEditing, props.editingEventId);
+} = useEventForm(props.initialData, props.isEditing);
 
 // Các hàm xử lý cập nhật dữ liệu từ component con
 const onTimeChange = (data: { eventDate: string; startTime: string; endTime: string }) => {
@@ -79,9 +77,10 @@ const handleSubmit = (): void => {
 
         <!-- Header -->
         <div class="sticky top-0 z-10 border-b-2 border-border bg-background/95 px-6 pb-4 pt-6 backdrop-blur">
-          <div class="inline-flex rounded-full border border-primary/20 bg-primary/10 px-4 py-2">
+          <div class="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2">
+            <component :is="isEditing ? Pencil : CalendarPlus2" class="text-primary" data-icon="inline-start" />
             <h2 class="text-lg font-mono font-bold uppercase tracking-widest text-primary">
-            {{ isEditing ? "Chỉnh sửa sự kiện" : "Thêm sự kiện mới" }}
+              {{ isEditing ? "Chỉnh sửa sự kiện" : "Thêm sự kiện mới" }}
             </h2>
           </div>
         </div>
@@ -121,22 +120,6 @@ const handleSubmit = (): void => {
                 :event-date="formData.eventDate"
                 @change="onRecurrenceChange"
               />
-
-              <!-- Cảnh báo trùng giờ -->
-              <div v-if="conflictEvents.length > 0"
-                class="rounded-xl border-2 border-accent bg-accent/10 p-4 shadow-[0_20px_40px_-32px_var(--color-accent)]">
-                <div class="flex items-center gap-2.5 text-accent text-[10px] font-mono font-bold uppercase tracking-widest mb-2">
-                  <AlertTriangle :size="14" />
-                  TRÙNG GIỜ VỚI {{ conflictEvents.length }} SỰ KIỆN:
-                </div>
-                <ul class="ml-6 space-y-1.5 text-xs font-mono text-accent/80">
-                  <li v-for="c in conflictEvents" :key="c.id" class="list-disc leading-relaxed uppercase">
-                    <span class="font-bold text-accent">{{ c.title }}</span><br />
-                    <span class="text-[10px] italic">({{ c.startTime.substring(0, 5) }} - {{ c.endTime.substring(0, 5) }})</span>
-                  </li>
-                </ul>
-              </div>
-
               <!-- Người tham gia Section -->
               <EventAttendeesSection
                 :show="show"
@@ -162,12 +145,22 @@ const handleSubmit = (): void => {
           <!-- Footer actions -->
           <div
             class="sticky bottom-0 z-10 flex justify-end gap-3 border-t-2 border-border bg-background/95 p-6 pt-4 backdrop-blur">
-            <button type="button" @click="emit('update:show', false)"
-              class="rounded-full border-2 border-border bg-background px-5 py-2.5 font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground transition-all hover:-translate-y-0.5 hover:border-foreground hover:text-foreground">HỦY</button>
-            <button type="submit"
-              class="rounded-full border-2 border-primary bg-primary px-6 py-2.5 font-mono text-xs font-bold uppercase tracking-widest text-primary-foreground shadow-[0_16px_34px_-22px_var(--color-primary)] transition-all hover:-translate-y-0.5 hover:bg-background hover:text-primary">
+            <Button
+              type="button"
+              variant="outline"
+              class="rounded-full border-2 font-mono text-xs font-bold uppercase tracking-widest"
+              @click="emit('update:show', false)"
+            >
+              <X data-icon="inline-start" />
+              Hủy
+            </Button>
+            <Button
+              type="submit"
+              class="rounded-full border-2 border-primary bg-primary font-mono text-xs font-bold uppercase tracking-widest text-primary-foreground shadow-[0_16px_34px_-22px_var(--color-primary)] hover:bg-background hover:text-primary"
+            >
+              <component :is="isEditing ? Pencil : CalendarPlus2" data-icon="inline-start" />
               {{ isEditing ? "CẬP NHẬT" : "TẠO SỰ KIỆN" }}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
