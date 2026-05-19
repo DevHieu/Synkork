@@ -23,6 +23,7 @@ const audio = reactive({
   inputVolume: 70,
   inputMuted: false,
   outputVolume: 85,
+  outputMuted: false,
   notificationVolume: 60,
   notificationMuted: false,
 
@@ -90,39 +91,53 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  globalAudio.stopMicTest()
+  globalAudio.stopSpeakerTest()
   navigator.mediaDevices?.removeEventListener("devicechange", updateDeviceList)
-  if (micTestInterval) clearInterval(micTestInterval)
 })
+
 
 const isMicTesting = ref(false)
 const micLevel = ref(0)
-let micTestInterval: any = null
 
-const toggleMicTest = () => {
-  isMicTesting.value = !isMicTesting.value
+const toggleMicTest = async () => {
   if (isMicTesting.value) {
-    micTestInterval = setInterval(() => {
-      micLevel.value = Math.floor(Math.random() * 70 + 10)
-    }, 150)
-  } else {
-    clearInterval(micTestInterval)
+    globalAudio.stopMicTest()
+    isMicTesting.value = false
     micLevel.value = 0
+  } else {
+    isMicTesting.value = true
+    await globalAudio.startMicTest(audio.inputDevice, (level) => {
+      micLevel.value = Math.round((level / 255) * 100)
+    })
   }
 }
 
-// const onVolumeChange = (values: number[]) => {
-//   if (values.length > 0) {
-//     globalAudio.setMasterVolume(values[0])
-//   }
-// }
+const isSpeakerTesting = ref(false)
+
+const toggleSpeakerTest = async () => {
+  if (isSpeakerTesting.value) {
+    globalAudio.stopSpeakerTest()
+    isSpeakerTesting.value = false
+  } else {
+    isSpeakerTesting.value = true
+    await globalAudio.testOutput(audio.outputDevice, "/assets/sounds/outputTest.mp3", () => {
+      // Callback khi audio kết thúc tự nhiên
+      isSpeakerTesting.value = false
+    })
+  }
+}
 
 const handleOutputDeviceChange = async (deviceId: string) => {
+  isSpeakerTesting.value = false
+  await globalAudio.stopSpeakerTest();
   await globalAudio.changeGlobalOutput(deviceId)
 }
 
 const handleInputDeviceChange = (deviceId: string) => {
-  console.log("Mic vừa đổi thành:", deviceId)
-
+  isMicTesting.value = false
+  micLevel.value = 0
+  globalAudio.stopMicTest();
   useVoiceSpaceStore().changeInputDevice(deviceId)
 }
 </script>
@@ -222,12 +237,26 @@ const handleInputDeviceChange = (deviceId: string) => {
                 </SelectItem>
               </SelectContent>
             </Select>
-
             <div class="flex items-center gap-3">
-              <Volume2 class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-              <Slider :min="0" :max="100" :step="1" :model-value="[audio.outputVolume]" class="flex-1"
+              <Button variant="outline" size="icon" class="w-7 h-7 shrink-0"
+                @click="audio.outputMuted = !audio.outputMuted">
+                <component :is="getVolumeIcon(audio.outputMuted, audio.inputVolume)" class="w-3.5 h-3.5" />
+              </Button>
+              <Slider :min="0" :max="100" :step="1" :model-value="[audio.outputMuted ? 0 : audio.outputVolume]"
+                :disabled="audio.outputMuted" class="flex-1"
                 @update:model-value="(val) => audio.outputVolume = val[0]" />
-              <span class="text-xs font-medium w-8 text-right">{{ audio.outputVolume }}%</span>
+              <span class="text-xs font-medium w-8 text-right">
+                {{ audio.outputMuted ? '0' : audio.inputVolume }}%
+              </span>
+            </div>
+
+            <!-- Mic test -->
+            <div class="space-y-2 pt-1">
+              <Button variant="secondary" size="sm" class="w-full text-xs h-7"
+                :class="{ 'bg-destructive text-destructive-foreground hover:bg-destructive/90': isSpeakerTesting }"
+                @click="toggleSpeakerTest">
+                {{ isSpeakerTesting ? 'Dừng kiểm tra' : 'Kiểm tra loa' }}
+              </Button>
             </div>
           </CardContent>
         </Card>
