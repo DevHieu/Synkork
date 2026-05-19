@@ -3,6 +3,7 @@ import type { ZegoState } from "@/types/ZegoType";
 import type { Ref } from "vue";
 import { zegoUtils } from "./zegoUtils";
 import globalAudio from "@/utils/appAudioManager";
+import { useLocalStorage } from "@vueuse/core";
 
 export function zegoRemoteStream(
   state: ZegoState,
@@ -49,12 +50,15 @@ export function zegoRemoteStream(
     const audioRemoteStream = await state.zg.startPlayingStream(streamId);
     remoteStreamsList.set(streamId, audioRemoteStream);
 
-    // state.zg.createRemoteStreamView(audioRemoteStream).play("audio-players", {
-    //   audio: true, // Phải setup lại ở đây để zego biết đường mà gắn. Tại vì mặc định nó sẽ gửi cả video cả audio
-    //   video: false,
-    // } as any);
-
     globalAudio.connectRemoteStream(streamId, audioRemoteStream);
+
+    // Apply callVolume hiện tại ngay lập tức
+    const audio = useLocalStorage("app-audio-settings", {
+      callVolume: 90,
+      callMuted: false,
+    });
+    const vol = audio.value.callMuted ? 0 : audio.value.callVolume;
+    globalAudio.setRemoteVolume(vol);
   };
 
   const playRemoteScreenStream = async (streamId: string, userId: string) => {

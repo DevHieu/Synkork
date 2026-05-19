@@ -1,4 +1,20 @@
+import { useLocalStorage } from "@vueuse/core";
+
+const audio = useLocalStorage("app-audio-settings", {
+  inputVolume: 70,
+  inputMuted: false,
+
+  outputVolume: 100,
+  outputMuted: false,
+
+  callVolume: 90,
+  callMuted: false,
+
+  systemVolume: 75,
+  systemMuted: false,
+});
 class AppAudioManager {
+  private currentInputVolume: number = 70;
   private audioCtx: AudioContext;
   private masterGain: GainNode;
   private audioElements = new Map<string, HTMLAudioElement>();
@@ -20,6 +36,8 @@ class AppAudioManager {
     const savedDeviceId = localStorage.getItem("selectedOutputDevice");
     if (!savedDeviceId || savedDeviceId === "default") return;
 
+    this.syncAudioSettings(audio.value);
+
     if ("setSinkId" in this.audioCtx) {
       try {
         await (this.audioCtx as any).setSinkId(savedDeviceId);
@@ -27,6 +45,25 @@ class AppAudioManager {
         console.warn("[AudioManager] init setSinkId lỗi:", err);
       }
     }
+  }
+
+  syncAudioSettings(settings: typeof audio.value) {
+    // Tỉ lệ của âm lượng tổng (từ 0.0 đến 1.0). Nếu mute tổng thì tỉ lệ bằng 0.
+    const masterScale = settings.outputMuted ? 0 : settings.outputVolume / 100;
+
+    // Mic
+    const actualInputVol = settings.inputMuted ? 0 : settings.inputVolume;
+    this.setMicroVolume(actualInputVol);
+
+    // Call
+    const baseCallVol = settings.callMuted ? 0 : settings.callVolume;
+    const actualCallVol = Math.round(baseCallVol * masterScale);
+    this.setRemoteVolume(actualCallVol);
+
+    // System
+    const baseSysVol = settings.systemMuted ? 0 : settings.systemVolume;
+    const actualSysVol = Math.round(baseSysVol * masterScale);
+    this.setSystemVolume(actualSysVol);
   }
 
   connectRemoteStream(streamId: string, mediaStream: MediaStream): void {
@@ -94,9 +131,36 @@ class AppAudioManager {
       );
   }
 
-  setMasterVolume(volume: number): void {
+  setMicroVolume(volume: number): void {
+    this.currentInputVolume = volume;
+    const normalized = Math.max(0, Math.min(100, volume)) / 100;
+
+    // Nếu mic đang test thì áp dụng thay đổi ngay lập tức lên node Gain của mic test
+    if (this.micTestGain) {
+      this.micTestGain.gain.setValueAtTime(
+        normalized,
+        this.audioCtx.currentTime,
+      );
+    }
+  }
+
+  setSystemVolume(volume: number): void {
     const normalized = Math.max(0, Math.min(100, volume)) / 100;
     this.masterGain.gain.setValueAtTime(normalized, this.audioCtx.currentTime);
+  }
+
+  setRemoteVolume(volume: number): void {
+    const normalized = Math.max(0, Math.min(100, volume)) / 100;
+
+    // Duyệt qua tất cả các thẻ audio của remote stream để giảm volume trực tiếp
+    for (const el of this.audioElements.values()) {
+      el.volume = normalized;
+    }
+
+    // Đồng thời áp dụng cho cả thiết bị test loa nếu nó đang chạy
+    if (this.speakerTestEl) {
+      this.speakerTestEl.volume = normalized;
+    }
   }
 
   async startMicTest(
@@ -115,23 +179,25 @@ class AppAudioManager {
       this.micAnalyser = this.audioCtx.createAnalyser();
       this.micAnalyser.fftSize = 256;
 
-      // Delay node để tránh echo feedback
       const delay = this.audioCtx.createDelay(0.5);
       delay.delayTime.value = 0.1;
 
-      // Gain riêng cho mic test để tắt được
       this.micTestGain = this.audioCtx.createGain();
-      this.micTestGain.gain.value = 1;
 
-      // source → analyser (đọc level) → delay → gain → destination (nghe tiếng)
-      source.connect(this.micAnalyser);
-      source.connect(delay);
-      delay.connect(this.micTestGain);
-      this.micTestGain.connect(this.audioCtx.destination);
+      const normalized =
+        Math.max(0, Math.min(100, this.currentInputVolume)) / 100;
+      this.micTestGain.gain.value = normalized;
+
+      source.connect(this.micTestGain);
+      this.micTestGain.connect(this.micAnalyser);
+
+      this.micTestGain.connect(delay);
+      delay.connect(this.audioCtx.destination);
 
       const dataArray = new Uint8Array(this.micAnalyser.frequencyBinCount);
       const tick = () => {
-        this.micAnalyser!.getByteFrequencyData(dataArray);
+        if (!this.micAnalyser) return; // Bảo vệ an toàn đề phòng bị stop bất chợt
+        this.micAnalyser.getByteFrequencyData(dataArray);
         const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
         onLevel(Math.round(avg));
         this.micTestAnimFrame = requestAnimationFrame(tick);
@@ -175,8 +241,13 @@ class AppAudioManager {
     this.stopSpeakerTest();
 
     const el = document.createElement("audio");
+
+    if (this.masterGain) {
+      el.volume = this.masterGain.gain.value;
+    }
+
     el.src = soundUrl;
-    el.loop = true; // Loop để không tự kết thúc, dừng bằng stopSpeakerTest
+    el.loop = true;
     el.style.display = "none";
     document.body.appendChild(el);
     this.speakerTestEl = el;
