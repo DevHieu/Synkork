@@ -46,3 +46,6 @@ coverage/
 
 # Cache local cua npm khi chay lenh trong frontend
 .npm-cache/
+
+# Project docs
+docs.md

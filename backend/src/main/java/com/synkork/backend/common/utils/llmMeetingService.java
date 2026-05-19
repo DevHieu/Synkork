@@ -144,11 +144,24 @@ public class llmMeetingService {
             );
 
             JsonNode rootNode = objectMapper.readTree(response.getBody());
-            String result = rootNode.path("choices").get(0).path("message").path("content").asText();
-            System.out.println("LLM Summary Result: " + result);
-            return result;
+            String rawResult = rootNode.path("choices").get(0).path("message").path("content").asText();
+            String sanitizedResult = sanitizeJsonResult(rawResult);
+            System.out.println("LLM Summary Result: " + sanitizedResult);
+            return sanitizedResult;
         } catch (Exception e) {
             System.err.println("Summary Error: " + e.getMessage());
+            return "{}";
+        }
+    }
+
+    private String sanitizeJsonResult(String rawResult) {
+        String sanitized = LlmJsonSanitizer.sanitize(rawResult);
+
+        try {
+            objectMapper.readTree(sanitized);
+            return sanitized;
+        } catch (Exception validationError) {
+            System.err.println("LLM meeting summary trả về JSON không hợp lệ sau khi sanitize: " + sanitized);
             return "{}";
         }
     }

@@ -15,7 +15,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "selectDate", date: dayjs.Dayjs): void;
-  (e: "editEvent", event: CalendarEvent): void;
+  (e: "viewEvent", event: CalendarEvent): void;
 }>();
 
 // Tính toán các ngày trong tuần hiện tại
@@ -82,7 +82,7 @@ const getEventsForDate = (date: dayjs.Dayjs) => {
             <div
               v-for="event in getEventsForDate(date)"
               :key="event.id"
-              @click="emit('editEvent', event)"
+              @click="emit('viewEvent', event)"
               class="cursor-pointer rounded-xl border-2 border-border bg-muted/35 p-3 text-foreground shadow-[0_16px_28px_-28px_var(--color-primary)] transition-all hover:-translate-y-0.5 hover:border-primary hover:bg-background"
             >
               <p class="text-xs font-mono font-bold truncate uppercase text-primary">
