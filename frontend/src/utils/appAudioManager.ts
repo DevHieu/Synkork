@@ -1,97 +1,99 @@
 class AppAudioManager {
-  // Định nghĩa kiểu dữ liệu cho thuộc tính trong class
   private audioCtx: AudioContext;
   private masterGain: GainNode;
+  private audioElements = new Map<string, HTMLAudioElement>();
 
   constructor() {
-    // Dự phòng trường hợp trình duyệt cũ, ép kiểu window về any để lấy webkitAudioContext
     const AudioContextClass =
       window.AudioContext || (window as any).webkitAudioContext;
-
-    // 1. Tạo "bàn mixer" trung tâm cho toàn app
     this.audioCtx = new AudioContextClass();
-
-    // Tạo một GainNode (bộ điều khiển âm lượng tổng của app)
     this.masterGain = this.audioCtx.createGain();
     this.masterGain.connect(this.audioCtx.destination);
   }
 
-  /**
-   * Hàm đổi thiết bị đầu ra cho TOÀN BỘ âm thanh đi qua mixer này
-   * @param deviceId ID của thiết bị đầu ra (loa/tai nghe) lấy từ enumerateDevices()
-   */
-  async changeGlobalOutput(deviceId: string): Promise<void> {
-    // Kiểm tra tính năng setSinkId có tồn tại trong audioCtx không
+  async init(): Promise<void> {
+    const savedDeviceId = localStorage.getItem("selectedOutputDevice");
+    if (!savedDeviceId || savedDeviceId === "default") return;
+
     if ("setSinkId" in this.audioCtx) {
       try {
-        // Ép kiểu qua 'any' để đánh lừa bộ kiểm tra của TypeScript vì setSinkId là API mới
-        await (this.audioCtx as any).setSinkId(deviceId);
-        console.log(
-          `[AudioManager] Đã đổi thiết bị đầu ra toàn app sang: ${deviceId}`,
-        );
+        await (this.audioCtx as any).setSinkId(savedDeviceId);
       } catch (err) {
-        console.error("[AudioManager] Lỗi khi đổi thiết bị đầu ra:", err);
+        console.warn("[AudioManager] init setSinkId lỗi:", err);
       }
-    } else {
-      console.warn(
-        "[AudioManager] Trình duyệt không hỗ trợ setSinkId trên AudioContext",
-      );
     }
   }
 
-  /**
-   * Hàm dùng để phát tiếng thông báo hệ thống (Notification, Click...)
-   * @param soundUrl Đường dẫn file âm thanh (ví dụ: '/sounds/ting.mp3')
-   */
+  connectRemoteStream(streamId: string, mediaStream: MediaStream): void {
+    // Cleanup cái cũ nếu có
+    this.disconnectRemoteStream(streamId);
+
+    const el = document.createElement("audio");
+    el.autoplay = true;
+    el.srcObject = mediaStream;
+    el.style.display = "none";
+    document.body.appendChild(el);
+    this.audioElements.set(streamId, el);
+
+    // Áp output device hiện tại
+    const currentDeviceId = localStorage.getItem("selectedOutputDevice");
+    if (currentDeviceId && typeof (el as any).setSinkId === "function") {
+      (el as any).setSinkId(currentDeviceId).catch(console.warn);
+    }
+  }
+
+  disconnectRemoteStream(streamId: string): void {
+    const el = this.audioElements.get(streamId);
+    if (!el) return;
+    el.srcObject = null;
+    el.remove();
+    this.audioElements.delete(streamId);
+  }
+
+  async changeGlobalOutput(deviceId: string): Promise<void> {
+    localStorage.setItem("selectedOutputDevice", deviceId);
+
+    // Đổi AudioContext (cho notification sounds)
+    if ("setSinkId" in this.audioCtx) {
+      try {
+        await (this.audioCtx as any).setSinkId(deviceId);
+      } catch (err) {
+        console.warn("[AudioManager] AudioContext setSinkId lỗi:", err);
+      }
+    }
+
+    // Đổi tất cả audio element đang manage (voice call)
+    for (const el of this.audioElements.values()) {
+      if (typeof (el as any).setSinkId === "function") {
+        try {
+          await (el as any).setSinkId(deviceId);
+        } catch (err) {
+          console.warn("[AudioManager] element setSinkId lỗi:", err);
+        }
+      }
+    }
+  }
+
   playSystemSound(soundUrl: string): void {
     fetch(soundUrl)
-      .then((res: Response) => res.arrayBuffer())
-      .then((data: ArrayBuffer) => this.audioCtx.decodeAudioData(data))
-      .then((buffer: AudioBuffer) => {
-        const source: AudioBufferSourceNode =
-          this.audioCtx.createBufferSource();
+      .then((res) => res.arrayBuffer())
+      .then((data) => this.audioCtx.decodeAudioData(data))
+      .then((buffer) => {
+        const source = this.audioCtx.createBufferSource();
         source.buffer = buffer;
-
-        // Cắm dây âm thanh này vào bộ điều khiển tổng
         source.connect(this.masterGain);
         source.start();
       })
-      .catch((err: Error) => {
-        console.error(
-          `[AudioManager] Lỗi không thể phát âm thanh từ url: ${soundUrl}`,
-          err,
-        );
-      });
+      .catch((err) =>
+        console.error("[AudioManager] playSystemSound lỗi:", err),
+      );
   }
 
-  /**
-   * Hàm dùng để cắm luồng WebRTC cuộc gọi vào mixer tổng
-   * @param mediaStream Luồng stream nhận từ WebRTC (hoặc từ Zego)
-   */
-  connectRemoteStream(mediaStream: MediaStream): void {
-    // Biến cái stream nhận từ WebRTC thành một Node trong Web Audio
-    const source: MediaStreamAudioSourceNode =
-      this.audioCtx.createMediaStreamSource(mediaStream);
-
-    // Cắm vào bộ điều khiển tổng
-    source.connect(this.masterGain);
-  }
-
-  /**
-   * Tính năng tặng thêm: Thay đổi âm lượng tổng (Master Volume)
-   * @param volume Giá trị từ 0 đến 100
-   */
   setMasterVolume(volume: number): void {
-    // Giới hạn giá trị trong khoảng 0 -> 100
-    const normalizedVolume = Math.max(0, Math.min(100, volume)) / 100;
-    // Thay đổi âm lượng mượt mà bằng API của Web Audio
-    this.masterGain.gain.setValueAtTime(
-      normalizedVolume,
-      this.audioCtx.currentTime,
-    );
+    const normalized = Math.max(0, Math.min(100, volume)) / 100;
+    this.masterGain.gain.setValueAtTime(normalized, this.audioCtx.currentTime);
   }
 }
 
-// Khởi tạo một instance duy nhất (Singleton) để dùng xuyên suốt dự án
 const globalAudio = new AppAudioManager();
 export default globalAudio;

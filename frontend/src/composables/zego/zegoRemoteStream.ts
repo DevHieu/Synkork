@@ -2,6 +2,7 @@ import type { Participant } from "@/types/VoiceSpaceParticipant";
 import type { ZegoState } from "@/types/ZegoType";
 import type { Ref } from "vue";
 import { zegoUtils } from "./zegoUtils";
+import globalAudio from "@/utils/appAudioManager";
 
 export function zegoRemoteStream(
   state: ZegoState,
@@ -48,10 +49,12 @@ export function zegoRemoteStream(
     const audioRemoteStream = await state.zg.startPlayingStream(streamId);
     remoteStreamsList.set(streamId, audioRemoteStream);
 
-    state.zg.createRemoteStreamView(audioRemoteStream).play("audio-players", {
-      audio: true, // Phải setup lại ở đây để zego biết đường mà gắn. Tại vì mặc định nó sẽ gửi cả video cả audio
-      video: false,
-    } as any);
+    // state.zg.createRemoteStreamView(audioRemoteStream).play("audio-players", {
+    //   audio: true, // Phải setup lại ở đây để zego biết đường mà gắn. Tại vì mặc định nó sẽ gửi cả video cả audio
+    //   video: false,
+    // } as any);
+
+    globalAudio.connectRemoteStream(streamId, audioRemoteStream);
   };
 
   const playRemoteScreenStream = async (streamId: string, userId: string) => {
@@ -107,6 +110,9 @@ export function zegoRemoteStream(
           p.screenStreamID = undefined;
         }
       }
+    } else {
+      // Audio stream → cleanup audio element
+      globalAudio.disconnectRemoteStream(streamId);
     }
 
     participants.value = new Map(participants.value);

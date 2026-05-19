@@ -352,12 +352,6 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     zego.local.changeInputDevice(deviceId);
   };
 
-  const changeOutputDevice = (deviceId: string) => {
-    console.log("123: " + deviceId);
-
-    zego.local.changeOutputDevice(deviceId);
-  };
-
   return {
     zego,
     currentSpaceId,
@@ -386,6 +380,5 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     toggleAudioUser,
     stopUserVideo,
     changeInputDevice,
-    changeOutputDevice,
   };
 });

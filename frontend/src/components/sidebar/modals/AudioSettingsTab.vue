@@ -11,6 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator"
 import { Label } from "@/components/ui/label"
 import globalAudio from "@/utils/appAudioManager"
+import { useLocalStorage } from "@vueuse/core"
+
+
+const savedInputDevice = useLocalStorage("audio-input-device", "default")
+const savedOutputDevice = useLocalStorage("audio-output-device", "default")
 
 const audio = reactive({
   masterVolume: 80,
@@ -21,8 +26,11 @@ const audio = reactive({
   notificationVolume: 60,
   notificationMuted: false,
 
-  inputDevice: "default",
-  outputDevice: "default",
+  get inputDevice() { return savedInputDevice.value },
+  set inputDevice(val) { savedInputDevice.value = val },
+
+  get outputDevice() { return savedOutputDevice.value },
+  set outputDevice(val) { savedOutputDevice.value = val },
 
   notifySoundNewMessage: true,
   notifySoundRequest: true,
@@ -52,12 +60,24 @@ const updateDeviceList = async () => {
     const mics = devices
       .filter(d => d.kind === "audioinput")
       .map(d => ({ value: d.deviceId, label: d.label || `Microphone (${d.deviceId.slice(0, 5)}...)` }))
-    if (mics.length > 0) inputDevices.value = mics
+    if (mics.length > 0) {
+      inputDevices.value = mics
+      // ← Nếu device đã lưu không còn tồn tại (bị rút ra), fallback về default
+      if (!mics.find(d => d.value === savedInputDevice.value)) {
+        savedInputDevice.value = mics[0].value
+      }
+    }
 
     const speakers = devices
       .filter(d => d.kind === "audiooutput")
       .map(d => ({ value: d.deviceId, label: d.label || `Speaker (${d.deviceId.slice(0, 5)}...)` }))
-    if (speakers.length > 0) outputDevices.value = speakers
+    if (speakers.length > 0) {
+      outputDevices.value = speakers
+      // ← Tương tự cho output
+      if (!speakers.find(d => d.value === savedOutputDevice.value)) {
+        savedOutputDevice.value = speakers[0].value
+      }
+    }
 
   } catch (error) {
     console.error("Lỗi khi lấy danh sách thiết bị âm thanh:", error)
@@ -90,18 +110,14 @@ const toggleMicTest = () => {
   }
 }
 
-const onVolumeChange = (values: number[]) => {
-  if (values.length > 0) {
-    globalAudio.setMasterVolume(values[0])
-  }
-}
+// const onVolumeChange = (values: number[]) => {
+//   if (values.length > 0) {
+//     globalAudio.setMasterVolume(values[0])
+//   }
+// }
 
 const handleOutputDeviceChange = async (deviceId: string) => {
-  console.log("Loa vừa đổi thành:", deviceId)
-
-  // 1. Đổi loa cho tiếng thông báo (Hệ thống Mixer của mình)
   await globalAudio.changeGlobalOutput(deviceId)
-  await useVoiceSpaceStore().changeOutputDevice(deviceId)
 }
 
 const handleInputDeviceChange = (deviceId: string) => {

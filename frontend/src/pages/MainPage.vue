@@ -1,4 +1,11 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { onMounted } from "vue"
+import globalAudio from "@/utils/appAudioManager"
+
+onMounted(async () => {
+  await globalAudio.init()
+})
+</script>
 <template>
   <div>
     <!-- Bên folder layout để xem kĩ hơn -->
