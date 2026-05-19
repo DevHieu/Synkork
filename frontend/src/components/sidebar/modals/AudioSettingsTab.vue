@@ -1,401 +1,304 @@
 <script setup lang="ts">
-import { ref, reactive } from "vue"
-import { Volume2, VolumeX, Mic, Headphones, Bell, Music } from "lucide-vue-next"
+import { ref, watch, onMounted, onUnmounted } from "vue"
+import { useVoiceSpaceStore } from "@/stores/voiceSpaceStore"
+import { Volume2, VolumeX, Mic, Headphones, Bell } from "lucide-vue-next"
 
-const audio = reactive({
-  masterVolume: 80,
-  masterMuted: false,
+import { Slider } from "@/components/ui/slider"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Separator } from "@/components/ui/separator"
+import { Label } from "@/components/ui/label"
+import globalAudio from "@/utils/appAudioManager"
+import { useLocalStorage } from "@vueuse/core"
+
+const savedInputDevice = useLocalStorage("audio-input-device", "default")
+const savedOutputDevice = useLocalStorage("audio-output-device", "default")
+
+// Set mặc định thì như thế này, load từ local storage lên thì khác
+const audio = useLocalStorage("app-audio-settings", {
   inputVolume: 70,
   inputMuted: false,
-  outputVolume: 85,
-  notificationVolume: 60,
-  notificationMuted: false,
 
-  inputDevice: "default",
-  outputDevice: "default",
+  outputVolume: 100,
+  outputMuted: false,
 
-  echoCancellation: true,
-  noiseSuppression: true,
-  autoGainControl: true,
+  callVolume: 90,
+  callMuted: false,
 
-  notifySoundNewMessage: true,
-  notifySoundRequest: true,
-  notifySoundJoin: true,
-  notifySoundLeave: false,
+  systemVolume: 75,
+  systemMuted: false,
 })
 
-const inputDevices = [
-  { value: "default", label: "Mặc định (Microphone tích hợp)" },
-  { value: "mic1", label: "Headset Microphone" },
-]
-
-const outputDevices = [
-  { value: "default", label: "Mặc định (Loa tích hợp)" },
-  { value: "speaker1", label: "Headphone (ASUS ROG)" },
-  { value: "speaker2", label: "External Monitor" },
-]
-
-const isMicTesting = ref(false)
-const micLevel = ref(0)
-let micTestInterval: any = null
-
-const toggleMicTest = () => {
-  isMicTesting.value = !isMicTesting.value
-  if (isMicTesting.value) {
-    micTestInterval = setInterval(() => {
-      micLevel.value = Math.floor(Math.random() * 70 + 10)
-    }, 150)
-  } else {
-    clearInterval(micTestInterval)
-    micLevel.value = 0
-  }
-}
+// Tự động đồng bộ âm thanh xuống globalAudio khi có bất kỳ thay đổi nào (Kéo slider / Bấm mute)
+watch(
+  () => audio.value,
+  (newSettings) => {
+    globalAudio.syncAudioSettings(newSettings)
+  },
+  { deep: true }
+)
 
 const getVolumeIcon = (muted: boolean, vol: number) => {
   return muted || vol === 0 ? VolumeX : Volume2
 }
+
+interface DeviceOption {
+  value: string
+  label: string
+}
+const inputDevices = ref<DeviceOption[]>([{ value: "default", label: "Mặc định (Microphone)" }])
+const outputDevices = ref<DeviceOption[]>([{ value: "default", label: "Mặc định (Loa/Tai nghe)" }])
+
+const updateDeviceList = async () => {
+  try {
+    await navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => {
+      console.warn("User từ chối cấp quyền mic")
+    })
+
+    const devices = await navigator.mediaDevices.enumerateDevices()
+
+    const mics = devices
+      .filter(d => d.kind === "audioinput")
+      .map(d => ({ value: d.deviceId, label: d.label || `Microphone (${d.deviceId.slice(0, 5)}...)` }))
+    if (mics.length > 0) {
+      inputDevices.value = mics
+      if (!mics.find(d => d.value === savedInputDevice.value)) {
+        savedInputDevice.value = mics[0].value
+      }
+    }
+
+    const speakers = devices
+      .filter(d => d.kind === "audiooutput")
+      .map(d => ({ value: d.deviceId, label: d.label || `Speaker (${d.deviceId.slice(0, 5)}...)` }))
+    if (speakers.length > 0) {
+      outputDevices.value = speakers
+      if (!speakers.find(d => d.value === savedOutputDevice.value)) {
+        savedOutputDevice.value = speakers[0].value
+      }
+    }
+
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách thiết bị âm thanh:", error)
+  }
+}
+
+onMounted(() => {
+  updateDeviceList()
+  navigator.mediaDevices?.addEventListener("devicechange", updateDeviceList)
+})
+
+onUnmounted(() => {
+  globalAudio.stopMicTest()
+  globalAudio.stopSpeakerTest()
+  navigator.mediaDevices?.removeEventListener("devicechange", updateDeviceList)
+})
+
+const isMicTesting = ref(false)
+const micLevel = ref(0)
+const toggleMicTest = async () => {
+  if (isMicTesting.value) {
+    globalAudio.stopMicTest()
+    isMicTesting.value = false
+    micLevel.value = 0
+  } else {
+    isMicTesting.value = true
+    await globalAudio.startMicTest(savedInputDevice.value, (level) => {
+      micLevel.value = Math.round((level / 255) * 100)
+    })
+  }
+}
+
+const isSpeakerTesting = ref(false)
+const toggleSpeakerTest = async () => {
+  if (isSpeakerTesting.value) {
+    globalAudio.stopSpeakerTest()
+    isSpeakerTesting.value = false
+  } else {
+    isSpeakerTesting.value = true
+    await globalAudio.testOutput(savedOutputDevice.value, "/assets/sounds/outputTest.mp3", () => {
+      isSpeakerTesting.value = false
+    })
+  }
+}
+
+const handleOutputDeviceChange = async (deviceId: string) => {
+  isSpeakerTesting.value = false
+  await globalAudio.stopSpeakerTest();
+  await globalAudio.changeGlobalOutput(deviceId)
+}
+
+const handleInputDeviceChange = (deviceId: string) => {
+  isMicTesting.value = false
+  micLevel.value = 0
+  globalAudio.stopMicTest();
+  useVoiceSpaceStore().changeInputDevice(deviceId)
+}
 </script>
 
 <template>
-  <div class="audio-root">
-
-    <!-- MASTER VOLUME -->
-    <section class="audio-section">
-      <div class="section-header">
-        <Headphones class="section-icon" />
-        <span>Âm lượng tổng</span>
-      </div>
-      <div class="vol-row">
-        <button class="mute-btn" :class="{ muted: audio.masterMuted }" @click="audio.masterMuted = !audio.masterMuted" :title="audio.masterMuted ? 'Bỏ tắt tiếng' : 'Tắt tiếng'">
-          <component :is="getVolumeIcon(audio.masterMuted, audio.masterVolume)" class="vol-icon" />
-        </button>
-        <input type="range" min="0" max="100" step="1" v-model.number="audio.masterVolume" class="vol-slider" :disabled="audio.masterMuted" />
-        <span class="vol-label">{{ audio.masterMuted ? '0' : audio.masterVolume }}%</span>
-      </div>
-    </section>
-
-    <div class="divider" />
-
+  <div class="p-6 space-y-6 text-foreground">
     <!-- INPUT / OUTPUT -->
-    <section class="audio-section">
-      <div class="section-header">
-        <Mic class="section-icon" />
+    <section class="space-y-4">
+      <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+        <Mic class="w-3.5 h-3.5" />
         <span>Thiết bị đầu vào / đầu ra</span>
       </div>
 
-      <div class="device-grid">
-        <!-- Mic -->
-        <div class="device-card">
-          <div class="device-label">
-            <Mic class="device-icon" />
-            Microphone
-          </div>
-          <select v-model="audio.inputDevice" class="device-select">
-            <option v-for="d in inputDevices" :key="d.value" :value="d.value">{{ d.label }}</option>
-          </select>
-          <div class="vol-row mt-2">
-            <button class="mute-btn small" :class="{ muted: audio.inputMuted }" @click="audio.inputMuted = !audio.inputMuted">
-              <component :is="getVolumeIcon(audio.inputMuted, audio.inputVolume)" class="vol-icon-sm" />
-            </button>
-            <input type="range" min="0" max="100" step="1" v-model.number="audio.inputVolume" class="vol-slider" :disabled="audio.inputMuted" />
-            <span class="vol-label">{{ audio.inputMuted ? '0' : audio.inputVolume }}%</span>
-          </div>
-
-          <!-- Mic test -->
-          <div class="mic-test-row">
-            <button class="mic-test-btn" :class="{ active: isMicTesting }" @click="toggleMicTest">
-              {{ isMicTesting ? 'Dừng kiểm tra' : 'Kiểm tra mic' }}
-            </button>
-            <div v-if="isMicTesting" class="mic-bar-wrapper">
-              <div class="mic-bar" :style="{ width: micLevel + '%' }" />
+      <div class="grid grid-cols-2 gap-4">
+        <!-- Microphone Card -->
+        <Card>
+          <CardContent class="p-4 space-y-3">
+            <div class="flex items-center gap-2">
+              <Mic class="w-3.5 h-3.5 text-primary" />
+              <Label class="text-sm font-semibold">Microphone đầu vào</Label>
             </div>
-          </div>
-        </div>
 
-        <!-- Speaker -->
-        <div class="device-card">
-          <div class="device-label">
-            <Volume2 class="device-icon" />
-            Loa / Tai nghe
-          </div>
-          <select v-model="audio.outputDevice" class="device-select">
-            <option v-for="d in outputDevices" :key="d.value" :value="d.value">{{ d.label }}</option>
-          </select>
-          <div class="vol-row mt-2">
-            <Volume2 class="vol-icon-sm text-muted-foreground" />
-            <input type="range" min="0" max="100" step="1" v-model.number="audio.outputVolume" class="vol-slider" />
-            <span class="vol-label">{{ audio.outputVolume }}%</span>
-          </div>
-        </div>
+            <Select v-model="savedInputDevice" @update:model-value="handleInputDeviceChange">
+              <SelectTrigger class="w-full h-8 text-xs">
+                <SelectValue placeholder="Chọn Microphone" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="d in inputDevices" :key="d.value" :value="d.value" class="text-xs">
+                  {{ d.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+
+            <div class="flex items-center gap-3">
+              <Button variant="outline" size="icon" class="w-7 h-7 shrink-0"
+                @click="audio.inputMuted = !audio.inputMuted">
+                <component :is="getVolumeIcon(audio.inputMuted, audio.inputVolume)" class="w-3.5 h-3.5" />
+              </Button>
+              <Slider :min="0" :max="100" :step="1" :model-value="[audio.inputMuted ? 0 : audio.inputVolume]"
+                :disabled="audio.inputMuted" class="flex-1" @update:model-value="(val) => audio.inputVolume = val[0]" />
+              <span class="text-xs font-medium w-8 text-right">
+                {{ audio.inputMuted ? '0' : audio.inputVolume }}%
+              </span>
+            </div>
+
+            <!-- Mic test -->
+            <div class="space-y-2 pt-1">
+              <Button variant="secondary" size="sm" class="w-full text-xs h-7"
+                :class="{ 'bg-destructive text-destructive-foreground hover:bg-destructive/90': isMicTesting }"
+                @click="toggleMicTest">
+                {{ isMicTesting ? 'Dừng kiểm tra' : 'Kiểm tra mic' }}
+              </Button>
+              <div class="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                <div class="h-full bg-primary transition-all duration-100 ease-out"
+                  :style="{ width: micLevel + '%' }" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <!-- Speaker Card -->
+        <Card>
+          <CardContent class="p-4 space-y-3">
+            <div class="flex items-center gap-2">
+              <Volume2 class="w-3.5 h-3.5 text-primary" />
+              <Label class="text-sm font-semibold">Loa / Tai nghe đầu ra</Label>
+            </div>
+
+            <Select v-model="savedOutputDevice" @update:model-value="handleOutputDeviceChange">
+              <SelectTrigger class="w-full h-8 text-xs">
+                <SelectValue placeholder="Chọn thiết bị đầu ra" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="d in outputDevices" :key="d.value" :value="d.value" class="text-xs">
+                  {{ d.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <div class="flex items-center gap-3">
+              <Button variant="outline" size="icon" class="w-7 h-7 shrink-0"
+                @click="audio.outputMuted = !audio.outputMuted">
+                <component :is="getVolumeIcon(audio.outputMuted, audio.outputVolume)" class="w-3.5 h-3.5" />
+              </Button>
+              <Slider :min="0" :max="100" :step="1" :model-value="[audio.outputMuted ? 0 : audio.outputVolume]"
+                :disabled="audio.outputMuted" class="flex-1"
+                @update:model-value="(val) => audio.outputVolume = val[0]" />
+              <span class="text-xs font-medium w-8 text-right">
+                {{ audio.outputMuted ? '0' : audio.outputVolume }}%
+              </span>
+            </div>
+
+            <!-- Speaker test -->
+            <div class="space-y-2 pt-1">
+              <Button variant="secondary" size="sm" class="w-full text-xs h-7"
+                :class="{ 'bg-destructive text-destructive-foreground hover:bg-destructive/90': isSpeakerTesting }"
+                @click="toggleSpeakerTest">
+                {{ isSpeakerTesting ? 'Dừng kiểm tra' : 'Kiểm tra loa' }}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </section>
 
-    <div class="divider" />
+    <Separator />
 
-    <!-- VOICE PROCESSING -->
-    <section class="audio-section">
-      <div class="section-header">
-        <Mic class="section-icon" />
-        <span>Xử lý giọng nói</span>
+    <!-- CALL & SYSTEM VOLUME -->
+    <section class="space-y-4">
+      <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+        <Bell class="w-3.5 h-3.5" />
+        <span>Âm lượng chi tiết</span>
       </div>
-      <div class="toggle-list">
-        <div class="toggle-item" v-for="item in [
-          { key: 'echoCancellation', label: 'Khử tiếng vang', desc: 'Giảm tiếng vọng trong cuộc gọi' },
-          { key: 'noiseSuppression', label: 'Khử tiếng ồn', desc: 'Lọc âm thanh nền không mong muốn' },
-          { key: 'autoGainControl', label: 'Tự động điều chỉnh âm lượng', desc: 'Cân bằng mức âm lượng mic tự động' },
-        ]" :key="item.key">
-          <div class="toggle-text">
-            <span class="toggle-label">{{ item.label }}</span>
-            <span class="toggle-desc">{{ item.desc }}</span>
-          </div>
-          <button class="toggle-switch" :class="{ on: (audio as any)[item.key] }" @click="(audio as any)[item.key] = !(audio as any)[item.key]">
-            <span class="toggle-thumb" />
-          </button>
-        </div>
+
+      <div class="grid grid-cols-1 gap-4">
+        <!-- Call Volume -->
+        <Card>
+          <CardContent class="p-4 space-y-3">
+            <div class="flex items-center gap-2">
+              <Headphones class="w-3.5 h-3.5 text-primary" />
+              <Label class="text-sm font-semibold">
+                Âm thanh cuộc gọi
+              </Label>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <Button variant="outline" size="icon" class="w-7 h-7 shrink-0"
+                @click="audio.callMuted = !audio.callMuted">
+                <component :is="getVolumeIcon(audio.callMuted, audio.callVolume)" class="w-3.5 h-3.5" />
+              </Button>
+
+              <Slider :min="0" :max="100" :step="1" :model-value="[audio.callMuted ? 0 : audio.callVolume]"
+                :disabled="audio.callMuted" class="flex-1" @update:model-value="(val) => audio.callVolume = val[0]" />
+
+              <span class="text-xs font-medium w-8 text-right">
+                {{ audio.callMuted ? '0' : audio.callVolume }}%
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <!-- System Volume -->
+        <Card>
+          <CardContent class="p-4 space-y-3">
+            <div class="flex items-center gap-2">
+              <Bell class="w-3.5 h-3.5 text-primary" />
+              <Label class="text-sm font-semibold">
+                Âm thanh hệ thống
+              </Label>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <Button variant="outline" size="icon" class="w-7 h-7 shrink-0"
+                @click="audio.systemMuted = !audio.systemMuted">
+                <component :is="getVolumeIcon(audio.systemMuted, audio.systemVolume)" class="w-3.5 h-3.5" />
+              </Button>
+
+              <Slider :min="0" :max="100" :step="1" :model-value="[audio.systemMuted ? 0 : audio.systemVolume]"
+                :disabled="audio.systemMuted" class="flex-1"
+                @update:model-value="(val) => audio.systemVolume = val[0]" />
+
+              <span class="text-xs font-medium w-8 text-right">
+                {{ audio.systemMuted ? '0' : audio.systemVolume }}%
+              </span>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </section>
-
-    <div class="divider" />
-
-    <!-- NOTIFICATION SOUNDS -->
-    <section class="audio-section">
-      <div class="section-header">
-        <Bell class="section-icon" />
-        <span>Âm thanh thông báo</span>
-      </div>
-      <div class="vol-row mb-3">
-        <button class="mute-btn small" :class="{ muted: audio.notificationMuted }" @click="audio.notificationMuted = !audio.notificationMuted">
-          <component :is="getVolumeIcon(audio.notificationMuted, audio.notificationVolume)" class="vol-icon-sm" />
-        </button>
-        <input type="range" min="0" max="100" step="1" v-model.number="audio.notificationVolume" class="vol-slider" :disabled="audio.notificationMuted" />
-        <span class="vol-label">{{ audio.notificationMuted ? '0' : audio.notificationVolume }}%</span>
-      </div>
-
-      <div class="toggle-list">
-        <div class="toggle-item" v-for="item in [
-          { key: 'notifySoundNewMessage', label: 'Tin nhắn mới' },
-          { key: 'notifySoundRequest', label: 'Lời mời kết bạn' },
-          { key: 'notifySoundJoin', label: 'Thành viên vào phòng' },
-          { key: 'notifySoundLeave', label: 'Thành viên rời phòng' },
-        ]" :key="item.key">
-          <div class="toggle-text">
-            <span class="toggle-label">{{ item.label }}</span>
-          </div>
-          <button class="toggle-switch small" :class="{ on: (audio as any)[item.key] }" @click="(audio as any)[item.key] = !(audio as any)[item.key]">
-            <span class="toggle-thumb" />
-          </button>
-        </div>
-      </div>
-    </section>
-
   </div>
 </template>
-
-<style scoped>
-.audio-root { padding: 0.25rem 0 2rem; }
-
-.audio-section { margin-bottom: 0.25rem; }
-
-.section-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--muted-foreground);
-  margin-bottom: 0.75rem;
-}
-
-.section-icon { width: 13px; height: 13px; }
-
-.divider {
-  height: 1px;
-  background: var(--border);
-  opacity: 0.4;
-  margin: 1.25rem 0;
-}
-
-/* Volume Row */
-.vol-row {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.mt-2 { margin-top: 0.6rem; }
-.mb-3 { margin-bottom: 0.85rem; }
-
-.mute-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--accent);
-  color: var(--foreground);
-  transition: background 0.12s, color 0.12s;
-  flex-shrink: 0;
-  border: none;
-  cursor: pointer;
-}
-
-.mute-btn.muted { background: var(--destructive); color: white; }
-.mute-btn.small { width: 26px; height: 26px; border-radius: 5px; }
-
-.vol-icon { width: 15px; height: 15px; }
-.vol-icon-sm { width: 13px; height: 13px; }
-
-.vol-slider {
-  flex: 1;
-  height: 4px;
-  border-radius: 999px;
-  accent-color: var(--primary);
-  cursor: pointer;
-}
-
-.vol-slider:disabled { opacity: 0.4; cursor: not-allowed; }
-
-.vol-label {
-  font-size: 0.78rem;
-  color: var(--muted-foreground);
-  min-width: 32px;
-  text-align: right;
-}
-
-/* Device */
-.device-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.85rem;
-}
-
-.device-card {
-  background: var(--muted);
-  border-radius: 8px;
-  padding: 0.85rem;
-}
-
-.device-label {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--foreground);
-  margin-bottom: 0.5rem;
-}
-
-.device-icon { width: 12px; height: 12px; color: var(--muted-foreground); }
-
-.device-select {
-  width: 100%;
-  background: var(--background);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 0.3rem 0.5rem;
-  font-size: 0.75rem;
-  color: var(--foreground);
-  outline: none;
-  transition: border-color 0.15s;
-  cursor: pointer;
-}
-
-.device-select:focus { border-color: var(--primary); }
-
-/* Mic test */
-.mic-test-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.6rem;
-}
-
-.mic-test-btn {
-  font-size: 0.72rem;
-  padding: 0.25rem 0.65rem;
-  border-radius: 4px;
-  border: 1px solid var(--border);
-  background: var(--accent);
-  color: var(--foreground);
-  cursor: pointer;
-  transition: all 0.12s;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.mic-test-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-
-.mic-bar-wrapper {
-  flex: 1;
-  height: 6px;
-  background: var(--border);
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.mic-bar {
-  height: 100%;
-  background: var(--primary);
-  border-radius: 999px;
-  transition: width 0.1s ease;
-}
-
-/* Toggle List */
-.toggle-list { display: flex; flex-direction: column; gap: 0; }
-
-.toggle-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.6rem 0;
-  border-bottom: 1px solid var(--border);
-  opacity: 0.9;
-}
-
-.toggle-item:last-child { border-bottom: none; }
-
-.toggle-text {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-}
-
-.toggle-label { font-size: 0.84rem; color: var(--foreground); }
-.toggle-desc { font-size: 0.72rem; color: var(--muted-foreground); }
-
-/* Toggle Switch */
-.toggle-switch {
-  width: 38px;
-  height: 22px;
-  border-radius: 999px;
-  background: var(--border);
-  position: relative;
-  cursor: pointer;
-  border: none;
-  transition: background 0.2s;
-  flex-shrink: 0;
-}
-
-.toggle-switch.on { background: var(--primary); }
-
-.toggle-switch.small { width: 32px; height: 18px; }
-
-.toggle-thumb {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: white;
-  transition: transform 0.2s;
-  display: block;
-}
-
-.toggle-switch.on .toggle-thumb { transform: translateX(16px); }
-.toggle-switch.small .toggle-thumb { width: 14px; height: 14px; }
-.toggle-switch.small.on .toggle-thumb { transform: translateX(14px); }
-</style>

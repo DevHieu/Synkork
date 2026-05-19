@@ -348,7 +348,12 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     zego.media.muteAudioUser(audioId, isMute);
   };
 
+  const changeInputDevice = (deviceId: string) => {
+    zego.local.changeInputDevice(deviceId);
+  };
+
   return {
+    zego,
     currentSpaceId,
     participants,
     participantList,
@@ -374,5 +379,6 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     stopUserScreen,
     toggleAudioUser,
     stopUserVideo,
+    changeInputDevice,
   };
 });

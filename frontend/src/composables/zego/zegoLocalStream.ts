@@ -197,6 +197,17 @@ export function zegoLocalStream(
     }
   };
 
+  const changeInputDevice = async (deviceId: string) => {
+    if (!state.zg || !state.localAudioStream) return;
+
+    try {
+      await state.zg.useAudioDevice(state.localAudioStream, deviceId);
+      console.log("Zego đã chuyển sang mic mới:", deviceId);
+    } catch (error) {
+      console.error("Lỗi khi Zego đổi mic đầu vào:", error);
+    }
+  };
+
   return {
     publishVideoStream,
     publishAudioStream,
@@ -204,5 +215,6 @@ export function zegoLocalStream(
     stopVideoStream,
     stopAudioStream,
     stopScreenStream,
+    changeInputDevice,
   };
 }
