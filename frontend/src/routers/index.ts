@@ -17,6 +17,7 @@ import CalendarWindowLayout from "@/components/windows/CalendarWindowLayout.vue"
 
 import FriendPage from "@/pages/FriendPage.vue";
 import MePage from "@/pages/MePage.vue";
+import SubscriptionPage from "@/pages/SubscriptionPage.vue";
 
 import PersonLayout from "@/layouts/PersonLayout.vue";
 import RoomLayout from "@/layouts/RoomLayout.vue";
@@ -56,6 +57,10 @@ const routes = [
           {
             path: "friends",
             component: FriendPage,
+          },
+          {
+            path: "subscriptions",
+            component: SubscriptionPage,
           },
           {
             path: ":spaceId",
