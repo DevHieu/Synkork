@@ -13,27 +13,28 @@ import java.util.UUID;
 @Repository
 public interface CardRepository extends JpaRepository<CardEntity, UUID> {
     Iterable<CardEntity> findByTitleContainingIgnoreCase(String title);
-    
+
     List<CardEntity> findByColumn_IdOrderByPositionAsc(UUID columnId);
+
     @Query("SELECT c FROM CardEntity c JOIN c.assignees u WHERE u.id = :userId")
     List<CardEntity> findByAssigneeId(@Param("userId") UUID userId);
-    
+
     List<CardEntity> findByDueDateBeforeAndOverdueMailSentFalse(
-        LocalDateTime time
-    );
+            LocalDateTime time);
+
+    @Query("SELECT c FROM CardEntity c " +
+            "JOIN FETCH c.assignees a " +
+            "JOIN FETCH a.user " +
+            "JOIN FETCH c.column col " +
+            "JOIN FETCH col.space s " +
+            "JOIN FETCH s.room " +
+            "WHERE c.dueDate IS NOT NULL")
+    List<CardEntity> findAllWithAssignees();
 
     @Query("""
-    SELECT DISTINCT c
-    FROM CardEntity c
-    LEFT JOIN FETCH c.assignees
-    WHERE c.dueDate IS NOT NULL
-""")
-List<CardEntity> findAllWithAssignees();
-
-@Query("""
-    SELECT c.column.space.room.id
-    FROM CardEntity c
-    WHERE c.id = :cardId
-""")
-UUID findRoomIdByCardId(@Param("cardId") UUID cardId);
+                SELECT c.column.space.room.id
+                FROM CardEntity c
+                WHERE c.id = :cardId
+            """)
+    UUID findRoomIdByCardId(@Param("cardId") UUID cardId);
 }

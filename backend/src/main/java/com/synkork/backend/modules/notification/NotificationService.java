@@ -11,6 +11,7 @@ import com.synkork.backend.modules.notification.enums.NotificationRefTypeEnum;
 import com.synkork.backend.modules.notification.enums.NotificationTypeEnum;
 import com.synkork.backend.modules.user.UserEntity;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -22,15 +23,17 @@ public class NotificationService {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
-    public void sendCardAssignedNotification(UserEntity actor, UserEntity target, UUID cardId, UUID roomId, UUID spaceId){
+    // CARD_ASSIGNEE
+    public void sendCardAssignedNotification(UserEntity actor, UserEntity target, UUID cardId, UUID roomId,
+            UUID spaceId) {
         NotificationEntity noti = NotificationEntity.builder()
-            .user(target)
-            .actor(actor)
-            .type(NotificationTypeEnum.CARD)
-            .refId(cardId)
-            .refType(NotificationRefTypeEnum.CARD_ASSIGNED)
-            .isRead(false)
-            .build();
+                .user(target)
+                .actor(actor)
+                .type(NotificationTypeEnum.TASK)
+                .refId(cardId)
+                .refType(NotificationRefTypeEnum.CARD_ASSIGNED)
+                .isRead(false)
+                .build();
 
         notificationRepository.save(noti);
 
@@ -38,75 +41,98 @@ public class NotificationService {
 
         System.out.println("SEND NOTI TO: " + target.getId());
 
-        messagingTemplate.convertAndSendToUser(target.getEmail().toString(), "/queue/notifications", dto);
+        messagingTemplate.convertAndSendToUser(target.getEmail(), "/queue/notifications", dto);
     }
 
-    public void sendAddFriendNotification(UserEntity actor, UserEntity target, UUID friendRequestId){
+    // ADD FRIEND
+    public void sendFriendNotification(UserEntity actor, UserEntity target, UUID friendRequestId, NotificationRefTypeEnum refType) {
         NotificationEntity noti = NotificationEntity.builder()
-            .user(target)
-            .actor(actor)
-            .type(NotificationTypeEnum.FRIEND)
-            .refId(friendRequestId)
-            .refType(NotificationRefTypeEnum.FRIEND_REQUEST)
-            .isRead(false)
-            .build();
+                .user(target)
+                .actor(actor)
+                .type(NotificationTypeEnum.FRIEND)
+                .refId(friendRequestId)
+                .refType(refType)
+                .isRead(false)
+                .build();
 
         notificationRepository.save(noti);
 
         NotificationDTO dto = toDTO(noti, null);
 
-        messagingTemplate.convertAndSendToUser(target.getId().toString(), "/queue/notifications", dto);
+        messagingTemplate.convertAndSendToUser(target.getEmail(), "/queue/notifications", dto);
     }
 
-    public void sendCardDueSoonNotification(UserEntity actor, UserEntity target, UUID cardId, UUID spaceId){
+    public void sendNoteNotification(UserEntity actor, UserEntity target, UUID friendRequestId, NotificationRefTypeEnum refType) {
         NotificationEntity noti = NotificationEntity.builder()
-            .user(target)
-            .actor(actor)
-            .type(NotificationTypeEnum.CARD)
-            .refId(cardId)
-            .refType(NotificationRefTypeEnum.CARD_DUE_SOON)
-            .isRead(false)
-            .build();
+                .user(target)
+                .actor(actor)
+                .type(NotificationTypeEnum.FRIEND)
+                .refId(friendRequestId)
+                .refType(refType)
+                .isRead(false)
+                .build();
+
+        notificationRepository.save(noti);
+
+        NotificationDTO dto = toDTO(noti, null);
+
+        messagingTemplate.convertAndSendToUser(target.getEmail(), "/queue/notifications", dto);
+    }
+
+    // DUE_SOON
+    public void sendCardDueSoonNotification(UserEntity actor, UserEntity target, UUID cardId, UUID roomId,
+            UUID spaceId) {
+        NotificationEntity noti = NotificationEntity.builder()
+                .user(target)
+                .actor(actor)
+                .type(NotificationTypeEnum.TASK)
+                .refId(cardId)
+                .refType(NotificationRefTypeEnum.CARD_DUE_SOON)
+                .isRead(false)
+                .build();
+
+        notificationRepository.save(noti);
+
+        NotificationDTO dto = toDTOAssignee(noti, spaceId, roomId);
+
+        messagingTemplate.convertAndSendToUser(target.getEmail(), "/queue/notifications", dto);
+    }
+
+    // OVER_DUE
+    public void sendCardOverDueNotification(UserEntity actor, UserEntity target, UUID cardId, UUID roomId,
+            UUID spaceId) {
+        NotificationEntity noti = NotificationEntity.builder()
+                .user(target)
+                .actor(actor)
+                .type(NotificationTypeEnum.TASK)
+                .refId(cardId)
+                .refType(NotificationRefTypeEnum.CARD_OVER_DUE)
+                .isRead(false)
+                .build();
+
+        notificationRepository.save(noti);
+
+        NotificationDTO dto = toDTOAssignee(noti, spaceId, roomId);
+
+        messagingTemplate.convertAndSendToUser(target.getEmail(), "/queue/notifications", dto);
+    }
+
+    // CALENDAR
+    public void sendCalendarEventNotification(UserEntity actor, UserEntity target, UUID calenderId, UUID spaceId) {
+        NotificationEntity noti = NotificationEntity.builder()
+                .user(target)
+                .actor(actor)
+                .type(NotificationTypeEnum.CALENDAR)
+                .refId(calenderId)
+                .refType(NotificationRefTypeEnum.EVENT_REMINDER)
+                .isRead(false)
+                .build();
 
         notificationRepository.save(noti);
 
         NotificationDTO dto = toDTO(noti, spaceId);
 
-        messagingTemplate.convertAndSendToUser(target.getId().toString(), "/queue/notifications", dto);
-    }
-
-    public void sendCardOverDueNotification(UserEntity actor, UserEntity target, UUID cardId, UUID spaceId){
-        NotificationEntity noti = NotificationEntity.builder()
-            .user(target)
-            .actor(actor)
-            .type(NotificationTypeEnum.CARD)
-            .refId(cardId)
-            .refType(NotificationRefTypeEnum.CARD_OVER_DUE)
-            .isRead(false)
-            .build();
-
-        notificationRepository.save(noti);
-
-        NotificationDTO dto = toDTO(noti, spaceId);
-
-        messagingTemplate.convertAndSendToUser(target.getId().toString(), "/queue/notifications", dto);
-    }
-
-    public void sendCalendarEventNotification(UserEntity actor, UserEntity target, UUID calenderId, UUID roomId, UUID spaceId){
-        NotificationEntity noti = NotificationEntity.builder()
-            .user(target)
-            .actor(actor)
-            .type(NotificationTypeEnum.CALENDAR_EVENT)
-            .refId(calenderId)
-            .refType(NotificationRefTypeEnum.EVENT_REMINDER)
-            .isRead(false)
-            .build();
-
-        notificationRepository.save(noti);
-
-        NotificationDTO dto = toDTO(noti, spaceId);
-
-        messagingTemplate.convertAndSendToUser(target.getId().toString(), "/queue/notifications", dto);
+        messagingTemplate.convertAndSendToUser(target.getEmail(), "/queue/notifications", dto);
     }
 
     public void markAsRead(UUID notificationId, UUID userId) {
@@ -136,7 +162,7 @@ public class NotificationService {
                 .actorAvatar(n.getActor() != null ? n.getActor().getAvatarUrl() : null)
                 .isRead(n.isRead())
                 .createdAt(n.getCreatedAt())
-                .spaceId(spaceId)  // để frontend navigate
+                .spaceId(spaceId) // để frontend navigate
                 .build();
     }
 
@@ -150,8 +176,16 @@ public class NotificationService {
                 .actorAvatar(n.getActor() != null ? n.getActor().getAvatarUrl() : null)
                 .isRead(n.isRead())
                 .createdAt(n.getCreatedAt())
-                .spaceId(spaceId)  // để frontend navigate
+                .spaceId(spaceId) // để frontend navigate
                 .roomId(roomId)
                 .build();
+    }
+
+    @Transactional
+    public void deleteNotication(UUID notiId){
+        NotificationEntity noti = notificationRepository.findById(notiId)
+                .orElseThrow(() -> new RuntimeException("Thông báo không tồn tại"));
+        
+        notificationRepository.delete(noti);
     }
 }

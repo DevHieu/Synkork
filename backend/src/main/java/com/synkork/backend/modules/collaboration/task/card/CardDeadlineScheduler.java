@@ -28,7 +28,7 @@ public class CardDeadlineScheduler {
     @Autowired
     private NotificationService notificationService;
 
-    @Scheduled(fixedRate = 10000)
+    @Scheduled(fixedRate = 5000)
     @Transactional
     public void checkDeadline() {
 
@@ -56,7 +56,8 @@ public class CardDeadlineScheduler {
                             null,
                             member.getUser(),
                             card.getId(),
-                            card.getColumn().getSpace().getId());
+                            card.getColumn().getSpace().getId(),
+                            card.getColumn().getSpace().getRoom().getId());
                 }
             }
 
@@ -72,7 +73,8 @@ public class CardDeadlineScheduler {
                             null,
                             member.getUser(),
                             card.getId(),
-                            card.getColumn().getSpace().getId());
+                            card.getColumn().getSpace().getId(),
+                            card.getColumn().getSpace().getRoom().getId());
                 }
             }
         }

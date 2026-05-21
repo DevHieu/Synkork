@@ -2,6 +2,7 @@ package com.synkork.backend.modules.friend;
 
 import com.synkork.backend.modules.friend.enums.FriendRequestStatus;
 import com.synkork.backend.modules.notification.NotificationService;
+import com.synkork.backend.modules.notification.enums.NotificationRefTypeEnum;
 import com.synkork.backend.modules.room.RoomService;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
@@ -59,8 +60,10 @@ public class FriendService {
         friendRepo.save(new FriendEntity(null, req.getSender(), req.getReceiver(), conversationId, null));
         friendRepo.save(new FriendEntity(null, req.getReceiver(), req.getSender(), conversationId, null));
 
-        requestRepo.delete(req);
+        notificationService.sendFriendNotification(req.getReceiver(), req.getSender(), requestId, NotificationRefTypeEnum.FRIEND_ACCEPT);
 
+        requestRepo.delete(req);
+        
        return List.of(req.getSender().getEmail(), req.getReceiver().getEmail());
     }
 
@@ -70,6 +73,8 @@ public class FriendService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy lời mời"));
         String senderEmail = req.getSender().getEmail(); // lấy email trước khi xóa
         requestRepo.delete(req);
+
+        notificationService.sendFriendNotification(req.getReceiver(), req.getSender(), requestId, NotificationRefTypeEnum.FRIEND_REJECT);
         return senderEmail; // ← thêm dòng này
     }
 
@@ -156,7 +161,7 @@ public class FriendService {
         req.setStatus(FriendRequestStatus.PENDING);
         requestRepo.save(req);
 
-        notificationService.sendAddFriendNotification(sender, receiver, senderId);
+        notificationService.sendFriendNotification(sender, receiver, senderId, NotificationRefTypeEnum.FRIEND_REQUEST);
 
         // Trả về email de lam socket
         return receiver.getEmail();

@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,6 +36,15 @@ public class NotificationController {
         UserPrinciple principal = (UserPrinciple) SecurityContextHolder
                 .getContext().getAuthentication().getPrincipal();
         notificationService.markAsRead(id, principal.getId());
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{notiId}")
+    public ResponseEntity<Void> delete(@PathVariable String notiId){
+        UUID notiUUID = UUID.fromString(notiId);
+
+        notificationService.deleteNotication(notiUUID);
+
         return ResponseEntity.noContent().build();
     }
 }
