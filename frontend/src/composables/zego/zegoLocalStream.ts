@@ -1,7 +1,7 @@
 import { useUserStore } from "@/stores/userStore";
 import type { Participant } from "@/types/VoiceSpaceParticipant";
 import type { ZegoState } from "@/types/ZegoType";
-import type { Ref } from "vue";
+import { type Ref } from "vue";
 
 import { zegoUtils } from "./zegoUtils";
 
@@ -13,7 +13,7 @@ export function zegoLocalStream(
   screenOn: Ref<boolean>,
   participants: Ref<Map<string, Participant>>,
 ) {
-  const utils = zegoUtils(participants);
+  const utils = zegoUtils(state, participants);
 
   const publishVideoStream = async () => {
     if (!state.zg) return;
@@ -74,6 +74,7 @@ export function zegoLocalStream(
         state.localAudioStream,
       );
 
+      await utils.setInputCaptureVolume();
       // Set mic tắt đi lúc vừa vào phòng
       state.zg.muteMicrophone(!micOn.value);
 
@@ -202,6 +203,7 @@ export function zegoLocalStream(
 
     try {
       await state.zg.useAudioDevice(state.localAudioStream, deviceId);
+      await utils.setInputCaptureVolume();
       console.log("Zego đã chuyển sang mic mới:", deviceId);
     } catch (error) {
       console.error("Lỗi khi Zego đổi mic đầu vào:", error);

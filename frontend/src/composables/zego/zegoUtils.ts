@@ -1,8 +1,13 @@
 import type { Participant } from "@/types/VoiceSpaceParticipant";
+import type { ZegoState } from "@/types/ZegoType";
 import globalAudio from "@/utils/appAudioManager";
+import { useLocalStorage } from "@vueuse/core";
 import type { Ref } from "vue";
 
-export function zegoUtils(participants: Ref<Map<string, Participant>>) {
+export function zegoUtils(
+  state: ZegoState,
+  participants: Ref<Map<string, Participant>>,
+) {
   const playNotificationSound = (type: "join" | "leave") => {
     globalAudio.playSystemSound(`/assets/sounds/${type}Sound.wav`);
   };
@@ -44,10 +49,38 @@ export function zegoUtils(participants: Ref<Map<string, Participant>>) {
     return null;
   };
 
+  const kickMember = (roomId: string, userId: string) => {
+    if (!state.zg) return;
+
+    const data = JSON.stringify({ type: "KICK_MEMBER" });
+
+    state.zg.sendCustomCommand(roomId, data, [userId]);
+  };
+
+  const audioSettings = useLocalStorage("app-audio-settings", {
+    inputVolume: 70,
+    inputMuted: false,
+  });
+
+  const getCaptureVolume = () =>
+    audioSettings.value.inputMuted ? 0 : audioSettings.value.inputVolume;
+
+  const setInputCaptureVolume = async (volume = getCaptureVolume()) => {
+    if (!state.zg || !state.localAudioStream) return;
+
+    try {
+      await state.zg.setCaptureVolume(state.localAudioStream, volume);
+    } catch (error) {
+      console.error("Lỗi khi set capture volume:", error);
+    }
+  };
+
   return {
     playNotificationSound,
     createHiddenContainer,
     clearHiddenContainer,
     findUserByStreamID,
+    kickMember,
+    setInputCaptureVolume,
   };
 }
