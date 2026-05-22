@@ -1,8 +1,16 @@
 
 export interface NotificationDTO {
   id: string
-  type: 'CARD' | 'FRIEND_REQUEST' | 'CALENDAR_EVENT' | 'NOTE'
-  refType: 'CARD_ASSIGNED' | 'CARD_DUE_SOON' | 'FRIEND_REQUEST' | 'EVENT_REMINDER' | 'CARD_OVER_DUE'
+  type: 'TASK' | 'FRIEND' | 'CALENDAR' | 'NOTE' | 'CHAT'
+  refType:   'CARD_ASSIGNED' 
+           | 'CARD_OVER_DUE'
+           | 'CARD_DUE_SOON' 
+           | 'FRIEND_REQUEST' 
+           | 'FRIEND_REJECT' 
+           | 'FRIEND_ACCEPT'
+           | 'EVENT_REMINDER' 
+           | 'NOTE_REMINDER'
+           
   refId: string
   actorName: string
   actorAvatar: string | null

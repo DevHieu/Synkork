@@ -12,9 +12,9 @@ import { storeToRefs } from "pinia";
 import type { CardEvent, ColumnEvent, TaskMoveEvent } from "@/types/Task";
 
 import TaskColumn from '@/components/windows/task/TaskColumn.vue'
-import ColumnFormDialog from '@/components/dialog/task/ColumnFormDialog.vue'
+import ColumnFormDialog from '@/components/dialog/TaskDialog/ColumnFormDialog.vue'
 import DeleteConfirmDialog from '@/components/dialog/DeleteConfirmDialog.vue'
-import CardFormDialog from '@/components/dialog/task/CardFormDialog.vue'    
+import CardFormDialog from '@/components/dialog/TaskDialog/CardFormDialog.vue'    
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
@@ -40,6 +40,11 @@ const targetColumnId = ref<string>('')
 const isDeleteOpen = ref(false)
 const deleteType = ref<'column' | 'card'>('column')
 const deleteData = ref<{cardId: string, columnId: string} | null>(null)
+
+const props = defineProps<{
+    spaceId: String,
+    roomId: String,
+}>()
 
 const executeDelete = async () => {
     taskStore.delete(deleteType.value, spaceId, deleteData.value)
@@ -166,10 +171,18 @@ const clearAll = async () => {
 <template>
     <div class="flex h-screen w-full overflow-hidden background">
         <div class="flex-1 flex flex-col relative overflow-hidden">
-            <header class="p-6 flex items-center gap-2 font-semibold">
-                <SidebarTrigger class="-ml-1 shrink-0" />
-                <Hash class="w-5 h-5 text-teal-600" />
-                <span>{{ currentSpace?.name }}</span>
+            <header class="flex items-center justify-between px-5 py-3.5 border-b border-border/50 bg-background/60 backdrop-blur-sm">
+                <div class="flex items-center gap-2.5">
+                    <SidebarTrigger class="-ml-1 shrink-0 text-muted-foreground hover:text-foreground" />
+                    <div class="h-4 w-px bg-border/60" />
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center">
+                            <Hash class="w-3.5 h-3.5 text-primary" />
+                        </div>
+                        <span class="font-semibold text-md text-foreground">{{ currentSpace?.name }}</span>
+                    </div>
+                </div>
+
             </header>
 
             <div class="flex-1 flex items-start gap-6 p-6 overflow-x-auto">
@@ -189,11 +202,11 @@ const clearAll = async () => {
                 </draggable>
 
                 <div @click="openAddColumnDialog"
-                    class="flex-shrink-0 w-72 h-32 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center gap-2 group cursor-pointer hover:border-teal-700 transition-colors">
-                    <div class="bg-slate-200 p-2 rounded-full group-hover:bg-teal-100">
-                        <Plus class="w-5 h-5 text-slate-500 group-hover:text-teal-600" />
+                    class="add-column-btn flex-shrink-0 w-72 h-28 border-2 border-dashed border-border/60 rounded-2xl flex flex-col items-center justify-center gap-2.5 group cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all duration-200">
+                    <div class="w-8 h-8 rounded-xl bg-muted group-hover:bg-primary/15 flex items-center justify-center transition-colors">
+                        <Plus class="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                     </div>
-                    <p class="text-xs font-bold text-slate-200 uppercase tracking-widest group-hover:text-teal-600">
+                    <p class="text-xs font-semibold text-muted-foreground/60 group-hover:text-primary uppercase tracking-wider transition-colors">
                         Thêm cột mới
                     </p>
                 </div>

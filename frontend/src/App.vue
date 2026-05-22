@@ -8,20 +8,17 @@ import { RouterView } from "vue-router";
 import { Toaster } from "vue-sonner";
 import "vue-sonner/style.css";
 
-
 const notificationStore = useNotificationStore()
 
 onMounted(async () => {
-  if (user.value?.id) {
-    await notificationStore.fetchNotifications()
-    await notificationStore.connect(user.value.id)
-  }
+  await notificationStore.fetchNotifications()
+  await notificationStore.connect()
 })
 </script>
 
 <template>
   <!-- Hiện thông báo ấy mà -->
-  <Toaster position="top-center" richColors />
+  <Toaster position="bottom-right" richColors class="synkork-toaster" />
 
   <RouterView />
 </template>

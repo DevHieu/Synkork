@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Calendar as CalendarIcon,
   UserPlus,
@@ -160,6 +165,8 @@ watch(
 <template>
   <Dialog :open="open" @update:open="$emit('update:open', $event)">
     <DialogContent class="max-w-2xl p-0 overflow-hidden border-none shadow-2xl bg-background rounded-xl">
+      <DialogTitle class="sr-only">Chi tiết thẻ</DialogTitle>
+      <DialogDescription class="sr-only">Chỉnh sửa thông tin thẻ công việc</DialogDescription>
       <div class="flex items-center justify-between px-6 py-3 bg-muted/20 border-b border-border/50">
         <div class="flex items-center gap-2 text-muted-foreground">
           <CreditCard :size="16" />
@@ -172,11 +179,11 @@ watch(
         </Button>
       </div>
 
-      <div class="p-8 space-y-8">
+      <div class="p-5 space-y-5">
         <!-- Title -->
         <div class="space-y-1">
           <input v-model="form.title"
-            class="w-full text-2xl font-bold bg-transparent border-none p-0 focus:ring-0 focus:outline-none placeholder:text-muted-foreground/40"
+            class="w-full text-2xl font-bold bg-transparent border-none p-1 focus:ring-0 focus:outline-none placeholder:text-muted-foreground/40"
             placeholder="Tiêu đề thẻ..." @blur="handleSave" @keydown="handleTitleKeydown" />
           <div class="flex items-center gap-2 text-sm text-muted-foreground">
             <span>Trong mục</span>
@@ -207,21 +214,23 @@ watch(
             </div>
 
             <!-- Dropdown chọn assignee -->
-            <div class="relative">
-              <div
-                class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-dashed border-border hover:border-primary cursor-pointer transition-colors"
-                @click="showDropdown = !showDropdown">
-                <UserPlus :size="13" class="text-muted-foreground" />
-                <span class="text-xs text-muted-foreground">Thêm người...</span>
-              </div>
+            <Popover v-model:open="showDropdown">
+              <PopoverTrigger as-child>
+                <div
+                  class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-dashed border-border hover:border-primary cursor-pointer transition-colors">
+                  <UserPlus :size="13" class="text-muted-foreground" />
+                  <span class="text-xs text-muted-foreground">
+                    Thêm người...
+                  </span>
+                </div>
+              </PopoverTrigger>
 
-              <!-- Dropdown list -->
-              <div v-if="showDropdown" v-click-outside="() => (showDropdown = false)"
-                class="absolute top-full mt-1 left-0 w-56 bg-popover border border-border rounded-xl shadow-lg z-50 overflow-hidden">
+              <PopoverContent class="w-56 p-0 overflow-hidden" align="start">
                 <div class="p-2 border-b border-border">
                   <input v-model="searchQuery" placeholder="Tìm tên..."
-                    class="w-full text-xs bg-transparent outline-none placeholder:text-muted-foreground" @click.stop />
+                    class="w-full text-xs bg-transparent outline-none placeholder:text-muted-foreground" />
                 </div>
+
                 <ul class="max-h-48 overflow-y-auto py-1">
                   <li v-for="member in filteredMembers" :key="member.memberId"
                     class="flex items-center gap-2 px-3 py-2 hover:bg-accent cursor-pointer transition-colors"
@@ -232,36 +241,48 @@ watch(
                         {{ member.displayName?.charAt(0).toUpperCase() }}
                       </AvatarFallback>
                     </Avatar>
-                    <span class="text-xs flex-1">{{ member.displayName }}</span>
+
+                    <span class="text-xs flex-1">
+                      {{ member.displayName }}
+                    </span>
+
                     <Check v-if="isAssigned(member.memberId)" :size="12" class="text-primary" />
                   </li>
+
                   <li v-if="filteredMembers.length === 0" class="px-3 py-2 text-xs text-muted-foreground">
                     Không tìm thấy
                   </li>
                 </ul>
-              </div>
-            </div>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div class="space-y-2">
-            <Label class="text-[11px] font-semibold uppercase text-muted-foreground">Hạn chót</Label>
-            <div class="flex items-center gap-2">
-              <CalendarIcon :size="16" class="text-muted-foreground" />
+            <Label class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              Hạn chót
+            </Label>
+            <div class="flex items-center gap-1.5">
+              <CalendarIcon class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
               <input v-model="form.dueDate" type="datetime-local"
-                class="text-sm bg-transparent border-none outline-none text-foreground/80 cursor-pointer hover:text-primary transition-colors"
+                class="text-xs bg-transparent border-none outline-none text-foreground/80 cursor-pointer hover:text-primary transition-colors w-full"
                 @change="handleSave" />
             </div>
-            <span v-if="status === 'OVERDUE'" class="text-red-500">
-              🔴 Quá hạn
-            </span>
 
-            <span v-else-if="status === 'DUE_SOON'" class="text-yellow-500">
-              🟡 Sắp đến hạn
-            </span>
-            <button v-if="form.dueDate" @click="clearDueDate"
-              class="text-[10px] text-muted-foreground hover:text-red-500 transition-colors flex items-center gap-1">
-              <X :size="10" /> Xóa hạn
-            </button>
+            <!-- Status badge -->
+            <div class="flex items-center gap-1.5">
+              <Badge v-if="status === 'OVERDUE'" variant="outline"
+                class="text-[10px] px-1.5 py-0 h-4 gap-1 border-destructive/30 bg-destructive/10 text-destructive">
+                <AlertCircle class="w-2.5 h-2.5" /> Quá hạn
+              </Badge>
+              <Badge v-else-if="status === 'DUE_SOON'" variant="outline"
+                class="text-[10px] px-1.5 py-0 h-4 gap-1 border-amber-300 bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800/40">
+                <Clock class="w-2.5 h-2.5" /> Sắp đến hạn
+              </Badge>
+              <button v-if="form.dueDate" @click="clearDueDate"
+                class="text-[10px] text-muted-foreground/60 hover:text-destructive transition-colors flex items-center gap-0.5">
+                <X class="w-2.5 h-2.5" /> Xóa
+              </button>
+            </div>
           </div>
         </div>
 
@@ -272,7 +293,7 @@ watch(
             <span class="text-sm font-semibold">Mô tả</span>
           </div>
           <Textarea v-model="form.description" placeholder="Nội dung chi tiết..."
-            class="min-h-[180px] w-full text-base bg-transparent border-none focus-visible:ring-0 p-0 resize-none leading-relaxed placeholder:text-muted-foreground/30 shadow-none"
+            class="min-h-[100px] w-full text-base bg-transparent border-none focus-visible:ring-0 p-2 resize-none leading-relaxed placeholder:text-muted-foreground/30 shadow-none"
             @blur="handleSave" />
         </div>
       </div>

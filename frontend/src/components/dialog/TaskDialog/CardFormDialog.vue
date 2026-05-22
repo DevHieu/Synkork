@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog'
 
@@ -56,9 +57,12 @@ const handleSave = () => {
   <Dialog :open="open" @update:open="$emit('update:open', $event)">
     <DialogContent class="sm:max-w-md ">
       <DialogHeader>
-        <DialogTitle class="mb-5">
+        <DialogTitle class="mb-1">
           {{ taskData ? 'Chỉnh sửa thẻ' : 'Thêm thẻ mới' }}
         </DialogTitle>
+        <DialogDescription>
+          <!-- {{ taskData ? 'Chỉnh sửa thông tin thẻ công việc' : 'Tạo thẻ công việc mới' }} -->
+        </DialogDescription>
       </DialogHeader>
 
       <div class="grid gap-6">
@@ -78,8 +82,8 @@ const handleSave = () => {
         <Button type="button" variant="outline" @click="closeDialog">
           Hủy
         </Button>
-        <Button @click="handleSave" :disabled="isSaving || !form.title.trim()">
-          {{ isSaving ? 'Đang lưu...' : taskData ? 'Cập nhật' : 'Tạo thẻ' }} 
+        <Button @click="handleSave" :disabled="!form.title.trim()">
+          {{ taskData ? 'Cập nhật' : 'Tạo thẻ' }} 
         </Button>
       </DialogFooter>
     </DialogContent>

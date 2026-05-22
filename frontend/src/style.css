@@ -755,3 +755,31 @@
   --foreground: oklch(0.99 0 0);
   --muted-foreground: oklch(0.77 0.02 100.64);
 }
+
+.synkork-toaster [data-sonner-toast] {
+  font-family: "Poppins", sans-serif !important;
+  background-color: var(--popover) !important;
+  border-color: var(--border) !important;
+  color: var(--popover-foreground) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: var(--shadow-lg) !important;
+  padding: 1rem !important;
+}
+
+.synkork-toaster [data-sonner-toast] [data-title] {
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  color: var(--foreground) !important;
+  line-height: 1.25rem !important;
+}
+
+.synkork-toaster [data-sonner-toast] [data-description] {
+  font-size: 0.75rem !important;
+  font-weight: 400 !important;
+  color: var(--muted-foreground) !important;
+  margin-top: 0.125rem !important;
+}
+
+.synkork-toaster [data-sonner-toast] {
+  border-left: 4px solid var(--primary) !important;
+}
