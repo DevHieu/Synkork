@@ -59,12 +59,12 @@ public class SecurityConfig {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // Thêm dòng này vào đầu danh sách requestMatchers
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/auth/check").authenticated()
                         .requestMatchers("/public/**", "/auth/**", "/ws/**").permitAll()
-                        .requestMatchers("/admin/**").authenticated() // Để tạm để test các chức năng của admin
-//                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/manage/auth/login").permitAll()
+                        .requestMatchers("/manage/auth/check").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers("/manage/admin/**").hasAnyRole("ADMIN")
+                        .requestMatchers("/manage/**").hasAnyRole("ADMIN", "MANAGER")
                         .anyRequest().authenticated())
                 .oauth2Login(oauth -> oauth
                         .successHandler(oAuth2SuccessHandler))
