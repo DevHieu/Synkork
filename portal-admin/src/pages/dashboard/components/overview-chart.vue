@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { dashboardService } from '@/services/dashboardService'
+import { dashboardService } from '../services/dashboardService'
 
 const rawData = ref<any[]>([])
 const timeRange = ref<'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY'>('WEEKLY')

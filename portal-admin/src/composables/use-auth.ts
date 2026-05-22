@@ -6,40 +6,49 @@ import { authService } from '@/pages/auth/services/authService'
 
 export function useAuth() {
   const router = useRouter()
-
   const authStore = useAuthStore()
-  const { isLogin } = storeToRefs(authStore)
+  const { isLogin, user } = storeToRefs(authStore)
   const loading = ref(false)
+  const error = ref<string | null>(null)
 
-  async function logout() {
-    await authService.logout()
-  }
-
-  function toHome() {
-    router.push({ path: '/dashboard' })
+  async function checkAuth() {
+    try {
+      const data = await authService.checkAuth()
+      user.value = data
+      isLogin.value = true
+      return true
+    } catch {
+      isLogin.value = false
+      user.value = null
+      return false
+    }
   }
 
   async function login(data: LoginData) {
     loading.value = true
-    
-    await authService.login(data)
-
-    // mock login
-    isLogin.value = true
-    loading.value = false
-
-    const redirect = router.currentRoute.value.query.redirect as string
-    if (!redirect || redirect.startsWith('//')) {
-      toHome()
-    }
-    else {
-      router.push(redirect)
+    error.value = null
+    try {
+      await authService.login(data)
+      await authStore.getUserInfo() // load user info luôn sau login
+      
+      const redirect = router.currentRoute.value.query.redirect as string
+      if (!redirect || redirect.startsWith('//')) {
+        router.push('/dashboard')
+      } else {
+        router.push(redirect)
+      }
+    } catch (err: any) {
+      error.value = err?.response?.data || 'Đăng nhập thất bại. Vui lòng thử lại.'
+    } finally {
+      loading.value = false
     }
   }
 
-  return {
-    loading,
-    logout,
-    login,
+  async function logout() {
+    await authService.logout()
+    isLogin.value = false
+    user.value = null
   }
+
+  return { loading, error, isLogin, user, checkAuth, login, logout }
 }

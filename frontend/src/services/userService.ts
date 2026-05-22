@@ -40,8 +40,11 @@ export const userService = {
     return res.data
   },
  
-  async updateAvatar(avatarUrl: string, avatarId: string) {
-    const res = await axiosClient.patch("/api/users/me/avatar", { avatarUrl, avatarId })
-    return res.data
-  },
+  async uploadAvatar(file: File) {
+  const formData = new FormData()
+  formData.append("file", file)
+  // KHÔNG set Content-Type — axios tự set boundary đúng cho multipart
+  const res = await axiosClient.post("/api/users/me/avatar/upload", formData)
+  return res.data
+},
 }
