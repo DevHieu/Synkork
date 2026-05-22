@@ -47,6 +47,9 @@ const isOAuth = computed(() => {
   const p = currentUser.value?.provider
   return p && p !== "LOCAL"
 })
+// Sau khi OAuth tạo password thành công → chuyển sang form đổi mật khẩu
+const oauthJustCreatedPassword = ref(false)
+const showChangePasswordForm = computed(() => !isOAuth.value || oauthJustCreatedPassword.value)
 
 const providerLabel = computed(() => {
   const map: Record<string, string> = { GOOGLE: "Google", FACEBOOK: "Facebook", GITHUB: "GitHub" }
@@ -128,10 +131,12 @@ async function submitCreatePw() {
   createPwLoading.value = true
   try {
     await userService.createPassword({ newPassword: createPwForm.next })
-    createPwSuccess.value = "Tạo mật khẩu thành công!"
     createPwForm.next = createPwForm.confirm = ""
     await userStore.getUserInfo()
-    setTimeout(() => (createPwSuccess.value = ""), 3000)
+    // Chuyển sang form đổi mật khẩu ngay sau khi tạo thành công
+    oauthJustCreatedPassword.value = true
+    pwSuccess.value = "Tạo mật khẩu thành công! Bạn có thể đổi mật khẩu bên dưới."
+    setTimeout(() => (pwSuccess.value = ""), 4000)
   } catch (e: any) {
     createPwError.value = e?.response?.data || e?.message || "Thất bại"
   } finally {
@@ -239,7 +244,7 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
                 <!-- Profile card -->
                 <div class="rounded-xl overflow-hidden bg-muted mb-5">
                   <div class="h-[90px] bg-gradient-to-br from-primary to-secondary" />
-                  <div class="flex items-end justify-between px-4 -mt-10 mb-3">
+                  <div class="flex items-end px-4 -mt-10 mb-3">
                     <div class="relative cursor-pointer group/ava2">
                       <Avatar class="w-20 h-20 border-4 border-card">
                         <AvatarImage v-if="currentUser?.avatarUrl" :src="currentUser.avatarUrl" />
@@ -252,7 +257,6 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
                         <Pencil class="size-5 text-white" />
                       </div>
                     </div>
-                    <Button variant="default" size="sm" class="mb-1 text-xs">Chỉnh Sửa Hồ Sơ</Button>
                   </div>
                   <p class="px-4 pb-3 text-sm font-bold text-foreground">{{ displayName }}</p>
                 </div>
@@ -329,30 +333,15 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
 
                   <Separator class="mx-4 w-auto opacity-40" />
 
-                  <!-- Email -->
-                  <div class="flex items-start justify-between gap-4 px-4 py-3">
-                    <div class="flex-1 min-w-0">
-                      <Label class="text-[10px] uppercase tracking-wider text-muted-foreground">Email</Label>
-                      <div class="flex items-center gap-2 mt-0.5">
-                        <p class="text-sm text-foreground">{{ showEmail ? currentUser?.email : maskedEmail }}</p>
-                        <button class="text-[11px] font-semibold text-primary hover:opacity-75 transition-opacity"
-                          @click="showEmail = !showEmail">
-                          {{ showEmail ? 'Ẩn' : 'Hiển thị' }}
-                        </button>
-                      </div>
+                  <!-- Email — read-only, toggle show/hide -->
+                  <div class="px-4 py-3">
+                    <Label class="text-[10px] uppercase tracking-wider text-muted-foreground">Email</Label>
+                    <div class="flex items-center gap-2 mt-0.5">
+                      <p class="text-sm text-foreground">{{ showEmail ? currentUser?.email : maskedEmail }}</p>
+                      <button class="text-[11px] font-semibold text-primary hover:opacity-75 transition-opacity" @click="showEmail = !showEmail">
+                        {{ showEmail ? 'Ẩn' : 'Hiển thị' }}
+                      </button>
                     </div>
-                    <Button variant="outline" size="sm" class="mt-5 text-xs shrink-0">Chỉnh sửa</Button>
-                  </div>
-
-                  <Separator class="mx-4 w-auto opacity-40" />
-
-                  <!-- Phone -->
-                  <div class="flex items-start justify-between gap-4 px-4 py-3">
-                    <div class="flex-1 min-w-0">
-                      <Label class="text-[10px] uppercase tracking-wider text-muted-foreground">Số Điện Thoại</Label>
-                      <p class="text-sm text-muted-foreground mt-0.5">Bạn chưa thêm số điện thoại nào cả.</p>
-                    </div>
-                    <Button variant="outline" size="sm" class="mt-5 text-xs shrink-0">Thêm</Button>
                   </div>
                 </div>
 
@@ -362,7 +351,7 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
                     Thực</p>
 
                   <!-- OAuth: tạo mật khẩu lần đầu -->
-                  <template v-if="isOAuth">
+                  <template v-if="isOAuth && !showChangePasswordForm">
                     <div class="rounded-lg bg-muted p-4 space-y-4">
 
                       <!-- Banner -->
@@ -454,7 +443,7 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
                     </div>
                   </template>
 
-                  <!-- LOCAL: đổi mật khẩu -->
+                  <!-- LOCAL hoặc OAuth đã tạo mật khẩu: đổi mật khẩu -->
                   <template v-else>
                     <div class="rounded-lg bg-muted p-4 space-y-3">
                       <div class="space-y-1.5">
