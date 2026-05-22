@@ -4,7 +4,7 @@ import GoogleButton from './google-button.vue'
 import ToForgotPasswordLink from './to-forgot-password-link.vue'
 import { LoginData } from '../types/LoginData'
 
-const { login, loading } = useAuth()
+const { login, loading, error } = useAuth()
 
 const loginForm = ref<LoginData>({
   username: '',
@@ -45,7 +45,9 @@ const loginForm = ref<LoginData>({
         </div>
         <UiInput id="password" v-model="loginForm.password" type="password" required placeholder="*********" />
       </div>
-
+      <p v-if="error" class="text-sm text-destructive">
+        {{ error }}
+      </p>
       <UiButton class="w-full" @click="login(loginForm)">
         <UiSpinner v-if="loading" class="mr-2" />
         {{ $t('login') }}
