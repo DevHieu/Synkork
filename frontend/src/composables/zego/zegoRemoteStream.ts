@@ -10,7 +10,7 @@ export function zegoRemoteStream(
   remoteStreamsList: Map<string, any>,
   participants: Ref<Map<string, Participant>>,
 ) {
-  const utils = zegoUtils(participants);
+  const utils = zegoUtils(state, participants);
 
   const playRemoteVideoStream = async (
     videoStreamId: string,

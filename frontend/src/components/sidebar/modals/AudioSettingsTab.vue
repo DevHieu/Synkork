@@ -11,6 +11,12 @@ import { Separator } from "@/components/ui/separator"
 import { Label } from "@/components/ui/label"
 import globalAudio from "@/utils/appAudioManager"
 import { useLocalStorage } from "@vueuse/core"
+import type { AcceptableValue } from "reka-ui"
+
+interface DeviceOption {
+  value: string
+  label: string
+}
 
 const savedInputDevice = useLocalStorage("audio-input-device", "default")
 const savedOutputDevice = useLocalStorage("audio-output-device", "default")
@@ -30,6 +36,8 @@ const audio = useLocalStorage("app-audio-settings", {
   systemMuted: false,
 })
 
+const voiceStore = useVoiceSpaceStore()
+
 // Tự động đồng bộ âm thanh xuống globalAudio khi có bất kỳ thay đổi nào (Kéo slider / Bấm mute)
 watch(
   () => audio.value,
@@ -43,10 +51,6 @@ const getVolumeIcon = (muted: boolean, vol: number) => {
   return muted || vol === 0 ? VolumeX : Volume2
 }
 
-interface DeviceOption {
-  value: string
-  label: string
-}
 const inputDevices = ref<DeviceOption[]>([{ value: "default", label: "Mặc định (Microphone)" }])
 const outputDevices = ref<DeviceOption[]>([{ value: "default", label: "Mặc định (Loa/Tai nghe)" }])
 
@@ -64,7 +68,8 @@ const updateDeviceList = async () => {
     if (mics.length > 0) {
       inputDevices.value = mics
       if (!mics.find(d => d.value === savedInputDevice.value)) {
-        savedInputDevice.value = mics[0].value
+        savedInputDevice.value = mics[0]?.value ?? "default"
+
       }
     }
 
@@ -74,7 +79,7 @@ const updateDeviceList = async () => {
     if (speakers.length > 0) {
       outputDevices.value = speakers
       if (!speakers.find(d => d.value === savedOutputDevice.value)) {
-        savedOutputDevice.value = speakers[0].value
+        savedOutputDevice.value = speakers[0]?.value ?? "default"
       }
     }
 
@@ -122,17 +127,19 @@ const toggleSpeakerTest = async () => {
   }
 }
 
-const handleOutputDeviceChange = async (deviceId: string) => {
+const handleOutputDeviceChange = async (deviceId: AcceptableValue) => {
+  if (!deviceId || typeof deviceId !== "string") return
   isSpeakerTesting.value = false
   await globalAudio.stopSpeakerTest();
   await globalAudio.changeGlobalOutput(deviceId)
 }
 
-const handleInputDeviceChange = (deviceId: string) => {
+const handleInputDeviceChange = (deviceId: AcceptableValue) => {
+  if (!deviceId || typeof deviceId !== "string") return
   isMicTesting.value = false
   micLevel.value = 0
   globalAudio.stopMicTest();
-  useVoiceSpaceStore().changeInputDevice(deviceId)
+  voiceStore.changeInputDevice(deviceId)
 }
 </script>
 
@@ -146,7 +153,6 @@ const handleInputDeviceChange = (deviceId: string) => {
       </div>
 
       <div class="grid grid-cols-2 gap-4">
-        <!-- Microphone Card -->
         <Card>
           <CardContent class="p-4 space-y-3">
             <div class="flex items-center gap-2">
@@ -171,13 +177,13 @@ const handleInputDeviceChange = (deviceId: string) => {
                 <component :is="getVolumeIcon(audio.inputMuted, audio.inputVolume)" class="w-3.5 h-3.5" />
               </Button>
               <Slider :min="0" :max="100" :step="1" :model-value="[audio.inputMuted ? 0 : audio.inputVolume]"
-                :disabled="audio.inputMuted" class="flex-1" @update:model-value="(val) => audio.inputVolume = val[0]" />
+                :disabled="audio.inputMuted" class="flex-1"
+                @update:model-value="(val) => { if (val) audio.inputVolume = val[0] ?? audio.inputVolume }" />
               <span class="text-xs font-medium w-8 text-right">
                 {{ audio.inputMuted ? '0' : audio.inputVolume }}%
               </span>
             </div>
 
-            <!-- Mic test -->
             <div class="space-y-2 pt-1">
               <Button variant="secondary" size="sm" class="w-full text-xs h-7"
                 :class="{ 'bg-destructive text-destructive-foreground hover:bg-destructive/90': isMicTesting }"
@@ -192,7 +198,6 @@ const handleInputDeviceChange = (deviceId: string) => {
           </CardContent>
         </Card>
 
-        <!-- Speaker Card -->
         <Card>
           <CardContent class="p-4 space-y-3">
             <div class="flex items-center gap-2">
@@ -217,13 +222,12 @@ const handleInputDeviceChange = (deviceId: string) => {
               </Button>
               <Slider :min="0" :max="100" :step="1" :model-value="[audio.outputMuted ? 0 : audio.outputVolume]"
                 :disabled="audio.outputMuted" class="flex-1"
-                @update:model-value="(val) => audio.outputVolume = val[0]" />
+                @update:model-value="(val) => { if (val) audio.outputVolume = val[0] ?? audio.outputVolume }" />
               <span class="text-xs font-medium w-8 text-right">
                 {{ audio.outputMuted ? '0' : audio.outputVolume }}%
               </span>
             </div>
 
-            <!-- Speaker test -->
             <div class="space-y-2 pt-1">
               <Button variant="secondary" size="sm" class="w-full text-xs h-7"
                 :class="{ 'bg-destructive text-destructive-foreground hover:bg-destructive/90': isSpeakerTesting }"
@@ -246,7 +250,6 @@ const handleInputDeviceChange = (deviceId: string) => {
       </div>
 
       <div class="grid grid-cols-1 gap-4">
-        <!-- Call Volume -->
         <Card>
           <CardContent class="p-4 space-y-3">
             <div class="flex items-center gap-2">
@@ -263,7 +266,8 @@ const handleInputDeviceChange = (deviceId: string) => {
               </Button>
 
               <Slider :min="0" :max="100" :step="1" :model-value="[audio.callMuted ? 0 : audio.callVolume]"
-                :disabled="audio.callMuted" class="flex-1" @update:model-value="(val) => audio.callVolume = val[0]" />
+                :disabled="audio.callMuted" class="flex-1"
+                @update:model-value="(val) => { if (val) audio.callVolume = val[0] ?? audio.callVolume }" />
 
               <span class="text-xs font-medium w-8 text-right">
                 {{ audio.callMuted ? '0' : audio.callVolume }}%
@@ -272,7 +276,6 @@ const handleInputDeviceChange = (deviceId: string) => {
           </CardContent>
         </Card>
 
-        <!-- System Volume -->
         <Card>
           <CardContent class="p-4 space-y-3">
             <div class="flex items-center gap-2">
@@ -290,7 +293,7 @@ const handleInputDeviceChange = (deviceId: string) => {
 
               <Slider :min="0" :max="100" :step="1" :model-value="[audio.systemMuted ? 0 : audio.systemVolume]"
                 :disabled="audio.systemMuted" class="flex-1"
-                @update:model-value="(val) => audio.systemVolume = val[0]" />
+                @update:model-value="(val) => { if (val) audio.systemVolume = val[0] ?? audio.systemVolume }" />
 
               <span class="text-xs font-medium w-8 text-right">
                 {{ audio.systemMuted ? '0' : audio.systemVolume }}%
