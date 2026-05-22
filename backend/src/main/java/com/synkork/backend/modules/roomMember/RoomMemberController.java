@@ -78,4 +78,14 @@ public class RoomMemberController {
 
         return ResponseEntity.ok().build();
     }
+
+    @DeleteMapping("/leave")
+    public ResponseEntity<?> leaveRoom(@PathVariable String roomId) {
+        UUID roomUUID = UUID.fromString(roomId);
+        UUID requesterId = AuthUtils.getCurrentUserId();
+
+        roomMemberService.leaveRoom(roomUUID, requesterId);
+
+        return ResponseEntity.ok().build();
+    }
 }

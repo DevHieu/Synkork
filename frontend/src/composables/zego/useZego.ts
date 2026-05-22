@@ -23,7 +23,7 @@ export function useZego({
 }: ZegoServiceOptions) {
   let isFirstLoad = true;
 
-  const utils = zegoUtils(participants);
+  const utils = zegoUtils(state, participants);
   const media = zegoMedia(
     state,
     remoteStreams,

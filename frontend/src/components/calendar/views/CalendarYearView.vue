@@ -6,6 +6,7 @@ import type { CalendarEvent } from "@/types/CalendarEvent";
 const props = defineProps<{
   currentDate: dayjs.Dayjs;
   events: CalendarEvent[];
+  isToday: (date: dayjs.Dayjs) => boolean;
 }>();
 
 const emit = defineEmits<{
@@ -36,15 +37,12 @@ const yearMonths = computed(() => {
 
     months.push({
       month: m,
-      name: monthStart.format("MMMM"),
+      name: monthStart.format("MMMM").charAt(0).toUpperCase() + monthStart.format("MMMM").slice(1),
       days,
     });
   }
   return months;
 });
-
-// Kiểm tra ngày hiện tại
-const isToday = (date: dayjs.Dayjs) => date.isSame(dayjs(), "day");
 
 // Kiểm tra xem ngày có sự kiện không (phải khớp đúng tháng đang hiển thị)
 const hasEvent = (date: dayjs.Dayjs, monthIndex: number) => {
@@ -62,29 +60,32 @@ const hasEvent = (date: dayjs.Dayjs, monthIndex: number) => {
 </script>
 
 <template>
-  <div class="flex-1 overflow-y-auto p-4">
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+  <div class="flex-1 overflow-y-auto p-4 calendar-scrollbar bg-background text-foreground">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
       <div
         v-for="m in yearMonths"
         :key="m.month"
         @click="emit('clickYearMonth', m.month)"
-        class="bg-white/5 rounded-xl p-3 cursor-pointer hover:bg-white/10 transition-all duration-200 hover:ring-1 hover:ring-teal-500/30"
+        class="bg-background border-2 border-border p-0 cursor-pointer hover:border-primary hover:translate-x-1 hover:-translate-y-1 transition-all duration-200 group"
+        style="box-shadow: 4px 4px 0px 0px var(--color-border);"
+        onmouseover="this.style.boxShadow='4px 4px 0px 0px var(--color-primary)';"
+        onmouseout="this.style.boxShadow='4px 4px 0px 0px var(--color-border)';"
       >
         <h4
           :class="[
-            'text-sm font-semibold mb-2 text-center',
+            'text-xs font-mono font-bold uppercase tracking-widest text-center py-2 border-b-2 border-border group-hover:border-primary transition-colors',
             currentDate.month() === m.month
-              ? 'text-teal-400'
-              : 'text-gray-300',
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted text-muted-foreground group-hover:text-primary',
           ]"
         >
           {{ m.name }}
         </h4>
-        <div class="grid grid-cols-7 gap-px">
+        <div class="grid grid-cols-7 gap-px p-2 bg-border group-hover:bg-primary/20 transition-colors">
           <div
-            v-for="dn in ['C', 'H', 'B', 'T', 'N', 'S', 'B']"
+            v-for="dn in ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']"
             :key="dn"
-            class="text-center text-[8px] text-gray-500 font-medium"
+            class="text-center text-[8px] font-mono font-bold text-muted-foreground bg-background py-1"
           >
             {{ dn }}
           </div>
@@ -92,10 +93,10 @@ const hasEvent = (date: dayjs.Dayjs, monthIndex: number) => {
             v-for="(day, di) in m.days.slice(0, 42)"
             :key="di"
             :class="[
-              'text-center text-[10px] rounded p-px',
-              day.month() === m.month ? 'text-gray-300' : 'text-gray-600',
-              isToday(day) ? 'bg-teal-500 text-white font-bold' : '',
-              hasEvent(day, m.month) ? 'text-teal-400 font-semibold' : '',
+              'text-center text-[10px] font-mono p-1 bg-background flex items-center justify-center',
+              day.month() === m.month ? 'text-foreground' : 'text-muted-foreground opacity-30',
+              isToday(day) ? 'bg-primary text-primary-foreground font-bold' : '',
+              hasEvent(day, m.month) && !isToday(day) ? 'border border-primary text-primary font-bold bg-primary/5' : '',
             ]"
           >
             {{ day.date() }}
@@ -107,11 +108,4 @@ const hasEvent = (date: dayjs.Dayjs, monthIndex: number) => {
 </template>
 
 <style scoped>
-.overflow-y-auto {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
-}
-.overflow-y-auto::-webkit-scrollbar {
-  width: 4px;
-}
 </style>

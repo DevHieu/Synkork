@@ -1,8 +1,0 @@
-package com.synkork.backend.modules.statistics.enums;
-
-public enum PeriodEnum {
-    WEEKLY,
-    MONTHLY,
-    QUARTERLY,
-    YEARLY,
-}

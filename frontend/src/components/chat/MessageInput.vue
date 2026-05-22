@@ -170,84 +170,45 @@ onUnmounted(() =>
 </script>
 
 <template>
-  <div
-    class="relative border-t background"
-    @dragover="handleDragOver"
-    @dragleave="handleDragLeave"
-    @drop="handleDrop"
-  >
+  <div class="relative border-t background" @dragover="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop">
     <!-- Drag overlay -->
     <Transition name="fade">
-      <div
-        v-if="isDragging"
-        class="absolute inset-0 z-50 flex items-center justify-center bg-primary/10 border-2 border-dashed border-primary/50 rounded-lg pointer-events-none"
-      >
+      <div v-if="isDragging"
+        class="absolute inset-0 z-50 flex items-center justify-center bg-primary/10 border-2 border-dashed border-primary/50 rounded-lg pointer-events-none">
         <p class="text-primary font-medium text-sm">Thả file vào đây</p>
       </div>
     </Transition>
 
     <Transition name="reply-slide">
-      <ReplyBar
-        v-if="replyingTo"
-        :replying-to="replyingTo"
-        @cancel="messageStore.setReply(null)"
-      />
+      <ReplyBar v-if="replyingTo" :replying-to="replyingTo" @cancel="messageStore.setReply(null)" />
     </Transition>
 
     <Transition name="reply-slide">
-      <FilePreview
-        v-if="hasFiles"
-        :files="selectedFiles"
-        :previews="filePreviews"
-        @remove="removeFile"
-        @clear="clearFiles"
-        @add-more="fileInputRef?.click()"
-      />
+      <FilePreview v-if="hasFiles" :files="selectedFiles" :previews="filePreviews" @remove="removeFile"
+        @clear="clearFiles" @add-more="fileInputRef?.click()" />
     </Transition>
 
     <div class="flex items-center gap-1 px-3 py-3">
-      <button
-        @click="fileInputRef?.click()"
-        title="Đính kèm file"
-        class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
-      >
+      <button @click="fileInputRef?.click()" title="Đính kèm file"
+        class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-all">
         <CirclePlus />
       </button>
-      <input
-        ref="fileInputRef"
-        type="file"
-        multiple
-        class="hidden"
-        @change="handleFileChange"
-      />
+      <input ref="fileInputRef" type="file" multiple class="hidden" @change="handleFileChange" />
 
       <div
-        class="flex-1 flex items-center bg-muted/50 rounded-lg px-3 gap-2 border border-border focus-within:border-primary/50 transition-colors"
-      >
-        <input
-          ref="inputRef"
-          v-model="newMessage"
-          :placeholder="
-            replyingTo
-              ? `Trả lời ${replyingTo.sender?.displayName}...`
-              : 'Nhắn tin...'
+        class="flex-1 flex items-center bg-muted/50 rounded-lg px-3 gap-2 border border-border focus-within:border-primary/50 transition-colors">
+        <input ref="inputRef" v-model="newMessage" :placeholder="replyingTo
+            ? `Trả lời ${replyingTo.sender?.displayName}...`
+            : 'Nhắn tin...'
           "
           class="flex-1 bg-transparent py-2.5 text-foreground placeholder:text-muted-foreground focus:outline-none text-sm"
-          @keydown.esc="messageStore.setReply(null)"
-          @keydown.enter.exact.prevent="handleSubmit"
-        />
+          @keydown.esc="messageStore.setReply(null)" @keydown.enter.exact.prevent="handleSubmit" />
         <div class="relative shrink-0">
-          <button
-            ref="emojiButtonRef"
-            @click="toggleEmojiPicker"
-            title="Emoji"
-            class="w-8 h-8 rounded-full flex items-center justify-center transition-all"
-            :class="
-              showEmojiPicker
+          <button ref="emojiButtonRef" @click="toggleEmojiPicker" title="Emoji"
+            class="w-8 h-8 rounded-full flex items-center justify-center transition-all" :class="showEmojiPicker
                 ? 'text-primary'
                 : 'text-muted-foreground hover:text-foreground'
-            "
-          >
+              ">
             <Smile />
           </button>
         </div>
@@ -255,30 +216,16 @@ onUnmounted(() =>
     </div>
 
     <Teleport to="body">
-      <div
-        v-if="showEmojiPicker"
-        ref="emojiPickerRef"
-        class="fixed z-[9999]"
-        :style="{
-          bottom: emojiPickerPos.bottom + 'px',
-          right: emojiPickerPos.right + 'px',
-        }"
-      >
-        <EmojiPicker
-          :native="true"
-          :disable-skin-tones="true"
-          @select="onSelectEmoji"
-        />
+      <div v-if="showEmojiPicker" ref="emojiPickerRef" class="fixed z-20" :style="{
+        bottom: emojiPickerPos.bottom + 'px',
+        right: emojiPickerPos.right + 'px',
+      }">
+        <EmojiPicker :native="true" :disable-skin-tones="true" @select="onSelectEmoji" />
       </div>
 
-      <FileSizeDialog
-        v-model:open="fileSizeDialogOpen"
-        :file-name="rejectedFile?.name ?? ''"
-        :file-size="rejectedFile?.size ?? 0"
-        current-plan="free"
-        @upgrade="(plan) => console.log('Navigate to upgrade:', plan)"
-        @dismiss="rejectedFile = null"
-      />
+      <FileSizeDialog v-model:open="fileSizeDialogOpen" :file-name="rejectedFile?.name ?? ''"
+        :file-size="rejectedFile?.size ?? 0" current-plan="free"
+        @upgrade="(plan) => console.log('Navigate to upgrade:', plan)" @dismiss="rejectedFile = null" />
     </Teleport>
   </div>
 </template>
@@ -289,6 +236,7 @@ onUnmounted(() =>
   transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }
+
 .reply-slide-enter-from,
 .reply-slide-leave-to {
   opacity: 0;
@@ -296,6 +244,7 @@ onUnmounted(() =>
   padding-top: 0;
   padding-bottom: 0;
 }
+
 .reply-slide-enter-to,
 .reply-slide-leave-from {
   opacity: 1;
@@ -306,6 +255,7 @@ onUnmounted(() =>
 .fade-leave-active {
   transition: opacity 0.15s;
 }
+
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;

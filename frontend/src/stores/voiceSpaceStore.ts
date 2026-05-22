@@ -1,6 +1,6 @@
+import { defineStore, storeToRefs } from "pinia";
+import { useSpaceStore } from "@/stores/spaceStore";
 import { useRoomMemberStore } from "./roomMemberStore";
-import { storeToRefs } from "pinia";
-import { defineStore } from "pinia";
 import { ref, computed, watch, reactive } from "vue";
 import { ZegoExpressEngine } from "zego-express-engine-webrtc";
 import type { Participant } from "@/types/VoiceSpaceParticipant";
@@ -8,7 +8,6 @@ import { useUserStore } from "@/stores/userStore";
 import { getZegoToken } from "@/services/spaceService";
 import router from "@/routers";
 import { useLocalStorage } from "@vueuse/core";
-import { useSpaceStore } from "@/stores/spaceStore";
 
 import { useZego } from "@/composables/zego/useZego";
 import { muteAudio } from "@/services/roomMemberService";
@@ -48,6 +47,7 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
   );
   const mutedList = reactive(new Map<string, boolean>());
 
+  const spaceStore = useSpaceStore();
   const roomMemberStore = useRoomMemberStore();
   const { isMuted: mutedStore, isDeafen: deafenStore } =
     storeToRefs(roomMemberStore);
@@ -78,7 +78,13 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
   });
 
   // Cần thêm roomId để làm chức năng mute tiếng user toàn phòng
-  const joinRoom = async (spaceId: string) => {
+  const joinRoom = async (spaceId: string, spaceLoading: boolean) => {
+    console.log("isloading" + spaceLoading);
+    if (spaceLoading || !spaceStore.isExisted(spaceId)) {
+      isJoining.value = false;
+      return;
+    }
+
     isJoining.value = true;
     if (isInRoom.value && currentSpaceId.value === spaceId) {
       isExpanded.value = true;
@@ -314,7 +320,7 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
   const kickMember = (userId: string) => {
     if (!zegoState.zg || !currentSpaceId.value) return;
 
-    zego.media.kickMember(currentSpaceId.value, userId);
+    zego.utils.kickMember(currentSpaceId.value, userId);
   };
 
   const stopUserScreen = (userId: string) => {
@@ -342,7 +348,18 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     zego.media.muteAudioUser(audioId, isMute);
   };
 
+  const changeInputDevice = (deviceId: string) => {
+    zego.local.changeInputDevice(deviceId);
+  };
+
+  const setInputCaptureVolume = async (volume: number) => {
+    if (!zegoState.zg || !zegoState.localAudioStream) return;
+
+    zego.utils.setInputCaptureVolume(volume);
+  };
+
   return {
+    zego,
     currentSpaceId,
     participants,
     participantList,
@@ -368,5 +385,7 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     stopUserScreen,
     toggleAudioUser,
     stopUserVideo,
+    changeInputDevice,
+    setInputCaptureVolume,
   };
 });

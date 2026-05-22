@@ -74,14 +74,6 @@ export function zegoMedia(
     state.zg.sendCustomCommand(roomId, data, [userId]);
   };
 
-  const kickMember = (roomId: string, userId: string) => {
-    if (!state.zg) return;
-
-    const data = JSON.stringify({ type: "KICK_MEMBER" });
-
-    state.zg.sendCustomCommand(roomId, data, [userId]);
-  };
-
   const stopUserScreen = (roomId: string, userId: string) => {
     if (!state.zg) return;
     const data = JSON.stringify({ type: "STOP_SCREEN" });
@@ -154,7 +146,6 @@ export function zegoMedia(
     requestMediaStates,
     replayAllStreamToDOM,
     roomMutedUserRequest,
-    kickMember,
     stopUserScreen,
     stopUserVideo,
   };

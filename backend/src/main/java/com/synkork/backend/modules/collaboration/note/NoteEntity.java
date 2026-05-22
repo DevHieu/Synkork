@@ -10,15 +10,18 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.Builder;
 
+import java.time.Instant;
+
 @Entity
-@Table(name="notes")
+@Table(name = "notes")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class NoteEntity extends BaseEntity {
-    @ManyToOne(fetch = FetchType.LAZY)
+
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "space_id", nullable = false, columnDefinition = "BINARY(16)")
     private SpaceEntity space;
 
@@ -34,7 +37,7 @@ public class NoteEntity extends BaseEntity {
     @Builder.Default
     private boolean allowEditAll = true;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "created_by", nullable = false, columnDefinition = "BINARY(16)")
     private UserEntity createdBy;
 
@@ -52,7 +55,11 @@ public class NoteEntity extends BaseEntity {
 
     @Column(name = "height", columnDefinition = "INT DEFAULT 2")
     private Integer height = 2;
+
+    @Column(name = "reminder_at")
+    private Instant reminderAt;
+
+    @Builder.Default
+    @Column(name = "reminder_sent")
+    private Boolean reminderSent = false;
 }
-
-
-    

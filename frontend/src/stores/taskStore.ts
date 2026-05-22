@@ -133,8 +133,8 @@ export const useTaskStore = defineStore("task", {
             }
         },
 
-        async saveCard(spaceId: string, cardId: string, columnId: string, title: string, description: string, assigneeIds: string[] = []) {
-            if(cardId) await updateCard(spaceId, cardId, { title, description, assigneeIds })
+        async saveCard(spaceId: string, cardId: string, columnId: string, title: string, description: string, assigneeIds: string[] = [], dueDate?: string) {
+            if(cardId) await updateCard(spaceId, cardId, { title, description, assigneeIds, dueDate })
             else await createCard(spaceId, { columnId, title, description })
         },
         

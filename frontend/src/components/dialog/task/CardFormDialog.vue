@@ -12,13 +12,14 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
+
 import type { CardEvent } from '@/types/Task'
 
-const props = defineProps < {
-  open: Boolean,
-  columnId: String,
+const props = defineProps<{
+  open: boolean,
+  columnId: string,
   taskData: CardEvent | null
-} > ();
+}>()
 
 const emit = defineEmits(['update:open', 'save'])
 
@@ -78,7 +79,7 @@ const handleSave = () => {
           Hủy
         </Button>
         <Button @click="handleSave" :disabled="isSaving || !form.title.trim()">
-          {{ isSaving ? 'Đang lưu...' : taskData ? 'Cập nhật' : 'Tạo thẻ' }}
+          {{ isSaving ? 'Đang lưu...' : taskData ? 'Cập nhật' : 'Tạo thẻ' }} 
         </Button>
       </DialogFooter>
     </DialogContent>

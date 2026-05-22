@@ -5,7 +5,7 @@ import LoginForm from './components/login-form.vue'
 
 <template>
   <div class="flex items-center justify-center min-h-screen p-4 min-w-screen">
-    <main class="flex flex-col gap-4">
+    <main class="flex flex-col gap-4 w-full max-w-md">
       <AuthTitle />
       <LoginForm />
     </main>

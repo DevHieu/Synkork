@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import { useColorMode } from "@vueuse/core";
-const mode = useColorMode();
-
 import { RouterView } from "vue-router";
 import { Toaster } from "vue-sonner";
 import "vue-sonner/style.css";
@@ -9,7 +6,7 @@ import "vue-sonner/style.css";
 
 <template>
   <!-- Hiện thông báo ấy mà -->
-  <Toaster position="top-center" richColors :theme="mode" />
+  <Toaster position="top-center" richColors />
 
   <RouterView />
 </template>

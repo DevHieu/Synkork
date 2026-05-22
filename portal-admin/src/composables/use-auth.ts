@@ -1,6 +1,8 @@
+import { LoginData } from './../pages/auth/types/LoginData';
 import { storeToRefs } from 'pinia'
 
 import { useAuthStore } from '@/stores/auth'
+import { authService } from '@/pages/auth/services/authService'
 
 export function useAuth() {
   const router = useRouter()
@@ -9,19 +11,19 @@ export function useAuth() {
   const { isLogin } = storeToRefs(authStore)
   const loading = ref(false)
 
-  function logout() {
-    isLogin.value = false
-
-    router.push({ path: '/auth/sign-in' })
+  async function logout() {
+    await authService.logout()
   }
 
   function toHome() {
     router.push({ path: '/dashboard' })
   }
 
-  async function login() {
+  async function login(data: LoginData) {
     loading.value = true
-    await new Promise(resolve => setTimeout(resolve, 10))
+    
+    await authService.login(data)
+
     // mock login
     isLogin.value = true
     loading.value = false

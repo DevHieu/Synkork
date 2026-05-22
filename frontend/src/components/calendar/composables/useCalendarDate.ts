@@ -35,42 +35,51 @@ export function useCalendarDate() {
     viewMode.value = "month";
   };
 
+  // Helpers dùng chung cho các view
+  const dayNames = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+  const dayNamesLong = ["CN", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
+  const isToday = (date: dayjs.Dayjs) => date.isSame(dayjs(), "day");
+  const isSelected = (date: dayjs.Dayjs) => date.isSame(selectedDate.value, "day");
+
   // Tiêu đề header
   const headerTitle = computed(() => {
     if (viewMode.value === "week") {
       const start = currentDate.value.startOf("week");
       const end = currentDate.value.endOf("week");
       return `${start.format("DD/MM")} - ${end.format("DD/MM/YYYY")}`;
-    } else if (viewMode.value === "year") {
-      return currentDate.value.format("YYYY");
     }
-    return currentDate.value.format("MMMM YYYY");
+    if (viewMode.value === "year") return currentDate.value.format("YYYY");
+    const formatted = currentDate.value.format("MMMM YYYY");
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
   });
+
+  // Lookup table: [zero, prev, next] — dùng chung cho week/month
+  const RELATIVE_LABELS: Record<"week" | "month", [string, string, string]> = {
+    week:  ["Tuần này",  "Tuần trước",  "Tuần sau"],
+    month: ["Tháng này", "Tháng trước", "Tháng sau"],
+  };
+
+  // Factory: chuyển diff số -> chuỗi tương đối
+  const relativeLabel = (diff: number, [zero, prev, next]: [string, string, string]): string => {
+    if (diff === 0)  return zero;
+    if (diff === -1) return prev;
+    if (diff === 1)  return next;
+    return diff < 0 ? `${-diff} ${prev}` : `${diff} ${next}`;
+  };
 
   // Label thời gian tương đối
   const relativeTimeText = computed(() => {
     const now = dayjs();
-    if (viewMode.value === "week") {
-      const diff = currentDate.value.startOf("week").diff(now.startOf("week"), "week");
-      if (diff === 0) return "Tuần này";
-      if (diff === -1) return "Tuần trước";
-      if (diff === 1) return "Tuần sau";
-      if (diff < -1) return `${-diff} tuần trước`;
-      return `${diff} tuần sau`;
-    } else if (viewMode.value === "month") {
-      const diff = currentDate.value.startOf("month").diff(now.startOf("month"), "month");
-      if (diff === 0) return "Tháng này";
-      if (diff === -1) return "Tháng trước";
-      if (diff === 1) return "Tháng sau";
-      if (diff < -1) return `${-diff} tháng trước`;
-      return `${diff} tháng sau`;
-    } else {
+    if (viewMode.value === "year") {
       const diff = currentDate.value.year() - now.year();
-      if (diff === 0) return "Năm nay";
+      if (diff === 0)  return "Năm nay";
       if (diff === -1) return "Năm ngoái";
-      if (diff === 1) return "Năm sau";
+      if (diff === 1)  return "Năm sau";
       return `Năm ${currentDate.value.year()}`;
     }
+    const unit = viewMode.value; // "week" | "month"
+    const diff = currentDate.value.startOf(unit).diff(now.startOf(unit), unit);
+    return relativeLabel(diff, RELATIVE_LABELS[unit]);
   });
 
   return {
@@ -82,8 +91,11 @@ export function useCalendarDate() {
     goNext,
     goPrev,
     goToday,
-    jumpDate,
     selectDate,
     setYearMonth,
+    dayNames,
+    dayNamesLong,
+    isToday,
+    isSelected,
   };
 }
