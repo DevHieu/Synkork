@@ -4,7 +4,7 @@ import RecentSales from '../components/recent-sales.vue'
 import DataCard from '../components/data-card.vue';
 
 import { Activity, MessagesSquare, Server, Users } from '@lucide/vue';
-import { dashboardService } from '@/services/dashboardService';
+import { dashboardService } from '../services/dashboardService';
 
 const stats = ref<any>(null)
 
