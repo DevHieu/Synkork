@@ -1,3 +1,4 @@
+import { useVoiceSpaceStore } from "@/stores/voiceSpaceStore";
 import { useLocalStorage } from "@vueuse/core";
 
 const audio = useLocalStorage("app-audio-settings", {
@@ -47,6 +48,7 @@ class AppAudioManager {
     }
   }
 
+  // Lấy thông tin lưu ở localStorege và áp dụng lên mấy cái audio
   syncAudioSettings(settings: typeof audio.value) {
     // Tỉ lệ của âm lượng tổng (từ 0.0 đến 1.0). Nếu mute tổng thì tỉ lệ bằng 0.
     const masterScale = settings.outputMuted ? 0 : settings.outputVolume / 100;
@@ -54,6 +56,7 @@ class AppAudioManager {
     // Mic
     const actualInputVol = settings.inputMuted ? 0 : settings.inputVolume;
     this.setMicroVolume(actualInputVol);
+    useVoiceSpaceStore().setInputCaptureVolume(actualInputVol);
 
     // Call
     const baseCallVol = settings.callMuted ? 0 : settings.callVolume;
@@ -92,6 +95,7 @@ class AppAudioManager {
     this.audioElements.delete(streamId);
   }
 
+  // Chỉnh thiết bị đầu ra chung cho tất cả âm thanh
   async changeGlobalOutput(deviceId: string): Promise<void> {
     localStorage.setItem("selectedOutputDevice", deviceId);
 

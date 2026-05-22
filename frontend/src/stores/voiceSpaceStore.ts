@@ -320,7 +320,7 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
   const kickMember = (userId: string) => {
     if (!zegoState.zg || !currentSpaceId.value) return;
 
-    zego.media.kickMember(currentSpaceId.value, userId);
+    zego.utils.kickMember(currentSpaceId.value, userId);
   };
 
   const stopUserScreen = (userId: string) => {
@@ -352,6 +352,12 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     zego.local.changeInputDevice(deviceId);
   };
 
+  const setInputCaptureVolume = async (volume: number) => {
+    if (!zegoState.zg || !zegoState.localAudioStream) return;
+
+    zego.utils.setInputCaptureVolume(volume);
+  };
+
   return {
     zego,
     currentSpaceId,
@@ -380,5 +386,6 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     toggleAudioUser,
     stopUserVideo,
     changeInputDevice,
+    setInputCaptureVolume,
   };
 });
