@@ -146,25 +146,22 @@ export const useMessageStore = defineStore("message", {
           knownSuggestionIds: Object.keys(this.suggestionsByMessageId),
         });
 
-        // Chỉ lưu cache cho những tin nhắn đang tồn tại trong chat hiện tại.
+        // Kiểm tra xem tin nhắn đã có sẵn trong danh sách hiển thị chưa (chỉ dùng để log thông tin).
         const targetMessage = this.messages.find(
           (message) => message.id === suggestion.messageId,
         );
         if (!targetMessage) {
-          console.warn("[Goi y] Khong tim thay tin nhan tuong ung trong chat hien tai:", {
-            suggestionMessageId: suggestion.messageId,
-            currentMessageIds: this.messages.slice(0, 10).map((message) => message.id),
-          });
-          return;
+          console.log("[Goi y] Tin nhan chua xuat hien trong danh sach hien tai, van luu cache cho messageId:", suggestion.messageId);
         }
-        if (!suggestion.title && !suggestion.description) {
-          console.warn("[Goi y] Bo qua vi title va description deu rong:", suggestion);
+
+        if (suggestion.suggestionType === "NONE") {
+          console.warn("[Goi y] Bo qua vi LLM tra ve NONE:", suggestion);
           return;
         }
 
-        // Cache theo messageId để từng MessageItem tự quyết định có bật UI gợi ý hay không.
-        this.suggestionsByMessageId[suggestion.messageId] = suggestion;
-        console.log("[Goi y] Da luu cache cho message:", suggestion.messageId);
+        // Xóa các gợi ý cũ trước khi thêm gợi ý mới để chỉ hiển thị duy nhất 1 gợi ý tại 1 thời điểm.
+        this.suggestionsByMessageId = { [suggestion.messageId]: suggestion };
+        console.log("[Goi y] Da luu cache duy nhat cho message:", suggestion.messageId);
       });
 
       if (!subscription) {

@@ -92,8 +92,13 @@ const messageSuggestion = computed<MessageEventSuggestion | null>(() => {
 
 // Nếu message có suggestion hợp lệ thì coi như đang ở trạng thái hover.
 const shouldHighlightSuggestion = computed(
-  () => messageSuggestion.value?.hasEvent === true,
+  () => !!messageSuggestion.value && messageSuggestion.value.suggestionType !== "NONE",
 );
+
+// Đổi nhãn nút sang "Tạo nhanh" chung cho các loại nội dung.
+const suggestionLabel = computed(() => {
+  return "Tạo nhanh";
+});
 
 watch(
   shouldHighlightSuggestion,
@@ -102,7 +107,7 @@ watch(
 
     console.log("[Goi y UI] Tin nhan da duoc bat trang thai goi y:", {
       messageId: props.message.id,
-      hasEvent: messageSuggestion.value?.hasEvent,
+      suggestionType: messageSuggestion.value?.suggestionType,
       title: messageSuggestion.value?.title ?? null,
     });
   },
@@ -235,6 +240,7 @@ const parsedContent = computed(() => {
       :class="shouldHighlightSuggestion ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'">
       <MessageActions v-if="!isEditing && !props.message.deleted" :isSender="isFullAction"
         :isPinned="props.message.pinned" :showSuggestion="shouldHighlightSuggestion"
+        :suggestionLabel="suggestionLabel"
         :forceVisible="shouldHighlightSuggestion" @reply="handleReply" @edit="handleEdit"
         @delete="isDeleteOpen = true" @pin="handlePin" @suggest="handleSuggestion" />
     </div>

@@ -205,6 +205,7 @@
     <NoteDialog
       :open="dialogOpen"
       :note="selectedNote"
+      :draft="noteDraft"
       @close="dialogOpen = false"
       @submit="handleSubmit"
     />
@@ -260,6 +261,8 @@ import {
 
 import { useRoute } from 'vue-router'
 import { useNoteStore } from '@/stores/noteStore'
+import { useCalendarSuggestionStore } from '@/stores/calendarSuggestionStore'
+import type { SuggestedNoteDraft } from '@/types/CalendarSuggestion'
 
 import {
   GridLayout,
@@ -305,6 +308,28 @@ const store = useNoteStore()
 const dialogOpen     = ref(false)
 const detailOpen     = ref(false)
 const selectedNote   = ref<Note | null>(null)
+const calendarSuggestionStore = useCalendarSuggestionStore()
+const noteDraft      = ref<SuggestedNoteDraft | null>(null)
+
+watch(
+  spaceId,
+  (newId) => {
+    if (!newId) return
+    const draft = calendarSuggestionStore.consumePendingNoteDraft(newId)
+    if (draft) {
+      noteDraft.value = draft
+      selectedNote.value = null
+      dialogOpen.value = true
+    }
+  },
+  { immediate: true }
+)
+
+watch(dialogOpen, (isOpen) => {
+  if (!isOpen) {
+    noteDraft.value = null
+  }
+})
 
 const confirmOpen    = ref(false)
 

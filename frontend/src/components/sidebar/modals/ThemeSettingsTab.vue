@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue"
 import { Sun, Moon, Monitor, Check, RotateCcw } from "lucide-vue-next"
-import { applyThemeVars, clearThemeVars } from "@/utils/themeVars"
 
 type ThemeMode = "light" | "dark" | "system"
 type ThemeId = string

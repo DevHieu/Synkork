@@ -70,10 +70,10 @@ onMounted(syncInternalState);
 </script>
 
 <template>
-  <div class="space-y-6 rounded-xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)]">
+  <div class="space-y-6 rounded-xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)] cursor-default">
     <!-- Định dạng giờ -->
-    <div class="rounded-xl border border-border/80 bg-muted/20 p-4">
-      <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-3">ĐỊNH DẠNG GIỜ</label>
+    <div class="rounded-xl border border-border/80 bg-muted/20 p-4 cursor-default">
+      <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-3 cursor-default">ĐỊNH DẠNG GIỜ</label>
       <div class="flex w-fit rounded-full border-2 border-border bg-background p-1">
         <button type="button" @click="timeFormat = '24h'" :class="[
           'rounded-full px-6 py-2 text-[10px] font-mono font-bold uppercase tracking-widest transition-colors',
@@ -89,14 +89,14 @@ onMounted(syncInternalState);
     <!-- Ngày & Giờ -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="md:col-span-2">
-        <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2">NGÀY DIỄN RA *</label>
+        <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">NGÀY DIỄN RA *</label>
         <input v-model="eventDate" type="date" required
           class="w-full rounded-lg border-2 border-border bg-background px-4 py-3 font-mono text-sm uppercase text-foreground transition-colors focus:outline-none focus:border-primary" />
       </div>
 
       <!-- Giờ bắt đầu -->
-      <div class="rounded-xl border border-border/80 bg-muted/20 p-4">
-        <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2">GIỜ BẮT ĐẦU *</label>
+      <div class="rounded-xl border border-border/80 bg-muted/20 p-4 cursor-default">
+        <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">GIỜ BẮT ĐẦU *</label>
         <div class="flex gap-2 items-center">
           <select v-model="startHour"
             class="calendar-scrollbar w-full cursor-pointer appearance-none rounded-lg border-2 border-border bg-background px-3 py-3 text-center font-mono text-sm text-foreground focus:outline-none focus:border-primary !bg-none">
@@ -116,8 +116,8 @@ onMounted(syncInternalState);
       </div>
 
       <!-- Giờ kết thúc -->
-      <div class="rounded-xl border border-border/80 bg-muted/20 p-4">
-        <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2">GIỜ KẾT THÚC *</label>
+      <div class="rounded-xl border border-border/80 bg-muted/20 p-4 cursor-default">
+        <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">GIỜ KẾT THÚC *</label>
         <div class="flex gap-2 items-center">
           <select v-model="endHour"
             class="calendar-scrollbar w-full cursor-pointer appearance-none rounded-lg border-2 border-border bg-background px-3 py-3 text-center font-mono text-sm text-foreground focus:outline-none focus:border-primary !bg-none">

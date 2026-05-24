@@ -28,7 +28,7 @@ watch(() => props.show, (isOpen) => {
 
 <template>
   <div>
-    <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2">Tệp đính kèm</label>
+    <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">Tệp đính kèm</label>
     <div class="flex flex-col gap-2">
       <label
         class="flex h-24 w-full cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/20 px-4 transition hover:border-primary hover:bg-muted/50 focus:outline-none">

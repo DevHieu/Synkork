@@ -88,16 +88,16 @@ const getCreatorLabel = (event: CalendarEvent) => {
 </script>
 
 <template>
-  <div class="flex flex-1 flex-col overflow-hidden bg-transparent text-foreground md:flex-row">
+  <div class="flex flex-1 flex-col overflow-hidden bg-transparent text-foreground cursor-default md:flex-row">
     <!-- Lưới lịch -->
     <div class="flex flex-1 flex-col overflow-hidden p-4 md:pr-0">
       <div class="flex flex-1 flex-col overflow-hidden rounded-[1.5rem] border-2 border-border bg-background shadow-[0_30px_80px_-48px_var(--color-foreground)]">
         <!-- Tiêu đề các thứ -->
-        <div class="grid grid-cols-7 border-b-2 border-border bg-muted/55 text-muted-foreground">
+        <div class="grid grid-cols-7 border-b-2 border-border bg-muted/55 text-muted-foreground cursor-default">
           <div
             v-for="day in dayNames"
             :key="day"
-            class="text-center text-[10px] sm:text-xs font-mono font-bold uppercase tracking-widest py-2 border-r-2 last:border-r-0 border-border"
+            class="text-center text-[10px] sm:text-xs font-mono font-bold uppercase tracking-widest py-2 border-r-2 last:border-r-0 border-border cursor-default"
           >
             {{ day }}
           </div>
@@ -147,7 +147,7 @@ const getCreatorLabel = (event: CalendarEvent) => {
 
     <!-- Danh sách sự kiện ngày đã chọn (Bên phải) -->
     <div class="mt-4 flex w-full flex-col overflow-hidden rounded-[1.5rem] border-2 border-border bg-background shadow-[0_30px_80px_-48px_var(--color-foreground)] md:ml-4 md:mt-0 md:w-96">
-      <div class="flex items-end justify-between border-b-2 border-border bg-muted/55 px-5 py-4">
+      <div class="flex items-end justify-between border-b-2 border-border bg-muted/55 px-5 py-4 cursor-default">
         <div>
           <h3 class="font-mono font-bold text-xl tracking-widest uppercase leading-none text-primary">
             {{ selectedDate.format("DD/MM/YYYY") }}
@@ -161,7 +161,7 @@ const getCreatorLabel = (event: CalendarEvent) => {
         <div class="flex flex-col gap-4 p-4 pr-5">
           <div
             v-if="selectedDateEvents.length === 0"
-            class="mt-8 rounded-xl border-2 border-dashed border-muted-foreground/50 bg-muted/20 p-8 text-center font-mono text-sm uppercase tracking-widest text-muted-foreground"
+            class="mt-8 rounded-xl border-2 border-dashed border-muted-foreground/50 bg-muted/20 p-8 text-center font-mono text-sm uppercase tracking-widest text-muted-foreground cursor-default"
           >
             KHÔNG CÓ SỰ KIỆN
           </div>

@@ -107,9 +107,9 @@ const openDelete = () => {
 <template>
   <Dialog :open="show" @update:open="emit('update:show', $event)">
     <DialogContent
-      class="overflow-hidden rounded-[1.5rem] border-2 border-border bg-background p-0 text-foreground shadow-[0_36px_110px_-52px_rgba(0,0,0,0.8)] sm:max-w-2xl"
+      class="overflow-hidden rounded-[1.5rem] border-2 border-border bg-background p-0 text-foreground shadow-[0_36px_110px_-52px_rgba(0,0,0,0.8)] sm:max-w-2xl cursor-default"
     >
-      <DialogHeader class="border-b-2 border-border bg-muted/35 px-5 py-4">
+      <DialogHeader class="border-b-2 border-border bg-muted/35 px-5 py-4 cursor-default">
         <div class="flex flex-col gap-3">
           <div class="flex flex-wrap items-center gap-2">
             <Badge variant="default" class="font-mono uppercase tracking-widest">
@@ -134,7 +134,7 @@ const openDelete = () => {
               </p>
             </div>
 
-            <div class="rounded-2xl border-2 border-primary/30 bg-primary/10 px-3 py-2.5">
+            <div class="rounded-2xl border-2 border-primary/30 bg-primary/10 px-3 py-2.5 cursor-default">
               <p class="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 Khung giờ
               </p>
@@ -156,12 +156,12 @@ const openDelete = () => {
                   Mô tả
                 </h3>
               </div>
-              <p class="mt-3 whitespace-pre-wrap rounded-xl border border-border bg-muted/20 p-4 font-mono text-sm leading-relaxed text-foreground">
+              <p class="mt-3 whitespace-pre-wrap rounded-xl border border-border bg-muted/20 p-4 font-mono text-sm leading-relaxed text-foreground cursor-default">
                 {{ event?.description || "Không có mô tả." }}
               </p>
             </section>
 
-            <section class="rounded-2xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)]">
+            <section class="rounded-2xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)] cursor-default">
               <div class="flex items-center gap-2">
                 <UserRound class="text-primary" data-icon="inline-start" />
                 <h3 class="font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground">
@@ -213,7 +213,7 @@ const openDelete = () => {
           </div>
 
           <section class="grid gap-4 md:grid-cols-3">
-            <div class="rounded-2xl border-2 border-border bg-background p-3.5">
+            <div class="rounded-2xl border-2 border-border bg-background p-3.5 cursor-default">
               <div class="flex items-center gap-2">
                 <CalendarDays class="text-primary" data-icon="inline-start" />
                 <p class="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
@@ -225,7 +225,7 @@ const openDelete = () => {
               </p>
             </div>
 
-            <div class="rounded-2xl border-2 border-border bg-background p-3.5">
+            <div class="rounded-2xl border-2 border-border bg-background p-3.5 cursor-default">
               <div class="flex items-center gap-2">
                 <Clock3 class="text-primary" data-icon="inline-start" />
                 <p class="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
@@ -237,7 +237,7 @@ const openDelete = () => {
               </p>
             </div>
 
-            <div class="rounded-2xl border-2 border-border bg-background p-3.5">
+            <div class="rounded-2xl border-2 border-border bg-background p-3.5 cursor-default">
               <div class="flex items-center gap-2">
                 <ShieldCheck class="text-primary" data-icon="inline-start" />
                 <p class="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
@@ -251,7 +251,7 @@ const openDelete = () => {
           </section>
 
           <div class="grid gap-4 md:grid-cols-2">
-            <section class="rounded-2xl border-2 border-border bg-background p-4">
+            <section class="rounded-2xl border-2 border-border bg-background p-4 cursor-default">
               <div class="flex items-center gap-2">
                 <Users class="text-primary" data-icon="inline-start" />
                 <h3 class="font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground">
@@ -274,7 +274,7 @@ const openDelete = () => {
               </p>
             </section>
 
-            <section class="rounded-2xl border-2 border-border bg-background p-4">
+            <section class="rounded-2xl border-2 border-border bg-background p-4 cursor-default">
               <div class="flex items-center gap-2">
                 <Paperclip class="text-primary" data-icon="inline-start" />
                 <h3 class="font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground">

@@ -64,9 +64,9 @@ watch(() => props.initialEndDate, (val) => recurrenceEndDate.value = val);
 </script>
 
 <template>
-  <div class="space-y-4 rounded-xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)]">
+  <div class="space-y-4 rounded-xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)] cursor-default">
     <div>
-      <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-3">CHẾ ĐỘ LẶP LẠI</label>
+      <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-3 cursor-default">CHẾ ĐỘ LẶP LẠI</label>
       <div class="grid grid-cols-5 gap-2 rounded-xl border border-border/80 bg-muted/20 p-2">
         <button v-for="opt in recurrenceOptions" :key="opt.val" type="button" @click="recurrenceType = opt.val" :class="[
             'flex flex-col items-center gap-1.5 rounded-lg px-1 py-3 transition-colors',
@@ -85,12 +85,12 @@ watch(() => props.initialEndDate, (val) => recurrenceEndDate.value = val);
       leave-active-class="transition duration-200 ease-in" leave-from-class="transform translate-y-0 opacity-100"
       leave-to-class="transform -translate-y-2 opacity-0">
       <div v-if="recurrenceType !== 'NONE'" class="space-y-4 pt-2">
-        <div class="flex items-start gap-2.5 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+        <div class="flex items-start gap-2.5 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 cursor-default">
           <Info :size="14" class="text-primary mt-0.5 flex-shrink-0" />
           <p class="text-xs font-mono text-foreground leading-relaxed">{{ recurrenceSummary }}</p>
         </div>
         <div>
-          <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2">NGÀY KẾT THÚC</label>
+          <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">NGÀY KẾT THÚC</label>
           <div class="relative group">
             <input v-model="recurrenceEndDate" type="date"
               class="w-full rounded-lg border-2 border-border bg-background px-4 py-3 pr-36 font-mono text-sm uppercase text-foreground transition-colors focus:outline-none focus:border-primary" />

@@ -86,8 +86,8 @@ const handleSaveInfo = async () => {
       </div>
 
       <div>
-        <p class="text-sm font-medium text-foreground">Ảnh phòng</p>
-        <p class="text-xs text-muted-foreground mt-0.5">Nhấn để thay đổi ảnh đại diện</p>
+        <p class="text-sm font-medium text-foreground cursor-default">Ảnh phòng</p>
+        <p class="text-xs text-muted-foreground mt-0.5 cursor-default">Nhấn để thay đổi ảnh đại diện</p>
         <button v-if="avatarPreview" @click="avatarPreview = ''; selectedFile = null;"
           class="text-xs text-destructive mt-1 hover:underline disabled:opacity-40 disabled:cursor-not-allowed"
           :disabled="isSaving || !canEdit">
@@ -100,7 +100,7 @@ const handleSaveInfo = async () => {
 
     <!-- Name -->
     <div class="flex flex-col gap-1.5">
-      <label class="text-sm font-medium text-foreground">Tên phòng</label>
+      <label class="text-sm font-medium text-foreground cursor-default">Tên phòng</label>
       <input v-model="roomName" type="text" placeholder="Nhập tên phòng..."
         class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition disabled:opacity-60 disabled:cursor-not-allowed"
         :disabled="!canEdit" />
@@ -108,7 +108,7 @@ const handleSaveInfo = async () => {
 
     <!-- Description -->
     <div class="flex flex-col gap-1.5">
-      <label class="text-sm font-medium text-foreground">Mô tả</label>
+      <label class="text-sm font-medium text-foreground cursor-default">Mô tả</label>
       <textarea v-model="roomDescription" rows="3" placeholder="Mô tả ngắn về phòng..."
         class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition resize-none disabled:opacity-60 disabled:cursor-not-allowed"
         :disabled="!canEdit" />

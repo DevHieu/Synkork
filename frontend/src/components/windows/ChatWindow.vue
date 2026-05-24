@@ -8,7 +8,7 @@ import { useFriendStore } from "@/stores/friendStore";
 import { useRoomsStore } from "@/stores/roomStore";
 import { useCalendarSuggestionStore } from "@/stores/calendarSuggestionStore";
 import { useUserStore } from "@/stores/userStore";
-import { buildSuggestedEventDraft } from "@/utils/calendarSuggestion";
+import { buildSuggestedEventDraft, buildSuggestedNoteDraft, buildSuggestedTaskDraft } from "@/utils/calendarSuggestion";
 import { storeToRefs } from "pinia";
 
 import ChatHeader from "@/components/chat/ChatHeader.vue";
@@ -16,8 +16,10 @@ import MessageList from "@/components/chat/MessageList.vue";
 import MessageInput from "@/components/chat/MessageInput.vue";
 import MemberPanel from "@/components/chat/MemberPanel.vue";
 import PinPanel from "@/components/chat/PinPanel.vue";
-import CalendarSuggestionChannelDialog from "@/components/chat/sub-components/CalendarSuggestionChannelDialog.vue";
+import SuggestionChannelDialog from "@/components/chat/sub-components/SuggestionChannelDialog.vue";
 import type { CalendarChannelOption } from "@/types/CalendarSuggestion";
+
+const dialogTargetType = ref<"CALENDAR" | "NOTE" | "TASK">("CALENDAR");
 
 const route = useRoute();
 const spaceId = ref(route.params.spaceId as string);
@@ -95,25 +97,48 @@ const handleOpenSuggestion = (messageId: string) => {
     return;
   }
 
+  // Xóa các gợi ý đang hiển thị trên UI chat sau khi người dùng đã bấm nút xử lý gợi ý này.
+  messageStore.suggestionsByMessageId = {};
+
+  if (suggestion.suggestionType === "NONE") return;
+
+  // Map suggestionType sang targetType của space
+  dialogTargetType.value = suggestion.suggestionType === "EVENT" ? "CALENDAR" : suggestion.suggestionType;
+
   // Mở dialog chọn kênh từ đúng suggestion đã được cache theo message.
   calendarSuggestionStore.openChannelDialog(suggestion);
 };
 
-const handleSelectCalendarChannel = async (option: CalendarChannelOption) => {
+const handleSelectSuggestionChannel = async (option: CalendarChannelOption, chosenType: "CALENDAR" | "NOTE" | "TASK") => {
   const suggestion = calendarSuggestionStore.selectedSuggestion;
   if (!suggestion) return;
 
   const room = rooms.value.find((item) => item.id === option.roomId);
   if (!room) return;
 
-  // Lưu sẵn draft để màn hình calendar mở ra là nhận đúng dữ liệu từ gợi ý.
-  calendarSuggestionStore.setPendingDraft(
-    option.spaceId,
-    buildSuggestedEventDraft(suggestion),
-  );
+  const targetType = chosenType;
+
+  // Lưu sẵn draft tương ứng theo loại gợi ý để màn hình đích mở ra là nhận đúng dữ liệu.
+  if (targetType === "CALENDAR") {
+    calendarSuggestionStore.setPendingDraft(
+      option.spaceId,
+      buildSuggestedEventDraft(suggestion),
+    );
+  } else if (targetType === "NOTE") {
+    calendarSuggestionStore.setPendingNoteDraft(
+      option.spaceId,
+      buildSuggestedNoteDraft(suggestion),
+    );
+  } else if (targetType === "TASK") {
+    calendarSuggestionStore.setPendingTaskDraft(
+      option.spaceId,
+      buildSuggestedTaskDraft(suggestion),
+    );
+  }
+
   calendarSuggestionStore.closeChannelDialog();
 
-  await roomStore.changeRoom(room, option.spaceId, "CALENDAR");
+  await roomStore.changeRoom(room, option.spaceId, targetType);
 };
 
 watch(currentSpace, (space, prevSpace) => {
@@ -199,9 +224,10 @@ watch(
       </div>
     </div>
 
-    <CalendarSuggestionChannelDialog
+    <SuggestionChannelDialog
       v-model:open="calendarSuggestionStore.isChannelDialogOpen"
-      @select="handleSelectCalendarChannel"
+      :targetType="dialogTargetType"
+      @select="handleSelectSuggestionChannel"
     />
   </div>
 </template>

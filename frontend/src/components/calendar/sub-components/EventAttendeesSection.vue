@@ -29,9 +29,9 @@ watch(() => props.show, (isOpen) => {
 
 <template>
   <div>
-    <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2">Người tham gia</label>
+    <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">Người tham gia</label>
     <div class="flex flex-col gap-2">
-      <div class="flex gap-2 rounded-xl border-2 border-border bg-background p-2 shadow-[0_16px_34px_-30px_var(--color-foreground)]">
+      <div class="flex gap-2 rounded-xl border-2 border-border bg-background p-2 shadow-[0_16px_34px_-30px_var(--color-foreground)] cursor-default">
         <input v-model="attendeeInput" @keyup.enter="addAttendee" @keydown.enter.prevent type="text"
           placeholder="NHẬP EMAIL VÀ ẤN ENTER..."
           class="flex-1 rounded-lg border-2 border-border bg-background px-4 py-3 font-mono text-xs uppercase text-foreground placeholder-muted-foreground transition-colors focus:outline-none focus:border-primary" />

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { LoaderCircle, CalendarClock, ArrowRight } from "lucide-vue-next";
+import { LoaderCircle, CalendarClock, NotebookPen, ListTodo, ArrowRight } from "lucide-vue-next";
 import { toast } from "vue-sonner";
 import { getAllSpacesFromRoomId } from "@/services/spaceService";
 import { useRoomsStore } from "@/stores/roomStore";
@@ -18,35 +18,93 @@ import { Separator } from "@/components/ui/separator";
 
 const props = defineProps<{
   open: boolean;
+  targetType: "CALENDAR" | "NOTE" | "TASK";
 }>();
 
 const emit = defineEmits<{
   (e: "update:open", value: boolean): void;
-  (e: "select", option: CalendarChannelOption): void;
+  (e: "select", option: CalendarChannelOption, type: "CALENDAR" | "NOTE" | "TASK"): void;
 }>();
+
+const selectedType = ref<"CALENDAR" | "NOTE" | "TASK">("CALENDAR");
+
+const typeOptions = [
+  { value: "CALENDAR", label: "Sự kiện", icon: CalendarClock },
+  { value: "NOTE", label: "Ghi chú", icon: NotebookPen },
+  { value: "TASK", label: "Công việc", icon: ListTodo },
+] as const;
 
 const roomStore = useRoomsStore();
 const { rooms, currentRoom } = storeToRefs(roomStore);
 
 const loading = ref(false);
-const calendarChannels = ref<CalendarChannelOption[]>([]);
+const channels = ref<CalendarChannelOption[]>([]);
 
 const currentRoomChannels = computed(() =>
-  calendarChannels.value.filter(
+  channels.value.filter(
     (channel) => channel.roomId === currentRoom.value?.id,
   ),
 );
 
 const otherRoomChannels = computed(() =>
-  calendarChannels.value.filter(
+  channels.value.filter(
     (channel) => channel.roomId !== currentRoom.value?.id,
   ),
 );
 
-// Chỉ tải lại danh sách khi dialog mở để tránh gọi thừa lúc chat render.
-const loadCalendarChannels = async () => {
+const title = computed(() => {
+  switch (selectedType.value) {
+    case "NOTE": return "Chọn kênh ghi chú";
+    case "TASK": return "Chọn kênh công việc";
+    case "CALENDAR":
+    default:
+      return "Chọn kênh lịch";
+  }
+});
+
+const description = computed(() => {
+  switch (selectedType.value) {
+    case "NOTE": return "Ghi chú sẽ được tạo ngay trong kênh ghi chú mà bạn chọn bên dưới.";
+    case "TASK": return "Thẻ công việc sẽ được tạo ngay trong kênh công việc mà bạn chọn bên dưới.";
+    case "CALENDAR":
+    default:
+      return "Sự kiện sẽ được tạo ngay trong kênh lịch mà bạn chọn bên dưới.";
+  }
+});
+
+const emptyCurrentText = computed(() => {
+  switch (selectedType.value) {
+    case "NOTE": return "Không có kênh ghi chú phù hợp trong phòng hiện tại.";
+    case "TASK": return "Không có kênh công việc phù hợp trong phòng hiện tại.";
+    case "CALENDAR":
+    default:
+      return "Không có kênh lịch phù hợp trong phòng hiện tại.";
+  }
+});
+
+const emptyOtherText = computed(() => {
+  switch (selectedType.value) {
+    case "NOTE": return "Không có kênh ghi chú nào khác khả dụng.";
+    case "TASK": return "Không có kênh công việc nào khác khả dụng.";
+    case "CALENDAR":
+    default:
+      return "Không có kênh lịch nào khác khả dụng.";
+  }
+});
+
+const iconComponent = computed(() => {
+  switch (selectedType.value) {
+    case "NOTE": return NotebookPen;
+    case "TASK": return ListTodo;
+    case "CALENDAR":
+    default:
+      return CalendarClock;
+  }
+});
+
+const loadChannels = async () => {
   if (!rooms.value.length) {
-    calendarChannels.value = [];
+    channels.value = [];
     return;
   }
 
@@ -58,7 +116,7 @@ const loadCalendarChannels = async () => {
         const response = await getAllSpacesFromRoomId(room.id);
 
         return response.data
-          .filter((space: { type: string }) => space.type === "CALENDAR")
+          .filter((space: { type: string }) => space.type === selectedType.value)
           .map(
             (space: { id: string; name: string }) =>
               ({
@@ -71,41 +129,71 @@ const loadCalendarChannels = async () => {
       }),
     );
 
-    calendarChannels.value = responses.flat();
+    channels.value = responses.flat();
   } catch (error) {
-    toast.error("Không thể tải danh sách kênh lịch.");
-    calendarChannels.value = [];
+    toast.error("Không thể tải danh sách kênh.");
+    channels.value = [];
   } finally {
     loading.value = false;
   }
 };
 
 const handleSelect = (option: CalendarChannelOption) => {
-  emit("select", option);
+  emit("select", option, selectedType.value);
 };
+
+watch(selectedType, () => {
+  if (props.open) {
+    loadChannels();
+  }
+});
 
 watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
-      loadCalendarChannels();
+      selectedType.value = props.targetType;
+      loadChannels();
     }
   },
 );
 </script>
 
 <template>
-  <Dialog :open="open" @update:open="emit('update:open', $event)">
+  <Dialog :open="open" @update:open="$emit('update:open', $event)">
     <DialogContent class="sm:max-w-xl">
       <DialogHeader>
         <DialogTitle class="flex items-center gap-2">
-          <CalendarClock class="h-5 w-5 text-primary" />
-          Chọn kênh lịch để tạo sự kiện
+          <component :is="iconComponent" class="h-5 w-5 text-primary" />
+          {{ title }}
         </DialogTitle>
         <DialogDescription>
-          Sự kiện sẽ được tạo ngay trong kênh lịch mà bạn chọn bên dưới.
+          {{ description }}
         </DialogDescription>
       </DialogHeader>
+
+      <!-- Giao diện chọn loại nội dung để Tạo nhanh -->
+      <div class="grid grid-cols-3 gap-2 p-1 bg-muted/60 rounded-xl">
+        <button
+          v-for="typeOpt in typeOptions"
+          :key="typeOpt.value"
+          type="button"
+          class="flex flex-col items-center justify-center gap-1.5 py-3 px-2 rounded-lg border transition-all duration-200"
+          :class="selectedType === typeOpt.value
+            ? 'bg-background border-border shadow-sm text-primary font-medium'
+            : 'border-transparent text-muted-foreground hover:bg-background/50 hover:text-foreground'"
+          @click="selectedType = typeOpt.value"
+        >
+          <component :is="typeOpt.icon" class="h-5 w-5" />
+          <span class="text-xs">{{ typeOpt.label }}</span>
+          <span
+            v-if="props.targetType === typeOpt.value"
+            class="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-bold uppercase tracking-wider scale-95"
+          >
+            Gợi ý
+          </span>
+        </button>
+      </div>
 
       <div v-if="loading" class="flex min-h-40 items-center justify-center">
         <LoaderCircle class="h-5 w-5 animate-spin text-primary" />
@@ -144,7 +232,7 @@ watch(
             v-else
             class="rounded-xl border border-dashed border-border px-4 py-6 text-sm text-muted-foreground"
           >
-            Không có kênh lịch phù hợp trong phòng hiện tại.
+            {{ emptyCurrentText }}
           </div>
         </section>
 
@@ -152,7 +240,7 @@ watch(
 
         <section class="flex flex-col gap-3">
           <div class="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-            Kênh lịch khác
+            Kênh khác
           </div>
 
           <div
@@ -182,7 +270,7 @@ watch(
             v-else
             class="rounded-xl border border-dashed border-border px-4 py-6 text-sm text-muted-foreground"
           >
-            Không có kênh lịch nào khác khả dụng.
+            {{ emptyOtherText }}
           </div>
         </section>
 

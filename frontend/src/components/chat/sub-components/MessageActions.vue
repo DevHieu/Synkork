@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Pin, Trash2, Reply, Pen, CalendarPlus2 } from "lucide-vue-next";
+import { Pin, Trash2, Reply, Pen, Sparkles } from "lucide-vue-next";
 
 const emits = defineEmits(["reply", "edit", "delete", "pin", "suggest"]);
 
@@ -7,6 +7,7 @@ const props = defineProps<{
   isSender: boolean;
   isPinned: boolean;
   showSuggestion: boolean;
+  suggestionLabel?: string;
   forceVisible?: boolean;
 }>();
 
@@ -25,12 +26,12 @@ const props = defineProps<{
       <button
         v-if="props.showSuggestion"
         class="rounded bg-primary px-2.5 py-1.5 text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
-        title="Tạo sự kiện từ tin nhắn"
+        :title="'Tạo nhanh từ tin nhắn'"
         @click="$emit('suggest')"
       >
         <span class="flex items-center gap-1.5 text-xs font-semibold">
-          <CalendarPlus2 class="h-4 w-4" />
-          Tạo lịch
+          <Sparkles class="h-4 w-4" />
+          {{ props.suggestionLabel ?? 'Tạo nhanh' }}
         </span>
       </button>
       <button

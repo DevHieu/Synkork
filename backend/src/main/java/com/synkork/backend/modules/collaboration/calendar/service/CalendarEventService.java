@@ -13,6 +13,7 @@ import com.synkork.backend.modules.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -152,6 +153,7 @@ public class CalendarEventService {
     }
 
     // Tạo event mới
+    @Transactional
     public CalendarEventDTO createEvent(CalendarEventDTO eventRequest, UUID creatorId) {
         // validateEventTime(eventRequest); // Bỏ comment để cho phép tạo sự kiện ở quá khứ
 
@@ -172,6 +174,7 @@ public class CalendarEventService {
     }
 
     // Cập nhật event (kiểm tra quyền: creator hoặc allowEditAll)
+    @Transactional
     public CalendarEventDTO updateEvent(UUID eventId, CalendarEventDTO eventRequest, UUID userId) {
         // Null check cho IDE
         CalendarEventEntity calendarEvent = calendarEventRepository.findById(Objects.requireNonNull(eventId))
@@ -194,8 +197,8 @@ public class CalendarEventService {
     }
 
     private void syncEventRelations(CalendarEventEntity event, CalendarEventDTO request, UserEntity actor) {
-        event.setAttendees(buildAttendees(event, request.getAttendees()));
-        event.setAttachments(buildAttachments(event, request.getAttachments(), actor));
+        event.replaceAttendees(buildAttendees(event, request.getAttendees()));
+        event.replaceAttachments(buildAttachments(event, request.getAttachments(), actor));
     }
 
     private List<EventAttendeeEntity> buildAttendees(CalendarEventEntity event, List<String> attendeeEmails) {
@@ -300,6 +303,7 @@ public class CalendarEventService {
     }
 
     // Xóa event (chỉ creator)
+    @Transactional
     public void deleteEvent(UUID eventId, UUID userId) {
         // Null check cho IDE
         CalendarEventEntity entity = calendarEventRepository.findById(Objects.requireNonNull(eventId))

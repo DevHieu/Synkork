@@ -73,10 +73,10 @@ const handleSubmit = (): void => {
 
       <!-- Dialog -->
       <div
-        class="relative mx-4 flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-[1.5rem] border-2 border-border bg-background shadow-[0_32px_100px_-48px_rgba(0,0,0,0.75)]">
+        class="relative mx-4 flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-[1.5rem] border-2 border-border bg-background shadow-[0_32px_100px_-48px_rgba(0,0,0,0.75)] cursor-default">
 
         <!-- Header -->
-        <div class="sticky top-0 z-10 border-b-2 border-border bg-background/95 px-6 pb-4 pt-6 backdrop-blur">
+        <div class="sticky top-0 z-10 border-b-2 border-border bg-background/95 px-6 pb-4 pt-6 backdrop-blur cursor-default">
           <div class="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2">
             <component :is="isEditing ? Pencil : CalendarPlus2" class="text-primary" data-icon="inline-start" />
             <h2 class="text-lg font-mono font-bold uppercase tracking-widest text-primary">
@@ -91,15 +91,15 @@ const handleSubmit = (): void => {
             <div class="space-y-5 p-6 pb-8 pr-5">
 
               <!-- Tiêu đề -->
-              <div class="rounded-xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)]">
-                <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2">TIÊU ĐỀ *</label>
+              <div class="rounded-xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)] cursor-default">
+                <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">TIÊU ĐỀ *</label>
                 <input v-model="formData.title" type="text" required placeholder="NHẬP TIÊU ĐỀ SỰ KIỆN..."
                   class="w-full rounded-lg border-2 border-border bg-background px-4 py-3 font-mono text-sm uppercase text-foreground placeholder-muted-foreground transition-colors focus:outline-none focus:border-primary" />
               </div>
 
               <!-- Mô tả -->
-              <div class="rounded-xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)]">
-                <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2">MÔ TẢ</label>
+              <div class="rounded-xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)] cursor-default">
+                <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">MÔ TẢ</label>
                 <textarea v-model="formData.description" rows="3" placeholder="MÔ TẢ CHI TIẾT SỰ KIỆN..."
                   class="w-full resize-none rounded-lg border-2 border-border bg-background px-4 py-3 font-mono text-sm uppercase text-foreground placeholder-muted-foreground transition-colors focus:outline-none focus:border-primary" />
               </div>
@@ -135,7 +135,7 @@ const handleSubmit = (): void => {
               />
 
               <!-- Cho phép chỉnh sửa -->
-              <div class="flex items-center gap-3 rounded-xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)]">
+              <div class="flex items-center gap-3 rounded-xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)] cursor-default">
                 <input v-model="formData.allowEditAll" type="checkbox" class="h-4 w-4 cursor-pointer rounded-sm border-2 border-border bg-background text-primary focus:ring-0 focus:ring-offset-0" />
                 <span class="text-[10px] font-mono font-bold text-foreground uppercase tracking-widest cursor-pointer select-none" @click="formData.allowEditAll = !formData.allowEditAll">CHO PHÉP MỌI NGƯỜI CHỈNH SỬA</span>
               </div>

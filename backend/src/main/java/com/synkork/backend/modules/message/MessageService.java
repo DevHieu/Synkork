@@ -1,11 +1,8 @@
 package com.synkork.backend.modules.message;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.google.api.client.json.Json;
 import com.synkork.backend.common.dtos.FileUploaded;
 import com.synkork.backend.common.utils.FileService;
-import com.synkork.backend.common.utils.llmService;
+import com.synkork.backend.common.utils.ChatEventLlmService;
 import com.synkork.backend.modules.message.dto.MessageDTO;
 import com.synkork.backend.modules.message.dto.MessagePageDTO;
 import com.synkork.backend.modules.message.dto.MessageSuggestionDTO;
@@ -41,7 +38,7 @@ public class MessageService {
     @Autowired
     SpaceRepository spaceRepository;
     @Autowired
-    private llmService LLMService;
+    private ChatEventLlmService chatEventLlmService;
     @Autowired
     private ObjectMapper objectMapper;
     @Autowired
@@ -116,18 +113,17 @@ public class MessageService {
         if (messageContent != null && !messageContent.trim().isEmpty()) {
             CompletableFuture.runAsync(()->{
                 try {
-                    String jsonRepsone = LLMService.detectEventFromMessage(messageContent);
-                    System.out.println("[Goi y LLM] Phan hoi tho cho message " + newMessage.getId() + ": " + jsonRepsone);
+                    String jsonResponse = chatEventLlmService.detectSuggestionFromMessage(messageContent);
+                    System.out.println("[Goi y LLM] Phan hoi tho cho message " + newMessage.getId() + ": " + jsonResponse);
 
-                    JsonNode rootNode = objectMapper.readTree(jsonRepsone);
+                    JsonNode rootNode = objectMapper.readTree(jsonResponse);
+                    MessageSuggestionDTO suggestionPayload = MessageSuggestionDTO.fromJsonNode(
+                            newMessage.getId(),
+                            rootNode
+                    );
 
-                    // Chỉ bắn suggestion khi LLM khẳng định đây là nội dung có thể tạo event.
-                    if (rootNode.has("hasEvent") && rootNode.get("hasEvent").asBoolean()) {
-                        // Bọc thêm messageId để frontend biết gợi ý này thuộc tin nhắn nào.
-                        MessageSuggestionDTO suggestionPayload = MessageSuggestionDTO.fromJsonNode(
-                                newMessage.getId(),
-                                rootNode
-                        );
+                    // Chỉ bắn suggestion khi LLM khẳng định đây là nội dung có thể mở modal nào đó.
+                    if (suggestionPayload.isActionable()) {
                         // Luôn dùng userId thật từ sender đã resolve để tránh lệch với id trong websocket session.
                         String privateChannel = "/topic/user/" + sender.getUser().getId() + "/suggestions";
                         System.out.println("[Goi y LLM] Dang gui toi " + privateChannel
@@ -135,13 +131,9 @@ public class MessageService {
                                 + " payload=" + suggestionPayload);
                         simpMessagingTemplate.convertAndSend(privateChannel, suggestionPayload);
                     } else {
-                        System.out.println("[Goi y LLM] Bo qua message " + newMessage.getId() + " vi hasEvent=false");
+                        System.out.println("[Goi y LLM] Bo qua message " + newMessage.getId() + " vi suggestionType=NONE");
                     }
 
-                } catch (JsonMappingException e) {
-                    System.err.println("Loi khi phan tich tin nhan bang LLM: " + e.getMessage());
-                } catch (JsonProcessingException e) {
-                    System.err.println("Loi khi phan tich tin nhan bang LLM: " + e.getMessage());
                 }  catch (Exception e) {
                     System.err.println("Loi khi phan tich tin nhan bang LLM: " + e.getMessage());
                 }
