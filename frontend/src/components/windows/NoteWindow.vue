@@ -9,21 +9,13 @@
         <!-- SEARCH -->
         <div class="flex-1 relative max-w-sm">
 
-          <Search
-            class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-          />
+          <Search class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
 
-          <input
-            v-model="store.searchQuery"
-            placeholder="Tìm kiếm ghi chú..."
-            class="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg border bg-muted/50"
-          />
+          <input v-model="store.searchQuery" placeholder="Tìm kiếm ghi chú..."
+            class="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg border bg-muted/50" />
 
-          <button
-            v-if="store.searchQuery"
-            @click="store.searchQuery = ''"
-            class="absolute right-2 top-1/2 -translate-y-1/2"
-          >
+          <button v-if="store.searchQuery" @click="store.searchQuery = ''"
+            class="absolute right-2 top-1/2 -translate-y-1/2">
             <X />
           </button>
 
@@ -37,10 +29,8 @@
 
             <Bell class="w-4 h-4 text-muted-foreground" />
 
-            <span
-              v-if="store.reminderQueue.length"
-              class="absolute -top-2 -right-2 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center"
-            >
+            <span v-if="store.reminderQueue.length"
+              class="absolute -top-2 -right-2 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center">
               {{ store.reminderQueue.length }}
             </span>
 
@@ -50,10 +40,8 @@
             {{ store.notes.length }} ghi chú
           </span>
 
-          <button
-            @click="openCreate"
-            class="px-3 py-1.5 text-sm rounded-lg bg-primary text-white flex items-center gap-1"
-          >
+          <button @click="openCreate"
+            class="px-3 py-1.5 text-sm rounded-lg bg-primary text-white flex items-center gap-1">
             <Plus />
             Tạo mới
           </button>
@@ -68,18 +56,12 @@
     <main class="max-w-6xl mx-auto px-4 py-6">
 
       <!-- LOADING -->
-      <div
-        v-if="store.loading && store.notes.length === 0"
-        class="text-center py-20"
-      >
+      <div v-if="store.loading && store.notes.length === 0" class="text-center py-20">
         <Loader2 class="animate-spin mx-auto" />
       </div>
 
       <!-- ERROR -->
-      <div
-        v-else-if="store.error && !store.error.includes('vị trí')"
-        class="text-center py-20"
-      >
+      <div v-else-if="store.error && !store.error.includes('vị trí')" class="text-center py-20">
         <AlertCircle class="mx-auto mb-3" />
         <p>{{ store.error }}</p>
       </div>
@@ -87,10 +69,7 @@
       <template v-else>
 
         <!-- EMPTY -->
-        <div
-          v-if="store.filteredNotes.length === 0 && !store.loading"
-          class="text-center py-20"
-        >
+        <div v-if="store.filteredNotes.length === 0 && !store.loading" class="text-center py-20">
 
           <NotebookPen class="mx-auto mb-3 opacity-20" />
 
@@ -104,11 +83,7 @@
 
           </p>
 
-          <button
-            v-if="!store.searchQuery"
-            @click="openCreate"
-            class="mt-3 text-sm text-primary hover:underline"
-          >
+          <button v-if="!store.searchQuery" @click="openCreate" class="mt-3 text-sm text-primary hover:underline">
             Tạo ghi chú đầu tiên
           </button>
 
@@ -117,30 +92,17 @@
         <template v-else>
 
           <!-- PINNED -->
-          <section
-            v-if="store.pinnedNotes.length > 0"
-            class="mb-6"
-          >
+          <section v-if="store.pinnedNotes.length > 0" class="mb-6">
 
-            <h2
-              class="text-xs mb-3 flex items-center gap-1 text-muted-foreground font-semibold uppercase"
-            >
+            <h2 class="text-xs mb-3 flex items-center gap-1 text-muted-foreground font-semibold uppercase">
               <Pin class="w-3 h-3" />
               Đã ghim
             </h2>
 
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
 
-              <NoteCard
-                v-for="note in store.pinnedNotes"
-                :key="note.id"
-                :note="note"
-                @view="openDetail"
-                @edit="openEdit"
-                @delete="confirmDelete"
-                @pin="handleTogglePin"
-                @reminder="openReminder"
-              />
+              <NoteCard v-for="note in store.pinnedNotes" :key="note.id" :note="note" @view="openDetail"
+                @edit="openEdit" @delete="confirmDelete" @pin="handleTogglePin" @reminder="openReminder" />
 
             </div>
 
@@ -149,45 +111,18 @@
           <!-- UNPINNED -->
           <section v-if="store.unpinnedNotes.length > 0">
 
-            <h2
-              v-if="store.pinnedNotes.length > 0"
-              class="text-xs mb-3 text-muted-foreground font-semibold uppercase"
-            >
+            <h2 v-if="store.pinnedNotes.length > 0" class="text-xs mb-3 text-muted-foreground font-semibold uppercase">
               Khác
             </h2>
 
-            <GridLayout
-              v-model:layout="layout"
-              :col-num="12"
-              :row-height="100"
-              :is-draggable="true"
-              :is-resizable="true"
-              :margin="[12, 12]"
-              :use-css-transforms="true"
-              @layout-updated="onLayoutUpdated"
-            >
+            <GridLayout v-model:layout="layout" :col-num="12" :row-height="100" :is-draggable="true"
+              :is-resizable="true" :margin="[12, 12]" :use-css-transforms="true" @layout-updated="onLayoutUpdated">
 
-              <GridItem
-                v-for="item in layout"
-                :key="item.i"
-                :x="item.x"
-                :y="item.y"
-                :w="item.w"
-                :h="item.h"
-                :i="item.i"
-                drag-allow-from=".drag-handle"
-                drag-ignore-from=".no-drag"
-              >
+              <GridItem v-for="item in layout" :key="item.i" :x="item.x" :y="item.y" :w="item.w" :h="item.h" :i="item.i"
+                drag-allow-from=".drag-handle" drag-ignore-from=".no-drag">
 
-                <NoteCard
-                  v-if="getNoteById(item.i)"
-                  :note="getNoteById(item.i)!"
-                  @view="openDetail"
-                  @edit="openEdit"
-                  @delete="confirmDelete"
-                  @pin="handleTogglePin"
-                  @reminder="openReminder"
-                />
+                <NoteCard v-if="getNoteById(item.i)" :note="getNoteById(item.i)!" @view="openDetail" @edit="openEdit"
+                  @delete="confirmDelete" @pin="handleTogglePin" @reminder="openReminder" />
 
               </GridItem>
 
@@ -210,40 +145,17 @@
       @submit="handleSubmit"
     />
 
-    <NoteDetailDialog
-      :open="detailOpen"
-      :note="selectedNote"
-      @close="detailOpen = false"
-      @edit="openEdit"
-      @delete="confirmDelete"
-    />
+    <NoteDetailDialog :open="detailOpen" :note="selectedNote" @close="detailOpen = false" @edit="openEdit"
+      @delete="confirmDelete" />
 
-    <ConfirmDialog
-      :open="confirmOpen"
-      @confirm="handleDelete"
-      @cancel="confirmOpen = false"
-    />
+    <ConfirmDialog :open="confirmOpen" @confirm="handleDelete" @cancel="confirmOpen = false" />
 
-    <ReminderDialog
-      :open="reminderOpen"
-      :note="reminderNote"
-      @close="reminderOpen = false"
-      @confirm="handleReminderConfirm"
-    />
+    <ReminderDialog :open="reminderOpen" :note="reminderNote" @close="reminderOpen = false"
+      @confirm="handleReminderConfirm" />
 
     <!-- REMINDER TOAST -->
-    <ReminderToast
-      v-for="item in store.reminderQueue"
-      :key="item.id"
-      :note="item"
-      :visible="item.visible"
-
-      @close="store.removeReminder(item.id)"
-
-      @open="openDetail(item)"
-
-      @snooze="handleSnooze"
-    />
+    <ReminderToast v-for="item in store.reminderQueue" :key="item.id" :note="item" :visible="item.visible"
+      @close="store.removeReminder(item.id)" @open="openDetail(item)" @snooze="handleSnooze" />
 
   </div>
 </template>
@@ -296,13 +208,16 @@ import type {
   Note,
   NoteRequest
 } from '@/types/NoteType'
+import { useSpaceStore } from '@/stores/spaceStore'
+import { storeToRefs } from 'pinia'
 
 const route = useRoute()
 
 const spaceId =
   computed(() => route.params.spaceId as string)
-
+const spaceStore = useSpaceStore()
 const store = useNoteStore()
+const { currentSpace } = storeToRefs(spaceStore)
 
 // Dialog state
 const dialogOpen     = ref(false)
@@ -331,12 +246,12 @@ watch(dialogOpen, (isOpen) => {
   }
 })
 
-const confirmOpen    = ref(false)
+const confirmOpen = ref(false)
 
 const deleteTargetId = ref<string | null>(null)
 
-const reminderOpen   = ref(false)
-const reminderNote   = ref<Note | null>(null)
+const reminderOpen = ref(false)
+const reminderNote = ref<Note | null>(null)
 
 // Layout
 const layout = ref<any[]>([])
@@ -424,9 +339,24 @@ function onLayoutUpdated(newLayout: any[]) {
 }
 
 // mounted
-onMounted(() => {
-  store.fetchNotes(spaceId.value)
-})
+watch(
+  currentSpace,
+  (space, prevSpace) => {
+    if (!space?.id) return
+    if (space.id === prevSpace?.id) return
+
+    if (prevSpace?.id) {
+      store.disconnectSocket(prevSpace.id)
+    }
+
+    store.notes = []
+    layout.value = []
+    layoutUpdateCount = 0
+
+    store.fetchNotes(space.id)
+  },
+  { immediate: true }
+)
 
 // change space
 watch(spaceId, (newId, oldId) => {

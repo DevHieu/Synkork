@@ -11,58 +11,57 @@ const store = useFriendStore();
 const activeTab = ref<"all" | "pending" | "add">("all");
 
 onMounted(async () => {
+  // Fetch data và subscribe socket song song
   await Promise.all([
     store.fetchFriends(),
     store.fetchPendingRequests(),
     store.fetchSentRequests(),
-
-    subscribeFriendSocket(),
-    subscribeFriendAccept(),
-    subscribeFriendReject(),
-    subscribeFriendCancel(),
-    subscribeFriendRemove(),
   ]);
+
+  // Subscribe riêng — không await để không block
+  subscribeFriendSocket();
+  subscribeFriendAccept();
+  subscribeFriendReject();
+  subscribeFriendCancel();
+  subscribeFriendRemove();
 });
 
+// Có lời mời mới đến → fetch pending
 const subscribeFriendSocket = () => {
   friendSocket.subscribeFriendRequest(async () => {
-    // Khi có request mới, chỉ cần fetch lại pending và sent là đủ
     await Promise.all([
-      console.log("RUNNING"),
-
       store.fetchPendingRequests(),
       store.fetchSentRequests(),
     ]);
   });
 };
 
+// Lời mời được chấp nhận → fetch friends + clear pending/sent
 const subscribeFriendAccept = () => {
   friendSocket.subscribeFriendAccept(async () => {
     await Promise.all([
-      console.log("RUNNING"),
-
+      store.fetchFriends(),
       store.fetchPendingRequests(),
       store.fetchSentRequests(),
-      store.fetchFriends(),
     ]);
   });
 };
 
-// Bị từ chối → cập nhật lại sent requests
+// Lời mời bị từ chối → clear sent
 const subscribeFriendReject = () => {
   friendSocket.subscribeFriendReject(async () => {
     await store.fetchSentRequests();
   });
 };
 
-// Lời mời bị hủy → cập nhật lại pending
+// Lời mời bị hủy → clear pending
 const subscribeFriendCancel = () => {
   friendSocket.subscribeFriendCancel(async () => {
     await store.fetchPendingRequests();
   });
 };
 
-// Bị xóa khỏi danh sách bạn → cập nhật lại friends
+// Bị xóa khỏi danh sách bạn → refresh friends
 const subscribeFriendRemove = () => {
   friendSocket.subscribeFriendRemove(async () => {
     await store.fetchFriends();
@@ -72,7 +71,6 @@ const subscribeFriendRemove = () => {
 const totalPending = () =>
   store.pendingRequests.length + store.sentRequests.length;
 
-// Khi switch sang tab pending thì fetch lại để đảm bảo data mới nhất
 const handleSwitchTab = async (tab: "pending") => {
   activeTab.value = tab;
   if (tab === "pending") {
