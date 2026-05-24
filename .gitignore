@@ -12,3 +12,5 @@ README.en.md
 .agents/
 .antigravitycli/
 
+# Ignore repository documentation files
+**/README*.md
