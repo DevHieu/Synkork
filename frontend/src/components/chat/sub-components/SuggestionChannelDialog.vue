@@ -55,7 +55,7 @@ const otherRoomChannels = computed(() =>
 const title = computed(() => {
   switch (selectedType.value) {
     case "NOTE": return "Chọn kênh ghi chú";
-    case "TASK": return "Chọn kênh công việc";
+    case "TASK": return "Chọn kênh task";
     case "CALENDAR":
     default:
       return "Chọn kênh lịch";
@@ -65,7 +65,7 @@ const title = computed(() => {
 const description = computed(() => {
   switch (selectedType.value) {
     case "NOTE": return "Ghi chú sẽ được tạo ngay trong kênh ghi chú mà bạn chọn bên dưới.";
-    case "TASK": return "Thẻ công việc sẽ được tạo ngay trong kênh công việc mà bạn chọn bên dưới.";
+    case "TASK": return "Thẻ task sẽ được tạo ngay trong kênh task mà bạn chọn bên dưới.";
     case "CALENDAR":
     default:
       return "Sự kiện sẽ được tạo ngay trong kênh lịch mà bạn chọn bên dưới.";
@@ -75,7 +75,7 @@ const description = computed(() => {
 const emptyCurrentText = computed(() => {
   switch (selectedType.value) {
     case "NOTE": return "Không có kênh ghi chú phù hợp trong phòng hiện tại.";
-    case "TASK": return "Không có kênh công việc phù hợp trong phòng hiện tại.";
+    case "TASK": return "Không có kênh task phù hợp trong phòng hiện tại.";
     case "CALENDAR":
     default:
       return "Không có kênh lịch phù hợp trong phòng hiện tại.";
@@ -85,7 +85,7 @@ const emptyCurrentText = computed(() => {
 const emptyOtherText = computed(() => {
   switch (selectedType.value) {
     case "NOTE": return "Không có kênh ghi chú nào khác khả dụng.";
-    case "TASK": return "Không có kênh công việc nào khác khả dụng.";
+    case "TASK": return "Không có kênh task nào khác khả dụng.";
     case "CALENDAR":
     default:
       return "Không có kênh lịch nào khác khả dụng.";

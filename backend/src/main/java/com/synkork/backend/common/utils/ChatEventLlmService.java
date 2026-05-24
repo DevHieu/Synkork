@@ -47,6 +47,29 @@ Luật quyết định:
 - Không bịa thêm chi tiết không có trong tin nhắn.
 - Chỉ điền field đúng với loại đã chọn; các field còn lại để null hoặc false.
 
+Luật nhận diện thời gian:
+- Phải chú ý mọi biểu thức chỉ thời gian hoặc hạn chót, kể cả tuyệt đối và tương đối.
+- Ví dụ thời gian tương đối: hôm nay, mai, ngày mai, ngày mốt, tối nay, sáng mai, chiều mai, tuần sau, thứ 2, thứ ba tới, cuối tuần, cuối tháng, đầu giờ chiều, trước 5h, sau 2 tiếng, lúc 9h, 9:30, 14h, 14:30.
+- Nếu tin nhắn có thời gian rõ ràng hoặc đủ rõ để suy ra theo thời điểm tham chiếu, hãy chuẩn hóa vào các field thời gian.
+- Nếu tin nhắn chứa "mai" hoặc "ngày mai", phải hiểu chính xác là ngày tham chiếu cộng 1 ngày; không được dùng ngày hôm nay.
+- Nếu tin nhắn chứa "ngày mốt", phải hiểu chính xác là ngày tham chiếu cộng 2 ngày.
+- eventDate và taskDueDate phải dùng định dạng yyyy-MM-dd.
+- startTime và endTime phải dùng định dạng HH:mm theo 24 giờ.
+- Nếu chỉ có ngày mà chưa có giờ, vẫn tạo EVENT hoặc TASK nếu ý định rõ ràng; field ngày phải có giá trị, field giờ để null.
+- Nếu chỉ có giờ mà không nói ngày nhưng có thể suy ra từ ngữ cảnh như "tối nay", "mai 9h", "chiều thứ 2", hãy suy ra ngày từ thời điểm tham chiếu.
+- Nếu có khoảng thời gian như "từ 9h đến 11h", "9h-11h", "2pm đến 4pm", điền cả startTime và endTime.
+- Nếu là TASK có hạn chót như "trước 5h", "deadline mai", "xong trước thứ 6", ưu tiên TASK và điền taskDueDate nếu suy ra được ngày; nếu suy ra được giờ thì đưa giờ đó vào taskDescription một cách ngắn gọn, không tạo field ngoài schema.
+- Nếu tin nhắn chủ yếu là lịch họp/lịch hẹn/lịch gặp theo thời gian, ưu tiên EVENT.
+- Nếu tin nhắn chủ yếu là việc phải làm dù có thời gian đi kèm, ưu tiên TASK.
+- Không được bỏ sót thời gian khi người dùng đã nêu rõ hoặc ngầm nêu đủ rõ.
+
+Quy tắc tạo nội dung:
+- title dùng cho EVENT phải ngắn, tự nhiên, mô tả đúng cuộc hẹn/sự kiện.
+- description dùng cho EVENT chỉ bổ sung ngữ cảnh cần thiết, không lặp lại title.
+- taskTitle phải là hành động cần làm, rõ chủ ngữ ngầm và ngắn gọn.
+- taskDescription chỉ chứa chi tiết bổ sung hữu ích như hạn chót theo giờ, đối tượng liên quan, hoặc bối cảnh.
+- noteTitle là tiêu đề ngắn gọn của ghi chú; noteContent chứa nội dung cần lưu.
+
 Cấu trúc bắt buộc:
 {
   "suggestionType":"EVENT|NOTE|TASK|NONE",
@@ -74,11 +97,15 @@ Cấu trúc bắt buộc:
 Ví dụ nhận diện:
 - "mai 9h họp team" -> EVENT
 - "thứ 6 này đặt lịch gặp khách hàng" -> EVENT
+- "chiều thứ 2 họp sprint planning" -> EVENT, cần suy ra đúng eventDate; nếu không có giờ chính xác thì startTime để null
+- "9h-11h mai review thiết kế" -> EVENT
 - "ghi lại ý này giúp tôi" -> NOTE
 - "note: tên domain là synkork.vn" -> NOTE
 - "tạo task nhắc mình gửi báo cáo" -> TASK
 - "nhắc mình mua sữa tối nay" -> TASK
 - "xử lý bug đăng nhập trước 5h" -> TASK
+- "hoàn thành proposal trước thứ 6" -> TASK
+- "deadline mai 15h nộp báo cáo" -> TASK
 - "ok cảm ơn" -> NONE
 - "chỉ mình cái này nhé" -> NONE
 
@@ -89,7 +116,13 @@ Ngày tham chiếu:
 """;
 
     private static final String SUGGESTION_USER_PROMPT_TEMPLATE = """
-Thời điểm tham chiếu: %s
+Múi giờ tham chiếu: Asia/Bangkok
+Thời điểm hiện tại: %s
+Quy đổi ngày bắt buộc:
+- hôm nay = %s
+- mai / ngày mai = %s
+- ngày mốt = %s
+Khi tin nhắn có các cụm trên, phải dùng đúng ngày đã quy đổi ở đây để điền eventDate hoặc taskDueDate.
 Tin nhắn: %s
 """;
 
@@ -140,7 +173,16 @@ Tin nhắn: %s
 
     private String buildSuggestionUserPrompt(ZonedDateTime now, String messageContent) {
         String currentTime = now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
-        return SUGGESTION_USER_PROMPT_TEMPLATE.formatted(currentTime, messageContent);
+        String today = now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        String tomorrow = now.plusDays(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        String dayAfterTomorrow = now.plusDays(2).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        return SUGGESTION_USER_PROMPT_TEMPLATE.formatted(
+                currentTime,
+                today,
+                tomorrow,
+                dayAfterTomorrow,
+                messageContent
+        );
     }
 
     private String parseJsonOrFallback(String rawResult) {
