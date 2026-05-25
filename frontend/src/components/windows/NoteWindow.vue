@@ -1,55 +1,47 @@
 <template>
-  <div class="min-h-screen bg-background">
+  <div class="min-h-screen background">
 
     <!-- HEADER -->
-    <header class="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
+    <header class="sticky top-0 z-40 border-b background/95 backdrop-blur">
+      <div class="mx-auto px-4 h-14 flex items-center gap-4">
 
-      <div class="max-w-6xl mx-auto px-4 h-14 flex items-center gap-4">
+        <!-- LEFT: sidebar trigger + search -->
+        <div class="flex-1 flex items-center gap-3">
+          <SidebarTrigger class="-ml-1 shrink-0" />
+          <Hash class="w-5 h-5 text-teal-600 shrink-0" />
+          <span class="font-semibold shrink-0">{{ currentSpace?.name }}</span>
 
-        <!-- SEARCH -->
-        <div class="flex-1 relative max-w-sm">
-
-          <Search class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-
-          <input v-model="store.searchQuery" placeholder="Tìm kiếm ghi chú..."
-            class="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg border bg-muted/50" />
-
-          <button v-if="store.searchQuery" @click="store.searchQuery = ''"
-            class="absolute right-2 top-1/2 -translate-y-1/2">
-            <X />
-          </button>
-
+          <div class="relative max-w-xs w-full ">
+            <Search class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-3.5 h-3.5" />
+            <input v-model="store.searchQuery" placeholder="Tìm kiếm ghi chú..."
+              class="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg border bg-muted/50" />
+            <button v-if="store.searchQuery" @click="store.searchQuery = ''"
+              class="absolute right-2 top-1/2 -translate-y-1/2">
+              <X class="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
 
-        <!-- ACTION -->
-        <div class="ml-auto flex items-center gap-3">
-
-          <!-- Reminder badge -->
+        <!-- RIGHT -->
+        <div class="flex items-center gap-3">
           <div class="relative">
-
             <Bell class="w-4 h-4 text-muted-foreground" />
-
             <span v-if="store.reminderQueue.length"
               class="absolute -top-2 -right-2 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center">
               {{ store.reminderQueue.length }}
             </span>
-
           </div>
-
           <span class="text-xs hidden sm:block">
             {{ store.notes.length }} ghi chú
           </span>
-
           <button @click="openCreate"
-            class="px-3 py-1.5 text-sm rounded-lg bg-primary text-white flex items-center gap-1">
-            <Plus />
+            class="px-3 py-1.5 text-sm rounded-lg bg-primary text-white flex items-center gap-1 cursor-pointer hover:bg-primary/90 transition-colors">
+            <Plus class="w-4 h-4" />
             Tạo mới
           </button>
-
         </div>
 
       </div>
-
     </header>
 
     <!-- MAIN -->
@@ -180,7 +172,8 @@ import {
   Pin,
   Loader2,
   AlertCircle,
-  Bell
+  Bell,
+  Hash
 } from 'lucide-vue-next'
 
 import NoteCard from '@/components/note/NoteCard.vue'
@@ -200,6 +193,7 @@ import type {
 } from '@/types/NoteType'
 import { useSpaceStore } from '@/stores/spaceStore'
 import { storeToRefs } from 'pinia'
+import SidebarTrigger from '../ui/sidebar/SidebarTrigger.vue'
 
 const route = useRoute()
 
