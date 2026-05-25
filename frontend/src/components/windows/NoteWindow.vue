@@ -137,13 +137,7 @@
     </main>
 
     <!-- DIALOGS -->
-    <NoteDialog
-      :open="dialogOpen"
-      :note="selectedNote"
-      :draft="noteDraft"
-      @close="dialogOpen = false"
-      @submit="handleSubmit"
-    />
+    <NoteDialog :space-id="spaceId" :open="dialogOpen" :note="selectedNote" @close="dialogOpen = false" />
 
     <NoteDetailDialog :open="detailOpen" :note="selectedNote" @close="detailOpen = false" @edit="openEdit"
       @delete="confirmDelete" />
@@ -166,15 +160,12 @@ import {
   ref,
   computed,
   watch,
-  onMounted,
   onUnmounted,
   nextTick
 } from 'vue'
 
 import { useRoute } from 'vue-router'
 import { useNoteStore } from '@/stores/noteStore'
-import { useCalendarSuggestionStore } from '@/stores/calendarSuggestionStore'
-import type { SuggestedNoteDraft } from '@/types/CalendarSuggestion'
 
 import {
   GridLayout,
@@ -206,7 +197,6 @@ import ReminderToast from '@/components/note/ReminderToast.vue'
 
 import type {
   Note,
-  NoteRequest
 } from '@/types/NoteType'
 import { useSpaceStore } from '@/stores/spaceStore'
 import { storeToRefs } from 'pinia'
@@ -219,32 +209,9 @@ const spaceStore = useSpaceStore()
 const store = useNoteStore()
 const { currentSpace } = storeToRefs(spaceStore)
 
-// Dialog state
-const dialogOpen     = ref(false)
-const detailOpen     = ref(false)
-const selectedNote   = ref<Note | null>(null)
-const calendarSuggestionStore = useCalendarSuggestionStore()
-const noteDraft      = ref<SuggestedNoteDraft | null>(null)
-
-watch(
-  spaceId,
-  (newId) => {
-    if (!newId) return
-    const draft = calendarSuggestionStore.consumePendingNoteDraft(newId)
-    if (draft) {
-      noteDraft.value = draft
-      selectedNote.value = null
-      dialogOpen.value = true
-    }
-  },
-  { immediate: true }
-)
-
-watch(dialogOpen, (isOpen) => {
-  if (!isOpen) {
-    noteDraft.value = null
-  }
-})
+const dialogOpen = ref(false)
+const detailOpen = ref(false)
+const selectedNote = ref<Note | null>(null)
 
 const confirmOpen = ref(false)
 
@@ -415,21 +382,6 @@ function confirmDelete(id: string) {
   detailOpen.value = false
 
   confirmOpen.value = true
-}
-
-async function handleSubmit(
-  data: NoteRequest,
-  id?: string
-) {
-
-  if (id) {
-    await store.updateNote(spaceId.value, id, data)
-  }
-  else {
-    await store.createNote(spaceId.value, data)
-  }
-
-  dialogOpen.value = false
 }
 
 async function handleDelete() {

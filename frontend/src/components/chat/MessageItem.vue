@@ -100,9 +100,13 @@ const suggestionLabel = computed(() => {
   return "Tạo nhanh";
 });
 
+const isSuggestionForceVisible = ref(false);
+
 watch(
   shouldHighlightSuggestion,
   (isHighlighted) => {
+    isSuggestionForceVisible.value = isHighlighted;
+
     if (!isHighlighted) return;
 
     console.log("[Goi y UI] Tin nhan da duoc bat trang thai goi y:", {
@@ -113,6 +117,12 @@ watch(
   },
   { immediate: true },
 );
+
+const disableSuggestionForceVisible = () => {
+  if (isSuggestionForceVisible.value) {
+    isSuggestionForceVisible.value = false;
+  }
+};
 
 // Tách nội dung tin nhắn thành các phần text và link để hiển thị đúng
 const parsedContent = computed(() => {
@@ -137,7 +147,8 @@ const parsedContent = computed(() => {
 
   <div :id="`message-${props.message.id}`"
     class="relative group flex gap-3 p-2 mx-2 rounded-lg transition-colors hover:bg-secondary/20 mb-2"
-    :class="{ 'bg-secondary/20 ring-1 ring-primary/20': shouldHighlightSuggestion }">
+    :class="{ 'bg-secondary/50 ring-1 ring-primary/20': shouldHighlightSuggestion }"
+    @mouseenter="disableSuggestionForceVisible">
     <!-- Avatar -->
     <div class="w-10 shrink-0">
       <UserInfoPopover :username="props.message.sender?.username" v-if="!isGrouped || props.message.replyTo">
@@ -236,13 +247,14 @@ const parsedContent = computed(() => {
     </div>
 
     <!-- Actions -->
-    <div class="absolute right-4 -top-4 transition-opacity z-10"
-      :class="shouldHighlightSuggestion ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'">
+    <div class="absolute right-4 -top-4 transition-opacity z-10" :class="isSuggestionForceVisible
+      ? 'opacity-100'
+      : 'opacity-0 group-hover:opacity-100'
+      ">
       <MessageActions v-if="!isEditing && !props.message.deleted" :isSender="isFullAction"
-        :isPinned="props.message.pinned" :showSuggestion="shouldHighlightSuggestion"
-        :suggestionLabel="suggestionLabel"
-        :forceVisible="shouldHighlightSuggestion" @reply="handleReply" @edit="handleEdit"
-        @delete="isDeleteOpen = true" @pin="handlePin" @suggest="handleSuggestion" />
+        :isPinned="props.message.pinned" :showSuggestion="shouldHighlightSuggestion" :suggestionLabel="suggestionLabel"
+        @reply="handleReply" @edit="handleEdit" @delete="isDeleteOpen = true" @pin="handlePin"
+        @suggest="handleSuggestion" />
     </div>
   </div>
 

@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useSpaceStore } from "@/stores/spaceStore";
 import { useUserStore } from "@/stores/userStore";
-import { useCalendarSuggestionStore } from "@/stores/calendarSuggestionStore";
+import { useSuggestionStore } from "@/stores/calendarStore";
 import { storeToRefs } from "pinia";
 import { useCalendar } from "@/components/calendar/composables/useCalendar";
 import type { CalendarEvent } from "@/types/CalendarEvent";
@@ -21,7 +21,7 @@ import type { EventFormData } from "@/components/calendar/composables/useEventFo
 // Store state
 const spaceStore = useSpaceStore();
 const userStore = useUserStore();
-const calendarSuggestionStore = useCalendarSuggestionStore();
+const calendarSuggestionStore = useSuggestionStore();
 const { currentSpace } = storeToRefs(spaceStore);
 const { user } = storeToRefs(userStore);
 
@@ -47,7 +47,6 @@ const {
   updateEvent,
   deleteEvent,
   checkConflicts,
-  dayNames,
   dayNamesLong,
   isToday,
   isSelected,
@@ -103,7 +102,7 @@ const createFormDataFromEvent = (event: CalendarEvent): EventFormData => createI
 const handleKeyDown = (e: KeyboardEvent) => {
   // Không điều hướng nếu đang mở dialog hoặc đang nhập liệu
   if (showDialog.value || showViewDialog.value || notificationState.value.show) return;
-  
+
   const target = e.target as HTMLElement;
   if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
     return;
@@ -132,14 +131,14 @@ onUnmounted(() => {
 const openCreateDialog = () => {
   isEditing.value = false;
   editingEventId.value = undefined;
-  
+
   const now = new Date();
-  
+
   now.setHours(now.getHours() + 1);
   const startH = now.getHours().toString().padStart(2, '0');
   const startM = now.getMinutes().toString().padStart(2, '0');
   const startTime = `${startH}:${startM}`;
-  
+
   now.setHours(now.getHours() + 1);
   const endH = now.getHours().toString().padStart(2, '0');
   const endM = now.getMinutes().toString().padStart(2, '0');
@@ -297,8 +296,8 @@ const handleDeleteEvent = (event: CalendarEvent) => {
   showViewDialog.value = false;
   eventToDelete.value = event;
   showNotification(
-    "delete", 
-    "XÓA SỰ KIỆN", 
+    "delete",
+    "XÓA SỰ KIỆN",
     `BẠN CÓ CHẮC CHẮN MUỐN XÓA SỰ KIỆN "<span class="text-foreground font-bold">${event.title}</span>" KHÔNG?<br/><br/>HÀNH ĐỘNG NÀY KHÔNG THỂ HOÀN TÁC.`
   );
 };
@@ -381,36 +380,25 @@ watch(
         :is-selected="isSelected" @select-date="selectDate" @view-event="openViewDialog" />
 
       <CalendarWeekView v-if="viewMode === 'week'" :current-date="currentDate" :selected-date="selectedDate"
-        :events="events" :day-names="dayNamesLong" :is-today="isToday" :is-selected="isSelected" @select-date="selectDate"
-        @view-event="openViewDialog" />
+        :events="events" :day-names="dayNamesLong" :is-today="isToday" :is-selected="isSelected"
+        @select-date="selectDate" @view-event="openViewDialog" />
 
       <CalendarYearView v-if="viewMode === 'year'" :current-date="currentDate" :events="events" :is-today="isToday"
         @click-year-month="setYearMonth" />
     </div>
 
-    <CalendarEventViewDialog
-      v-model:show="showViewDialog"
-      :event="selectedEvent"
-      :current-user-id="currentUserId"
-      @edit="openEditDialog"
-      @delete="handleDeleteEvent"
-    />
+    <CalendarEventViewDialog v-model:show="showViewDialog" :event="selectedEvent" :current-user-id="currentUserId"
+      @edit="openEditDialog" @delete="handleDeleteEvent" />
 
     <CalendarEventDialog v-model:show="showDialog" :is-editing="isEditing" :initial-data="initialFormData"
       @save="handleSaveEvent" />
 
     <!-- Unified Notification Dialog -->
-    <CalendarNotificationDialog 
-      v-model:show="notificationState.show" 
-      :type="notificationState.type"
-      :title="notificationState.title"
-      :message="notificationState.message"
-      :confirm-text="notificationState.confirmText"
-      :cancel-text="notificationState.cancelText"
-      :is-loading="isDeletingEvent || isSavingEvent"
-      @confirm="handleNotificationConfirm" 
-      @cancel="handleNotificationCancel"
-    />
+    <CalendarNotificationDialog v-model:show="notificationState.show" :type="notificationState.type"
+      :title="notificationState.title" :message="notificationState.message"
+      :confirm-text="notificationState.confirmText" :cancel-text="notificationState.cancelText"
+      :is-loading="isDeletingEvent || isSavingEvent" @confirm="handleNotificationConfirm"
+      @cancel="handleNotificationCancel" />
   </div>
 </template>
 

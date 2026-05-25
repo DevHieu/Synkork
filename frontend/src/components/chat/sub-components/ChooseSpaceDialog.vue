@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { LoaderCircle, CalendarClock, NotebookPen, ListTodo, ArrowRight } from "lucide-vue-next";
+import { CalendarClock, NotebookPen, ListTodo, ArrowRight } from "lucide-vue-next";
 import { toast } from "vue-sonner";
 import { getAllSpacesFromRoomId } from "@/services/spaceService";
 import { useRoomsStore } from "@/stores/roomStore";
@@ -14,7 +14,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
 
 const props = defineProps<{
   open: boolean;
@@ -35,22 +34,10 @@ const typeOptions = [
 ] as const;
 
 const roomStore = useRoomsStore();
-const { rooms, currentRoom } = storeToRefs(roomStore);
+const { currentRoom } = storeToRefs(roomStore);
 
 const loading = ref(false);
-const channels = ref<CalendarChannelOption[]>([]);
-
-const currentRoomChannels = computed(() =>
-  channels.value.filter(
-    (channel) => channel.roomId === currentRoom.value?.id,
-  ),
-);
-
-const otherRoomChannels = computed(() =>
-  channels.value.filter(
-    (channel) => channel.roomId !== currentRoom.value?.id,
-  ),
-);
+const currentRoomChannels = ref<CalendarChannelOption[]>([]);
 
 const title = computed(() => {
   switch (selectedType.value) {
@@ -82,16 +69,6 @@ const emptyCurrentText = computed(() => {
   }
 });
 
-const emptyOtherText = computed(() => {
-  switch (selectedType.value) {
-    case "NOTE": return "Không có kênh ghi chú nào khác khả dụng.";
-    case "TASK": return "Không có kênh task nào khác khả dụng.";
-    case "CALENDAR":
-    default:
-      return "Không có kênh lịch nào khác khả dụng.";
-  }
-});
-
 const iconComponent = computed(() => {
   switch (selectedType.value) {
     case "NOTE": return NotebookPen;
@@ -103,36 +80,30 @@ const iconComponent = computed(() => {
 });
 
 const loadChannels = async () => {
-  if (!rooms.value.length) {
-    channels.value = [];
+  if (!currentRoom.value?.id) {
+    currentRoomChannels.value = [];
     return;
   }
 
   loading.value = true;
 
   try {
-    const responses = await Promise.all(
-      rooms.value.map(async (room) => {
-        const response = await getAllSpacesFromRoomId(room.id);
+    const response = await getAllSpacesFromRoomId(currentRoom.value.id);
 
-        return response.data
-          .filter((space: { type: string }) => space.type === selectedType.value)
-          .map(
-            (space: { id: string; name: string }) =>
-              ({
-                roomId: room.id,
-                roomName: room.name,
-                spaceId: space.id,
-                spaceName: space.name,
-              }) satisfies CalendarChannelOption,
-          );
-      }),
-    );
-
-    channels.value = responses.flat();
+    currentRoomChannels.value = response.data
+      .filter((space: { type: string }) => space.type === selectedType.value)
+      .map(
+        (space: { id: string; name: string }) =>
+          ({
+            roomId: currentRoom.value!.id,
+            roomName: currentRoom.value!.name,
+            spaceId: space.id,
+            spaceName: space.name,
+          }) satisfies CalendarChannelOption,
+      );
   } catch (error) {
     toast.error("Không thể tải danh sách kênh.");
-    channels.value = [];
+    currentRoomChannels.value = [];
   } finally {
     loading.value = false;
   }
@@ -174,48 +145,32 @@ watch(
 
       <!-- Giao diện chọn loại nội dung để Tạo nhanh -->
       <div class="grid grid-cols-3 gap-2 p-1 bg-muted/60 rounded-xl">
-        <button
-          v-for="typeOpt in typeOptions"
-          :key="typeOpt.value"
-          type="button"
+        <button v-for="typeOpt in typeOptions" :key="typeOpt.value" type="button"
           class="flex flex-col items-center justify-center gap-1.5 py-3 px-2 rounded-lg border transition-all duration-200"
           :class="selectedType === typeOpt.value
             ? 'bg-background border-border shadow-sm text-primary font-medium'
             : 'border-transparent text-muted-foreground hover:bg-background/50 hover:text-foreground'"
-          @click="selectedType = typeOpt.value"
-        >
+          @click="selectedType = typeOpt.value">
           <component :is="typeOpt.icon" class="h-5 w-5" />
           <span class="text-xs">{{ typeOpt.label }}</span>
-          <span
-            v-if="props.targetType === typeOpt.value"
-            class="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-bold uppercase tracking-wider scale-95"
-          >
+          <span v-if="props.targetType === typeOpt.value"
+            class="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-bold uppercase tracking-wider scale-95">
             Gợi ý
           </span>
         </button>
       </div>
 
-      <div v-if="loading" class="flex min-h-40 items-center justify-center">
-        <LoaderCircle class="h-5 w-5 animate-spin text-primary" />
-      </div>
-
-      <div v-else class="flex flex-col gap-5">
+      <div class="flex flex-col gap-5 transition-opacity duration-150"
+        :class="loading ? 'opacity-50 pointer-events-none' : 'opacity-100'">
         <section class="flex flex-col gap-3">
           <div class="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-            Trong phòng hiện tại
+            Danh sách space
           </div>
 
-          <div
-            v-if="currentRoomChannels.length"
-            class="flex flex-col gap-2"
-          >
-            <button
-              v-for="channel in currentRoomChannels"
-              :key="channel.spaceId"
-              type="button"
+          <div v-if="currentRoomChannels.length" class="flex flex-col gap-2">
+            <button v-for="channel in currentRoomChannels" :key="channel.spaceId" type="button"
               class="flex items-center justify-between rounded-xl border border-border bg-background px-4 py-3 text-left transition-colors hover:border-primary hover:bg-primary/5"
-              @click="handleSelect(channel)"
-            >
+              @click="handleSelect(channel)">
               <div class="flex flex-col">
                 <span class="text-sm font-medium text-foreground">
                   {{ channel.spaceName }}
@@ -228,52 +183,10 @@ watch(
             </button>
           </div>
 
-          <div
-            v-else
-            class="rounded-xl border border-dashed border-border px-4 py-6 text-sm text-muted-foreground"
-          >
+          <div v-else class="rounded-xl border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
             {{ emptyCurrentText }}
           </div>
         </section>
-
-        <Separator />
-
-        <section class="flex flex-col gap-3">
-          <div class="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-            Kênh khác
-          </div>
-
-          <div
-            v-if="otherRoomChannels.length"
-            class="flex max-h-64 flex-col gap-2 overflow-y-auto pr-1"
-          >
-            <button
-              v-for="channel in otherRoomChannels"
-              :key="channel.spaceId"
-              type="button"
-              class="flex items-center justify-between rounded-xl border border-border bg-background px-4 py-3 text-left transition-colors hover:border-primary hover:bg-primary/5"
-              @click="handleSelect(channel)"
-            >
-              <div class="flex flex-col">
-                <span class="text-sm font-medium text-foreground">
-                  {{ channel.spaceName }}
-                </span>
-                <span class="text-xs text-muted-foreground">
-                  {{ channel.roomName }}
-                </span>
-              </div>
-              <ArrowRight class="h-4 w-4 text-primary" />
-            </button>
-          </div>
-
-          <div
-            v-else
-            class="rounded-xl border border-dashed border-border px-4 py-6 text-sm text-muted-foreground"
-          >
-            {{ emptyOtherText }}
-          </div>
-        </section>
-
         <div class="flex justify-end">
           <Button variant="outline" @click="emit('update:open', false)">
             Hủy

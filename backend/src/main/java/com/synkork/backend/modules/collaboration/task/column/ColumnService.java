@@ -105,4 +105,10 @@ public class ColumnService {
 
         return columns.stream().map(ColumnDTO::new).collect(Collectors.toList());
     }
+
+    @Transactional()
+    public List<ColumnDTO> getAllWithoutCards(UUID spaceId) {
+        List<ColumnEntity> columns = columnRepository.findColumnsOnlyBySpaceId(spaceId);
+        return columns.stream().map(ColumnDTO::new).collect(Collectors.toList());
+    }
 }
