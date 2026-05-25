@@ -9,7 +9,6 @@ import com.synkork.backend.modules.message.dto.MessageSuggestionDTO;
 import com.synkork.backend.modules.message.dto.ReplyPreviewDTO;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
-import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
 import com.synkork.backend.modules.space.SpaceEntity;
 import com.synkork.backend.modules.space.SpaceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -78,10 +76,6 @@ public class MessageService {
 
     @Transactional
     public MessageDTO saveMessage(MessageDTO dto, String senderId, String senderEmail) {
-        System.out.println("[Tin nhan] Bat dau luu tin nhan. spaceId=" + dto.getSpaceId()
-                + ", senderId=" + senderId
-                + ", senderEmail=" + senderEmail
-                + ", replyToId=" + dto.getReplyToId());
         MessageEntity entity = new MessageEntity();
         UUID spaceId = UUID.fromString(dto.getSpaceId());
 
@@ -99,46 +93,11 @@ public class MessageService {
         }
 
         MessageEntity newMessage = messageRepository.saveAndFlush(entity);
-        System.out.println("[Tin nhan] Da luu tin nhan. messageId=" + newMessage.getId()
-                + ", roomId=" + space.getRoom().getId()
-                + ", senderMemberId=" + sender.getId());
 
-        // Dựng lại DTO từ entity vừa lưu để đảm bảo createdAt / updatedAt / sender luôn đầy đủ.
         MessageDTO responseDto = new MessageDTO(newMessage);
         responseDto.setReplyToId(dto.getReplyToId());
 
-        // LLM 100% AI Code for AI Sug (")>
-        String messageContent = responseDto.getContent();
-
-        if (messageContent != null && !messageContent.trim().isEmpty()) {
-            CompletableFuture.runAsync(()->{
-                try {
-                    String jsonResponse = chatEventLlmService.detectSuggestionFromMessage(messageContent);
-                    System.out.println("[Goi y LLM] Phan hoi tho cho message " + newMessage.getId() + ": " + jsonResponse);
-
-                    JsonNode rootNode = objectMapper.readTree(jsonResponse);
-                    MessageSuggestionDTO suggestionPayload = MessageSuggestionDTO.fromJsonNode(
-                            newMessage.getId(),
-                            rootNode
-                    );
-
-                    // Chỉ bắn suggestion khi LLM khẳng định đây là nội dung có thể mở modal nào đó.
-                    if (suggestionPayload.isActionable()) {
-                        // Luôn dùng userId thật từ sender đã resolve để tránh lệch với id trong websocket session.
-                        String privateChannel = "/topic/user/" + sender.getUser().getId() + "/suggestions";
-                        System.out.println("[Goi y LLM] Dang gui toi " + privateChannel
-                                + " for messageId=" + newMessage.getId()
-                                + " payload=" + suggestionPayload);
-                        simpMessagingTemplate.convertAndSend(privateChannel, suggestionPayload);
-                    } else {
-                        System.out.println("[Goi y LLM] Bo qua message " + newMessage.getId() + " vi suggestionType=NONE");
-                    }
-
-                }  catch (Exception e) {
-                    System.err.println("Loi khi phan tich tin nhan bang LLM: " + e.getMessage());
-                }
-            });
-        }
+        broadcastSuggestion(newMessage, sender);
 
         return responseDto;
     }
@@ -274,36 +233,6 @@ public class MessageService {
         return returnPageDto(messages, beforeCursor, afterCursor, beforeHasMore, afterHasMore);
     }
 
-    // Hàm này nhằm load lên những cái tin nhắn được reply
-    private void enrichReplyTo(List<MessageDTO> messages) {
-        List<UUID> replyToIds = messages.stream()
-                .map(MessageDTO::getReplyToId)
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
-
-        if (replyToIds.isEmpty()) return;
-
-        Map<UUID, ReplyPreviewDTO> previewMap = messageRepository
-                .findReplyPreviews(replyToIds)
-                .stream()
-                .collect(Collectors.toMap(ReplyPreviewDTO::getId, r -> r));
-
-        messages.forEach(m -> {
-            if (m.getReplyToId() != null) {
-                m.setReplyTo(previewMap.get(m.getReplyToId()));
-            }
-        });
-    }
-
-    private MessagePageDTO returnPageDto(List<MessageDTO> messages, UUID beforeCursor, UUID afterCursor, boolean beforeHasMore, boolean afterHasMore) {
-        MessagePageDTO page = new MessagePageDTO(messages, beforeCursor, afterCursor, beforeHasMore, afterHasMore);
-        enrichReplyTo(messages);
-
-        return page;
-    }
-
-
     public void sendFileMessage(UUID spaceId, UUID userId, UUID replyToId, List<MultipartFile> fileList) {
         SpaceEntity space = spaceRepository.findById(spaceId).orElseThrow();
         MessageEntity replyTo = replyToId != null ? messageRepository.findById(replyToId).orElse(null) : null;
@@ -336,4 +265,69 @@ public class MessageService {
         }
     }
 
+    // Hàm này nhằm load lên những cái tin nhắn được reply
+    private void enrichReplyTo(List<MessageDTO> messages) {
+        List<UUID> replyToIds = messages.stream()
+                .map(MessageDTO::getReplyToId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        if (replyToIds.isEmpty()) return;
+
+        Map<UUID, ReplyPreviewDTO> previewMap = messageRepository
+                .findReplyPreviews(replyToIds)
+                .stream()
+                .collect(Collectors.toMap(ReplyPreviewDTO::getId, r -> r));
+
+        messages.forEach(m -> {
+            if (m.getReplyToId() != null) {
+                m.setReplyTo(previewMap.get(m.getReplyToId()));
+            }
+        });
+    }
+
+    private void broadcastSuggestion(MessageEntity message, RoomMemberEntity sender) {
+        String messageContent = message.getContent();
+
+        if (messageContent == null || messageContent.trim().isEmpty()) {
+            return;
+        }
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                String jsonResponse = chatEventLlmService.detectSuggestionFromMessage(messageContent);
+                System.out.println("[Goi y LLM] Phan hoi tho cho message " + message.getId() + ": " + jsonResponse);
+
+                JsonNode rootNode = objectMapper.readTree(jsonResponse);
+                MessageSuggestionDTO suggestionPayload = MessageSuggestionDTO.fromJsonNode(
+                        message.getId(),
+                        rootNode
+                );
+
+                // Chỉ bắn suggestion khi LLM khẳng định đây là nội dung có thể mở modal nào đó.
+                if (suggestionPayload.isActionable()) {
+                    // Luôn dùng userId thật từ sender đã resolve để tránh lệch với id trong websocket session.
+                    String privateChannel = "/topic/user/" + sender.getUser().getId() + "/suggestions";
+                    System.out.println("[Goi y LLM] Dang gui toi " + privateChannel
+                            + " for messageId=" + message.getId()
+                            + " payload=" + suggestionPayload);
+
+                    simpMessagingTemplate.convertAndSend(privateChannel, suggestionPayload);
+                } else {
+                    System.out.println("[Goi y LLM] Bo qua message " + message.getId() + " vi suggestionType=NONE");
+                }
+            } catch (Exception e) {
+                System.err.println("Loi khi phan tich tin nhan bang LLM: " + e.getMessage());
+            }
+        });
+    }
+
+
+    private MessagePageDTO returnPageDto(List<MessageDTO> messages, UUID beforeCursor, UUID afterCursor, boolean beforeHasMore, boolean afterHasMore) {
+        MessagePageDTO page = new MessagePageDTO(messages, beforeCursor, afterCursor, beforeHasMore, afterHasMore);
+        enrichReplyTo(messages);
+
+        return page;
+    }
 }
