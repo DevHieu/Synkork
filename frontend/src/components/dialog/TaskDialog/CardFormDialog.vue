@@ -15,11 +15,14 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 
 import type { CardEvent } from '@/types/Task'
+import type { SuggestedTaskDraft } from '@/types/CalendarSuggestion'
 
 const props = defineProps<{
   open: boolean,
   columnId: string,
-  taskData: CardEvent | null
+  taskData: CardEvent | null,
+  draft?: SuggestedTaskDraft | null,
+  isSaving?: boolean
 }>()
 
 const emit = defineEmits(['update:open', 'save'])
@@ -32,6 +35,11 @@ watch(() => props.open, (newVal) => {
       form.value = {
         title: props.taskData.title || '',
         description: props.taskData.description || ''
+      }
+    } else if (props.draft) {
+      form.value = {
+        title: props.draft.title || '',
+        description: props.draft.description || ''
       }
     } else {
       form.value = { title: '', description: '' }

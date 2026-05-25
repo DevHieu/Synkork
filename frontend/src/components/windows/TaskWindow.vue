@@ -65,7 +65,7 @@ const openEditColumnDialog = async (col: ColumnEvent) => {
 }
 
 const handleSaveColumn = async (data: { title: string }) => {
-    if(!currentSpace.value?.id) return;
+    if (!currentSpace.value?.id) return;
     isSaving.value = true
     try {
         await taskStore.saveColumn(currentSpace.value.id, editingCol.value?.id ?? '', data.title)
@@ -85,7 +85,7 @@ const confirmDeleteColumn = (colId: string) => {
 }
 
 const onColumnMove = async (event: TaskMoveEvent) => {
-    if(!currentSpace.value?.id) return;
+    if (!currentSpace.value?.id) return;
     try {
         await taskStore.moveColumn(currentSpace.value.id, event)
     } catch (error) {
@@ -101,10 +101,10 @@ const openAddCardDialog = (columnId: string) => {
 }
 
 const handleSaveCard = async (data: { title: string, description: string }) => {
-    if(!currentSpace.value?.id) return;
+    if (!currentSpace.value?.id) return;
     try {
         await taskStore.saveCard(
-            currentSpace.value.id, editingCard.value?.id ?? '', 
+            currentSpace.value.id, editingCard.value?.id ?? '',
             targetColumnId.value, data.title, data.description
         )
         isCardDialogOpen.value = false
@@ -122,7 +122,7 @@ const confirmDeleteCard = (columnId: string, cardId: string) => {
 }
 
 const onCardMove = async (event: TaskMoveEvent, currentColumnId: string) => {
-    if(!currentSpace.value?.id) return;
+    if (!currentSpace.value?.id) return;
     try {
         await taskStore.moveCard(currentSpace.value.id, currentColumnId, event)
     } catch (error) {
@@ -160,7 +160,6 @@ const joinspace = async (spaceId: string) => {
     await clearAll();
     await taskStore.fetchTasks(spaceId);
     await taskStore.subscribeTospace(spaceId);
-
 }
 
 const clearAll = async () => {
@@ -189,15 +188,9 @@ const clearAll = async () => {
                 <draggable v-model="columns" group="columns" item-key="id" handle=".column-handle"
                     @change="onColumnMove" class="flex gap-6 items-start h-full">
                     <template #item="{ element: col }">
-                        <TaskColumn
-                            :column="col"
-                            :space-name="currentSpace?.name ?? ''"
-                            @edit-column="openEditColumnDialog"
-                            @delete-column="confirmDeleteColumn"
-                            @add-card="openAddCardDialog"
-                            @delete-card="confirmDeleteCard"
-                            @card-move="onCardMove"
-                        />
+                        <TaskColumn :column="col" :space-name="currentSpace?.name ?? ''"
+                            @edit-column="openEditColumnDialog" @delete-column="confirmDeleteColumn"
+                            @add-card="openAddCardDialog" @delete-card="confirmDeleteCard" @card-move="onCardMove" />
                     </template>
                 </draggable>
 
@@ -214,14 +207,12 @@ const clearAll = async () => {
         </div>
     </div>
 
-    <CardFormDialog v-model:open="isCardDialogOpen" :columnId="targetColumnId" :taskData="editingCard" @save="handleSaveCard" />
+    <CardFormDialog v-model:open="isCardDialogOpen" :columnId="targetColumnId" :taskData="editingCard"
+        :isSaving="isSaving" @save="handleSaveCard" />
     <ColumnFormDialog v-model:open="isColumnDialogOpen" :column-data="editingCol" @save="handleSaveColumn" />
-    <DeleteConfirmDialog
-        v-model:open="isDeleteOpen"
-        :title="deleteType === 'column' ? 'Xóa cột này?' : 'Xóa thẻ này?'"
+    <DeleteConfirmDialog v-model:open="isDeleteOpen" :title="deleteType === 'column' ? 'Xóa cột này?' : 'Xóa thẻ này?'"
         :description="deleteType === 'column' ? 'Toàn bộ thẻ trong cột này sẽ bị mất.' : 'Bạn không thể khôi phục thẻ này sau khi xóa.'"
-        @confirm="executeDelete"
-    />
+        @confirm="executeDelete" />
 </template>
 
 <style scoped></style>
