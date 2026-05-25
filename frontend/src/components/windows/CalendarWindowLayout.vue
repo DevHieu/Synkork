@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useSpaceStore } from "@/stores/spaceStore";
 import { useUserStore } from "@/stores/userStore";
-import { useSuggestionStore } from "@/stores/suggestionStore";
+import { useSuggestionStore } from "@/stores/calendarStore";
 import { storeToRefs } from "pinia";
 import { useCalendar } from "@/components/calendar/composables/useCalendar";
 import type { CalendarEvent } from "@/types/CalendarEvent";

@@ -61,22 +61,6 @@ export const useMessageStore = defineStore("message", {
         if (!this.isJumpMode) {
           this.messages = this.messages.filter((m) => m.id !== msg.id);
           this.messages.unshift(msg);
-          console.log("[Chat] Da chen tin nhan vao danh sach hien tai:", {
-            spaceId,
-            messageId: msg.id,
-            totalMessages: this.messages.length,
-          });
-
-          const mockSuggestion = buildMockSuggestion(msg);
-
-          if (mockSuggestion) {
-            this.suggestionsByMessageId = {
-              ...this.suggestionsByMessageId,
-              [msg.id]: mockSuggestion,
-            };
-
-            console.log("[Goi y MOCK] Da tao suggestion cho message:", mockSuggestion);
-          }
 
           if (!this.isScrollTop) {
             // Tự nhảy xuống
@@ -120,6 +104,8 @@ export const useMessageStore = defineStore("message", {
           );
         }
       });
+
+      this.subscribeToSuggestions();
     },
 
     async subscribeToSuggestions() {
@@ -134,37 +120,13 @@ export const useMessageStore = defineStore("message", {
         return;
       }
 
-      // Luôn đảm bảo socket đã kết nối trước khi đăng ký kênh gợi ý.
       await socketService.connect();
-      console.log("[Goi y] Socket da ket noi, bat dau dang ky kenh cho user:", currentUserId);
 
       const subscription = chatSocket.subscribeSuggestions(currentUserId, (suggestion) => {
-        console.log("[Goi y] Da nhan payload:", suggestion);
-        console.log("[Goi y] Trang thai chat hien tai khi nhan payload:", {
-          messageCount: this.messages.length,
-          currentMessageIds: this.messages.slice(0, 5).map((message) => message.id),
-          knownSuggestionIds: Object.keys(this.suggestionsByMessageId),
-        });
-
-        // Kiểm tra xem tin nhắn đã có sẵn trong danh sách hiển thị chưa (chỉ dùng để log thông tin).
-        const targetMessage = this.messages.find(
-          (message) => message.id === suggestion.messageId,
-        );
-        if (!targetMessage) {
-          console.log("[Goi y] Tin nhan chua xuat hien trong danh sach hien tai, van luu cache cho messageId:", suggestion.messageId);
-        }
-
-        if (suggestion.suggestionType === "NONE") {
-          console.warn("[Goi y] Bo qua vi LLM tra ve NONE:", suggestion);
-          return;
-        }
-
-        // Xóa các gợi ý cũ trước khi thêm gợi ý mới để chỉ hiển thị duy nhất 1 gợi ý tại 1 thời điểm.
         this.suggestionsByMessageId = {
           ...this.suggestionsByMessageId,
           [suggestion.messageId]: suggestion,
         };
-        console.log("[Goi y] Da luu cache duy nhat cho message:", suggestion.messageId);
       });
 
       if (!subscription) {
@@ -416,84 +378,4 @@ function createTempMessage(
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   } as Message;
-}
-
-function buildMockSuggestion(message: Message): MessageEventSuggestion | null {
-  const text = message.content?.trim().toLowerCase() ?? "";
-
-  if (!text) return null;
-
-  if (text.includes("note") || text.includes("ghi chú") || text.includes("ghi lại")) {
-    return {
-      messageId: message.id,
-      suggestionType: "NOTE",
-      hasEvent: false,
-      hasNote: true,
-      hasTask: false,
-      title: null,
-      description: null,
-      eventDate: null,
-      startTime: null,
-      endTime: null,
-      noteTitle: "Ghi chú mock",
-      noteContent: message.content,
-      noteColor: "#3b82f6",
-      notePinned: false,
-      noteAllowEditAll: false,
-      taskTitle: null,
-      taskDescription: null,
-      taskColumnName: null,
-      taskDueDate: null,
-    };
-  }
-
-  if (text.includes("task") || text.includes("todo") || text.includes("việc")) {
-    return {
-      messageId: message.id,
-      suggestionType: "TASK",
-      hasEvent: false,
-      hasNote: false,
-      hasTask: true,
-      title: null,
-      description: null,
-      eventDate: null,
-      startTime: null,
-      endTime: null,
-      noteTitle: null,
-      noteContent: null,
-      noteColor: null,
-      notePinned: null,
-      noteAllowEditAll: null,
-      taskTitle: "Task mock",
-      taskDescription: message.content,
-      taskColumnName: null,
-      taskDueDate: "2026-05-26",
-    };
-  }
-
-  if (text.includes("họp") || text.includes("hop") || text.includes("lịch")) {
-    return {
-      messageId: message.id,
-      suggestionType: "EVENT",
-      hasEvent: true,
-      hasNote: false,
-      hasTask: false,
-      title: "Lịch mock",
-      description: message.content,
-      eventDate: "2026-05-26",
-      startTime: "09:00",
-      endTime: "10:00",
-      noteTitle: null,
-      noteContent: null,
-      noteColor: null,
-      notePinned: null,
-      noteAllowEditAll: null,
-      taskTitle: null,
-      taskDescription: null,
-      taskColumnName: null,
-      taskDueDate: null,
-    };
-  }
-
-  return null;
 }

@@ -5,8 +5,6 @@ import { useRoute } from "vue-router";
 import { useSpaceStore } from "@/stores/spaceStore";
 import { useMessageStore } from "@/stores/messageStore";
 import { useFriendStore } from "@/stores/friendStore";
-import { useUserStore } from "@/stores/userStore";
-
 import { storeToRefs } from "pinia";
 
 import ChatHeader from "@/components/chat/ChatHeader.vue";
@@ -22,8 +20,6 @@ const spaceId = ref(route.params.spaceId as string);
 
 const spaceStore = useSpaceStore();
 const { currentSpace } = storeToRefs(spaceStore);
-const userStore = useUserStore();
-const { user } = storeToRefs(userStore);
 
 const messageStore = useMessageStore();
 const { messages, beforeHasMore, afterHasMore, replyingTo } =
@@ -87,30 +83,18 @@ const handleOpenSuggestion = async (messageId: string) => {
 
 
   // Xóa các gợi ý đang hiển thị trên UI chat sau khi người dùng đã bấm nút xử lý gợi ý
-  // messageStore.suggestionsByMessageId = {};
+  messageStore.suggestionsByMessageId = {};
 
   suggestionData.value = suggestion;
   await nextTick();
   suggestionDialogOpen.value = true;
 };
 
-
-
 watch(currentSpace, (space, prevSpace) => {
   if (!space?.id) return;
   if (space.id === prevSpace?.id) return; // không re-join nếu cùng space
   joinSpace(space.id);
 });
-
-watch(
-  () => user.value?.id,
-  async (userId) => {
-    if (!userId) return;
-
-    await messageStore.subscribeToSuggestions();
-  },
-  { immediate: true },
-);
 </script>
 
 <template>
@@ -145,9 +129,6 @@ watch(
         <MemberPanel />
       </div>
     </div>
-
-    <!-- <SuggestionChannelDialog v-model:open="suggestionStore.isChannelDialogOpen" :targetType="dialogTargetType"
-      @select="handleSelectSuggestionChannel" /> -->
 
     <SuggestionDialog v-model:open="suggestionDialogOpen" :room-id="currentSpace?.id ?? ''"
       :message-info="suggestionData" @close="suggestionDialogOpen = false" />

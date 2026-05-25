@@ -14,7 +14,7 @@ import CardFormDialog from "../dialog/task/CardFormDialog.vue";
 
 import { useSpaceStore } from "@/stores/spaceStore";
 import { useTaskStore } from "@/stores/taskStore";
-import { useSuggestionStore } from "@/stores/suggestionStore";
+import { useSuggestionStore } from "@/stores/calendarStore";
 
 const spaceStore = useSpaceStore();
 const suggestionStore = useSuggestionStore();
@@ -30,7 +30,6 @@ const emit = defineEmits<{
   (e: "update:open", value: boolean): void;
   (e: "close"): void;
 }>();
-
 
 const dialogTargetType = ref<"CALENDAR" | "NOTE" | "TASK">("CALENDAR");
 const spaceDialogOpen = ref(false);

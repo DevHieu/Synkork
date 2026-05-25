@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { LoaderCircle, CalendarClock, NotebookPen, ListTodo, ArrowRight } from "lucide-vue-next";
+import { CalendarClock, NotebookPen, ListTodo, ArrowRight } from "lucide-vue-next";
 import { toast } from "vue-sonner";
 import { getAllSpacesFromRoomId } from "@/services/spaceService";
 import { useRoomsStore } from "@/stores/roomStore";
@@ -160,11 +160,8 @@ watch(
         </button>
       </div>
 
-      <div v-if="loading" class="flex min-h-40 items-center justify-center">
-        <LoaderCircle class="h-5 w-5 animate-spin text-primary" />
-      </div>
-
-      <div v-else class="flex flex-col gap-5">
+      <div class="flex flex-col gap-5 transition-opacity duration-150"
+        :class="loading ? 'opacity-50 pointer-events-none' : 'opacity-100'">
         <section class="flex flex-col gap-3">
           <div class="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
             Danh sách space
@@ -190,45 +187,6 @@ watch(
             {{ emptyCurrentText }}
           </div>
         </section>
-
-        <!-- <Separator />
-
-        <section class="flex flex-col gap-3">
-          <div class="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-            Kênh khác
-          </div>
-
-          <div
-            v-if="otherRoomChannels.length"
-            class="flex max-h-64 flex-col gap-2 overflow-y-auto pr-1"
-          >
-            <button
-              v-for="channel in otherRoomChannels"
-              :key="channel.spaceId"
-              type="button"
-              class="flex items-center justify-between rounded-xl border border-border bg-background px-4 py-3 text-left transition-colors hover:border-primary hover:bg-primary/5"
-              @click="handleSelect(channel)"
-            >
-              <div class="flex flex-col">
-                <span class="text-sm font-medium text-foreground">
-                  {{ channel.spaceName }}
-                </span>
-                <span class="text-xs text-muted-foreground">
-                  {{ channel.roomName }}
-                </span>
-              </div>
-              <ArrowRight class="h-4 w-4 text-primary" />
-            </button>
-          </div>
-
-          <div
-            v-else
-            class="rounded-xl border border-dashed border-border px-4 py-6 text-sm text-muted-foreground"
-          >
-            {{ emptyOtherText }}
-          </div>
-        </section> -->
-
         <div class="flex justify-end">
           <Button variant="outline" @click="emit('update:open', false)">
             Hủy

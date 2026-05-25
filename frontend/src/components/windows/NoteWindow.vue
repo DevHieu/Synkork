@@ -137,8 +137,7 @@
     </main>
 
     <!-- DIALOGS -->
-    <NoteDialog :space-id="spaceId" :open="dialogOpen" :note="selectedNote" :draft="noteDraft"
-      @close="dialogOpen = false" />
+    <NoteDialog :space-id="spaceId" :open="dialogOpen" :note="selectedNote" @close="dialogOpen = false" />
 
     <NoteDetailDialog :open="detailOpen" :note="selectedNote" @close="detailOpen = false" @edit="openEdit"
       @delete="confirmDelete" />
@@ -167,8 +166,6 @@ import {
 
 import { useRoute } from 'vue-router'
 import { useNoteStore } from '@/stores/noteStore'
-import { useSuggestionStore } from '@/stores/suggestionStore'
-import type { SuggestedNoteDraft } from '@/types/CalendarSuggestion'
 
 import {
   GridLayout,
@@ -200,7 +197,6 @@ import ReminderToast from '@/components/note/ReminderToast.vue'
 
 import type {
   Note,
-  NoteRequest
 } from '@/types/NoteType'
 import { useSpaceStore } from '@/stores/spaceStore'
 import { storeToRefs } from 'pinia'
@@ -213,32 +209,9 @@ const spaceStore = useSpaceStore()
 const store = useNoteStore()
 const { currentSpace } = storeToRefs(spaceStore)
 
-// Dialog state
 const dialogOpen = ref(false)
 const detailOpen = ref(false)
 const selectedNote = ref<Note | null>(null)
-const calendarSuggestionStore = useSuggestionStore()
-const noteDraft = ref<SuggestedNoteDraft | null>(null)
-
-watch(
-  spaceId,
-  (newId) => {
-    if (!newId) return
-    const draft = calendarSuggestionStore.consumePendingNoteDraft(newId)
-    if (draft) {
-      noteDraft.value = draft
-      selectedNote.value = null
-      dialogOpen.value = true
-    }
-  },
-  { immediate: true }
-)
-
-watch(dialogOpen, (isOpen) => {
-  if (!isOpen) {
-    noteDraft.value = null
-  }
-})
 
 const confirmOpen = ref(false)
 

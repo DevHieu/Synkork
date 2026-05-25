@@ -10,8 +10,6 @@ import { useTaskStore } from "@/stores/taskStore";
 import { storeToRefs } from "pinia";
 
 import type { CardEvent, ColumnEvent, TaskMoveEvent } from "@/types/Task";
-import { useSuggestionStore } from '@/stores/suggestionStore'
-import type { SuggestedTaskDraft } from '@/types/CalendarSuggestion'
 
 import TaskColumn from '@/components/windows/task/TaskColumn.vue'
 import ColumnFormDialog from '@/components/dialog/task/ColumnFormDialog.vue'
@@ -35,15 +33,6 @@ const editingCol = ref<ColumnEvent | null>(null)
 
 const isCardDialogOpen = ref(false)
 const editingCard = ref<CardEvent | null>(null)
-
-const calendarSuggestionStore = useSuggestionStore()
-const taskDraft = ref<SuggestedTaskDraft | null>(null)
-
-watch(isCardDialogOpen, (isOpen) => {
-    if (!isOpen) {
-        taskDraft.value = null
-    }
-})
 
 const isSaving = ref(false)
 const targetColumnId = ref<string>('')
@@ -166,23 +155,6 @@ const joinspace = async (spaceId: string) => {
     await clearAll();
     await taskStore.fetchTasks(spaceId);
     await taskStore.subscribeTospace(spaceId);
-
-    const draft = calendarSuggestionStore.consumePendingTaskDraft(spaceId);
-    if (draft) {
-        await nextTick();
-        const col = columns.value.find(
-            (c) => c.title.toLowerCase() === draft.columnName.toLowerCase()
-        ) || columns.value[0];
-
-        if (col) {
-            targetColumnId.value = col.id;
-            editingCard.value = null;
-            taskDraft.value = draft;
-            isCardDialogOpen.value = true;
-        } else {
-            console.warn("[Goi y] Khong tim thay cot nao trong Task Space de tao the");
-        }
-    }
 }
 
 const clearAll = async () => {
@@ -223,7 +195,7 @@ const clearAll = async () => {
     </div>
 
     <CardFormDialog v-model:open="isCardDialogOpen" :columnId="targetColumnId" :taskData="editingCard"
-        :draft="taskDraft" :isSaving="isSaving" @save="handleSaveCard" />
+        :isSaving="isSaving" @save="handleSaveCard" />
     <ColumnFormDialog v-model:open="isColumnDialogOpen" :column-data="editingCol" @save="handleSaveColumn" />
     <DeleteConfirmDialog v-model:open="isDeleteOpen" :title="deleteType === 'column' ? 'Xóa cột này?' : 'Xóa thẻ này?'"
         :description="deleteType === 'column' ? 'Toàn bộ thẻ trong cột này sẽ bị mất.' : 'Bạn không thể khôi phục thẻ này sau khi xóa.'"

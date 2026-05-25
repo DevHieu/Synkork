@@ -200,9 +200,6 @@ async function handleSubmit() {
   } finally {
     submitting.value = false
   }
-
-
-
 }
 </script>
 
