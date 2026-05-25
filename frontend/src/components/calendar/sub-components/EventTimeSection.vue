@@ -22,6 +22,7 @@ const {
   parseTimeString, buildTimeString, adjustEndTimeIfNeeded, syncDropdownsOnFormatChange,
 } = useTimeSelector();
 
+// Gom logic đồng bộ giờ vào một hàm để dialog mở lại không bị lệch dropdown.
 // Đồng bộ trạng thái nội bộ với props khi dialog mở hoặc dữ liệu thay đổi
 const syncInternalState = () => {
   eventDate.value = props.initialDate;
@@ -69,18 +70,18 @@ onMounted(syncInternalState);
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="space-y-6 rounded-xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)] cursor-default">
     <!-- Định dạng giờ -->
-    <div class="bg-background border-2 border-border p-3">
-      <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-3">ĐỊNH DẠNG GIỜ</label>
-      <div class="flex gap-0 border-2 border-border bg-background w-fit">
+    <div class="rounded-xl border border-border/80 bg-muted/20 p-4 cursor-default">
+      <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-3 cursor-default">ĐỊNH DẠNG GIỜ</label>
+      <div class="flex w-fit rounded-full border-2 border-border bg-background p-1">
         <button type="button" @click="timeFormat = '24h'" :class="[
-          'px-6 py-2 text-[10px] font-mono font-bold uppercase tracking-widest transition-colors border-r-2 border-border',
-          timeFormat === '24h' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+          'rounded-full px-6 py-2 text-[10px] font-mono font-bold uppercase tracking-widest transition-colors',
+          timeFormat === '24h' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
         ]">24H</button>
         <button type="button" @click="timeFormat = '12h'" :class="[
-          'px-6 py-2 text-[10px] font-mono font-bold uppercase tracking-widest transition-colors',
-          timeFormat === '12h' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+          'rounded-full px-6 py-2 text-[10px] font-mono font-bold uppercase tracking-widest transition-colors',
+          timeFormat === '12h' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
         ]">12H (AM/PM)</button>
       </div>
     </div>
@@ -88,26 +89,26 @@ onMounted(syncInternalState);
     <!-- Ngày & Giờ -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="md:col-span-2">
-        <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2">NGÀY DIỄN RA *</label>
+        <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">NGÀY DIỄN RA *</label>
         <input v-model="eventDate" type="date" required
-          class="w-full bg-background border-2 border-border rounded-none px-3 py-2.5 font-mono text-sm text-foreground focus:outline-none focus:border-primary uppercase transition-colors" />
+          class="w-full rounded-lg border-2 border-border bg-background px-4 py-3 font-mono text-sm uppercase text-foreground transition-colors focus:outline-none focus:border-primary" />
       </div>
 
       <!-- Giờ bắt đầu -->
-      <div class="bg-background border-2 border-border p-3">
-        <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2">GIỜ BẮT ĐẦU *</label>
+      <div class="rounded-xl border border-border/80 bg-muted/20 p-4 cursor-default">
+        <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">GIỜ BẮT ĐẦU *</label>
         <div class="flex gap-2 items-center">
           <select v-model="startHour"
-            class="bg-background border-2 border-border rounded-none px-2 py-2 font-mono text-center text-foreground focus:outline-none focus:border-primary text-sm w-full appearance-none !bg-none cursor-pointer calendar-scrollbar">
+            class="calendar-scrollbar w-full cursor-pointer appearance-none rounded-lg border-2 border-border bg-background px-3 py-3 text-center font-mono text-sm text-foreground focus:outline-none focus:border-primary !bg-none">
             <option class="text-foreground bg-background font-mono" v-for="h in (timeFormat === '24h' ? hours24 : hours12)" :key="h" :value="h">{{ h }}</option>
           </select>
           <span class="text-foreground font-mono font-bold">:</span>
           <select v-model="startMinute"
-            class="bg-background border-2 border-border rounded-none px-2 py-2 font-mono text-center text-foreground focus:outline-none focus:border-primary text-sm w-full appearance-none !bg-none cursor-pointer calendar-scrollbar">
+            class="calendar-scrollbar w-full cursor-pointer appearance-none rounded-lg border-2 border-border bg-background px-3 py-3 text-center font-mono text-sm text-foreground focus:outline-none focus:border-primary !bg-none">
             <option class="text-foreground bg-background font-mono" v-for="m in minutes" :key="m" :value="m">{{ m }}</option>
           </select>
           <select v-if="timeFormat === '12h'" v-model="startAmPm"
-            class="bg-background border-2 border-border rounded-none px-2 py-2 font-mono text-center text-foreground focus:outline-none focus:border-primary text-sm w-full appearance-none !bg-none cursor-pointer">
+            class="w-full cursor-pointer appearance-none rounded-lg border-2 border-border bg-background px-3 py-3 text-center font-mono text-sm text-foreground focus:outline-none focus:border-primary !bg-none">
             <option class="text-foreground bg-background font-mono" value="AM">AM</option>
             <option class="text-foreground bg-background font-mono" value="PM">PM</option>
           </select>
@@ -115,20 +116,20 @@ onMounted(syncInternalState);
       </div>
 
       <!-- Giờ kết thúc -->
-      <div class="bg-background border-2 border-border p-3">
-        <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2">GIỜ KẾT THÚC *</label>
+      <div class="rounded-xl border border-border/80 bg-muted/20 p-4 cursor-default">
+        <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">GIỜ KẾT THÚC *</label>
         <div class="flex gap-2 items-center">
           <select v-model="endHour"
-            class="bg-background border-2 border-border rounded-none px-2 py-2 font-mono text-center text-foreground focus:outline-none focus:border-primary text-sm w-full appearance-none !bg-none cursor-pointer calendar-scrollbar">
+            class="calendar-scrollbar w-full cursor-pointer appearance-none rounded-lg border-2 border-border bg-background px-3 py-3 text-center font-mono text-sm text-foreground focus:outline-none focus:border-primary !bg-none">
             <option class="text-foreground bg-background font-mono" v-for="h in (timeFormat === '24h' ? hours24 : hours12)" :key="h" :value="h">{{ h }}</option>
           </select>
           <span class="text-foreground font-mono font-bold">:</span>
           <select v-model="endMinute"
-            class="bg-background border-2 border-border rounded-none px-2 py-2 font-mono text-center text-foreground focus:outline-none focus:border-primary text-sm w-full appearance-none !bg-none cursor-pointer calendar-scrollbar">
+            class="calendar-scrollbar w-full cursor-pointer appearance-none rounded-lg border-2 border-border bg-background px-3 py-3 text-center font-mono text-sm text-foreground focus:outline-none focus:border-primary !bg-none">
             <option class="text-foreground bg-background font-mono" v-for="m in minutes" :key="m" :value="m">{{ m }}</option>
           </select>
           <select v-if="timeFormat === '12h'" v-model="endAmPm"
-            class="bg-background border-2 border-border rounded-none px-2 py-2 font-mono text-center text-foreground focus:outline-none focus:border-primary text-sm w-full appearance-none !bg-none cursor-pointer">
+            class="w-full cursor-pointer appearance-none rounded-lg border-2 border-border bg-background px-3 py-3 text-center font-mono text-sm text-foreground focus:outline-none focus:border-primary !bg-none">
             <option class="text-foreground bg-background font-mono" value="AM">AM</option>
             <option class="text-foreground bg-background font-mono" value="PM">PM</option>
           </select>

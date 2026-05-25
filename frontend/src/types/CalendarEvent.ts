@@ -1,3 +1,10 @@
+export interface CalendarEventAttachment {
+  name: string;
+  size: number;
+  fileUrl?: string;
+  type?: string;
+}
+
 export interface CalendarEvent {
   id: string;
   spaceId: string;
@@ -13,6 +20,9 @@ export interface CalendarEvent {
   createdById: string;
   createdByUsername: string;
   createdByDisplayName: string;
+  createdByAvatarUrl?: string;
+  attendees?: string[];
+  attachments?: CalendarEventAttachment[];
   createdAt: string;
   updatedAt: string;
 }

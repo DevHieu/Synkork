@@ -1,5 +1,5 @@
-import { ref, watch } from "vue";
-import type { CalendarEvent } from "@/types/CalendarEvent";
+import { ref } from "vue";
+import type { CalendarEventAttachment } from "@/types/CalendarEvent";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
 import { toMinutes } from "@/components/calendar/composables/useTimeSelector";
@@ -16,19 +16,15 @@ export interface EventFormData {
   recurrenceEndDate?: string;
   allowEditAll: boolean;
   attendees?: string[];
-  attachments?: { name: string; size: number; file?: File }[];
+  attachments?: CalendarEventAttachment[];
 }
 
 // Quản lý data/validate form
 export function useEventForm(
   initialData: EventFormData,
-  checkConflicts: (date: string, start: string, end: string, excludeId?: string) => Promise<CalendarEvent[]>,
   isEditing: boolean,
-  editingEventId?: string
 ) {
   const formData = ref<EventFormData>({ ...initialData });
-  const conflictEvents = ref<CalendarEvent[]>([]);
-  const isCheckingConflict = ref(false);
 
   const warningMessage = ref("");
   const showWarning = ref(false);
@@ -38,40 +34,6 @@ export function useEventForm(
     warningMessage.value = message;
     showWarning.value = true;
   };
-
-  // Check trùng lịch (debounce)
-  let conflictDebounce: ReturnType<typeof setTimeout> | null = null;
-
-  const scheduleConflictCheck = (date: string, start: string, end: string): void => {
-    if (conflictDebounce) clearTimeout(conflictDebounce);
-    conflictDebounce = setTimeout(async () => {
-      isCheckingConflict.value = true;
-      try {
-        conflictEvents.value = await checkConflicts(
-          date,
-          start,
-          end,
-          isEditing ? editingEventId : undefined
-        );
-      } catch {
-        conflictEvents.value = [];
-      } finally {
-        isCheckingConflict.value = false;
-      }
-    }, 400);
-  };
-
-  // Trigger check khi chọn lại thời gian
-  watch(
-    () => [formData.value.eventDate, formData.value.startTime, formData.value.endTime],
-    ([date, start, end]) => {
-      if (!date || !start || !end) { 
-        conflictEvents.value = []; 
-        return; 
-      }
-      scheduleConflictCheck(date as string, start as string, end as string);
-    }
-  );
 
   const isEndTimeAfterStartTime = (): boolean =>
     toMinutes(formData.value.endTime) > toMinutes(formData.value.startTime);
@@ -99,12 +61,10 @@ export function useEventForm(
   // Reset form
   const resetForm = (data: EventFormData): void => {
     formData.value = { ...data };
-    conflictEvents.value = [];
   };
 
   return {
     formData,
-    conflictEvents,
     warningMessage,
     showWarning,
     validate,

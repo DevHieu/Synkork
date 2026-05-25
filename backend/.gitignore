@@ -47,3 +47,4 @@ log/
 *.log
 .DS_Store
 Thumbs.db
+testFunc.md

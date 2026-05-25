@@ -1,13 +1,11 @@
 package com.synkork.backend.modules.message;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.google.api.client.json.Json;
 import com.synkork.backend.common.dtos.FileUploaded;
 import com.synkork.backend.common.utils.FileService;
-import com.synkork.backend.common.utils.llmService;
+import com.synkork.backend.common.utils.ChatEventLlmService;
 import com.synkork.backend.modules.message.dto.MessageDTO;
 import com.synkork.backend.modules.message.dto.MessagePageDTO;
+import com.synkork.backend.modules.message.dto.MessageSuggestionDTO;
 import com.synkork.backend.modules.message.dto.ReplyPreviewDTO;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
@@ -17,6 +15,7 @@ import com.synkork.backend.modules.space.SpaceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -39,7 +38,7 @@ public class MessageService {
     @Autowired
     SpaceRepository spaceRepository;
     @Autowired
-    private llmService LLMService;
+    private ChatEventLlmService chatEventLlmService;
     @Autowired
     private ObjectMapper objectMapper;
     @Autowired
@@ -77,18 +76,19 @@ public class MessageService {
         }
     }
 
-    public MessageDTO saveMessage(MessageDTO dto, String senderId) {
-        System.out.println(dto.getReplyToId());
+    @Transactional
+    public MessageDTO saveMessage(MessageDTO dto, String senderId, String senderEmail) {
+        System.out.println("[Tin nhan] Bat dau luu tin nhan. spaceId=" + dto.getSpaceId()
+                + ", senderId=" + senderId
+                + ", senderEmail=" + senderEmail
+                + ", replyToId=" + dto.getReplyToId());
         MessageEntity entity = new MessageEntity();
-        UUID userId = UUID.fromString(senderId);
         UUID spaceId = UUID.fromString(dto.getSpaceId());
 
         SpaceEntity space = spaceRepository.findById(spaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Space not found"));
 
-        RoomMemberEntity sender = roomMemberRepository
-                .findByUserIdAndRoom_IdWithUser(userId, space.getRoom().getId())
-                .orElseThrow(() -> new IllegalArgumentException("User is not a member of this room"));
+        RoomMemberEntity sender = resolveSender(space.getRoom().getId(), senderId, senderEmail);
 
         entity.setSender(sender);
         entity.setSpace(space);
@@ -98,50 +98,84 @@ public class MessageService {
             entity.setReplyTo(messageRepository.getReferenceById(dto.getReplyToId()));
         }
 
-        MessageEntity newMessage = messageRepository.save(entity);
-        dto.setId(newMessage.getId());
-        dto.setCreatedAt(newMessage.getCreatedAt());
-        dto.setUpdatedAt(newMessage.getUpdatedAt());
+        MessageEntity newMessage = messageRepository.saveAndFlush(entity);
+        System.out.println("[Tin nhan] Da luu tin nhan. messageId=" + newMessage.getId()
+                + ", roomId=" + space.getRoom().getId()
+                + ", senderMemberId=" + sender.getId());
 
-        RoomMemberDto senderDto = new RoomMemberDto(sender);
-        dto.setSender(senderDto);
-
-        if (dto.getReplyToId() != null) {
-            messageRepository.findReplyPreviews(List.of(dto.getReplyToId()))
-                    .stream()
-                    .findFirst()
-                    .ifPresent(dto::setReplyTo);
-        }
+        // Dựng lại DTO từ entity vừa lưu để đảm bảo createdAt / updatedAt / sender luôn đầy đủ.
+        MessageDTO responseDto = new MessageDTO(newMessage);
+        responseDto.setReplyToId(dto.getReplyToId());
 
         // LLM 100% AI Code for AI Sug (")>
-        String messageContent = dto.getContent();
+        String messageContent = responseDto.getContent();
 
         if (messageContent != null && !messageContent.trim().isEmpty()) {
             CompletableFuture.runAsync(()->{
                 try {
-                    String jsonRepsone = LLMService.detectEventFromMessage(messageContent);
+                    String jsonResponse = chatEventLlmService.detectSuggestionFromMessage(messageContent);
+                    System.out.println("[Goi y LLM] Phan hoi tho cho message " + newMessage.getId() + ": " + jsonResponse);
 
-                    JsonNode rootNode = objectMapper.readTree(jsonRepsone);
-                          
-                    // 
-                    if (rootNode.has("hasEvent") && rootNode.get("hasEvent").asBoolean()) {
-                        String suggestionPayload = rootNode.toString();
-                        String privateChannel = "/topic/user/" + senderId + "/suggestions";
+                    JsonNode rootNode = objectMapper.readTree(jsonResponse);
+                    MessageSuggestionDTO suggestionPayload = MessageSuggestionDTO.fromJsonNode(
+                            newMessage.getId(),
+                            rootNode
+                    );
+
+                    // Chỉ bắn suggestion khi LLM khẳng định đây là nội dung có thể mở modal nào đó.
+                    if (suggestionPayload.isActionable()) {
+                        // Luôn dùng userId thật từ sender đã resolve để tránh lệch với id trong websocket session.
+                        String privateChannel = "/topic/user/" + sender.getUser().getId() + "/suggestions";
+                        System.out.println("[Goi y LLM] Dang gui toi " + privateChannel
+                                + " for messageId=" + newMessage.getId()
+                                + " payload=" + suggestionPayload);
                         simpMessagingTemplate.convertAndSend(privateChannel, suggestionPayload);
-
+                    } else {
+                        System.out.println("[Goi y LLM] Bo qua message " + newMessage.getId() + " vi suggestionType=NONE");
                     }
 
-                } catch (JsonMappingException e) {
-                    System.err.println("Lỗi khi phân tích tin nhắn bằng LLM: " + e.getMessage());
-                } catch (JsonProcessingException e) {
-                    System.err.println("Lỗi khi phân tích tin nhắn bằng LLM: " + e.getMessage());
                 }  catch (Exception e) {
-                    System.err.println("Lỗi khi phân tích tin nhắn bằng LLM: " + e.getMessage());
+                    System.err.println("Loi khi phan tich tin nhan bang LLM: " + e.getMessage());
                 }
             });
         }
 
-        return dto;
+        return responseDto;
+    }
+
+    private RoomMemberEntity resolveSender(UUID roomId, String senderId, String senderEmail) {
+        // Ưu tiên dùng userId từ websocket session vì đây là định danh ổn định nhất.
+        if (senderId != null && !senderId.isBlank()) {
+            try {
+                UUID userId = UUID.fromString(senderId);
+                Optional<RoomMemberEntity> senderById = roomMemberRepository
+                        .findByUserIdAndRoom_IdWithUser(userId, roomId);
+                if (senderById.isPresent()) {
+                    System.out.println("[Tin nhan] Tim duoc sender theo userId=" + senderId + " trong roomId=" + roomId);
+                    return senderById.get();
+                }
+                System.out.println("[Tin nhan] Khong tim thay sender theo userId=" + senderId + " trong roomId=" + roomId);
+            } catch (IllegalArgumentException ignored) {
+                // Bỏ qua để fallback sang email nếu userId trong session không hợp lệ.
+                System.out.println("[Tin nhan] senderId khong phai UUID hop le: " + senderId);
+            }
+        }
+
+        // Fallback theo email để tránh lỗi nếu claim userId trong websocket session bị lệch.
+        if (senderEmail != null && !senderEmail.isBlank()) {
+            Optional<RoomMemberEntity> senderByEmail = roomMemberRepository
+                    .findByUser_EmailAndRoom_Id(senderEmail, roomId);
+            if (senderByEmail.isPresent()) {
+                System.out.println("[Tin nhan] Tim duoc sender theo email=" + senderEmail + " trong roomId=" + roomId);
+                return senderByEmail.get();
+            }
+            System.out.println("[Tin nhan] Khong tim thay sender theo email=" + senderEmail + " trong roomId=" + roomId);
+        }
+
+        System.out.println("[Tin nhan] Khong the xac dinh sender. roomId=" + roomId
+                + ", senderId=" + senderId
+                + ", senderEmail=" + senderEmail);
+        throw new IllegalArgumentException("User is not a member of this room");
     }
 
     public void deleteMessage(UUID messageId) {

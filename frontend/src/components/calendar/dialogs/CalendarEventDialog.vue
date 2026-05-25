@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { watch } from "vue";
-import { AlertTriangle } from "lucide-vue-next";
-import type { CalendarEvent } from "@/types/CalendarEvent";
+import { CalendarPlus2, Pencil, X } from "lucide-vue-next";
+import { Button } from "@/components/ui/button";
 import CalendarNotificationDialog from "./CalendarNotificationDialog.vue";
 import EventTimeSection from "../sub-components/EventTimeSection.vue";
 import EventRecurrenceSection from "../sub-components/EventRecurrenceSection.vue";
@@ -14,8 +14,6 @@ const props = defineProps<{
   show: boolean;
   isEditing: boolean;
   initialData: EventFormData;
-  checkConflicts: (date: string, start: string, end: string, excludeId?: string) => Promise<CalendarEvent[]>;
-  editingEventId?: string;
 }>();
 
 const emit = defineEmits<{
@@ -25,10 +23,10 @@ const emit = defineEmits<{
 
 // Logic điều khiển Form
 const {
-  formData, conflictEvents,
+  formData,
   warningMessage, showWarning,
   validate, resetForm,
-} = useEventForm(props.initialData, props.checkConflicts, props.isEditing, props.editingEventId);
+} = useEventForm(props.initialData, props.isEditing);
 
 // Các hàm xử lý cập nhật dữ liệu từ component con
 const onTimeChange = (data: { eventDate: string; startTime: string; endTime: string }) => {
@@ -50,6 +48,7 @@ const onAttachmentsChange = (list: any[]) => {
   formData.value.attachments = list;
 };
 
+// Luôn reset form theo initialData mới nhất trước khi người dùng thao tác.
 // Đồng bộ trạng thái khi Dialog đóng/mở
 watch(
   () => props.show,
@@ -74,96 +73,94 @@ const handleSubmit = (): void => {
 
       <!-- Dialog -->
       <div
-        class="relative bg-background rounded-none shadow-2xl border-2 border-border w-full max-w-md mx-4 flex flex-col max-h-[90vh] overflow-hidden">
+        class="relative mx-4 flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-[1.5rem] border-2 border-border bg-background shadow-[0_32px_100px_-48px_rgba(0,0,0,0.75)] cursor-default">
 
         <!-- Header -->
-        <div class="p-6 pb-4 border-b-2 border-border bg-background sticky top-0 z-10">
-          <h2 class="text-lg font-mono font-bold uppercase tracking-widest text-primary">
-            {{ isEditing ? "Chỉnh sửa sự kiện" : "Thêm sự kiện mới" }}
-          </h2>
+        <div class="sticky top-0 z-10 border-b-2 border-border bg-background/95 px-6 pb-4 pt-6 backdrop-blur cursor-default">
+          <div class="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2">
+            <component :is="isEditing ? Pencil : CalendarPlus2" class="text-primary" data-icon="inline-start" />
+            <h2 class="text-lg font-mono font-bold uppercase tracking-widest text-primary">
+              {{ isEditing ? "Chỉnh sửa sự kiện" : "Thêm sự kiện mới" }}
+            </h2>
+          </div>
         </div>
 
         <form @submit.prevent="handleSubmit" class="flex flex-col flex-1 min-h-0">
           <!-- Scrollable body -->
-          <div class="flex-1 overflow-y-auto p-6 space-y-5 calendar-scrollbar">
+          <div class="calendar-scrollbar min-h-0 flex-1 overflow-y-auto">
+            <div class="space-y-5 p-6 pb-8 pr-5">
 
-            <!-- Tiêu đề -->
-            <div class="bg-background border-2 border-border p-3">
-              <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2">TIÊU ĐỀ *</label>
-              <input v-model="formData.title" type="text" required placeholder="NHẬP TIÊU ĐỀ SỰ KIỆN..."
-                class="w-full bg-background border-2 border-border px-3 py-2.5 font-mono text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-colors uppercase" />
-            </div>
-
-            <!-- Mô tả -->
-            <div class="bg-background border-2 border-border p-3">
-              <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2">MÔ TẢ</label>
-              <textarea v-model="formData.description" rows="3" placeholder="MÔ TẢ CHI TIẾT SỰ KIỆN..."
-                class="w-full bg-background border-2 border-border px-3 py-2 font-mono text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary resize-none transition-colors uppercase" />
-            </div>
-
-            <!-- Ngày & Giờ Section -->
-            <EventTimeSection
-              :show="show"
-              :initial-date="initialData.eventDate"
-              :initial-start-time="initialData.startTime"
-              :initial-end-time="initialData.endTime"
-              @change="onTimeChange"
-            />
-
-            <!-- Chế độ lặp lại Section -->
-            <EventRecurrenceSection
-              :initial-type="initialData.recurrenceType || 'NONE'"
-              :initial-end-date="initialData.recurrenceEndDate"
-              :event-date="formData.eventDate"
-              @change="onRecurrenceChange"
-            />
-
-            <!-- Cảnh báo trùng giờ -->
-            <div v-if="conflictEvents.length > 0"
-              class="bg-accent/10 border-2 border-accent p-4 shadow-[4px_4px_0px_0px_var(--color-accent)]">
-              <div class="flex items-center gap-2.5 text-accent text-[10px] font-mono font-bold uppercase tracking-widest mb-2">
-                <AlertTriangle :size="14" />
-                TRÙNG GIỜ VỚI {{ conflictEvents.length }} SỰ KIỆN:
+              <!-- Tiêu đề -->
+              <div class="rounded-xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)] cursor-default">
+                <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">TIÊU ĐỀ *</label>
+                <input v-model="formData.title" type="text" required placeholder="NHẬP TIÊU ĐỀ SỰ KIỆN..."
+                  class="w-full rounded-lg border-2 border-border bg-background px-4 py-3 font-mono text-sm uppercase text-foreground placeholder-muted-foreground transition-colors focus:outline-none focus:border-primary" />
               </div>
-              <ul class="text-xs font-mono text-accent/80 space-y-1.5 ml-6">
-                <li v-for="c in conflictEvents" :key="c.id" class="list-disc leading-relaxed uppercase">
-                  <span class="font-bold text-accent">{{ c.title }}</span><br />
-                  <span class="text-[10px] italic">({{ c.startTime.substring(0, 5) }} - {{ c.endTime.substring(0, 5) }})</span>
-                </li>
-              </ul>
+
+              <!-- Mô tả -->
+              <div class="rounded-xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)] cursor-default">
+                <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">MÔ TẢ</label>
+                <textarea v-model="formData.description" rows="3" placeholder="MÔ TẢ CHI TIẾT SỰ KIỆN..."
+                  class="w-full resize-none rounded-lg border-2 border-border bg-background px-4 py-3 font-mono text-sm uppercase text-foreground placeholder-muted-foreground transition-colors focus:outline-none focus:border-primary" />
+              </div>
+
+              <!-- Ngày & Giờ Section -->
+              <EventTimeSection
+                :show="show"
+                :initial-date="initialData.eventDate"
+                :initial-start-time="initialData.startTime"
+                :initial-end-time="initialData.endTime"
+                @change="onTimeChange"
+              />
+
+              <!-- Chế độ lặp lại Section -->
+              <EventRecurrenceSection
+                :initial-type="initialData.recurrenceType || 'NONE'"
+                :initial-end-date="initialData.recurrenceEndDate"
+                :event-date="formData.eventDate"
+                @change="onRecurrenceChange"
+              />
+              <!-- Người tham gia Section -->
+              <EventAttendeesSection
+                :show="show"
+                :initial-attendees="initialData.attendees"
+                @change="onAttendeesChange"
+              />
+
+              <!-- Tệp đính kèm Section -->
+              <EventAttachmentsSection
+                :show="show"
+                :initial-attachments="initialData.attachments"
+                @change="onAttachmentsChange"
+              />
+
+              <!-- Cho phép chỉnh sửa -->
+              <div class="flex items-center gap-3 rounded-xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)] cursor-default">
+                <input v-model="formData.allowEditAll" type="checkbox" class="h-4 w-4 cursor-pointer rounded-sm border-2 border-border bg-background text-primary focus:ring-0 focus:ring-offset-0" />
+                <span class="text-[10px] font-mono font-bold text-foreground uppercase tracking-widest cursor-pointer select-none" @click="formData.allowEditAll = !formData.allowEditAll">CHO PHÉP MỌI NGƯỜI CHỈNH SỬA</span>
+              </div>
             </div>
-
-            <!-- Người tham gia Section -->
-            <EventAttendeesSection
-              :show="show"
-              :initial-attendees="initialData.attendees"
-              @change="onAttendeesChange"
-            />
-
-            <!-- Tệp đính kèm Section -->
-            <EventAttachmentsSection
-              :show="show"
-              :initial-attachments="initialData.attachments"
-              @change="onAttachmentsChange"
-            />
-
-            <!-- Cho phép chỉnh sửa -->
-            <div class="flex items-center gap-3 py-2 border-2 border-border bg-background p-3">
-              <input v-model="formData.allowEditAll" type="checkbox" class="w-4 h-4 bg-background border-2 border-border text-primary focus:ring-0 focus:ring-offset-0 rounded-none cursor-pointer" />
-              <span class="text-[10px] font-mono font-bold text-foreground uppercase tracking-widest cursor-pointer select-none" @click="formData.allowEditAll = !formData.allowEditAll">CHO PHÉP MỌI NGƯỜI CHỈNH SỬA</span>
-            </div>
-
           </div>
 
           <!-- Footer actions -->
           <div
-            class="p-6 pt-4 border-t-2 border-border flex gap-2 justify-end bg-background sticky bottom-0 z-10">
-            <button type="button" @click="emit('update:show', false)"
-              class="px-5 py-2.5 bg-background border-2 border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-all font-mono text-xs font-bold uppercase tracking-widest">HỦY</button>
-            <button type="submit"
-              class="px-6 py-2.5 bg-primary text-primary-foreground border-2 border-primary hover:bg-background hover:text-primary transition-all font-mono text-xs font-bold uppercase tracking-widest" style="box-shadow: 4px 4px 0px 0px var(--color-primary);">
+            class="sticky bottom-0 z-10 flex justify-end gap-3 border-t-2 border-border bg-background/95 p-6 pt-4 backdrop-blur">
+            <Button
+              type="button"
+              variant="outline"
+              class="rounded-full border-2 font-mono text-xs font-bold uppercase tracking-widest"
+              @click="emit('update:show', false)"
+            >
+              <X data-icon="inline-start" />
+              Hủy
+            </Button>
+            <Button
+              type="submit"
+              class="rounded-full border-2 border-primary bg-primary font-mono text-xs font-bold uppercase tracking-widest text-primary-foreground shadow-[0_16px_34px_-22px_var(--color-primary)] hover:bg-background hover:text-primary"
+            >
+              <component :is="isEditing ? Pencil : CalendarPlus2" data-icon="inline-start" />
               {{ isEditing ? "CẬP NHẬT" : "TẠO SỰ KIỆN" }}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

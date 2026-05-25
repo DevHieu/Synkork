@@ -261,3 +261,25 @@
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
 }
+
+/* Giữ scrollbar của khu vực calendar khác nhẹ hơn scrollbar global. */
+.calendar-scroll-area [data-slot="scroll-area-scrollbar"] {
+  padding: 2px;
+}
+
+.calendar-scroll-area [data-slot="scroll-area-thumb"] {
+  background: color-mix(in oklch, var(--muted-foreground) 55%, transparent);
+}
+
+.calendar-scroll-area:hover [data-slot="scroll-area-thumb"] {
+  background: color-mix(in oklch, var(--primary) 42%, var(--muted-foreground));
+  --secondary-foreground: oklch(0.15 0 0);
+  --ring: oklch(0.72 0.18 65);
+  --sidebar-primary: oklch(0.72 0.18 65);
+  --sidebar-accent: oklch(0.72 0.18 65);
+  --background: oklch(0.99 0.005 65);
+  --card: oklch(0.99 0.005 65);
+  --muted: oklch(0.95 0.01 65);
+  --accent: oklch(0.93 0.015 65);
+  --sidebar: oklch(0.98 0.008 65);
+}
