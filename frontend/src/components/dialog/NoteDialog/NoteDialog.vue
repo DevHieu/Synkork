@@ -119,10 +119,11 @@ import {
   ImagePlus, Archive, MoreVertical, Undo2, Redo2
 } from 'lucide-vue-next'
 import type { Note, NoteRequest } from '@/types/NoteType'
+import type { SuggestedNoteDraft } from '@/types/CalendarSuggestion'
 
 const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899']
 
-const props = defineProps<{ open: boolean; note?: Note | null }>()
+const props = defineProps<{ open: boolean; note?: Note | null; draft?: SuggestedNoteDraft | null }>()
 const emit = defineEmits<{
   close: []
   submit: [data: NoteRequest, id?: string]
@@ -141,6 +142,14 @@ watch(() => props.open, (val) => {
         note: props.note.note || '',
         color: props.note.color || '',
         pinned: props.note.pinned,
+      }
+    } else if (props.draft) {
+      isEdit.value = false
+      form.value = {
+        title: props.draft.title,
+        note: props.draft.note || '',
+        color: props.draft.color || '',
+        pinned: props.draft.pinned || false,
       }
     } else {
       isEdit.value = false

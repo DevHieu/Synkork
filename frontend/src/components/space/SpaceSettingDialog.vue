@@ -78,7 +78,7 @@ const handleDelete = () => {
 
 <template>
   <Dialog :open="open" @update:open="emit('update:open', $event)">
-    <DialogContent class="max-w-sm">
+    <DialogContent class="max-w-sm cursor-default">
       <DialogHeader>
         <DialogTitle>Cài đặt kênh</DialogTitle>
       </DialogHeader>
@@ -86,7 +86,7 @@ const handleDelete = () => {
       <div class="space-y-4 py-2">
         <!-- Tên kênh -->
         <div class="space-y-2">
-          <label class="text-sm font-medium">Tên kênh</label>
+          <label class="text-sm font-medium cursor-default">Tên kênh</label>
           <Input
             v-model="nameInput"
             placeholder="Tên kênh..."
@@ -97,11 +97,11 @@ const handleDelete = () => {
         <!-- Restricted toggle -->
         <div class="flex items-start justify-between gap-4">
           <div class="space-y-1">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 cursor-default">
               <Lock class="h-4 w-4 text-muted-foreground" />
-              <p class="text-sm font-medium">Kênh riêng tư</p>
+              <p class="text-sm font-medium cursor-default">Kênh riêng tư</p>
             </div>
-            <p class="text-xs text-muted-foreground">
+            <p class="text-xs text-muted-foreground cursor-default">
               Chỉ admin và mod mới có thể xem và sử dụng kênh này.
             </p>
           </div>
@@ -124,8 +124,8 @@ const handleDelete = () => {
 
         <!-- Xóa -->
         <div class="space-y-2">
-          <p class="text-sm font-medium text-destructive">Vùng nguy hiểm</p>
-          <p class="text-xs text-muted-foreground">
+          <p class="text-sm font-medium text-destructive cursor-default">Vùng nguy hiểm</p>
+          <p class="text-xs text-muted-foreground cursor-default">
             Xóa kênh sẽ xóa toàn bộ dữ liệu và không thể khôi phục.
           </p>
           <Button variant="destructive" class="w-full" @click="handleDelete">

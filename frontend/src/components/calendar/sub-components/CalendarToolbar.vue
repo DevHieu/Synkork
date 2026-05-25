@@ -23,37 +23,41 @@ const emit = defineEmits<{
 
   (e: "openCreateDialog"): void;
 }>();
+
+// Toolbar chỉ phát sự kiện điều hướng, toàn bộ logic nằm ở layout cha.
 </script>
 
 <template>
-  <div class="flex flex-col border-b-2 border-border bg-background">
+  <div class="flex flex-col gap-3 bg-transparent px-4 pt-4">
     <!-- Header -->
-    <div class="flex items-center justify-between px-4 py-3 border-b-2 border-border">
+    <div class="flex items-center justify-between rounded-[1.5rem] border-2 border-border bg-background/95 px-5 py-4 shadow-[0_18px_50px_-32px_var(--color-foreground)]">
       <div class="flex items-center gap-4">
-        <SidebarTrigger class="-ml-1 rounded-none border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground" />
-        <span class="font-mono text-lg font-bold uppercase tracking-widest flex items-center gap-2 text-foreground">
-          <CalendarDays class="w-5 h-5 text-primary" />
+        <SidebarTrigger class="-ml-1 rounded-full border-2 border-primary/40 bg-primary/10 p-2 text-primary transition-colors hover:bg-primary hover:text-primary-foreground" />
+        <span class="flex items-center gap-3 font-mono text-lg font-bold uppercase tracking-widest text-foreground">
+          <span class="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_24px_-16px_var(--color-primary)]">
+            <CalendarDays class="h-5 w-5" />
+          </span>
           {{ currentSpaceName }}
         </span>
       </div>
 
       <!-- View Mode Switcher -->
-      <div class="flex border-2 border-border bg-background">
+      <div class="flex rounded-full border-2 border-border bg-muted/40 p-1 shadow-inner">
         <button
           @click="emit('update:viewMode', 'week')"
-          :class="['px-4 py-1 text-xs font-mono uppercase tracking-wider font-bold transition-colors border-r-2 border-border', viewMode === 'week' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted text-muted-foreground hover:text-foreground']"
+          :class="['rounded-full px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all', viewMode === 'week' ? 'bg-primary text-primary-foreground shadow-[0_8px_18px_-12px_var(--color-primary)]' : 'text-muted-foreground hover:bg-background hover:text-foreground']"
         >
           Tuần
         </button>
         <button
           @click="emit('update:viewMode', 'month')"
-          :class="['px-4 py-1 text-xs font-mono uppercase tracking-wider font-bold transition-colors border-r-2 border-border', viewMode === 'month' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted text-muted-foreground hover:text-foreground']"
+          :class="['rounded-full px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all', viewMode === 'month' ? 'bg-primary text-primary-foreground shadow-[0_8px_18px_-12px_var(--color-primary)]' : 'text-muted-foreground hover:bg-background hover:text-foreground']"
         >
           Tháng
         </button>
         <button
           @click="emit('update:viewMode', 'year')"
-          :class="['px-4 py-1 text-xs font-mono uppercase tracking-wider font-bold transition-colors', viewMode === 'year' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted text-muted-foreground hover:text-foreground']"
+          :class="['rounded-full px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all', viewMode === 'year' ? 'bg-primary text-primary-foreground shadow-[0_8px_18px_-12px_var(--color-primary)]' : 'text-muted-foreground hover:bg-background hover:text-foreground']"
         >
           Năm
         </button>
@@ -61,22 +65,22 @@ const emit = defineEmits<{
     </div>
 
     <!-- Navigation Bar -->
-    <div class="flex items-center justify-between px-4 py-2 bg-muted/30">
-      <div class="flex items-center gap-1">
-        <button @click="emit('goPrev')" class="w-8 h-8 flex items-center justify-center border-2 border-border text-muted-foreground hover:border-primary hover:bg-primary hover:text-primary-foreground transition-colors" :title="`${viewMode === 'week' ? 'Tuần' : viewMode === 'month' ? 'Tháng' : 'Năm'} trước`">
+    <div class="flex items-center justify-between rounded-[1.5rem] border-2 border-border bg-muted/35 px-5 py-3 shadow-[0_20px_40px_-34px_var(--color-foreground)]">
+      <div class="flex items-center gap-2">
+        <button @click="emit('goPrev')" class="flex size-10 items-center justify-center rounded-full border-2 border-border bg-background text-muted-foreground transition-all hover:-translate-y-0.5 hover:border-primary hover:bg-primary hover:text-primary-foreground" :title="`${viewMode === 'week' ? 'Tuần' : viewMode === 'month' ? 'Tháng' : 'Năm'} trước`">
           <ChevronLeft :size="16" />
         </button>
-        <button @click="emit('goToday')" class="px-4 py-1 h-8 flex items-center justify-center border-2 border-border font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground hover:border-primary hover:bg-primary hover:text-primary-foreground transition-colors">
+        <button @click="emit('goToday')" class="flex h-10 items-center justify-center rounded-full border-2 border-border bg-background px-5 font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground transition-all hover:-translate-y-0.5 hover:border-primary hover:bg-primary hover:text-primary-foreground">
           {{ relativeTimeText }}
         </button>
-        <button @click="emit('goNext')" class="w-8 h-8 flex items-center justify-center border-2 border-border text-muted-foreground hover:border-primary hover:bg-primary hover:text-primary-foreground transition-colors" :title="`${viewMode === 'week' ? 'Tuần' : viewMode === 'month' ? 'Tháng' : 'Năm'} sau`">
+        <button @click="emit('goNext')" class="flex size-10 items-center justify-center rounded-full border-2 border-border bg-background text-muted-foreground transition-all hover:-translate-y-0.5 hover:border-primary hover:bg-primary hover:text-primary-foreground" :title="`${viewMode === 'week' ? 'Tuần' : viewMode === 'month' ? 'Tháng' : 'Năm'} sau`">
           <ChevronRight :size="16" />
         </button>
       </div>
 
-      <span class="font-mono text-sm font-bold uppercase tracking-widest text-primary">{{ headerTitle }}</span>
+      <span class="rounded-full border border-primary/20 bg-primary/10 px-4 py-2 font-mono text-sm font-bold uppercase tracking-widest text-primary">{{ headerTitle }}</span>
 
-      <button @click="emit('openCreateDialog')" class="flex items-center gap-2 px-4 py-1 h-8 bg-primary text-primary-foreground border-2 border-primary font-mono text-xs font-bold uppercase tracking-wider hover:bg-background hover:text-primary transition-colors">
+      <button @click="emit('openCreateDialog')" class="flex h-10 items-center gap-2 rounded-full border-2 border-primary bg-primary px-5 font-mono text-xs font-bold uppercase tracking-wider text-primary-foreground transition-all hover:-translate-y-0.5 hover:bg-background hover:text-primary">
         <Plus :size="14" />
         Thêm sự kiện
       </button>
