@@ -137,13 +137,8 @@
     </main>
 
     <!-- DIALOGS -->
-    <NoteDialog
-      :open="dialogOpen"
-      :note="selectedNote"
-      :draft="noteDraft"
-      @close="dialogOpen = false"
-      @submit="handleSubmit"
-    />
+    <NoteDialog :space-id="spaceId" :open="dialogOpen" :note="selectedNote" :draft="noteDraft"
+      @close="dialogOpen = false" />
 
     <NoteDetailDialog :open="detailOpen" :note="selectedNote" @close="detailOpen = false" @edit="openEdit"
       @delete="confirmDelete" />
@@ -166,14 +161,13 @@ import {
   ref,
   computed,
   watch,
-  onMounted,
   onUnmounted,
   nextTick
 } from 'vue'
 
 import { useRoute } from 'vue-router'
 import { useNoteStore } from '@/stores/noteStore'
-import { useCalendarSuggestionStore } from '@/stores/calendarSuggestionStore'
+import { useSuggestionStore } from '@/stores/suggestionStore'
 import type { SuggestedNoteDraft } from '@/types/CalendarSuggestion'
 
 import {
@@ -220,11 +214,11 @@ const store = useNoteStore()
 const { currentSpace } = storeToRefs(spaceStore)
 
 // Dialog state
-const dialogOpen     = ref(false)
-const detailOpen     = ref(false)
-const selectedNote   = ref<Note | null>(null)
-const calendarSuggestionStore = useCalendarSuggestionStore()
-const noteDraft      = ref<SuggestedNoteDraft | null>(null)
+const dialogOpen = ref(false)
+const detailOpen = ref(false)
+const selectedNote = ref<Note | null>(null)
+const calendarSuggestionStore = useSuggestionStore()
+const noteDraft = ref<SuggestedNoteDraft | null>(null)
 
 watch(
   spaceId,
@@ -415,21 +409,6 @@ function confirmDelete(id: string) {
   detailOpen.value = false
 
   confirmOpen.value = true
-}
-
-async function handleSubmit(
-  data: NoteRequest,
-  id?: string
-) {
-
-  if (id) {
-    await store.updateNote(spaceId.value, id, data)
-  }
-  else {
-    await store.createNote(spaceId.value, data)
-  }
-
-  dialogOpen.value = false
 }
 
 async function handleDelete() {

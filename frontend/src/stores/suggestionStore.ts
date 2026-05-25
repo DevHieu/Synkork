@@ -22,7 +22,7 @@ interface PendingTaskSuggestionDraft {
 }
 
 // Cầu nối tạm từ chat sang calendar/note/task: chỉ giữ draft, không xử lý modal bên trong.
-export const useCalendarSuggestionStore = defineStore("calendarSuggestion", {
+export const useSuggestionStore = defineStore("suggestion", {
   state: () => ({
     isChannelDialogOpen: false,
     selectedSuggestion: null as MessageEventSuggestion | null,
@@ -43,6 +43,8 @@ export const useCalendarSuggestionStore = defineStore("calendarSuggestion", {
     },
 
     setPendingDraft(spaceId: string, draft: SuggestedEventDraft) {
+      console.log(draft);
+
       this.pendingDraft = { spaceId, draft };
     },
 
@@ -61,6 +63,7 @@ export const useCalendarSuggestionStore = defineStore("calendarSuggestion", {
     },
 
     setPendingNoteDraft(spaceId: string, draft: SuggestedNoteDraft) {
+      console.log(draft);
       this.pendingNoteDraft = { spaceId, draft };
     },
 

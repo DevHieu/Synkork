@@ -57,13 +57,6 @@ export const useMessageStore = defineStore("message", {
 
     subscribeToChat(spaceId: string) {
       chatSocket.subscribeMessages(spaceId, (msg: Message) => {
-        console.log("[Chat] Da nhan tin nhan tu socket:", {
-          spaceId,
-          messageId: msg.id,
-          createdAt: msg.createdAt,
-          hasCachedSuggestion: Boolean(this.suggestionsByMessageId[msg.id]),
-        });
-
         // Nếu đang jump mode thì không push tin mới vào (tránh lộn xộn)
         if (!this.isJumpMode) {
           this.messages = this.messages.filter((m) => m.id !== msg.id);
@@ -74,8 +67,15 @@ export const useMessageStore = defineStore("message", {
             totalMessages: this.messages.length,
           });
 
-          if (this.suggestionsByMessageId[msg.id]) {
-            console.log("[Goi y] Tin nhan den sau goi y va da san sang hien thi:", msg.id);
+          const mockSuggestion = buildMockSuggestion(msg);
+
+          if (mockSuggestion) {
+            this.suggestionsByMessageId = {
+              ...this.suggestionsByMessageId,
+              [msg.id]: mockSuggestion,
+            };
+
+            console.log("[Goi y MOCK] Da tao suggestion cho message:", mockSuggestion);
           }
 
           if (!this.isScrollTop) {
@@ -160,7 +160,10 @@ export const useMessageStore = defineStore("message", {
         }
 
         // Xóa các gợi ý cũ trước khi thêm gợi ý mới để chỉ hiển thị duy nhất 1 gợi ý tại 1 thời điểm.
-        this.suggestionsByMessageId = { [suggestion.messageId]: suggestion };
+        this.suggestionsByMessageId = {
+          ...this.suggestionsByMessageId,
+          [suggestion.messageId]: suggestion,
+        };
         console.log("[Goi y] Da luu cache duy nhat cho message:", suggestion.messageId);
       });
 
@@ -413,4 +416,84 @@ function createTempMessage(
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   } as Message;
+}
+
+function buildMockSuggestion(message: Message): MessageEventSuggestion | null {
+  const text = message.content?.trim().toLowerCase() ?? "";
+
+  if (!text) return null;
+
+  if (text.includes("note") || text.includes("ghi chú") || text.includes("ghi lại")) {
+    return {
+      messageId: message.id,
+      suggestionType: "NOTE",
+      hasEvent: false,
+      hasNote: true,
+      hasTask: false,
+      title: null,
+      description: null,
+      eventDate: null,
+      startTime: null,
+      endTime: null,
+      noteTitle: "Ghi chú mock",
+      noteContent: message.content,
+      noteColor: "#3b82f6",
+      notePinned: false,
+      noteAllowEditAll: false,
+      taskTitle: null,
+      taskDescription: null,
+      taskColumnName: null,
+      taskDueDate: null,
+    };
+  }
+
+  if (text.includes("task") || text.includes("todo") || text.includes("việc")) {
+    return {
+      messageId: message.id,
+      suggestionType: "TASK",
+      hasEvent: false,
+      hasNote: false,
+      hasTask: true,
+      title: null,
+      description: null,
+      eventDate: null,
+      startTime: null,
+      endTime: null,
+      noteTitle: null,
+      noteContent: null,
+      noteColor: null,
+      notePinned: null,
+      noteAllowEditAll: null,
+      taskTitle: "Task mock",
+      taskDescription: message.content,
+      taskColumnName: null,
+      taskDueDate: "2026-05-26",
+    };
+  }
+
+  if (text.includes("họp") || text.includes("hop") || text.includes("lịch")) {
+    return {
+      messageId: message.id,
+      suggestionType: "EVENT",
+      hasEvent: true,
+      hasNote: false,
+      hasTask: false,
+      title: "Lịch mock",
+      description: message.content,
+      eventDate: "2026-05-26",
+      startTime: "09:00",
+      endTime: "10:00",
+      noteTitle: null,
+      noteContent: null,
+      noteColor: null,
+      notePinned: null,
+      noteAllowEditAll: null,
+      taskTitle: null,
+      taskDescription: null,
+      taskColumnName: null,
+      taskDueDate: null,
+    };
+  }
+
+  return null;
 }
