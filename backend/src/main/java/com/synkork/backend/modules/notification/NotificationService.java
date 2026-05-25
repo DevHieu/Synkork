@@ -62,19 +62,19 @@ public class NotificationService {
         messagingTemplate.convertAndSendToUser(target.getEmail(), "/queue/notifications", dto);
     }
 
-    public void sendNoteNotification(UserEntity actor, UserEntity target, UUID friendRequestId, NotificationRefTypeEnum refType) {
+    public void sendNotification(UserEntity actor, UserEntity target, UUID id, UUID spaceId, NotificationTypeEnum type, NotificationRefTypeEnum refType) {
         NotificationEntity noti = NotificationEntity.builder()
                 .user(target)
                 .actor(actor)
-                .type(NotificationTypeEnum.FRIEND)
-                .refId(friendRequestId)
+                .type(type)
+                .refId(id)
                 .refType(refType)
                 .isRead(false)
                 .build();
 
         notificationRepository.save(noti);
 
-        NotificationDTO dto = toDTO(noti, null);
+        NotificationDTO dto = toDTO(noti, spaceId);
 
         messagingTemplate.convertAndSendToUser(target.getEmail(), "/queue/notifications", dto);
     }

@@ -7,7 +7,6 @@ import org.springframework.http.HttpStatus;
 
 import com.synkork.backend.modules.collaboration.note.dto.NoteRequest;
 import com.synkork.backend.modules.collaboration.note.dto.NoteResponse;
-import com.synkork.backend.modules.notification.NotificationService;
 
 import java.time.Instant;
 import java.util.List;
@@ -31,9 +30,6 @@ public class NoteService {
 
     @Autowired
     private UserRepository userRepository;
-
-    @Autowired
-    private NotificationService notificationService;
 
     public List<NoteResponse> getAllNotesBySpaceId(String spaceId) {
         UUID spaceUuid = UUID.fromString(spaceId);
@@ -130,7 +126,6 @@ public class NoteService {
         note.setReminderAt(request.getReminderAt());
         note.setReminderSent(false);
 
-
         return new NoteResponse(noteRepository.save(note));
     }
 
@@ -138,7 +133,7 @@ public class NoteService {
         return noteRepository.findPendingReminders(Instant.now());
     }
 
-    public void markReminderSent(NoteEntity note) {
+    public void     markReminderSent(NoteEntity note) {
         note.setReminderSent(true);
         noteRepository.save(note);
     }

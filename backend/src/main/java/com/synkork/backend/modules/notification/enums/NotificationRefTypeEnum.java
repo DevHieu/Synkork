@@ -9,5 +9,7 @@ public enum NotificationRefTypeEnum {
     
     CARD_ASSIGNED,
     CARD_DUE_SOON,
-    CARD_OVER_DUE
+    CARD_OVER_DUE,
+
+    NOTE_REMINDER
 }
