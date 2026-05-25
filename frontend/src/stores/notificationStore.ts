@@ -6,7 +6,7 @@ import router from '@/routers'
 import type { NotificationDTO } from '@/types/Notification'
 import { getNotifications, markNotificationAsRead, deleteNotification } from '@/services/notificationService'
 import { useSpaceStore } from '@/stores/spaceStore'
-
+import { useRoomsStore } from '@/stores/roomStore'
 
 export const useNotificationStore = defineStore('notification', {
   state: () => ({
@@ -48,15 +48,25 @@ export const useNotificationStore = defineStore('notification', {
           onClick: async () => {
             await this.markAsRead(notification.id)
 
-            if (notification.spaceId) {
-              const spaceStore = useSpaceStore()
+            if(notification.roomId && notification.spaceId) {
+              const roomStore = useRoomsStore()
+              const currentRoomId = roomStore.currentRoom?.id
 
-              spaceStore.changeSpaceById(
-                notification.spaceId,
-                notification.type
-              )
-            }
+              if(currentRoomId != notification.roomId) {
+                const targetRoom = roomStore.rooms.find(r => r.id === notification.roomId)
 
+                if(targetRoom){
+                  await roomStore.changeRoom(targetRoom, notification.spaceId, notification.type)
+                }
+              } else {
+                const spaceStore = useSpaceStore()
+
+                await spaceStore.changeSpaceById(
+                  notification.spaceId,
+                  notification.type
+                ) 
+              }
+            } 
             router.push({
               path,
               query: {
@@ -131,7 +141,7 @@ function notificationMessage(n: NotificationDTO) {
 function getNotificationPath(n: NotificationDTO) {
   if (n.type === 'FRIEND') return '/me/friends'
 
-  if (!n.roomId || !n.spaceId) return null
+  // if (!n.roomId || !n.spaceId) return null
 
   switch (n.type) {
     case 'TASK':
