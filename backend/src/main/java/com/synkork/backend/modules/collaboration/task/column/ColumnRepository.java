@@ -5,6 +5,8 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -14,6 +16,9 @@ public interface ColumnRepository extends JpaRepository<ColumnEntity, UUID> {
             "cards"
     })
     List<ColumnEntity> findBySpaceIdOrderByPositionAsc(UUID spaceId);
+
+    @Query("SELECT c FROM ColumnEntity c WHERE c.space.id = :spaceId ORDER BY c.position ASC")
+    List<ColumnEntity> findColumnsOnlyBySpaceId(@Param("spaceId") UUID spaceId);
 
     void deleteBySpaceId(UUID spaceId);
 }

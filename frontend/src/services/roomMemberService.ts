@@ -18,12 +18,18 @@ export const changeMemberAuthority = async (
   return res.data;
 };
 
+export const leaveRoom = async (roomId: string) => {
+  const res = await axiosClient.delete(`/api/rooms/${roomId}/members/leave`);
+
+  return res.data;
+};
+
 export const kickMember = async (memberId: string, roomId: string) => {
   const res = await axiosClient.delete(
     `/api/rooms/${roomId}/members/${memberId}`,
   );
 
-  return res.data;
+  return res;
 };
 
 export const muteAudio = async (

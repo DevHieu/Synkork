@@ -1,11 +1,8 @@
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios'
 
 import axios from 'axios'
-import VueCookies from 'vue-cookies'
-
 import { getFreshToken } from '@/utils/auth'
-
-const cookies = VueCookies as any
+import { getCookie, removeCookie } from './cookies'
 
 const axiosClient: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_SERVER_API_URL as string,
@@ -15,9 +12,10 @@ const axiosClient: AxiosInstance = axios.create({
 
 axiosClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = cookies.get('accessToken')
+    const token = getCookie('accessToken')
     const url = config.url ?? ''
-    if (!url.includes('/auth')) {
+    const authRoute = ['/auth/login', '/auth/logout']
+    if (!authRoute.some(route => url.includes(route))) {
       if (token) {
         config.headers = config.headers ?? {}
         config.headers.Authorization = `Bearer ${token}`
@@ -43,9 +41,9 @@ axiosClient.interceptors.response.use(
       error.response?.status === 401
       && error.response?.data?.error === 'INVALID_TOKEN'
     ) {
-      cookies.remove('accessToken')
-      cookies.remove('refreshToken')
-      window.location.href = '/auth'
+      removeCookie('accessToken')
+      removeCookie('refreshToken')
+      window.location.href = '/auth/sign-in'
     }
 
     if (
@@ -62,8 +60,8 @@ axiosClient.interceptors.response.use(
         return axiosClient(originalRequest)
       }
       catch (refreshError: any) {
-        cookies.remove('accessToken')
-        window.location.href = '/auth'
+        removeCookie('accessToken')
+        window.location.href = '/auth/sign-in'
         return Promise.reject(refreshError)
       }
     }

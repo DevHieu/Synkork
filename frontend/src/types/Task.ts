@@ -8,6 +8,7 @@ export interface CardEvent {
   
   createdBy: MemberSummary 
   assignees: MemberSummary[]
+  dueDate?: string | undefined
   
 }
 

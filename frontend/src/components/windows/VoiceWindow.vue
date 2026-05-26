@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useUserStore } from "@/stores/userStore";
+import { useSpaceStore } from "@/stores/spaceStore";
 import { useVoiceSpaceStore } from "@/stores/voiceSpaceStore";
 import type { VoiceItemType } from "@/types/VoiceSpaceParticipant";
 import { storeToRefs } from "pinia";
@@ -14,6 +15,9 @@ import VoiceHeader from "../voice/VoiceHeader.vue";
 
 const route = useRoute();
 const spaceId = ref(route.params.spaceId as string);
+
+const spaceStore = useSpaceStore();
+const { loading } = storeToRefs(spaceStore);
 
 const voiceSpaceStore = useVoiceSpaceStore();
 const { participantList } = storeToRefs(voiceSpaceStore);
@@ -113,7 +117,7 @@ const syncVideoToItem = (containerId: string, itemElement: HTMLElement) => {
   // srcObject khác → cập nhật stream mới
   if (target.srcObject !== sourceVideo.srcObject) {
     target.srcObject = sourceVideo.srcObject;
-    target.play().catch(() => {});
+    target.play().catch(() => { });
   }
 };
 
@@ -160,7 +164,7 @@ onMounted(async () => {
     await voiceSpaceStore.replayAllStreamsToDOM();
     syncAll();
   } else {
-    await voiceSpaceStore.joinRoom(spaceId.value);
+    await voiceSpaceStore.joinRoom(spaceId.value, loading.value);
   }
 });
 
@@ -171,9 +175,9 @@ onUnmounted(() => {
 });
 
 // Khi relooad trang lúc đang ở voice space -> Vừa vào khi user được fetch dữ liệu xong sẽ tự động join vào
-watch(user, async (newUser) => {
-  if (newUser && !voiceSpaceStore.isInRoom)
-    await voiceSpaceStore.joinRoom(spaceId.value);
+watch([user, loading], async ([newUser, spaceLoading]) => {
+  if (newUser && !spaceLoading && !voiceSpaceStore.isInRoom)
+    await voiceSpaceStore.joinRoom(spaceId.value, spaceLoading);
 });
 
 // Đổi phòng khác thì set mấy cái này về null
@@ -211,37 +215,24 @@ watch(
 </script>
 
 <template>
-  <div
-    class="flex flex-col h-full bg-background text-foreground select-none overflow-hidden"
-  >
+  <div class="flex flex-col h-full bg-background text-foreground select-none overflow-hidden">
     <VoiceHeader />
 
     <!-- ── Video Area ── -->
     <div class="flex-1 min-h-0 p-3 overflow-hidden flex flex-col gap-3">
       <!-- FOCUS MODE -->
       <template v-if="focusItem">
-        <VoiceFocusItem
-          :focusedTile="focusItem"
-          :user="user"
-          @minimize="focusedId = null"
-          @register-ref="(id, el) => (itemRefs[id] = el)"
-        />
+        <VoiceFocusItem :focusedTile="focusItem" :user="user" @minimize="focusedId = null"
+          @register-ref="(id, el) => (itemRefs[id] = el)" />
 
-        <VoiceStripFocus
-          :otherPeople="otherItemWhenFocused"
-          @focus="focusedId = $event"
-          @register-ref="(id, el) => (itemRefs[id] = el)"
-        />
+        <VoiceStripFocus :otherPeople="otherItemWhenFocused" @focus="focusedId = $event"
+          @register-ref="(id, el) => (itemRefs[id] = el)" />
       </template>
 
       <!-- NORMAL MODE -->
       <template v-else>
-        <VoiceGrid
-          :list="voiceList"
-          :user="user"
-          @focus="focusedId = $event"
-          @register-ref="(id, el) => (itemRefs[id] = el)"
-        />
+        <VoiceGrid :list="voiceList" :user="user" @focus="focusedId = $event"
+          @register-ref="(id, el) => (itemRefs[id] = el)" />
       </template>
     </div>
 

@@ -1,112 +1,165 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
+import { ref, watch, computed } from "vue";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
-  Calendar as CalendarIcon, UserPlus, Trash2, AlignLeft, CreditCard, X, Check
-} from 'lucide-vue-next'
-import type { CardEvent, MemberSummary } from '@/types/Task'
-import type { Member } from '@/types/Member'
+  Calendar as CalendarIcon,
+  UserPlus,
+  Trash2,
+  AlignLeft,
+  CreditCard,
+  X,
+  Check,
+} from "lucide-vue-next";
+import type { CardEvent, MemberSummary } from "@/types/Task";
+import type { Member } from "@/types/Member";
 
-import { useTaskStore } from '@/stores/taskStore'
-import { useSpaceStore } from '@/stores/spaceStore'
-import { useRoomMemberStore } from '@/stores/roomMemberStore'
-import { storeToRefs } from 'pinia'
+import { useTaskStore } from "@/stores/taskStore";
+import { useSpaceStore } from "@/stores/spaceStore";
+import { useRoomMemberStore } from "@/stores/roomMemberStore";
+import { storeToRefs } from "pinia";
 
-const spaceStore = useSpaceStore()
-const { currentSpace } = storeToRefs(spaceStore)
+const spaceStore = useSpaceStore();
+const { currentSpace } = storeToRefs(spaceStore);
 
-const roomMemberStore = useRoomMemberStore()
-const taskStore = useTaskStore()
+const roomMemberStore = useRoomMemberStore();
+const taskStore = useTaskStore();
 
-const searchQuery = ref('')
-const showDropdown = ref(false)
+const searchQuery = ref("");
+const showDropdown = ref(false);
 
-const form = ref({ title: '', description: '' })
+const form = ref({ title: "", description: "", dueDate: "" });
 
-const localAssignees = ref<MemberSummary[]>([])
+const localAssignees = ref<MemberSummary[]>([]);
+
+const getStatus = (dueDate?: string) => {
+  if (!dueDate) return null;
+
+  const now = new Date();
+  const due = new Date(dueDate);
+
+  const diff = due.getTime() - now.getTime();
+
+  if (diff < 0) {
+    return "OVERDUE";
+  }
+
+  if (diff <= 24 * 60 * 60 * 1000) {
+    return "DUE_SOON";
+  }
+
+  return "NORMAL";
+};
+
+const clearDueDate = () => {
+  form.value.dueDate = ""
+  handleSave()
+};
+
+const status = computed(() => getStatus(form.value.dueDate));
 
 const props = defineProps<{
-  open: boolean, card: CardEvent, columnName: string
-}>()
+  open: boolean;
+  card: CardEvent;
+  columnName: string;
+}>();
 
-const emit = defineEmits(['update:open', 'save'])
+const emit = defineEmits(["update:open", "save"]);
 
 const emitSave = () => {
-  if (!form.value.title.trim()) return
-    emit('save', { ...props.card, title: form.value.title.trim(), description: form.value.description.trim(), assignees: localAssignees.value
-  })
-}
+  if (!form.value.title.trim()) return;
+  const formattedDueDate = form.value.dueDate
+    ? `${form.value.dueDate}:00`
+    : null;
+  emit("save", {
+    ...props.card,
+    title: form.value.title.trim(),
+    description: form.value.description.trim(),
+    assignees: localAssignees.value,
+    dueDate: formattedDueDate,
+  });
+};
 
 const handleSave = () => {
-  if (!form.value.title.trim()) return
-  emitSave()
-}
+  if (!form.value.title.trim()) return;
+  emitSave();
+};
 
 const handleTitleKeydown = (e: KeyboardEvent) => {
-  if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
-}
+  if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+};
 
 const filteredMembers = computed(() =>
-  roomMemberStore.searchMembers(searchQuery.value)
-)
+  roomMemberStore.searchMembers(searchQuery.value),
+);
 
 const handleDelete = () => {
-  if (!currentSpace.value) return
+  if (!currentSpace.value) return;
 
   const data = {
     columnId: props.card.columnId,
-    cardId: props.card.id
-  }
+    cardId: props.card.id,
+  };
 
-  taskStore.delete("card", currentSpace.value.id, data)
-  emit('update:open', false)
-}
+  taskStore.delete("card", currentSpace.value.id, data);
+  emit("update:open", false);
+};
 
 const toggleAssignee = (member: Member) => {
-  const exists = localAssignees.value.some(a => a.id === member.memberId)
+  const exists = localAssignees.value.some((a) => a.id === member.memberId);
 
   if (exists) {
-    localAssignees.value = localAssignees.value.filter(a => a.id !== member.memberId)
+    localAssignees.value = localAssignees.value.filter(
+      (a) => a.id !== member.memberId,
+    );
   } else {
     localAssignees.value.push({
       id: member.memberId,
       name: member.displayName,
-      avatarUrl: member.avatarUrl
-    })
+      avatarUrl: member.avatarUrl,
+    });
   }
 
-  emitSave()
-}
+  emitSave();
+};
 
 const removeAssignee = (id: string) => {
-  localAssignees.value = localAssignees.value.filter(a => a.id !== id)
-  emitSave()
-}
+  localAssignees.value = localAssignees.value.filter((a) => a.id !== id);
+  emitSave();
+};
 
 const isAssigned = (memberId: string) =>
-  localAssignees.value.some(a => a.id === memberId)
+  localAssignees.value.some((a) => a.id === memberId);
 
-watch(() => props.open, (newVal) => {
-  localAssignees.value = [...(props.card.assignees ?? [])]
-  if (newVal && props.card) {
-    form.value = {
-      title: props.card.title || '',
-      description: props.card.description || ''
+watch(
+  () => props.open,
+  (newVal) => {
+    localAssignees.value = [...(props.card.assignees ?? [])];
+    if (newVal && props.card) {
+      let formattedDate = "";
+
+      if (props.card.dueDate) {
+        formattedDate = props.card.dueDate.slice(0, 16);
+      }
+      form.value = {
+        title: props.card.title || "",
+        description: props.card.description || "",
+        dueDate: formattedDate,
+      };
     }
-  }
-  searchQuery.value = ''
-  showDropdown.value = false
-}, { immediate: true })
+    searchQuery.value = "";
+    showDropdown.value = false;
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
   <Dialog :open="open" @update:open="$emit('update:open', $event)">
     <DialogContent class="max-w-2xl p-0 overflow-hidden border-none shadow-2xl bg-background rounded-xl">
-
       <div class="flex items-center justify-between px-6 py-3 bg-muted/20 border-b border-border/50">
         <div class="flex items-center gap-2 text-muted-foreground">
           <CreditCard :size="16" />
@@ -163,7 +216,7 @@ watch(() => props.open, (newVal) => {
               </div>
 
               <!-- Dropdown list -->
-              <div v-if="showDropdown" v-click-outside="() => showDropdown = false"
+              <div v-if="showDropdown" v-click-outside="() => (showDropdown = false)"
                 class="absolute top-full mt-1 left-0 w-56 bg-popover border border-border rounded-xl shadow-lg z-50 overflow-hidden">
                 <div class="p-2 border-b border-border">
                   <input v-model="searchQuery" placeholder="Tìm tên..."
@@ -192,11 +245,23 @@ watch(() => props.open, (newVal) => {
 
           <div class="space-y-2">
             <Label class="text-[11px] font-semibold uppercase text-muted-foreground">Hạn chót</Label>
-            <div
-              class="flex items-center gap-2 text-sm font-medium text-foreground/80 hover:text-primary cursor-pointer group transition-colors">
-              <CalendarIcon :size="16" class="text-muted-foreground group-hover:text-primary" />
-              <span>Chưa thiết lập</span>
+            <div class="flex items-center gap-2">
+              <CalendarIcon :size="16" class="text-muted-foreground" />
+              <input v-model="form.dueDate" type="datetime-local"
+                class="text-sm bg-transparent border-none outline-none text-foreground/80 cursor-pointer hover:text-primary transition-colors"
+                @change="handleSave" />
             </div>
+            <span v-if="status === 'OVERDUE'" class="text-red-500">
+              🔴 Quá hạn
+            </span>
+
+            <span v-else-if="status === 'DUE_SOON'" class="text-yellow-500">
+              🟡 Sắp đến hạn
+            </span>
+            <button v-if="form.dueDate" @click="clearDueDate"
+              class="text-[10px] text-muted-foreground hover:text-red-500 transition-colors flex items-center gap-1">
+              <X :size="10" /> Xóa hạn
+            </button>
           </div>
         </div>
 
@@ -218,7 +283,6 @@ watch(() => props.open, (newVal) => {
           * Tự động lưu khi bạn hoàn tất chỉnh sửa
         </p>
       </div>
-
     </DialogContent>
   </Dialog>
 </template>

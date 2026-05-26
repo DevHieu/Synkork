@@ -2,7 +2,7 @@ package com.synkork.backend.modules.message;
 
 import com.synkork.backend.modules.message.dto.MessageDTO;
 import com.synkork.backend.modules.message.dto.ReplyPreviewDTO;
-import com.synkork.backend.modules.statistics.dtos.CountByDate;
+//import com.synkork.backend.modules.statistics.dtos.CountByDate;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,6 +15,7 @@ import java.util.UUID;
 @Repository
 public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
 
+    // Trả về đủ thông tin sender để chat render ngay sau khi nhận socket message.
     @Query("""
             SELECT new com.synkork.backend.modules.message.dto.MessageDTO(
                 m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,

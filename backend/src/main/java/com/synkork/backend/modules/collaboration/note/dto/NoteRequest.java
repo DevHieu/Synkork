@@ -3,6 +3,7 @@ package com.synkork.backend.modules.collaboration.note.dto;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import java.time.Instant;
 
 @Data
 @NoArgsConstructor
@@ -17,4 +18,5 @@ public class NoteRequest {
     private Integer posY;
     private Integer width;
     private Integer height;
+    private Instant reminderAt;
 }

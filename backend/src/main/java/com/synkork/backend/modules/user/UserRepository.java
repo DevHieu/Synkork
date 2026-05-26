@@ -1,7 +1,7 @@
 package com.synkork.backend.modules.user;
 
-import com.synkork.backend.modules.statistics.StatisticsEntity;
-import com.synkork.backend.modules.statistics.dtos.CountByDate;
+//import com.synkork.backend.modules.statistics.StatisticsEntity;
+//import com.synkork.backend.modules.statistics.dtos.CountByDate;
 import com.synkork.backend.modules.user.enums.RoleEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -20,6 +20,7 @@ import java.util.UUID;
 
 @Repository
 public interface UserRepository extends JpaRepository<UserEntity, UUID> {
+    // Repo này được dùng để lấy user thật khi đồng bộ dữ liệu chat và calendar.
     Optional<UserEntity> findByUsername(String username); // Optional to handle user not found case
 
     Optional<UserEntity> findByEmail(String email);

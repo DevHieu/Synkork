@@ -2,10 +2,12 @@
 import { computed } from "vue";
 import dayjs from "dayjs";
 import type { CalendarEvent } from "@/types/CalendarEvent";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const props = defineProps<{
   currentDate: dayjs.Dayjs;
   events: CalendarEvent[];
+  isToday: (date: dayjs.Dayjs) => boolean;
 }>();
 
 const emit = defineEmits<{
@@ -36,15 +38,12 @@ const yearMonths = computed(() => {
 
     months.push({
       month: m,
-      name: monthStart.format("MMMM"),
+      name: monthStart.format("MMMM").charAt(0).toUpperCase() + monthStart.format("MMMM").slice(1),
       days,
     });
   }
   return months;
 });
-
-// Kiểm tra ngày hiện tại
-const isToday = (date: dayjs.Dayjs) => date.isSame(dayjs(), "day");
 
 // Kiểm tra xem ngày có sự kiện không (phải khớp đúng tháng đang hiển thị)
 const hasEvent = (date: dayjs.Dayjs, monthIndex: number) => {
@@ -59,59 +58,56 @@ const hasEvent = (date: dayjs.Dayjs, monthIndex: number) => {
   }
   return false;
 };
+
+// View năm chỉ cần biết ngày nào có event để làm chỉ báo nhanh.
 </script>
 
 <template>
-  <div class="flex-1 overflow-y-auto p-4">
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-      <div
-        v-for="m in yearMonths"
-        :key="m.month"
-        @click="emit('clickYearMonth', m.month)"
-        class="bg-white/5 rounded-xl p-3 cursor-pointer hover:bg-white/10 transition-all duration-200 hover:ring-1 hover:ring-teal-500/30"
-      >
-        <h4
-          :class="[
-            'text-sm font-semibold mb-2 text-center',
-            currentDate.month() === m.month
-              ? 'text-teal-400'
-              : 'text-gray-300',
-          ]"
+  <ScrollArea class="calendar-scroll-area min-h-0 flex-1">
+    <div class="bg-transparent p-4 text-foreground">
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+        <div
+          v-for="m in yearMonths"
+          :key="m.month"
+          @click="emit('clickYearMonth', m.month)"
+          class="group cursor-pointer overflow-hidden rounded-[1.5rem] border-2 border-border bg-background p-0 shadow-[0_26px_60px_-44px_var(--color-foreground)] transition-all duration-200 hover:-translate-y-1 hover:border-primary"
         >
-          {{ m.name }}
-        </h4>
-        <div class="grid grid-cols-7 gap-px">
-          <div
-            v-for="dn in ['C', 'H', 'B', 'T', 'N', 'S', 'B']"
-            :key="dn"
-            class="text-center text-[8px] text-gray-500 font-medium"
-          >
-            {{ dn }}
-          </div>
-          <div
-            v-for="(day, di) in m.days.slice(0, 42)"
-            :key="di"
+          <h4
             :class="[
-              'text-center text-[10px] rounded p-px',
-              day.month() === m.month ? 'text-gray-300' : 'text-gray-600',
-              isToday(day) ? 'bg-teal-500 text-white font-bold' : '',
-              hasEvent(day, m.month) ? 'text-teal-400 font-semibold' : '',
+              'border-b-2 border-border py-3 text-center text-xs font-mono font-bold uppercase tracking-widest transition-colors group-hover:border-primary',
+              currentDate.month() === m.month
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted/45 text-muted-foreground group-hover:text-primary',
             ]"
           >
-            {{ day.date() }}
+            {{ m.name }}
+          </h4>
+          <div class="grid grid-cols-7 gap-px bg-border/60 p-3 transition-colors group-hover:bg-primary/20">
+            <div
+              v-for="dn in ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']"
+              :key="dn"
+              class="bg-background py-1 text-center text-[8px] font-mono font-bold text-muted-foreground"
+            >
+              {{ dn }}
+            </div>
+            <div
+              v-for="(day, di) in m.days.slice(0, 42)"
+              :key="di"
+              :class="[
+                'flex items-center justify-center bg-background p-1 text-center text-[10px] font-mono',
+                day.month() === m.month ? 'text-foreground' : 'text-muted-foreground opacity-30',
+                isToday(day) ? 'bg-primary text-primary-foreground font-bold shadow-[0_8px_20px_-14px_var(--color-primary)]' : '',
+                hasEvent(day, m.month) && !isToday(day) ? 'border border-primary bg-primary/5 font-bold text-primary' : '',
+              ]"
+            >
+              {{ day.date() }}
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </ScrollArea>
 </template>
 
 <style scoped>
-.overflow-y-auto {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
-}
-.overflow-y-auto::-webkit-scrollbar {
-  width: 4px;
-}
 </style>

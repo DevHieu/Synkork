@@ -2,7 +2,6 @@ package com.synkork.backend.modules.room;
 
 import com.synkork.backend.modules.room.enums.RoomStatusEnum;
 import com.synkork.backend.modules.room.enums.RoomTypeEnum;
-import com.synkork.backend.modules.statistics.dtos.CountByDate;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

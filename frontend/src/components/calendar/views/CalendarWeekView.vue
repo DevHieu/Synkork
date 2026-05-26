@@ -2,20 +2,21 @@
 import { computed } from "vue";
 import dayjs from "dayjs";
 import type { CalendarEvent } from "@/types/CalendarEvent";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const props = defineProps<{
   currentDate: dayjs.Dayjs;
   selectedDate: dayjs.Dayjs;
   events: CalendarEvent[];
+  dayNames: string[];
+  isToday: (date: dayjs.Dayjs) => boolean;
+  isSelected: (date: dayjs.Dayjs) => boolean;
 }>();
 
 const emit = defineEmits<{
   (e: "selectDate", date: dayjs.Dayjs): void;
-  (e: "editEvent", event: CalendarEvent): void;
+  (e: "viewEvent", event: CalendarEvent): void;
 }>();
-
-// Tên các thứ trong tuần
-const dayNames = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
 // Tính toán các ngày trong tuần hiện tại
 const weekDays = computed(() => {
@@ -43,72 +44,66 @@ const getEventsForDate = (date: dayjs.Dayjs) => {
   return result;
 };
 
-// Các hàm kiểm tra trạng thái ngày
-const isToday = (date: dayjs.Dayjs) => date.isSame(dayjs(), "day");
-const isSelected = (date: dayjs.Dayjs) => date.isSame(props.selectedDate, "day");
+// View tuần render trực tiếp từ mảng event đã được store đồng bộ sẵn.
 </script>
-
 <template>
-  <div class="flex-1 overflow-y-auto p-3">
-    <div class="grid grid-cols-7 gap-2">
-      <div
-        v-for="(date, idx) in weekDays"
-        :key="idx"
-        class="flex flex-col h-full min-h-[400px]"
-      >
-        <!-- Day Header -->
+  <ScrollArea class="calendar-scroll-area min-h-0 flex-1">
+    <div class="bg-transparent p-4 text-foreground">
+      <div class="grid grid-cols-7 overflow-hidden rounded-[1.5rem] border-2 border-border bg-background shadow-[0_30px_80px_-48px_var(--color-foreground)]">
         <div
-          @click="emit('selectDate', date)"
-          :class="[
-            'text-center p-2 rounded-t-lg cursor-pointer transition-colors',
-            isToday(date) ? 'bg-teal-600/30' : 'bg-white/5',
-            isSelected(date) ? 'ring-1 ring-teal-500' : '',
-          ]"
+          v-for="(date, idx) in weekDays"
+          :key="idx"
+          :class="['flex flex-col h-full min-h-[400px] border-r-2 border-border last:border-r-0']"
         >
-          <div class="text-xs text-gray-400">{{ dayNames[date.day()] }}</div>
+          <!-- Day Header -->
           <div
+            @click="emit('selectDate', date)"
             :class="[
-              'text-lg font-bold',
-              isToday(date) ? 'text-teal-400' : 'text-white',
+              'cursor-pointer border-b-2 border-border p-3 text-center transition-colors',
+              isToday(date) ? 'bg-primary text-primary-foreground' : 'bg-muted/30 hover:bg-muted/70',
+              isSelected(date) ? 'bg-primary/5 ring-2 ring-inset ring-primary' : '',
             ]"
           >
-            {{ date.date() }}
+            <div :class="['text-[10px] font-mono font-bold uppercase tracking-widest', isToday(date) ? 'text-primary-foreground/80' : 'text-muted-foreground']">
+              {{ dayNames[date.day()] }}
+            </div>
+            <div
+              :class="[
+                'text-xl font-mono font-bold mt-1',
+                isToday(date) ? 'text-primary-foreground' : 'text-foreground',
+              ]"
+            >
+              {{ date.date() }}
+            </div>
           </div>
-        </div>
 
-        <!-- Events List -->
-        <div class="flex-1 bg-white/5 rounded-b-lg p-1.5 space-y-1">
-          <div
-            v-for="event in getEventsForDate(date)"
-            :key="event.id"
-            @click="emit('editEvent', event)"
-            class="bg-teal-600/20 rounded p-1.5 cursor-pointer hover:bg-teal-600/30 transition-colors border-l-2 border-teal-500"
-          >
-            <p class="text-xs font-medium text-white truncate">
-              {{ event.title }}
-            </p>
-            <p class="text-xs text-teal-300">
-              {{ event.startTime.substring(0, 5) }}
-            </p>
-          </div>
-          <div
-            v-if="getEventsForDate(date).length === 0"
-            class="text-center text-gray-600 text-xs mt-4"
-          >
-            —
+          <!-- Events List -->
+          <div class="flex flex-1 flex-col gap-2 bg-background p-3">
+            <div
+              v-for="event in getEventsForDate(date)"
+              :key="event.id"
+              @click="emit('viewEvent', event)"
+              class="cursor-pointer rounded-xl border-2 border-border bg-muted/35 p-3 text-foreground shadow-[0_16px_28px_-28px_var(--color-primary)] transition-all hover:-translate-y-0.5 hover:border-primary hover:bg-background"
+            >
+              <p class="text-xs font-mono font-bold truncate uppercase text-primary">
+                {{ event.title }}
+              </p>
+              <p class="mt-2 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-mono font-bold text-primary w-fit">
+                {{ event.startTime.substring(0, 5) }}
+              </p>
+            </div>
+            <div
+              v-if="getEventsForDate(date).length === 0"
+              class="mt-4 rounded-lg border border-dashed border-border bg-muted/20 px-3 py-4 text-center font-mono text-[10px] uppercase text-muted-foreground"
+            >
+              KHÔNG SỰ KIỆN
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </ScrollArea>
 </template>
 
 <style scoped>
-.overflow-y-auto {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
-}
-.overflow-y-auto::-webkit-scrollbar {
-  width: 4px;
-}
 </style>

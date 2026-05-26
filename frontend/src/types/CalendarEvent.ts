@@ -1,3 +1,10 @@
+export interface CalendarEventAttachment {
+  name: string;
+  size: number;
+  fileUrl?: string;
+  type?: string;
+}
+
 export interface CalendarEvent {
   id: string;
   spaceId: string;
@@ -9,9 +16,13 @@ export interface CalendarEvent {
   recurrenceType?: string;
   recurrenceEndDate?: string;
   allowEditAll: boolean;
+  remindBeforeMinutes?: number;
   createdById: string;
   createdByUsername: string;
   createdByDisplayName: string;
+  createdByAvatarUrl?: string;
+  attendees?: string[];
+  attachments?: CalendarEventAttachment[];
   createdAt: string;
   updatedAt: string;
 }

@@ -1,6 +1,12 @@
 <script setup lang="ts">
-import { computed } from "vue";
+
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+} from "lucide-vue-next";
 
 const props = defineProps<{
   currentSpaceName?: string;
@@ -14,114 +20,74 @@ const emit = defineEmits<{
   (e: "goPrev"): void;
   (e: "goNext"): void;
   (e: "goToday"): void;
-  (e: "jumpDate", amount: number, unit: "week" | "month" | "year"): void;
+
   (e: "openCreateDialog"): void;
 }>();
 
-const quickJumpBtnClass = "px-2.5 py-1 text-xs font-medium rounded-md bg-white/5 text-gray-400 hover:bg-teal-600/20 hover:text-teal-400 transition-all border border-transparent hover:border-teal-500/30 whitespace-nowrap cursor-pointer";
+// Toolbar chỉ phát sự kiện điều hướng, toàn bộ logic nằm ở layout cha.
 </script>
 
 <template>
-  <div class="flex flex-col bg-transparent">
+  <div class="flex flex-col gap-3 bg-transparent px-4 pt-4">
     <!-- Header -->
-    <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
-      <div class="flex items-center gap-3">
-        <SidebarTrigger class="-ml-1" />
-        <span class="font-semibold text-lg flex items-center gap-2">
-          <i class="pi pi-calendar text-teal-400"></i>
+    <div class="flex items-center justify-between rounded-[1.5rem] border-2 border-border bg-background/95 px-5 py-4 shadow-[0_18px_50px_-32px_var(--color-foreground)]">
+      <div class="flex items-center gap-4">
+        <SidebarTrigger class="-ml-1 rounded-full border-2 border-primary/40 bg-primary/10 p-2 text-primary transition-colors hover:bg-primary hover:text-primary-foreground" />
+        <span class="flex items-center gap-3 font-mono text-lg font-bold uppercase tracking-widest text-foreground">
+          <span class="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_24px_-16px_var(--color-primary)]">
+            <CalendarDays class="h-5 w-5" />
+          </span>
           {{ currentSpaceName }}
         </span>
       </div>
 
-      <div class="flex items-center gap-2">
-        <!-- View Mode Buttons -->
-        <div class="flex rounded-lg overflow-hidden border border-white/20">
-          <button @click="emit('update:viewMode', 'week')" :class="[
-            'px-3 py-1.5 text-sm font-medium transition-all duration-200',
-            viewMode === 'week' ? 'bg-teal-600 text-white' : 'hover:bg-white/10 text-gray-300',
-          ]">
-            Tuần
-          </button>
-          <button @click="emit('update:viewMode', 'month')" :class="[
-            'px-3 py-1.5 text-sm font-medium transition-all duration-200',
-            viewMode === 'month' ? 'bg-teal-600 text-white' : 'hover:bg-white/10 text-gray-300',
-          ]">
-            Tháng
-          </button>
-          <button @click="emit('update:viewMode', 'year')" :class="[
-            'px-3 py-1.5 text-sm font-medium transition-all duration-200',
-            viewMode === 'year' ? 'bg-teal-600 text-white' : 'hover:bg-white/10 text-gray-300',
-          ]">
-            Năm
-          </button>
-        </div>
+      <!-- View Mode Switcher -->
+      <div class="flex rounded-full border-2 border-border bg-muted/40 p-1 shadow-inner">
+        <button
+          @click="emit('update:viewMode', 'week')"
+          :class="['rounded-full px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all', viewMode === 'week' ? 'bg-primary text-primary-foreground shadow-[0_8px_18px_-12px_var(--color-primary)]' : 'text-muted-foreground hover:bg-background hover:text-foreground']"
+        >
+          Tuần
+        </button>
+        <button
+          @click="emit('update:viewMode', 'month')"
+          :class="['rounded-full px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all', viewMode === 'month' ? 'bg-primary text-primary-foreground shadow-[0_8px_18px_-12px_var(--color-primary)]' : 'text-muted-foreground hover:bg-background hover:text-foreground']"
+        >
+          Tháng
+        </button>
+        <button
+          @click="emit('update:viewMode', 'year')"
+          :class="['rounded-full px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider transition-all', viewMode === 'year' ? 'bg-primary text-primary-foreground shadow-[0_8px_18px_-12px_var(--color-primary)]' : 'text-muted-foreground hover:bg-background hover:text-foreground']"
+        >
+          Năm
+        </button>
       </div>
     </div>
 
     <!-- Navigation Bar -->
-    <div class="flex items-center justify-between px-4 py-2 border-b border-white/10">
+    <div class="flex items-center justify-between rounded-[1.5rem] border-2 border-border bg-muted/35 px-5 py-3 shadow-[0_20px_40px_-34px_var(--color-foreground)]">
       <div class="flex items-center gap-2">
-        <button @click="emit('goPrev')"
-          class="p-2 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors text-gray-300">
-          <i class="pi pi-chevron-left"></i>
+        <button @click="emit('goPrev')" class="flex size-10 items-center justify-center rounded-full border-2 border-border bg-background text-muted-foreground transition-all hover:-translate-y-0.5 hover:border-primary hover:bg-primary hover:text-primary-foreground" :title="`${viewMode === 'week' ? 'Tuần' : viewMode === 'month' ? 'Tháng' : 'Năm'} trước`">
+          <ChevronLeft :size="16" />
         </button>
-        <button @click="emit('goToday')"
-          class="px-3 py-1.5 text-sm rounded-lg bg-teal-600/20 text-teal-400 hover:bg-teal-600/30 transition-colors font-medium min-w-[90px]">
+        <button @click="emit('goToday')" class="flex h-10 items-center justify-center rounded-full border-2 border-border bg-background px-5 font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground transition-all hover:-translate-y-0.5 hover:border-primary hover:bg-primary hover:text-primary-foreground">
           {{ relativeTimeText }}
         </button>
-        <button @click="emit('goNext')"
-          class="p-2 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors text-gray-300">
-          <i class="pi pi-chevron-right"></i>
+        <button @click="emit('goNext')" class="flex size-10 items-center justify-center rounded-full border-2 border-border bg-background text-muted-foreground transition-all hover:-translate-y-0.5 hover:border-primary hover:bg-primary hover:text-primary-foreground" :title="`${viewMode === 'week' ? 'Tuần' : viewMode === 'month' ? 'Tháng' : 'Năm'} sau`">
+          <ChevronRight :size="16" />
         </button>
       </div>
-      <span class="text-lg font-semibold text-white">{{ headerTitle }}</span>
-      <button @click="emit('openCreateDialog')"
-        class="px-4 py-1.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium flex items-center gap-1.5">
-        <i class="pi pi-plus"></i>
+
+      <span class="rounded-full border border-primary/20 bg-primary/10 px-4 py-2 font-mono text-sm font-bold uppercase tracking-widest text-primary">{{ headerTitle }}</span>
+
+      <button @click="emit('openCreateDialog')" class="flex h-10 items-center gap-2 rounded-full border-2 border-primary bg-primary px-5 font-mono text-xs font-bold uppercase tracking-wider text-primary-foreground transition-all hover:-translate-y-0.5 hover:bg-background hover:text-primary">
+        <Plus :size="14" />
         Thêm sự kiện
       </button>
-    </div>
-
-    <!-- Quick Navigation Bar -->
-    <div class="flex items-center gap-4 px-4 py-2 border-b border-white/10 bg-black/10 overflow-x-auto no-scrollbar scroll-smooth">
-      <!-- Week Group -->
-      <div class="flex items-center gap-1.5 shrink-0 px-2 py-1 rounded-lg bg-teal-500/5 border border-teal-500/10">
-        <span class="text-[10px] font-bold text-teal-500/70 uppercase tracking-widest mr-1">Tuần</span>
-        <div class="flex items-center gap-1">
-          <button @click="emit('jumpDate', -1, 'week')" :class="quickJumpBtnClass">Tuần trước</button>
-          <button @click="emit('jumpDate', 1, 'week')" :class="quickJumpBtnClass">Tuần sau</button>
-          <button @click="emit('jumpDate', 2, 'week')" :class="quickJumpBtnClass">2 tuần sau</button>
-        </div>
-      </div>
-
-      <!-- Month Group -->
-      <div class="flex items-center gap-1.5 shrink-0 px-2 py-1 rounded-lg bg-teal-500/5 border border-teal-500/10">
-        <span class="text-[10px] font-bold text-teal-500/70 uppercase tracking-widest mr-1">Tháng</span>
-        <div class="flex items-center gap-1">
-          <button @click="emit('jumpDate', -1, 'month')" :class="quickJumpBtnClass">Tháng trước</button>
-          <button @click="emit('jumpDate', 1, 'month')" :class="quickJumpBtnClass">Tháng sau</button>
-        </div>
-      </div>
-
-      <!-- Year Group -->
-      <div class="flex items-center gap-1.5 shrink-0 px-2 py-1 rounded-lg bg-teal-500/5 border border-teal-500/10">
-        <span class="text-[10px] font-bold text-teal-500/70 uppercase tracking-widest mr-1">Năm</span>
-        <div class="flex items-center gap-1">
-          <button @click="emit('jumpDate', -1, 'year')" :class="quickJumpBtnClass">Năm trước</button>
-          <button @click="emit('jumpDate', 1, 'year')" :class="quickJumpBtnClass">Năm sau</button>
-        </div>
-      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
-.no-scrollbar {
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
-}
+/* Industrial / Utilitarian styling applied mostly via Tailwind classes. */
 </style>

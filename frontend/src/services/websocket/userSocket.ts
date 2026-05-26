@@ -10,7 +10,7 @@ export const userSocket = {
       "/user/queue/kick",
       (roomId: string) => {
         toast.error("Bạn đã bị đuổi khỏi phòng");
-        roomStore.leaveRoom(roomId);
+        roomStore.removeRoomFromArray(roomId);
       },
       { persistent: true },
     );
@@ -33,7 +33,7 @@ export const userSocket = {
     return socketService.subscribe(
       "/user/queue/rooms/deleted",
       (roomId: string) => {
-        roomStore.leaveRoom(roomId);
+        roomStore.removeRoomFromArray(roomId);
       },
       { persistent: true },
     );

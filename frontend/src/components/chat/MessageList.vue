@@ -16,6 +16,10 @@ const props = defineProps<{
   friendName?: string;
 }>();
 
+const emit = defineEmits<{
+  (e: "openSuggestion", messageId: string): void;
+}>();
+
 const messageStore = useMessageStore();
 
 const isLoading = ref(false);
@@ -28,6 +32,7 @@ let beforeObserver: IntersectionObserver | null = null;
 let afterObserver: IntersectionObserver | null = null;
 
 const setRef = (el: any) => {
+  // Gửi container xuống store để các thao tác jump/scroll dùng chung một điểm neo.
   container.value = el as HTMLElement | null;
   messageStore.setScrollContainer(el as HTMLElement | null); // ← thêm
   if (el) nextTick(() => setupObserver());
@@ -161,6 +166,7 @@ const processedMessages = computed(() => {
             :message="msg"
             :isGrouped="msg.isGrouped"
             :isDifferentDay="msg.isDifferentDay"
+            @open-suggestion="emit('openSuggestion', $event)"
           />
         </template>
       </div>

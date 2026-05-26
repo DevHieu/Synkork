@@ -4,7 +4,6 @@ import com.synkork.backend.modules.user.dto.ChangePasswordDto;
 import com.synkork.backend.modules.user.dto.UpdateprofileDto;
 import com.synkork.backend.modules.user.dto.UserInfoDto;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.lang.NonNull;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,10 +24,9 @@ public class UserService {
     @Autowired
     UserRepository userRepository;
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(12);
-    }
+    @Autowired
+    PasswordEncoder passwordEncoder;
+
     public List<UserEntity> findAll() {
         return userRepository.findAll();
     }
@@ -57,6 +55,10 @@ public class UserService {
 
     public UserEntity findByEmail(String email) {
         return userRepository.findByEmail(email).orElse(null);
+    }
+
+    public UserEntity getUserInfoByUsername(String username) {
+        return userRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("User không tồn tại"));
     }
 
     public UserEntity updateUser(UserEntity existedUser) {
@@ -100,7 +102,7 @@ public class UserService {
             throw new RuntimeException("Tài khoản chưa có mật khẩu. Hãy dùng chức năng tạo mật khẩu.");
         }
 
-        if (!passwordEncoder().matches(dto.currentPassword(), user.getPassword())) {
+        if (!passwordEncoder.matches(dto.currentPassword(), user.getPassword())) {
             throw new RuntimeException("Mật khẩu hiện tại không đúng");
         }
 
@@ -108,7 +110,7 @@ public class UserService {
             throw new RuntimeException("Mật khẩu mới phải có ít nhất 6 ký tự");
         }
 
-        user.setPassword(passwordEncoder().encode(dto.newPassword()));
+        user.setPassword(passwordEncoder.encode(dto.newPassword()));
         userRepository.save(user);
     }
 
@@ -124,7 +126,7 @@ public class UserService {
             throw new RuntimeException("Mật khẩu phải có ít nhất 6 ký tự");
         }
 
-        user.setPassword(passwordEncoder().encode(newPassword));
+        user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
     }
 
@@ -134,4 +136,6 @@ public class UserService {
         user.setAvatarId(avatarId);
         return new UserInfoDto(userRepository.save(user));
     }
+
+
 }

@@ -1,12 +1,12 @@
 import { Client, type StompSubscription } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import { getFreshToken } from "@/utils/auth";
-import VueCookies from "vue-cookies";
+import { getCookie, removeCookie } from "@/lib/cookies";
 
-const cookies = VueCookies as any;
 let stompClient: Client | null = null;
 const subscriptions = new Map<string, StompSubscription>();
 let connectingPromise: Promise<void> | null = null;
+// Giữ lại các kênh cần sống lâu hơn vòng đời của từng space.
 const persistentDestinations = new Set<string>();
 
 const createStompClient = (token: string, onConnected?: () => void): Client => {
@@ -30,7 +30,7 @@ const createStompClient = (token: string, onConnected?: () => void): Client => {
         (event.reason ?? "").toLowerCase().includes("unauthorized");
 
       if (isUnauthorized) {
-        cookies.remove("accessToken");
+        removeCookie("accessToken");
         try {
           const freshToken = await getFreshToken();
 
@@ -58,7 +58,7 @@ export const socketService = {
     if (connectingPromise) return connectingPromise;
 
     connectingPromise = new Promise<void>(async (resolve, reject) => {
-      let token = cookies.get("accessToken");
+      let token = getCookie("accessToken");
       if (!token) {
         try {
           token = await getFreshToken();
@@ -94,17 +94,21 @@ export const socketService = {
   ) {
     if (!this.isConnected()) {
       console.error(
-        `[Socket] Cannot subscribe to ${destination}. Not connected.`,
+        `[Socket] Khong the dang ky ${destination} vi socket chua ket noi.`,
       );
       return null;
     }
 
     if (subscriptions.has(destination)) {
+      console.log(`[Socket] Huy dang ky cu de dang ky lai: ${destination}`);
       subscriptions.get(destination)!.unsubscribe();
       subscriptions.delete(destination);
     }
 
+    console.log(`[Socket] Dang ky kenh: ${destination}`);
+
     const sub = stompClient!.subscribe(destination, (msg) => {
+      console.log(`[Socket] Da nhan frame tu kenh ${destination}:`, msg.body);
       try {
         callback(JSON.parse(msg.body));
       } catch {
@@ -117,6 +121,7 @@ export const socketService = {
     // Đánh dấu persistent nếu có
     if (options?.persistent) {
       persistentDestinations.add(destination);
+      console.log(`[Socket] Danh dau kenh persistent: ${destination}`);
     }
 
     return sub;

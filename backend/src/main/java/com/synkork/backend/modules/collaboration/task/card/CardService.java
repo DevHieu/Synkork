@@ -57,6 +57,8 @@ public class CardService {
             card.setAssignees(assignees);
         }
 
+        card.setDueDate(req.getDueDate());
+
         CardEntity savedCard = cardRepository.save(card);
         return new CardDTO(savedCard);
     }
@@ -73,6 +75,8 @@ public class CardService {
         if(req.getDescription() != null){
             card.setDescription(req.getDescription());
         }
+
+        card.setDueDate(req.getDueDate());
         
         System.out.println("assigneeIds từ request: " + req.getAssigneeIds());
         System.out.println("isEmpty check: " + (req.getAssigneeIds() != null && !req.getAssigneeIds().isEmpty()));
@@ -82,6 +86,8 @@ public class CardService {
             System.out.println("Users tìm được: " + assignees.stream().map(u -> u.getId().toString()).toList());
             card.setAssignees(assignees);
         }
+
+        
 
         CardEntity updatedCard = cardRepository.save(card);
         return new CardDTO(updatedCard);

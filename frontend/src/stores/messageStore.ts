@@ -7,7 +7,9 @@ import {
   sendFileMessage as sendFileMessageApi,
 } from "@/services/chatService";
 import { chatSocket } from "@/services/websocket/chatSocket";
+import { socketService } from "@/services/websocket/socketService";
 import type { Message } from "@/types/Message";
+import type { MessageEventSuggestion } from "@/types/CalendarSuggestion";
 import { nextTick } from "vue";
 import { useUserStore } from "./userStore";
 
@@ -33,6 +35,8 @@ export const useMessageStore = defineStore("message", {
     pinLoading: false,
 
     replyingTo: null as Message | null,
+    suggestionsByMessageId: {} as Record<string, MessageEventSuggestion>,
+    suggestionSubscriptionReady: false,
   }),
 
   actions: {
@@ -48,6 +52,7 @@ export const useMessageStore = defineStore("message", {
       this.pinnedHasMore = false;
       this.pinnedCursor = null;
       this.replyingTo = null;
+      this.suggestionsByMessageId = {};
     },
 
     subscribeToChat(spaceId: string) {
@@ -56,6 +61,7 @@ export const useMessageStore = defineStore("message", {
         if (!this.isJumpMode) {
           this.messages = this.messages.filter((m) => m.id !== msg.id);
           this.messages.unshift(msg);
+
           if (!this.isScrollTop) {
             // Tự nhảy xuống
             nextTick(() => this.scrollToBottom(spaceId));
@@ -64,6 +70,7 @@ export const useMessageStore = defineStore("message", {
       });
 
       chatSocket.subscribeDelete(spaceId, (messageId: string) => {
+        // Xóa mềm trong list hiện tại để UI cập nhật ngay khi backend broadcast.
         const msg = this.messages.find((m) => m.id === messageId);
         if (msg) msg.deleted = true;
 
@@ -97,6 +104,38 @@ export const useMessageStore = defineStore("message", {
           );
         }
       });
+
+      this.subscribeToSuggestions();
+    },
+
+    async subscribeToSuggestions() {
+      const currentUserId = useUserStore().user?.id;
+      if (!currentUserId) {
+        console.warn("[Goi y] Bo qua dang ky vi chua co userId hien tai");
+        return;
+      }
+
+      if (this.suggestionSubscriptionReady) {
+        console.log("[Goi y] Bo qua dang ky vi kenh goi y da san sang truoc do");
+        return;
+      }
+
+      await socketService.connect();
+
+      const subscription = chatSocket.subscribeSuggestions(currentUserId, (suggestion) => {
+        this.suggestionsByMessageId = {
+          ...this.suggestionsByMessageId,
+          [suggestion.messageId]: suggestion,
+        };
+      });
+
+      if (!subscription) {
+        console.warn("[Goi y] Dang ky that bai vi socket chua san sang");
+        return;
+      }
+
+      this.suggestionSubscriptionReady = true;
+      console.log("[Goi y] Dang ky thanh cong cho user:", currentUserId);
     },
 
     // Load lần đầu hoặc scroll lên
@@ -109,6 +148,13 @@ export const useMessageStore = defineStore("message", {
       console.log(messages);
 
       this.messages = [...this.messages, ...messages];
+      console.log("[Chat] Da tai xong danh sach tin nhan:", {
+        spaceId,
+        cursor,
+        loadedCount: messages.length,
+        totalMessages: this.messages.length,
+        firstMessageId: this.messages[0]?.id ?? null,
+      });
       this.beforeHasMore = beforeHasMore;
       this.beforeCursor = beforeCursor ?? null;
     },

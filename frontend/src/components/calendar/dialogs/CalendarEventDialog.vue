@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { watch } from "vue";
-import type { CalendarEvent } from "@/types/CalendarEvent";
-import CalendarWarningDialog from "./CalendarWarningDialog.vue";
+import { CalendarPlus2, Pencil, X } from "lucide-vue-next";
+import { Button } from "@/components/ui/button";
+import CalendarNotificationDialog from "./CalendarNotificationDialog.vue";
 import EventTimeSection from "../sub-components/EventTimeSection.vue";
 import EventRecurrenceSection from "../sub-components/EventRecurrenceSection.vue";
 import EventAttendeesSection from "../sub-components/EventAttendeesSection.vue";
@@ -13,8 +14,6 @@ const props = defineProps<{
   show: boolean;
   isEditing: boolean;
   initialData: EventFormData;
-  checkConflicts: (date: string, start: string, end: string, excludeId?: string) => Promise<CalendarEvent[]>;
-  editingEventId?: string;
 }>();
 
 const emit = defineEmits<{
@@ -24,10 +23,10 @@ const emit = defineEmits<{
 
 // Logic điều khiển Form
 const {
-  formData, conflictEvents,
+  formData,
   warningMessage, showWarning,
   validate, resetForm,
-} = useEventForm(props.initialData, props.checkConflicts, props.isEditing, props.editingEventId);
+} = useEventForm(props.initialData, props.isEditing);
 
 // Các hàm xử lý cập nhật dữ liệu từ component con
 const onTimeChange = (data: { eventDate: string; startTime: string; endTime: string }) => {
@@ -49,6 +48,7 @@ const onAttachmentsChange = (list: any[]) => {
   formData.value.attachments = list;
 };
 
+// Luôn reset form theo initialData mới nhất trước khi người dùng thao tác.
 // Đồng bộ trạng thái khi Dialog đóng/mở
 watch(
   () => props.show,
@@ -73,125 +73,101 @@ const handleSubmit = (): void => {
 
       <!-- Dialog -->
       <div
-        class="relative bg-zinc-900 rounded-2xl shadow-2xl border border-white/10 w-full max-w-md mx-4 flex flex-col max-h-[90vh] overflow-hidden">
+        class="relative mx-4 flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-3xl border-2 border-border bg-background shadow-[0_32px_100px_-48px_rgba(0,0,0,0.75)] cursor-default">
 
         <!-- Header -->
-        <div class="p-6 pb-4 border-b border-white/5 bg-zinc-900/50 backdrop-blur-md sticky top-0 z-10">
-          <h2 class="text-lg font-semibold text-white">
-            {{ isEditing ? "Chỉnh sửa sự kiện" : "Thêm sự kiện mới" }}
-          </h2>
+        <div
+          class="sticky top-0 z-10 border-b-2 border-border bg-background/95 px-6 pb-4 pt-6 backdrop-blur cursor-default">
+          <div class="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2">
+            <component :is="isEditing ? Pencil : CalendarPlus2" class="text-primary" data-icon="inline-start" />
+            <h2 class="text-lg font-mono font-bold uppercase tracking-widest text-primary">
+              {{ isEditing ? "Chỉnh sửa sự kiện" : "Thêm sự kiện mới" }}
+            </h2>
+          </div>
         </div>
 
         <form @submit.prevent="handleSubmit" class="flex flex-col flex-1 min-h-0">
           <!-- Scrollable body -->
-          <div class="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar">
+          <div class="calendar-scrollbar min-h-0 flex-1 overflow-y-auto">
+            <div class="space-y-5 p-6 pb-8 pr-5">
 
-            <!-- Tiêu đề -->
-            <div>
-              <label class="block text-sm text-gray-400 mb-1.5 font-medium">Tiêu đề *</label>
-              <input v-model="formData.title" type="text" required placeholder="Nhập tiêu đề sự kiện..."
-                class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-all text-sm" />
-            </div>
-
-            <!-- Mô tả -->
-            <div>
-              <label class="block text-sm text-gray-400 mb-1.5 font-medium">Mô tả</label>
-              <textarea v-model="formData.description" rows="3" placeholder="Mô tả chi tiết sự kiện..."
-                class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 resize-none text-sm transition-all" />
-            </div>
-
-            <!-- Ngày & Giờ Section -->
-            <EventTimeSection
-              :show="show"
-              :initial-date="initialData.eventDate"
-              :initial-start-time="initialData.startTime"
-              :initial-end-time="initialData.endTime"
-              @change="onTimeChange"
-            />
-
-            <!-- Chế độ lặp lại Section -->
-            <EventRecurrenceSection
-              :initial-type="initialData.recurrenceType || 'NONE'"
-              :initial-end-date="initialData.recurrenceEndDate"
-              :event-date="formData.eventDate"
-              @change="onRecurrenceChange"
-            />
-
-            <!-- Cảnh báo trùng giờ -->
-            <div v-if="conflictEvents.length > 0"
-              class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 shadow-lg shadow-amber-500/5">
-              <div class="flex items-center gap-2.5 text-amber-400 text-sm font-semibold mb-2">
-                <i class="pi pi-exclamation-triangle" />
-                Trùng giờ với {{ conflictEvents.length }} sự kiện:
+              <!-- Tiêu đề -->
+              <div
+                class="rounded-xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)] cursor-default">
+                <label
+                  class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">TIÊU
+                  ĐỀ *</label>
+                <input v-model="formData.title" type="text" required placeholder="NHẬP TIÊU ĐỀ SỰ KIỆN..."
+                  class="w-full rounded-lg border-2 border-border bg-background px-4 py-3 font-mono text-sm uppercase text-foreground placeholder-muted-foreground transition-colors focus:outline-none focus:border-primary" />
               </div>
-              <ul class="text-xs text-amber-300/70 space-y-1.5 ml-6">
-                <li v-for="c in conflictEvents" :key="c.id" class="list-disc leading-relaxed">
-                  <span class="font-bold text-amber-400/90">{{ c.title }}</span><br />
-                  <span class="text-[10px] italic">({{ c.startTime.substring(0, 5) }} - {{ c.endTime.substring(0, 5)
-                    }})</span>
-                </li>
-              </ul>
+
+              <!-- Mô tả -->
+              <div
+                class="rounded-xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)] cursor-default">
+                <label
+                  class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">MÔ
+                  TẢ</label>
+                <textarea v-model="formData.description" rows="3" placeholder="MÔ TẢ CHI TIẾT SỰ KIỆN..."
+                  class="w-full resize-none rounded-lg border-2 border-border bg-background px-4 py-3 font-mono text-sm uppercase text-foreground placeholder-muted-foreground transition-colors focus:outline-none focus:border-primary" />
+              </div>
+
+              <!-- Ngày & Giờ Section -->
+              <EventTimeSection :show="show" :initial-date="initialData.eventDate"
+                :initial-start-time="initialData.startTime" :initial-end-time="initialData.endTime"
+                @change="onTimeChange" />
+
+              <!-- Chế độ lặp lại Section -->
+              <EventRecurrenceSection :initial-type="initialData.recurrenceType || 'NONE'"
+                :initial-end-date="initialData.recurrenceEndDate" :event-date="formData.eventDate"
+                @change="onRecurrenceChange" />
+              <!-- Người tham gia Section -->
+              <EventAttendeesSection :show="show" :initial-attendees="initialData.attendees"
+                @change="onAttendeesChange" />
+
+              <!-- Tệp đính kèm Section -->
+              <EventAttachmentsSection :show="show" :initial-attachments="initialData.attachments"
+                @change="onAttachmentsChange" />
+
+              <!-- Cho phép chỉnh sửa -->
+              <div
+                class="flex items-center gap-3 rounded-xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)] cursor-default">
+                <input v-model="formData.allowEditAll" type="checkbox"
+                  class="h-4 w-4 cursor-pointer rounded-sm border-2 border-border bg-background text-primary focus:ring-0 focus:ring-offset-0" />
+                <span
+                  class="text-[10px] font-mono font-bold text-foreground uppercase tracking-widest cursor-pointer select-none"
+                  @click="formData.allowEditAll = !formData.allowEditAll">CHO PHÉP MỌI NGƯỜI CHỈNH SỬA</span>
+              </div>
             </div>
-
-            <!-- Người tham gia Section -->
-            <EventAttendeesSection
-              :show="show"
-              :initial-attendees="initialData.attendees"
-              @change="onAttendeesChange"
-            />
-
-            <!-- Tệp đính kèm Section -->
-            <EventAttachmentsSection
-              :show="show"
-              :initial-attachments="initialData.attachments"
-              @change="onAttachmentsChange"
-            />
-
-            <!-- Cho phép chỉnh sửa -->
-            <div class="flex items-center gap-3 py-1">
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input v-model="formData.allowEditAll" type="checkbox" class="sr-only peer" />
-                <div
-                  class="w-9 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-teal-600" />
-              </label>
-              <span class="text-sm text-gray-300 font-medium">Cho phép mọi người chỉnh sửa</span>
-            </div>
-
           </div>
 
           <!-- Footer actions -->
           <div
-            class="p-6 pt-4 border-t border-white/5 flex gap-2 justify-end bg-zinc-900/50 backdrop-blur-md sticky bottom-0 z-10 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.3)]">
-            <button type="button" @click="emit('update:show', false)"
-              class="px-5 py-2.5 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-all text-sm font-medium">Hủy</button>
-            <button type="submit"
-              class="px-6 py-2.5 bg-teal-600 text-white rounded-xl hover:bg-teal-700 hover:shadow-lg hover:shadow-teal-500/20 active:scale-95 transition-all text-sm font-bold">{{
-                isEditing ? "Cập nhật" : "Tạo sự kiện" }}</button>
+            class="sticky bottom-0 z-10 flex justify-end gap-3 border-t-2 border-border bg-background/95 p-6 pt-4 backdrop-blur">
+            <Button type="button" variant="outline"
+              class="rounded-full border-2 font-mono text-xs font-bold uppercase tracking-widest"
+              @click="emit('update:show', false)">
+              <X data-icon="inline-start" />
+              Hủy
+            </Button>
+            <Button type="submit"
+              class="rounded-full border-2 border-primary bg-primary font-mono text-xs font-bold uppercase tracking-widest text-primary-foreground shadow-[0_16px_34px_-22px_var(--color-primary)] hover:bg-background hover:text-primary">
+              <component :is="isEditing ? Pencil : CalendarPlus2" data-icon="inline-start" />
+              {{ isEditing ? "CẬP NHẬT" : "TẠO SỰ KIỆN" }}
+            </Button>
           </div>
         </form>
       </div>
     </div>
 
     <!-- Warning dialog -->
-    <CalendarWarningDialog v-model:show="showWarning" :message="warningMessage" />
+    <CalendarNotificationDialog v-model:show="showWarning" type="warning" title="CẢNH BÁO" :message="warningMessage"
+      confirm-text="ĐÃ HIỂU" @confirm="showWarning = false" />
   </Teleport>
 </template>
 
 <style scoped>
-.custom-scrollbar::-webkit-scrollbar {
-  width: 5px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+.create-btn {
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 </style>

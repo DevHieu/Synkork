@@ -130,6 +130,8 @@ public class FriendController {
                                     ? req.getSender().getDisplayName()
                                     : req.getSender().getUsername(),
                             req.getReceiver().getUsername(),
+                            req.getSender().getUsername(),
+                            req.getReceiver().getUsername(),
                             req.getStatus().name()
                     )
             ).toList();
@@ -154,6 +156,8 @@ public class FriendController {
                             req.getReceiver().getDisplayName() != null
                                     ? req.getReceiver().getDisplayName()
                                     : req.getReceiver().getUsername(),
+                            req.getSender().getUsername(),
+                            req.getReceiver().getUsername(),
                             req.getStatus().name()
                     )
             ).toList();

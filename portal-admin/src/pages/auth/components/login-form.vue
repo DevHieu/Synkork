@@ -1,17 +1,19 @@
 <script lang="ts" setup>
 import { useAuth } from '@/composables/use-auth'
-
-import GitHubButton from './github-button.vue'
 import GoogleButton from './google-button.vue'
-import PrivacyPolicyButton from './privacy-policy-button.vue'
-import TermsOfServiceButton from './terms-of-service-button.vue'
 import ToForgotPasswordLink from './to-forgot-password-link.vue'
+import { LoginData } from '../types/LoginData'
 
-const { login, loading } = useAuth()
+const { login, loading, error } = useAuth()
+
+const loginForm = ref<LoginData>({
+  username: '',
+  password: ''
+})
 </script>
 
 <template>
-  <UiCard class="w-full max-w-sm">
+  <UiCard class="w-full max-w-md">
     <UiCardHeader>
       <UiCardTitle class="text-2xl">
         Login
@@ -32,7 +34,7 @@ const { login, loading } = useAuth()
         <UiLabel for="email">
           {{ $t('email') }}
         </UiLabel>
-        <UiInput id="email" type="email" placeholder="m@example.com" required />
+        <UiInput id="email" v-model="loginForm.username" type="email" placeholder="m@example.com" required />
       </div>
       <div class="grid gap-2">
         <div class="flex items-center justify-between">
@@ -41,10 +43,12 @@ const { login, loading } = useAuth()
           </UiLabel>
           <ToForgotPasswordLink />
         </div>
-        <UiInput id="password" type="password" required placeholder="*********" />
+        <UiInput id="password" v-model="loginForm.password" type="password" required placeholder="*********" />
       </div>
-
-      <UiButton class="w-full" @click="login">
+      <p v-if="error" class="text-sm text-destructive">
+        {{ error }}
+      </p>
+      <UiButton class="w-full" @click="login(loginForm)">
         <UiSpinner v-if="loading" class="mr-2" />
         {{ $t('login') }}
       </UiButton>
@@ -52,16 +56,8 @@ const { login, loading } = useAuth()
       <UiSeparator label="Or continue with" />
 
       <div class="flex flex-col items-center justify-between gap-4">
-        <GitHubButton />
         <GoogleButton />
       </div>
-
-      <UiCardDescription>
-        By clicking login, you agree to our
-        <TermsOfServiceButton />
-        and
-        <PrivacyPolicyButton />
-      </UiCardDescription>
     </UiCardContent>
   </UiCard>
 </template>
