@@ -25,6 +25,7 @@ interface PendingTaskSuggestionDraft {
 export const useCalendarSuggestionStore = defineStore("calendarSuggestion", {
   state: () => ({
     isChannelDialogOpen: false,
+    dialogTargetType: "CALENDAR" as "CALENDAR" | "NOTE" | "TASK",
     selectedSuggestion: null as MessageEventSuggestion | null,
     pendingDraft: null as PendingCalendarSuggestionDraft | null,
     pendingNoteDraft: null as PendingNoteSuggestionDraft | null,
@@ -32,8 +33,9 @@ export const useCalendarSuggestionStore = defineStore("calendarSuggestion", {
   }),
 
   actions: {
-    openChannelDialog(suggestion: MessageEventSuggestion) {
+    openChannelDialog(suggestion: MessageEventSuggestion, targetType: "CALENDAR" | "NOTE" | "TASK") {
       this.selectedSuggestion = suggestion;
+      this.dialogTargetType = targetType;
       this.isChannelDialogOpen = true;
     },
 

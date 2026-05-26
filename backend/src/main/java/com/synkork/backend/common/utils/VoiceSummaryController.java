@@ -1,6 +1,7 @@
 package com.synkork.backend.common.utils;
 
 import com.synkork.backend.common.dtos.FileUploaded;
+import com.synkork.backend.common.dtos.VoiceSummaryResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,13 +42,14 @@ public class VoiceSummaryController {
             String transcript = meetingService.transcribeAudio(file);
             String summaryJson = meetingService.summarizeMeeting(transcript);
 
-            // 3) Trả về đầy đủ payload để bên gọi dùng lại cả transcript lẫn summary.
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "Xử lý voice thành công");
-            response.put("fileUrl", fileUrl);
-            response.put("publicId", publicId);
-            response.put("transcript", transcript);
-            response.put("analysis", summaryJson);
+            // 3) Trả về đầy đủ payload dùng DTO sạch sẽ.
+            VoiceSummaryResponse response = new VoiceSummaryResponse(
+                    "Xử lý voice thành công",
+                    fileUrl,
+                    publicId,
+                    transcript,
+                    summaryJson
+            );
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {

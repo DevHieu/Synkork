@@ -15,7 +15,7 @@ public class ChatEventLlmService {
 
     private static final String CHAT_REFERER = "http://localhost:5173/rooms/chat";
     private static final String APP_TITLE = "Synkork";
-    private static final String EVENT_MODEL = "liquid/lfm-2.5-1.2b-thinking:free";
+    private static final String EVENT_MODEL = "deepseek/deepseek-v4-flash:free";
 
     private final ObjectMapper objectMapper;
     private final OpenRouterClient openRouterClient;
@@ -28,6 +28,7 @@ public class ChatEventLlmService {
     private static final String SUGGESTION_SYSTEM_PROMPT = """
 Bạn là bộ phân loại ý định cho tin nhắn chat nội bộ của Synkork.
 Nhiệm vụ của bạn là phát hiện tin nhắn có liên quan đến sự kiện, ghi chú, hoặc task.
+Bạn chỉ được nhìn thấy duy nhất một tin nhắn đơn lẻ, nên phải suy luận hoàn toàn từ chính nội dung tin nhắn đó.
 
 Chỉ trả về JSON hợp lệ, không markdown, không giải thích thêm.
 
@@ -41,8 +42,12 @@ Luật quyết định:
 - Chọn TASK khi trọng tâm là hành động cần hoàn thành.
 - Chọn NOTE khi trọng tâm chỉ là lưu thông tin, không cần hẹn giờ hay trạng thái hoàn thành.
 - Nếu một tin nhắn có nhiều ý, chọn loại mạnh nhất theo thứ tự: EVENT > TASK > NOTE.
+- Nếu tin nhắn là câu kể ngắn nhưng thể hiện rõ là có lịch, có cuộc họp, có cuộc hẹn, có buổi, có task, có việc, có note, có ghi chú, hoặc cần nhắc/lưu lại, vẫn phải xem đó là ý định tạo mới chứ không được mặc định là NONE.
+- Nếu tin nhắn có từ khóa chỉ loại đối tượng như "lịch", "họp", "meeting", "task", "việc", "todo", "deadline", "note", "ghi chú", "nhắc", và ngữ nghĩa đủ rõ là đang nói đến một mục cần tạo, ưu tiên tạo suggestion thay vì bỏ qua.
+- Nếu tin nhắn còn mơ hồ nhưng đã đủ rõ loại ý định, vẫn phải trả về EVENT, TASK, hoặc NOTE với title/description tối giản, bám sát nội dung gốc.
 - Nếu người dùng chỉ chào hỏi, cảm ơn, xác nhận, hoặc nhắc đến từ khóa nhưng không có ý định tạo mới, trả về NONE.
-- Nếu không chắc chắn, trả về NONE.
+- Nếu tin nhắn quá ngắn, vô nghĩa, chỉ gồm ký tự rời rạc, tiếng đệm, test rác như "e", "ê", "eee", "tét", thì trả về NONE.
+- Chỉ trả về NONE khi thực sự không thấy ý định tạo event/task/note, hoặc nội dung quá nhiễu để xác định tối thiểu một loại rõ ràng.
 - Giữ nguyên ngôn ngữ người dùng; nếu người dùng viết tiếng Việt thì title, description, noteTitle, taskTitle cũng phải tự nhiên bằng tiếng Việt.
 - Không bịa thêm chi tiết không có trong tin nhắn.
 - Chỉ điền field đúng với loại đã chọn; các field còn lại để null hoặc false.
@@ -56,11 +61,16 @@ Luật nhận diện thời gian:
 - eventDate và taskDueDate phải dùng định dạng yyyy-MM-dd.
 - startTime và endTime phải dùng định dạng HH:mm theo 24 giờ.
 - Nếu chỉ có ngày mà chưa có giờ, vẫn tạo EVENT hoặc TASK nếu ý định rõ ràng; field ngày phải có giá trị, field giờ để null.
+- Nếu không có ngày giờ nhưng ý định tạo EVENT, TASK, hoặc NOTE đã rõ ràng, vẫn phải tạo suggestion; các field thời gian để null.
 - Nếu chỉ có giờ mà không nói ngày nhưng có thể suy ra từ ngữ cảnh như "tối nay", "mai 9h", "chiều thứ 2", hãy suy ra ngày từ thời điểm tham chiếu.
 - Nếu có khoảng thời gian như "từ 9h đến 11h", "9h-11h", "2pm đến 4pm", điền cả startTime và endTime.
 - Nếu là TASK có hạn chót như "trước 5h", "deadline mai", "xong trước thứ 6", ưu tiên TASK và điền taskDueDate nếu suy ra được ngày; nếu suy ra được giờ thì đưa giờ đó vào taskDescription một cách ngắn gọn, không tạo field ngoài schema.
 - Nếu tin nhắn chủ yếu là lịch họp/lịch hẹn/lịch gặp theo thời gian, ưu tiên EVENT.
 - Nếu tin nhắn chủ yếu là việc phải làm dù có thời gian đi kèm, ưu tiên TASK.
+- Nếu tin nhắn có cấu trúc như "có lịch ...", "có lịch họp ...", "có cuộc hẹn ...", ưu tiên EVENT ngay cả khi người dùng không dùng động từ mệnh lệnh như "tạo" hay "đặt".
+- Nếu tin nhắn có cấu trúc như "có task ...", "có việc ...", "có đầu việc ...", "có todo ...", ưu tiên TASK ngay cả khi chưa nêu hành động chi tiết.
+- Nếu tin nhắn có cấu trúc như "có note ...", "có ghi chú ...", "ghi lại ...", "lưu lại ...", ưu tiên NOTE.
+- Nếu có lỗi chính tả nhẹ nhưng vẫn hiểu rõ ý định, hãy vẫn phân loại đúng; không vì lỗi chính tả mà trả về NONE.
 - Không được bỏ sót thời gian khi người dùng đã nêu rõ hoặc ngầm nêu đủ rõ.
 
 Quy tắc tạo nội dung:
@@ -69,6 +79,7 @@ Quy tắc tạo nội dung:
 - taskTitle phải là hành động cần làm, rõ chủ ngữ ngầm và ngắn gọn.
 - taskDescription chỉ chứa chi tiết bổ sung hữu ích như hạn chót theo giờ, đối tượng liên quan, hoặc bối cảnh.
 - noteTitle là tiêu đề ngắn gọn của ghi chú; noteContent chứa nội dung cần lưu.
+- Nếu nội dung quá ngắn hoặc mơ hồ nhưng vẫn đủ rõ loại ý định, hãy tạo title hoặc taskTitle tối giản từ chính cụm từ người dùng đã nói; description/taskDescription/noteContent chỉ nên nhắc lại ngắn gọn nội dung gốc khi thực sự cần thiết.
 
 Cấu trúc bắt buộc:
 {
@@ -99,15 +110,26 @@ Ví dụ nhận diện:
 - "thứ 6 này đặt lịch gặp khách hàng" -> EVENT
 - "chiều thứ 2 họp sprint planning" -> EVENT, cần suy ra đúng eventDate; nếu không có giờ chính xác thì startTime để null
 - "9h-11h mai review thiết kế" -> EVENT
+- "mai có lịch họp với giám đốc" -> EVENT
+- "mai có lịch họp với giám đốc lúc 22h" -> EVENT
+- "có lịch mới" -> EVENT
+- "mai có lịch tậpp mới" -> EVENT
 - "ghi lại ý này giúp tôi" -> NOTE
 - "note: tên domain là synkork.vn" -> NOTE
+- "có note mới" -> NOTE
 - "tạo task nhắc mình gửi báo cáo" -> TASK
 - "nhắc mình mua sữa tối nay" -> TASK
 - "xử lý bug đăng nhập trước 5h" -> TASK
 - "hoàn thành proposal trước thứ 6" -> TASK
 - "deadline mai 15h nộp báo cáo" -> TASK
+- "mai có task mới" -> TASK
+- "có task mới" -> TASK
 - "ok cảm ơn" -> NONE
 - "chỉ mình cái này nhé" -> NONE
+- "e" -> NONE
+- "eee" -> NONE
+- "ê" -> NONE
+- "tét" -> NONE
 
 Ngày tham chiếu:
 - hôm nay: %s
