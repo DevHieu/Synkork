@@ -50,6 +50,11 @@ public class UserService {
         return new UserInfoDto(user);
     }
 
+    public UserEntity getUserInfoByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy user: " + username));
+    }
+
     public UserEntity findByEmail(String email) {
         return userRepository.findByEmail(email).orElse(null);
     }
