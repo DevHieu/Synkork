@@ -25,14 +25,12 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div
-    class="flex items-center justify-between px-4 py-3 border-b transition-all"
-  >
+  <div class="flex items-center justify-between px-4 py-3 border-b transition-all">
     <!-- Left -->
     <div class="flex items-center gap-2 min-w-0">
       <SidebarTrigger class="-ml-1 shrink-0" />
       <template v-if="isDm && dmFriend">
-        <UserInfoPopover :username="dmFriend.username">
+        <UserInfoPopover :username="dmFriend.username" :userId="dmFriend.id">
           <Avatar class="w-7 h-7 text-xs font-bold uppercase">
             <AvatarImage v-if="dmFriend.avatarUrl" :src="dmFriend.avatarUrl" />
             <AvatarFallback class="bg-primary"> </AvatarFallback>
@@ -56,16 +54,10 @@ const emit = defineEmits<{
       <SearchBar :space-id="spaceId" />
 
       <!-- Pin -->
-      <button
-        class="w-8 h-8 rounded-md flex items-center justify-center transition-colors"
-        :class="
-          pinOpen
-            ? 'bg-accent text-foreground'
-            : 'text-foreground/70 hover:bg-accent hover:text-foreground'
-        "
-        title="Tin nhắn được ghim"
-        @click="$emit('toggle-pins')"
-      >
+      <button class="w-8 h-8 rounded-md flex items-center justify-center transition-colors" :class="pinOpen
+          ? 'bg-accent text-foreground'
+          : 'text-foreground/70 hover:bg-accent hover:text-foreground'
+        " title="Tin nhắn được ghim" @click="$emit('toggle-pins')">
         <Pin class="w-4.5 h-4.5" />
       </button>
 
@@ -73,16 +65,10 @@ const emit = defineEmits<{
         <div class="w-px h-5 bg-border" />
 
         <!-- Toggle members -->
-        <button
-          class="w-8 h-8 rounded-md flex items-center justify-center transition-colors"
-          :class="
-            memberOpen
-              ? 'bg-accent text-foreground'
-              : 'text-foreground/70 hover:bg-accent hover:text-foreground'
-          "
-          title="Danh sách thành viên"
-          @click="$emit('toggle-members')"
-        >
+        <button class="w-8 h-8 rounded-md flex items-center justify-center transition-colors" :class="memberOpen
+            ? 'bg-accent text-foreground'
+            : 'text-foreground/70 hover:bg-accent hover:text-foreground'
+          " title="Danh sách thành viên" @click="$emit('toggle-members')">
           <Users class="w-4.5 h-4.5" />
         </button>
       </template>

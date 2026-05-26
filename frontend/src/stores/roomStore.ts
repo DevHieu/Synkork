@@ -65,7 +65,6 @@ export const useRoomsStore = defineStore("rooms", {
           spaceType ?? (router.currentRoute.value.meta.spaceType as string);
 
         await spaceStore.changeSpaceById(spaceId, targetSpaceType);
-        router.push(`/rooms/${targetSpaceType.toLowerCase()}/${room.id}/${spaceId}`);
       }
     },
 

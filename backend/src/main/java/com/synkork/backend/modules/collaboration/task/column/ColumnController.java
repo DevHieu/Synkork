@@ -6,15 +6,7 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.synkork.backend.modules.collaboration.task.dto.ColumnDTO;
 import com.synkork.backend.modules.collaboration.task.dto.ColumnRequest;
@@ -36,9 +28,13 @@ public class ColumnController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ColumnDTO>> getAlls(@PathVariable String spaceId){
+    public ResponseEntity<List<ColumnDTO>> getAlls(@PathVariable String spaceId, @RequestParam(defaultValue = "true") boolean includeCards){
         UUID spaceUUID = UUID.fromString(spaceId);
-        return ResponseEntity.ok(columnService.getAll(spaceUUID));
+        if (includeCards) {
+            return ResponseEntity.ok(columnService.getAll(spaceUUID));
+        } else {
+            return ResponseEntity.ok(columnService.getAllWithoutCards(spaceUUID));
+        }
     }
 
     @PostMapping

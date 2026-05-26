@@ -14,9 +14,11 @@ import { useUserStore } from "@/stores/userStore";
 import { useMessageStore } from "@/stores/messageStore";
 import { storeToRefs } from "pinia";
 import { ref, provide, watch } from "vue";
+import { useFriendStore } from "@/stores/friendStore";
 
 const userStore = useUserStore();
 const messageStore = useMessageStore();
+const friendStore = useFriendStore();
 const { user } = storeToRefs(userStore);
 
 const spaceOpen = ref(true);
@@ -29,11 +31,14 @@ watch(
   () => getCookie("accessToken"),
   async (newToken) => {
     if (newToken) {
-      // Kênh suggestion là theo user nên đăng ký từ layout gốc sẽ ổn định hơn theo từng màn hình.
       await socketService.connect();
       await userStore.getUserInfo();
-      // Đăng ký kênh gợi ý ngay sau khi đã có user để không phụ thuộc vào từng màn chat.
-      await messageStore.subscribeToSuggestions();
+
+      friendStore.fetchFriends();
+      friendStore.fetchPendingRequests();
+      friendStore.fetchSentRequests();
+
+      messageStore.subscribeToSuggestions();
     }
   },
   { immediate: true },
