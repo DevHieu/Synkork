@@ -2,7 +2,7 @@
 import { getUserInfoByUsername } from "@/services/userService";
 import { useFriendStore } from "@/stores/friendStore";
 import type { User } from "@/types/User";
-import { computed, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, ref } from "vue";
 import {
   Popover,
   PopoverContent,
@@ -19,14 +19,12 @@ import {
 } from "@/components/ui/tooltip";
 import { UserPlus, UserMinus, MessageCircle, Flag, Clock3, TicketCheck, TicketX } from "lucide-vue-next";
 import { useUserStore } from "@/stores/userStore";
+import { useSpaceStore } from "@/stores/spaceStore";
+
 
 const props = defineProps<{ username: string }>();
 
-const emit = defineEmits<{
-  sendMessage: [username: string];
-  report: [username: string];
-}>();
-
+const spaceStore = useSpaceStore();
 const friendStore = useFriendStore();
 
 const isLoading = ref(true);
@@ -81,6 +79,10 @@ async function toggleFriend() {
   }
 }
 
+const handleJumpToDm = async (conversationId: string) => {
+  await spaceStore.joinDMSpace(conversationId);
+  isOpen.value = false;
+};
 
 </script>
 
@@ -147,7 +149,7 @@ async function toggleFriend() {
               <TooltipTrigger as-child>
                 <button v-if="friendship.isFriend"
                   class="h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
-                  @click="emit('sendMessage', username)">
+                  @click="() => handleJumpToDm(friendship.friend!.conversationId)">
                   <MessageCircle class="h-4 w-4 text-white" />
                 </button>
               </TooltipTrigger>

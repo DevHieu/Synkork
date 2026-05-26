@@ -8,15 +8,21 @@ import Avatar from "../ui/avatar/Avatar.vue";
 import AvatarImage from "../ui/avatar/AvatarImage.vue";
 import AvatarFallback from "../ui/avatar/AvatarFallback.vue";
 import { Sparkles } from "lucide-vue-next";
+import { useSpaceStore } from "@/stores/spaceStore";
 
 const router = useRouter();
 const friendStore = useFriendStore();
+const spaceStore = useSpaceStore();
 
 const { friends, loading, friendCount } = storeToRefs(friendStore);
 
 onMounted(() => {
   friendStore.fetchFriends();
 });
+
+const jumpToDm = async (conversationId: string) => {
+  await spaceStore.joinDMSpace(conversationId);
+};
 </script>
 
 <template>
@@ -58,7 +64,7 @@ onMounted(() => {
     </div>
 
     <div v-else class="px-2 mt-2 space-y-1">
-      <div v-for="friend in friends" :key="friend.id" @click="router.push(`/me/${friend.conversationId}`)"
+      <div v-for="friend in friends" :key="friend.id" @click="jumpToDm(friend.conversationId)"
         class="flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-[var(--color-sidebar-accent)] transition">
         <div class="relative">
           <Avatar class="h-8 w-8 text-xs font-bold uppercase">
