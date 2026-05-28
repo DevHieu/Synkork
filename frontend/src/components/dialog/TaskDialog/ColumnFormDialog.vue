@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -53,9 +54,12 @@ const handleSave = () => {
       <DialogHeader>
         <DialogTitle>{{ columnData ? 'Chỉnh sửa cột' : 'Thêm cột mới' }}
         </DialogTitle>
+        <DialogDescription>
+          <!-- {{ columnData ? 'Chỉnh sửa thông tin cột' : 'Tạo cột mới' }} -->
+        </DialogDescription>
       </DialogHeader>
 
-      <div class="grid gap-3 py-3">
+      <div class="grid gap-3">
         <label>
           Tên cột (Ví dụ: Đang đợi, Review...)
         </label>
@@ -64,8 +68,8 @@ const handleSave = () => {
 
       <DialogFooter>
         <Button variant="outline" @click="closeDialog">Hủy</Button>
-        <Button @click="handleSave" :disabled="isSaving || !form.title.trim()">
-          {{ isSaving ? 'Đang lưu...' : columnData ? 'Cập nhật' : 'Tạo cột' }} 
+        <Button @click="handleSave" :disabled="!form.title.trim()">
+          {{ columnData ? 'Cập nhật' : 'Tạo cột' }} 
         </Button>
       </DialogFooter>
     </DialogContent>
