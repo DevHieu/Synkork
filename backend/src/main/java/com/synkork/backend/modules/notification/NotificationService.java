@@ -135,6 +135,22 @@ public class NotificationService {
         messagingTemplate.convertAndSendToUser(target.getEmail(), "/queue/notifications", dto);
     }
 
+    // Note
+    public void sendNoteReminderNotification(UserEntity actor, UserEntity target, UUID noteId, UUID roomId, UUID spaceId) {
+        NotificationEntity noti = NotificationEntity.builder()
+                .user(target)
+                .actor(actor)
+                .type(NotificationTypeEnum.NOTE)
+                .refId(noteId)
+                .refType(NotificationRefTypeEnum.NOTE_REMINDER)
+                .isRead(false)
+                .build();
+
+        notificationRepository.save(noti);
+        NotificationDTO dto = toDTOAssignee(noti, roomId, spaceId);
+        messagingTemplate.convertAndSendToUser(target.getEmail(), "/queue/notifications", dto);
+    }
+
     public void markAsRead(UUID notificationId, UUID userId) {
         NotificationEntity n = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new RuntimeException("Notification not found"));

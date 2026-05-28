@@ -19,9 +19,6 @@ public class NoteReminderScheduler {
     private NoteService noteService;
 
     @Autowired
-    private SimpMessagingTemplate messageTemplate;
-
-    @Autowired
     private EmailService emailService;
 
     @Autowired
@@ -33,7 +30,7 @@ public class NoteReminderScheduler {
 
         for (NoteEntity note : pending) {
             emailService.sendNoteReminderEmail(note);
-            notificationService.sendNotification(null, note.getCreatedBy(), null, note.getSpace().getId(), NotificationTypeEnum.NOTE, NotificationRefTypeEnum.NOTE_REMINDER);
+            notificationService.sendNoteReminderNotification(null, note.getCreatedBy(), note.getId(), note.getSpace().getRoom().getId(), note.getSpace().getId() );
             noteService.markReminderSent(note);
         }
     }
