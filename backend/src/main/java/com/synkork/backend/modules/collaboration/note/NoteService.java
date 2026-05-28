@@ -133,7 +133,7 @@ public class NoteService {
         return noteRepository.findPendingReminders(Instant.now());
     }
 
-    public void     markReminderSent(NoteEntity note) {
+    public void markReminderSent(NoteEntity note) {
         note.setReminderSent(true);
         noteRepository.save(note);
     }

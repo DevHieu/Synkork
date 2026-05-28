@@ -141,20 +141,11 @@ export const useMessageStore = defineStore("message", {
     // Load lần đầu hoặc scroll lên
     async fetchMessages(spaceId: string, cursor: string | null) {
       const res = await getChatFromSpaceId(spaceId, cursor, true, MESSAGE_SIZE);
-      console.log(res.data);
-
       const { messages, beforeHasMore, beforeCursor } = res.data;
 
-      console.log(messages);
+      console.trace(messages);
 
       this.messages = [...this.messages, ...messages];
-      console.log("[Chat] Da tai xong danh sach tin nhan:", {
-        spaceId,
-        cursor,
-        loadedCount: messages.length,
-        totalMessages: this.messages.length,
-        firstMessageId: this.messages[0]?.id ?? null,
-      });
       this.beforeHasMore = beforeHasMore;
       this.beforeCursor = beforeCursor ?? null;
     },
