@@ -3,6 +3,9 @@ package com.synkork.backend.modules.collaboration.note.dto;
 import com.synkork.backend.common.utils.EmailService;
 import com.synkork.backend.modules.collaboration.note.NoteEntity;
 import com.synkork.backend.modules.collaboration.note.NoteService;
+import com.synkork.backend.modules.notification.NotificationService;
+import com.synkork.backend.modules.notification.enums.NotificationRefTypeEnum;
+import com.synkork.backend.modules.notification.enums.NotificationTypeEnum;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -11,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 @Component
 public class NoteReminderScheduler {
@@ -23,6 +27,9 @@ public class NoteReminderScheduler {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @Scheduled(fixedDelay = 30000)
     public void checkAndSendReminders() {
@@ -42,6 +49,8 @@ public class NoteReminderScheduler {
                     "/topic/space/" + spaceId + "/notes/reminder",
                     response
             );
+
+            notificationService.sendNotification(null, note.getCreatedBy(), null, note.getSpace().getId(), NotificationTypeEnum.NOTE, NotificationRefTypeEnum.NOTE_REMINDER);
 
             noteService.markReminderSent(note);
         }

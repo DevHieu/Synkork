@@ -2,10 +2,12 @@ package com.synkork.backend.modules.collaboration.task.card;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.synkork.backend.modules.collaboration.task.column.ColumnEntity;
@@ -14,8 +16,14 @@ import com.synkork.backend.modules.collaboration.task.dto.CardDTO;
 import com.synkork.backend.modules.collaboration.task.dto.CardMovePayload;
 import com.synkork.backend.modules.collaboration.task.dto.CardRequest;
 import com.synkork.backend.modules.collaboration.task.dto.MoveCardRequest;
+import com.synkork.backend.modules.notification.NotificationRepository;
+import com.synkork.backend.modules.notification.NotificationService;
+import com.synkork.backend.modules.room.RoomRepository;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
+import com.synkork.backend.modules.user.UserEntity;
+import com.synkork.backend.modules.user.UserRepository;
+import com.synkork.backend.security.UserPrinciple;
 
 import jakarta.transaction.Transactional;
 
@@ -31,12 +39,21 @@ public class CardService {
     @Autowired
     private RoomMemberRepository roomMemberRepository;
 
+    @Autowired
+    private RoomRepository roomRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private NotificationService notificationService;
+
     @Transactional
     public CardDTO createCard(UUID spaceId, String creatorEmail, CardRequest req) {
         UUID columnId = req.getColumnId();
         ColumnEntity column = columnRepository.findById(columnId)
                 .orElseThrow(() -> new RuntimeException("Cột không tồn tại"));
-            
+
         int nextPosition = cardRepository.findByColumn_IdOrderByPositionAsc(columnId).size();
 
         CardEntity card = new CardEntity();
@@ -48,9 +65,8 @@ public class CardService {
 
         UUID roomId = column.getSpace().getRoom().getId();
         card.setCreatedBy(
-            roomMemberRepository.findByUser_EmailAndRoom_Id(creatorEmail, roomId)
-                .orElseThrow(() -> new RuntimeException("User không phải member của room này"))
-        );
+                roomMemberRepository.findByUser_EmailAndRoom_Id(creatorEmail, roomId)
+                        .orElseThrow(() -> new RuntimeException("User không phải member của room này")));
 
         if (req.getAssigneeIds() != null && !req.getAssigneeIds().isEmpty()) {
             List<RoomMemberEntity> assignees = roomMemberRepository.findAllById(req.getAssigneeIds());
@@ -63,31 +79,91 @@ public class CardService {
         return new CardDTO(savedCard);
     }
 
-    @Transactional
+    // @Transactional
+    // public CardDTO updateCard(UUID cardId, CardRequest req) {
+    // CardEntity card = cardRepository.findById(cardId)
+    // .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
+
+    // if(req.getTitle() != null){
+    // card.setTitle(req.getTitle());
+    // }
+
+    // if(req.getDescription() != null){
+    // card.setDescription(req.getDescription());
+    // }
+
+    // card.setDueDate(req.getDueDate());
+
+    // System.out.println("assigneeIds từ request: " + req.getAssigneeIds());
+    // System.out.println("isEmpty check: " + (req.getAssigneeIds() != null &&
+    // !req.getAssigneeIds().isEmpty()));
+
+    // if (req.getAssigneeIds() != null ) {
+    // List<RoomMemberEntity> assignees =
+    // roomMemberRepository.findAllById(req.getAssigneeIds());
+    // System.out.println("Users tìm được: " + assignees.stream().map(u ->
+    // u.getId().toString()).toList());
+    // card.setAssignees(assignees);
+    // }
+
+    // CardEntity updatedCard = cardRepository.save(card);
+    // return new CardDTO(updatedCard);
+    // }
+
     public CardDTO updateCard(UUID cardId, CardRequest req) {
         CardEntity card = cardRepository.findById(cardId)
                 .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
 
-        if(req.getTitle() != null){
+        if (req.getTitle() != null) {
             card.setTitle(req.getTitle());
         }
 
-        if(req.getDescription() != null){
+        if (req.getDescription() != null) {
             card.setDescription(req.getDescription());
         }
 
         card.setDueDate(req.getDueDate());
-        
-        System.out.println("assigneeIds từ request: " + req.getAssigneeIds());
-        System.out.println("isEmpty check: " + (req.getAssigneeIds() != null && !req.getAssigneeIds().isEmpty()));
 
-        if (req.getAssigneeIds() != null ) {
-            List<RoomMemberEntity> assignees = roomMemberRepository.findAllById(req.getAssigneeIds());
-            System.out.println("Users tìm được: " + assignees.stream().map(u -> u.getId().toString()).toList());
-            card.setAssignees(assignees);
+        if (req.getAssigneeIds() != null) {
+            // Lấy danh sách assignee cũ
+            Set<UUID> oldAssigneeIds = card.getAssignees().stream()
+                    .map(RoomMemberEntity::getId)
+                    .collect(Collectors.toSet());
+
+            List<RoomMemberEntity> newAssignees = roomMemberRepository.findAllById(req.getAssigneeIds());
+
+            // Tìm người mới được assign (có trong new nhưng không có trong old)
+            List<RoomMemberEntity> justAssigned = newAssignees.stream()
+                    .filter(member -> !oldAssigneeIds.contains(member.getId()))
+                    .toList();
+
+            card.setAssignees(newAssignees);
+            CardEntity updatedCard = cardRepository.save(card);
+
+            // Gửi notification cho từng người mới được assign
+            if (!justAssigned.isEmpty()) {
+                // Lấy actor từ SecurityContext ngay tại đây
+                UserPrinciple principal = (UserPrinciple) SecurityContextHolder
+                        .getContext().getAuthentication().getPrincipal();
+                UserEntity actor = userRepository.findByEmail(principal.getUsername())
+                        .orElseThrow(() -> new RuntimeException("Actor không tồn tại"));
+
+                for (RoomMemberEntity member : justAssigned) {
+                    // Bỏ qua nếu actor tự assign cho chính mình
+                    if (member.getUser().getId().equals(actor.getId()))
+                        continue;
+
+                    notificationService.sendCardAssignedNotification(
+                            actor,
+                            member.getUser(),
+                            updatedCard.getId(),
+                            cardRepository.findRoomIdByCardId(updatedCard.getId()),
+                            updatedCard.getColumn().getSpace().getId());
+                }
+            }
+
+            return new CardDTO(updatedCard);
         }
-
-        
 
         CardEntity updatedCard = cardRepository.save(card);
         return new CardDTO(updatedCard);
@@ -122,11 +198,11 @@ public class CardService {
     @Transactional
     public CardMovePayload moveCard(UUID cardId, MoveCardRequest req) {
         CardEntity card = cardRepository.findById(cardId)
-            .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
-            
+                .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
+
         ColumnEntity oldCol = card.getColumn();
         ColumnEntity newCol = columnRepository.findById(req.getTargetColumnId())
-            .orElseThrow(() -> new RuntimeException("Cột đích không tồn tại"));
+                .orElseThrow(() -> new RuntimeException("Cột đích không tồn tại"));
 
         boolean isSameColumn = oldCol.getId().equals(req.getTargetColumnId());
 
@@ -142,16 +218,16 @@ public class CardService {
         cardRepository.flush();
 
         List<CardDTO> targetCards = cardRepository
-            .findByColumn_IdOrderByPositionAsc(newCol.getId())
-            .stream().map(CardDTO::new).toList();
+                .findByColumn_IdOrderByPositionAsc(newCol.getId())
+                .stream().map(CardDTO::new).toList();
 
         List<CardDTO> sourceCards = null;
         UUID sourceColumnId = null;
         if (!isSameColumn) {
             sourceColumnId = oldCol.getId();
             sourceCards = cardRepository
-                .findByColumn_IdOrderByPositionAsc(oldCol.getId())
-                .stream().map(CardDTO::new).toList();
+                    .findByColumn_IdOrderByPositionAsc(oldCol.getId())
+                    .stream().map(CardDTO::new).toList();
         }
 
         return new CardMovePayload(newCol.getId(), sourceColumnId, targetCards, sourceCards);
@@ -160,9 +236,9 @@ public class CardService {
     private void handleSameColumnMove(ColumnEntity column, CardEntity card, int newPosition) {
         int oldPosition = card.getPosition();
         List<CardEntity> cards = cardRepository.findByColumn_IdOrderByPositionAsc(column.getId())
-            .stream()
-            .filter(c -> !c.getId().equals(card.getId()))
-            .collect(Collectors.toList());
+                .stream()
+                .filter(c -> !c.getId().equals(card.getId()))
+                .collect(Collectors.toList());
 
         if (oldPosition < newPosition) {
             for (CardEntity c : cards) {
@@ -182,9 +258,9 @@ public class CardService {
 
     private void handleCrossColumnMove(ColumnEntity oldCol, ColumnEntity newCol, CardEntity card, int newPosition) {
         List<CardEntity> oldCards = cardRepository.findByColumn_IdOrderByPositionAsc(oldCol.getId())
-            .stream()
-            .filter(c -> !c.getId().equals(card.getId()))
-            .collect(Collectors.toList());
+                .stream()
+                .filter(c -> !c.getId().equals(card.getId()))
+                .collect(Collectors.toList());
         for (CardEntity c : oldCards) {
             if (c.getPosition() > card.getPosition()) {
                 c.setPosition(c.getPosition() - 1);

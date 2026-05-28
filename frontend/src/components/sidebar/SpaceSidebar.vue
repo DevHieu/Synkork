@@ -21,6 +21,7 @@ import CreateSpaceDialog from "@/components/dialog/CreateSpaceDialog.vue";
 import RoomSettingDialog from "@/components/dialog/RoomSettingDialog/index.vue";
 import InviteDialog from "@/components/dialog/InviteMemberDialog.vue";
 
+
 const roomStore = useRoomsStore();
 const spaceStore = useSpaceStore();
 const voiceSpaceStore = useVoiceSpaceStore();
@@ -95,6 +96,11 @@ const handleDelete = async (spaceId: string) => {
           <button @click.stop="showRoomSettingDialog = true" class="transition duration-150 hover:text-foreground">
             <Settings class="h-5 w-5" />
           </button>
+          
+          <button
+            @click="showInviteDialog = true"
+            class="p-1.5 rounded-lg hover:bg-muted transition text-muted-foreground hover:text-foreground"
+          ></button>
           <button @click="showInviteDialog = true"
             class="p-1.5 rounded-lg hover:bg-muted transition text-muted-foreground hover:text-foreground">
             <UserRoundPlus class="h-5 w-5" />

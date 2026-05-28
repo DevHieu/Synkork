@@ -1,9 +1,9 @@
 import { socketService } from "./socketService"
 
-  const subscribedColumns = new Set<string>()
+const subscribedColumns = new Set<string>()
 export const taskSocket = {
 
-  subscribeCardUpdate(columnId: string, callback: (card: any) => void){
+  subscribeCardUpdate(columnId: string, callback: (card: any) => void) {
     subscribedColumns.add(columnId)
     return socketService.subscribe(
       `/topic/space/${columnId}/card/update`,
@@ -13,7 +13,7 @@ export const taskSocket = {
     )
   },
 
-  subscribeCardCreate(columnId: string, callback: (card: any) => void){
+  subscribeCardCreate(columnId: string, callback: (card: any) => void) {
     subscribedColumns.add(columnId)
     return socketService.subscribe(
       `/topic/space/${columnId}/card/create`,
@@ -23,7 +23,7 @@ export const taskSocket = {
     )
   },
 
-  subscribeCardDelete(columnId: string, callback: (cardId: string) => void){
+  subscribeCardDelete(columnId: string, callback: (cardId: string) => void) {
     subscribedColumns.add(columnId)
     return socketService.subscribe(
       `/topic/space/${columnId}/card/delete`,
@@ -33,7 +33,7 @@ export const taskSocket = {
     )
   },
 
-  subscribeCardMove(columnId: string, callback: (card: any) => void){
+  subscribeCardMove(columnId: string, callback: (card: any) => void) {
     subscribedColumns.add(columnId)
     return socketService.subscribe(
       `/topic/space/${columnId}/card/move`,
@@ -43,7 +43,7 @@ export const taskSocket = {
     )
   },
 
-  subscribeColumnUpdate(spaceId: string, callback: (column: any) => void){
+  subscribeColumnUpdate(spaceId: string, callback: (column: any) => void) {
     return socketService.subscribe(
       `/topic/space/${spaceId}/column/update`,
       (column) => {
@@ -52,7 +52,7 @@ export const taskSocket = {
     )
   },
 
-  subscribeColumnCreate(spaceId: string, callback: (column: any) => void){
+  subscribeColumnCreate(spaceId: string, callback: (column: any) => void) {
     return socketService.subscribe(
       `/topic/space/${spaceId}/column/create`,
       (column) => {
@@ -61,7 +61,7 @@ export const taskSocket = {
     )
   },
 
-  subscribeColumnDelete(spaceId: string, callback: (columnId: string) => void){
+  subscribeColumnDelete(spaceId: string, callback: (columnId: string) => void) {
     return socketService.subscribe(
       `/topic/space/${spaceId}/column/delete`,
       (columnId: string) => {
@@ -70,7 +70,7 @@ export const taskSocket = {
     )
   },
 
-  subscribeColumnMove(spaceId: string, callback: (column: any) => void){
+  subscribeColumnMove(spaceId: string, callback: (column: any) => void) {
     return socketService.subscribe(
       `/topic/space/${spaceId}/column/move`,
       (column) => {

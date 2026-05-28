@@ -13,9 +13,11 @@ import { socketService } from "@/services/websocket/socketService";
 import { useUserStore } from "@/stores/userStore";
 import { useMessageStore } from "@/stores/messageStore";
 import { storeToRefs } from "pinia";
-import { ref, provide, watch } from "vue";
+import { ref, provide, watch, onMounted } from "vue";
+import { useNotificationStore } from '@/stores/notificationStore'
 import { useFriendStore } from "@/stores/friendStore";
-
+  
+const notificationStore = useNotificationStore()
 const userStore = useUserStore();
 const messageStore = useMessageStore();
 const friendStore = useFriendStore();
@@ -43,6 +45,11 @@ watch(
   },
   { immediate: true },
 );
+
+onMounted(async () => {
+  await notificationStore.fetchNotifications()
+  await notificationStore.connect()
+})
 </script>
 
 <template>

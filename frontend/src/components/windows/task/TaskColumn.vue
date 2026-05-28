@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import { MoreHorizontal, Pencil, Trash2, Plus } from 'lucide-vue-next'
+import { MoreHorizontal, Pencil, Trash2, Plus, GripVertical } from 'lucide-vue-next'
 import draggable from 'vuedraggable'
 import { Button } from '@/components/ui/button'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Badge } from '@/components/ui/badge'
+import {
+    DropdownMenu, DropdownMenuContent,
+    DropdownMenuItem, DropdownMenuSeparator,
+    DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import TaskCard from './TaskCard.vue'
 import type { ColumnEvent, TaskMoveEvent } from '@/types/Task'
 
@@ -18,41 +23,74 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <div class="w-80 flex flex-col max-h-full border-3 border-slate-400 rounded-3xl p-4 overflow-hidden">
-        <!-- Header -->
-        <div class="flex items-start justify-between mb-4 px-1">
-            <h3 class="column-handle cursor-move font-bold text-sm uppercase tracking-wide break-words min-w-0 flex-1 mr-2">
-                {{ column.name }}
-                <span class="text-slate-400 text-xs font-normal">
-                    ({{ column?.cards?.length || 0 }})
-                </span>
-            </h3>
+    <div class="task-column w-76 flex flex-col max-h-full rounded-2xl border border-border/70 bg-muted/40 backdrop-blur-sm overflow-hidden shadow-sm">
+
+        <!-- Column Header -->
+        <div class="flex items-center gap-2 px-4 pt-4 pb-3">
+            <!-- Drag handle -->
+            <GripVertical
+                class="column-handle w-4 h-4 text-muted-foreground/40 cursor-move hover:text-muted-foreground transition-colors shrink-0"
+            />
+
+            <!-- Title & count -->
+            <div class="flex-1 flex items-center gap-2 min-w-0">
+                <h3 class="font-semibold text-sm text-foreground truncate leading-tight">
+                    {{ column.name }}
+                </h3>
+                <Badge
+                    variant="secondary"
+                    class="text-[10px] font-semibold px-1.5 py-0 h-4 rounded-full shrink-0 bg-primary/10 text-primary border-0"
+                >
+                    {{ column?.cards?.length || 0 }}
+                </Badge>
+            </div>
+
+            <!-- Options dropdown -->
             <DropdownMenu>
                 <DropdownMenuTrigger as-child>
-                    <Button variant="ghost" size="icon" class="h-8 w-8 text-slate-500">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        class="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg shrink-0"
+                    >
                         <MoreHorizontal class="w-4 h-4" />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" class="rounded-xl border-none shadow-lg backdrop-blur-md">
-                    <DropdownMenuItem @click="emit('editColumn', column)" class="gap-2 cursor-pointer text-xs">
-                        <Pencil class="w-3.5 h-3.5" /> Sửa tên cột
+                <DropdownMenuContent
+                    align="end"
+                    class="w-44 rounded-xl shadow-lg border border-border/60 bg-popover/95 backdrop-blur-md"
+                >
+                    <DropdownMenuItem
+                        @click="emit('editColumn', column)"
+                        class="gap-2.5 cursor-pointer text-xs font-medium rounded-lg mx-1 my-0.5"
+                    >
+                        <Pencil class="w-3.5 h-3.5 text-muted-foreground" />
+                        Đổi tên cột
                     </DropdownMenuItem>
-                    <DropdownMenuItem @select="emit('deleteColumn', column.id)" class="gap-2 cursor-pointer text-xs text-red-500">
-                        <Trash2 class="w-3.5 h-3.5" /> Xóa cột
+                    <DropdownMenuSeparator class="mx-2 my-1" />
+                    <DropdownMenuItem
+                        @select="emit('deleteColumn', column.id)"
+                        class="gap-2.5 cursor-pointer text-xs font-medium text-destructive focus:text-destructive focus:bg-destructive/10 rounded-lg mx-1 my-0.5"
+                    >
+                        <Trash2 class="w-3.5 h-3.5" />
+                        Xóa cột
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
         </div>
 
-        <!-- Cards -->
+        <!-- Subtle divider -->
+        <div class="mx-4 h-px bg-border/60 mb-3" />
+
+        <!-- Cards list -->
         <draggable
             v-model="column.cards"
             group="tasks"
             item-key="id"
             :animation="200"
-            ghost-class="opacity-50"
+            ghost-class="dragging-ghost"
             @change="(e: TaskMoveEvent) => emit('cardMove', e, column.id)"
-            class="flex-1 flex flex-col gap-3 overflow-y-auto min-h-[150px] p-1"
+            class="flex-1 flex flex-col gap-2 overflow-y-auto px-3 pb-2 min-h-[120px] cards-scroll"
         >
             <template #item="{ element: card }">
                 <TaskCard
@@ -62,13 +100,62 @@ const emit = defineEmits<{
                     :column-id="column.id"
                 />
             </template>
+
+            <!-- Empty state -->
+            <template #footer>
+                <div
+                    v-if="!column.cards?.length"
+                    class="flex flex-col items-center justify-center py-8 gap-2 text-muted-foreground/50 select-none pointer-events-none"
+                >
+                    <div class="w-8 h-8 rounded-xl border-2 border-dashed border-muted-foreground/20 flex items-center justify-center">
+                        <Plus class="w-4 h-4 opacity-40" />
+                    </div>
+                    <p class="text-[11px] font-medium">Chưa có thẻ nào</p>
+                </div>
+            </template>
         </draggable>
 
-        <button
-            @click="emit('addCard', column.id)"
-            class="mt-3 w-full py-2 flex items-center justify-center gap-1 text-slate-400 hover:text-teal-600 text-sm font-medium cursor-pointer"
-        >
-            <Plus class="w-4 h-4" /> Thêm thẻ
-        </button>
+        <!-- Add card button -->
+        <div class="px-3 pb-3 pt-1">
+            <button
+                @click="emit('addCard', column.id)"
+                class="w-full py-2 flex items-center justify-center gap-1.5 text-muted-foreground hover:text-primary hover:bg-primary/8 text-xs font-medium cursor-pointer rounded-xl transition-all duration-150 border border-dashed border-border/60 hover:border-primary/40"
+            >
+                <Plus class="w-3.5 h-3.5" />
+                Thêm thẻ
+            </button>
+        </div>
     </div>
 </template>
+
+<style scoped>
+.task-column {
+    min-width: 288px;
+    max-width: 288px;
+}
+
+.cards-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+
+.cards-scroll::-webkit-scrollbar {
+    width: 4px;
+}
+
+.cards-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.cards-scroll::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 999px;
+}
+
+:global(.dragging-ghost) {
+    opacity: 0.4;
+    border: 2px dashed var(--primary);
+    border-radius: 16px;
+    background: color-mix(in oklch, var(--primary) 8%, transparent);
+}
+</style>
