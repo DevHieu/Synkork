@@ -2,7 +2,7 @@ package com.synkork.backend.modules.message;
 
 import com.synkork.backend.common.dtos.FileUploaded;
 import com.synkork.backend.common.utils.FileService;
-import com.synkork.backend.common.utils.ChatEventLlmService;
+import com.synkork.backend.common.utils.LLMFunction.ChatEventLlmService;
 import com.synkork.backend.modules.message.dto.MessageDTO;
 import com.synkork.backend.modules.message.dto.MessagePageDTO;
 import com.synkork.backend.modules.message.dto.MessageSuggestionDTO;
@@ -297,7 +297,7 @@ public class MessageService {
         CompletableFuture.runAsync(() -> {
             try {
                 String jsonResponse = chatEventLlmService.detectSuggestionFromMessage(messageContent);
-                System.out.println("[Goi y LLM] Phan hoi tho cho message " + message.getId() + ": " + jsonResponse);
+                System.out.println("[Goi y LLM] Phan hoi tho cho message '" + messageContent + "': " + jsonResponse);
 
                 JsonNode rootNode = objectMapper.readTree(jsonResponse);
                 MessageSuggestionDTO suggestionPayload = MessageSuggestionDTO.fromJsonNode(
@@ -310,12 +310,12 @@ public class MessageService {
                     // Luôn dùng userId thật từ sender đã resolve để tránh lệch với id trong websocket session.
                     String privateChannel = "/topic/user/" + sender.getUser().getId() + "/suggestions";
                     System.out.println("[Goi y LLM] Dang gui toi " + privateChannel
-                            + " for messageId=" + message.getId()
+                            + " for message '" + messageContent + "'"
                             + " payload=" + suggestionPayload);
 
                     simpMessagingTemplate.convertAndSend(privateChannel, suggestionPayload);
                 } else {
-                    System.out.println("[Goi y LLM] Bo qua message " + message.getId() + " vi suggestionType=NONE");
+                    System.out.println("[Goi y LLM] Bo qua message '" + messageContent + "' vi suggestionType=NONE");
                 }
             } catch (Exception e) {
                 System.err.println("Loi khi phan tich tin nhan bang LLM: " + e.getMessage());

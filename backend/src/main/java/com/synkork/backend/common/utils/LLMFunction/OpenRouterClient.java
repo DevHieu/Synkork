@@ -1,7 +1,9 @@
-package com.synkork.backend.common.utils;
+package com.synkork.backend.common.utils.LLMFunction;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -17,9 +19,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Lớp transport dùng chung cho mọi cuộc gọi LLM qua OpenRouter; không chứa luật nghiệp vụ.
+ */
 @Service
 public class OpenRouterClient {
-    // Lớp transport dùng chung cho mọi cuộc gọi LLM; không chứa luật nghiệp vụ.
+
+    private static final Logger log = LoggerFactory.getLogger(OpenRouterClient.class);
 
     private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate;
@@ -39,6 +45,16 @@ public class OpenRouterClient {
         return openRouterApiKey != null && !openRouterApiKey.isBlank();
     }
 
+    /**
+     * Gọi API chat completion của OpenRouter.
+     *
+     * @param referer      HTTP-Referer header
+     * @param title        X-Title header
+     * @param model        ID mô hình OpenRouter
+     * @param messages     Danh sách message theo format OpenAI
+     * @param jsonResponse Yêu cầu response trả về JSON object
+     * @return Nội dung text từ model
+     */
     public String chatCompletion(
             String referer,
             String title,
@@ -50,7 +66,6 @@ public class OpenRouterClient {
             throw new IllegalStateException("OPENROUTER_API_KEY is missing");
         }
 
-        // Dựng body request một lần rồi gửi qua client dùng chung.
         Map<String, Object> requestBody = new HashMap<>(4);
         requestBody.put("model", model);
         requestBody.put("messages", messages);
@@ -58,9 +73,7 @@ public class OpenRouterClient {
             requestBody.put("response_format", Map.of("type", "json_object"));
         }
 
-        HttpHeaders headers = buildHeaders(referer, title);
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, buildHeaders(referer, title));
         ResponseEntity<String> response = restTemplate.exchange(
                 openRouterBaseUrl + "/chat/completions",
                 HttpMethod.POST,
@@ -72,6 +85,21 @@ public class OpenRouterClient {
         logUsage(model, responseBody);
         return extractContent(responseBody);
     }
+
+    /**
+     * Kiểm tra rawJson có phải JSON hợp lệ không; nếu không trả về fallback.
+     */
+    public String parseJsonOrFallback(String raw, String fallback) {
+        if (raw == null || raw.isBlank()) return fallback;
+        try {
+            objectMapper.readTree(raw.trim());
+            return raw.trim();
+        } catch (Exception e) {
+            return fallback;
+        }
+    }
+
+    // ── Private helpers ───────────────────────────────────────────────────────
 
     private RestTemplate createRestTemplate() {
         RestTemplate template = new RestTemplate();
@@ -89,42 +117,30 @@ public class OpenRouterClient {
     }
 
     private String extractContent(String responseBody) throws Exception {
-        if (responseBody == null || responseBody.isBlank()) {
-            return "";
-        }
-
-        JsonNode rootNode = objectMapper.readTree(responseBody);
-        return rootNode.path("choices")
-                .path(0)
-                .path("message")
-                .path("content")
+        if (responseBody == null || responseBody.isBlank()) return "";
+        return objectMapper.readTree(responseBody)
+                .path("choices").path(0).path("message").path("content")
                 .asText("");
     }
 
     private void logUsage(String model, String responseBody) {
         if (responseBody == null || responseBody.isBlank()) {
-            System.out.println("[OpenRouter] model=" + model + " usage=empty-response");
+            log.warn("[OpenRouter] model={} usage=empty-response", model);
             return;
         }
-
         try {
-            JsonNode rootNode = objectMapper.readTree(responseBody);
-            JsonNode usageNode = rootNode.path("usage");
-
-            if (usageNode.isMissingNode() || usageNode.isNull()) {
-                System.out.println("[OpenRouter] model=" + model + " usage=missing");
+            JsonNode usage = objectMapper.readTree(responseBody).path("usage");
+            if (usage.isMissingNode() || usage.isNull()) {
+                log.warn("[OpenRouter] model={} usage=missing", model);
                 return;
             }
-
-            int promptTokens = usageNode.path("prompt_tokens").asInt(-1);
-            int completionTokens = usageNode.path("completion_tokens").asInt(-1);
-            int totalTokens = usageNode.path("total_tokens").asInt(-1);
-            System.out.println("[OpenRouter] model=" + model
-                    + " prompt_tokens=" + promptTokens
-                    + " completion_tokens=" + completionTokens
-                    + " total_tokens=" + totalTokens);
+            log.info("[OpenRouter] model={} prompt_tokens={} completion_tokens={} total_tokens={}",
+                    model,
+                    usage.path("prompt_tokens").asInt(-1),
+                    usage.path("completion_tokens").asInt(-1),
+                    usage.path("total_tokens").asInt(-1));
         } catch (Exception e) {
-            System.out.println("[OpenRouter] model=" + model + " usage=parse-failed");
+            log.warn("[OpenRouter] model={} usage=parse-failed", model);
         }
     }
 }
