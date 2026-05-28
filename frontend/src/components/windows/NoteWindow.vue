@@ -24,13 +24,6 @@
 
         <!-- RIGHT -->
         <div class="flex items-center gap-3">
-          <div class="relative">
-            <Bell class="w-4 h-4 text-muted-foreground" />
-            <span v-if="store.reminderQueue.length"
-              class="absolute -top-2 -right-2 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center">
-              {{ store.reminderQueue.length }}
-            </span>
-          </div>
           <span class="text-xs hidden sm:block">
             {{ store.notes.length }} ghi chú
           </span>
@@ -138,11 +131,6 @@
 
     <ReminderDialog :open="reminderOpen" :note="reminderNote" @close="reminderOpen = false"
       @confirm="handleReminderConfirm" />
-
-    <!-- REMINDER TOAST -->
-    <ReminderToast v-for="item in store.reminderQueue" :key="item.id" :note="item" :visible="item.visible"
-      @close="store.removeReminder(item.id)" @open="openDetail(item)" @snooze="handleSnooze" />
-
   </div>
 </template>
 
@@ -172,7 +160,6 @@ import {
   Pin,
   Loader2,
   AlertCircle,
-  Bell,
   Hash
 } from 'lucide-vue-next'
 
@@ -185,8 +172,6 @@ import NoteDetailDialog from '@/components/dialog/NoteDialog/NoteDetailDialog.vu
 import ConfirmDialog from '@/components/dialog/NoteDialog/ConfirmDialog.vue'
 
 import ReminderDialog from '@/components/dialog/NoteDialog/ReminderDialog.vue'
-
-import ReminderToast from '@/components/note/ReminderToast.vue'
 
 import type {
   Note,
@@ -429,21 +414,6 @@ async function handleReminderConfirm(reminderAt: string | null) {
   }
 
   reminderOpen.value = false
-}
-
-// snooze
-async function handleSnooze(note: Note) {
-
-  const next =
-    new Date(Date.now() + 5 * 60 * 1000)
-
-  await store.setNoteReminder(
-    spaceId.value,
-    note.id,
-    next.toISOString()
-  )
-
-  store.removeReminder(note.id)
 }
 
 </script>

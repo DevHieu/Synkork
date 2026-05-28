@@ -19,15 +19,8 @@ export const noteSocket = {
         subscriptions[`pin_${spaceId}`] = socketService.subscribe(`/topic/space/${spaceId}/notes/pin`, callback)
     },
 
-    subscribeReminder(spaceId: string, callback: (payload: any) => void) {
-        subscriptions[`reminder_${spaceId}`] = socketService.subscribe(
-            `/topic/space/${spaceId}/notes/reminder`,
-            callback
-        )
-    },
-
     unsubscribeAll(spaceId: string) {
-        ;[`create`, `update`, `delete`, `pin`, `reminder`].forEach(type => {  
+        ;[`create`, `update`, `delete`, `pin`, `reminder`].forEach(type => {
             const key = `${type}_${spaceId}`
             if (subscriptions[key]) {
                 subscriptions[key].unsubscribe()
