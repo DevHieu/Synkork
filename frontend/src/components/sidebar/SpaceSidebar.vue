@@ -96,11 +96,6 @@ const handleDelete = async (spaceId: string) => {
           <button @click.stop="showRoomSettingDialog = true" class="transition duration-150 hover:text-foreground">
             <Settings class="h-5 w-5" />
           </button>
-          
-          <button
-            @click="showInviteDialog = true"
-            class="p-1.5 rounded-lg hover:bg-muted transition text-muted-foreground hover:text-foreground"
-          ></button>
           <button @click="showInviteDialog = true"
             class="p-1.5 rounded-lg hover:bg-muted transition text-muted-foreground hover:text-foreground">
             <UserRoundPlus class="h-5 w-5" />
