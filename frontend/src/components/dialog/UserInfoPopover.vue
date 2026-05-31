@@ -20,6 +20,7 @@ import {
 import { UserPlus, UserMinus, MessageCircle, Flag, Clock3, TicketCheck, TicketX } from "lucide-vue-next";
 import { useUserStore } from "@/stores/userStore";
 import { useSpaceStore } from "@/stores/spaceStore";
+import ReportDialog from "./ReportDialog.vue";
 
 
 const props = defineProps<{ username: string }>();
@@ -30,6 +31,7 @@ const friendStore = useFriendStore();
 const isLoading = ref(true);
 const userInfo = ref<User | null>(null);
 const isOpen = ref(false);
+const isReportOpen = ref(false);
 const isMyself = ref(false);
 const friendship = computed(() =>
   friendStore.getFriendshipStatus(props.username),
@@ -162,7 +164,7 @@ const handleJumpToDm = async (conversationId: string) => {
                 <button
                   class="h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
                   @click="() => {
-                    console.log(friendship);
+                    isReportOpen = true
                   }">
                   <Flag class="h-4 w-4 text-white hover:text-destructive" />
                 </button>
@@ -215,4 +217,6 @@ const handleJumpToDm = async (conversationId: string) => {
       </div>
     </PopoverContent>
   </Popover>
+
+  <ReportDialog :open="isReportOpen" :user="userInfo" @update:open="isReportOpen = false" />
 </template>
