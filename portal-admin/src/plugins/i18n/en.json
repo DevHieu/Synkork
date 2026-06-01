@@ -97,7 +97,33 @@
       "subtitle": "Just 3 minutes to start using"
     }
   },
+  "common": {
+    "reset": "Reset"
+  },
+  "pages": {
+    "014": {
+      "ranges": {
+        "7d": "7 days",
+        "30d": "30 days",
+        "90d": "90 days",
+        "1y": "1 year"
+      },
+      "jumpDate": "Jump Date",
+      "previousYear": "Previous Year",
+      "previousMonth": "Previous Month",
+      "nextMonth": "Next Month",
+      "nextYear": "Next Year"
+    }
+  },
   "login": "Login",
+  "pagination": {
+    "currentRecord": "Showing {from} to {to} of {total} records",
+    "first": "First page",
+    "prev": "Previous page",
+    "next": "Next page",
+    "last": "Last page",
+    "goTo": "Go to"
+  },
   "email": "Email",
   "password": "Password",
   "download": "Download",
