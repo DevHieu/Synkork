@@ -25,10 +25,16 @@ public class EventAttachmentEntity extends BaseEntity {
     @Column(nullable = false, length = 500)
     private String fileUrl;
 
+    @Column(length = 500)
+    private String publicId;
+
     @Column(length = 255)
     private String fileName;
 
     private Integer fileSizeKb;
+
+    @Column(length = 50)
+    private String resourceType;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

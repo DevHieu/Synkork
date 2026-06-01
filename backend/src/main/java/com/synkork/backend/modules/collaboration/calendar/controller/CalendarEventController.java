@@ -1,14 +1,13 @@
 package com.synkork.backend.modules.collaboration.calendar.controller;
 
-import com.synkork.backend.modules.collaboration.calendar.repository.CalendarEventRepository;
-import com.synkork.backend.modules.collaboration.calendar.service.CalendarEventService;
-import com.synkork.backend.modules.collaboration.calendar.dto.CalendarEventDTO;
 import com.synkork.backend.common.utils.AuthUtils;
+import com.synkork.backend.modules.collaboration.calendar.dto.CalendarEventDTO;
+import com.synkork.backend.modules.collaboration.calendar.service.CalendarEventService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -17,10 +16,10 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/calendar-events")
+@RequiredArgsConstructor
 public class CalendarEventController {
 
-    @Autowired
-    private CalendarEventService calendarEventService;
+    private final CalendarEventService calendarEventService;
 
     // Lấy tất cả event theo spaceId
     @GetMapping("/{spaceId}")
@@ -53,10 +52,11 @@ public class CalendarEventController {
     public ResponseEntity<List<CalendarEventDTO>> checkConflicts(
             @PathVariable UUID spaceId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime startTime,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime endTime,
             @RequestParam(required = false) UUID excludeId) {
-        List<CalendarEventDTO> conflicts = calendarEventService.findConflicts(spaceId, date, startTime, endTime, excludeId);
+        List<CalendarEventDTO> conflicts = calendarEventService.findConflicts(spaceId, date, endDate, startTime, endTime, excludeId);
         return ResponseEntity.ok(conflicts);
     }
 
@@ -78,6 +78,15 @@ public class CalendarEventController {
             @RequestBody CalendarEventDTO dto) {
         UUID userId = AuthUtils.getCurrentUserId();
         CalendarEventDTO updated = calendarEventService.updateEvent(eventId, dto, userId);
+        return ResponseEntity.ok(updated);
+    }
+
+    @PostMapping("/{eventId}/attachments")
+    public ResponseEntity<CalendarEventDTO> uploadAttachments(
+            @PathVariable UUID eventId,
+            @RequestParam("files") List<MultipartFile> files) {
+        UUID userId = AuthUtils.getCurrentUserId();
+        CalendarEventDTO updated = calendarEventService.uploadAttachments(eventId, files, userId);
         return ResponseEntity.ok(updated);
     }
 

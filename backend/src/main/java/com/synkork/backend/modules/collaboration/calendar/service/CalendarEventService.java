@@ -1,5 +1,8 @@
 package com.synkork.backend.modules.collaboration.calendar.service;
 
+import com.synkork.backend.common.dtos.FileUploaded;
+import com.synkork.backend.common.utils.EmailService;
+import com.synkork.backend.common.utils.FileService;
 import com.synkork.backend.modules.collaboration.calendar.entity.CalendarEventEntity;
 import com.synkork.backend.modules.collaboration.calendar.entity.EventAttachmentEntity;
 import com.synkork.backend.modules.collaboration.calendar.entity.EventAttendeeEntity;
@@ -7,19 +10,24 @@ import com.synkork.backend.modules.collaboration.calendar.enums.AttachmentTypeEn
 import com.synkork.backend.modules.collaboration.calendar.dto.CalendarEventDTO;
 import com.synkork.backend.modules.collaboration.calendar.dto.CalendarEventAttachmentDTO;
 import com.synkork.backend.modules.collaboration.calendar.repository.CalendarEventRepository;
+import com.synkork.backend.modules.roomMember.RoomMemberRepository;
 import com.synkork.backend.modules.space.SpaceRepository;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
+@RequiredArgsConstructor
 public class CalendarEventService {
 
     private static final int DEFAULT_RECURRENCE_LIMIT_YEARS = 1;
@@ -29,17 +37,19 @@ public class CalendarEventService {
     private static final String RECURRENCE_MONTHLY = "MONTHLY";
     private static final String RECURRENCE_YEARLY = "YEARLY";
 
-    @Autowired
-    private CalendarEventRepository calendarEventRepository;
+    private final CalendarEventRepository calendarEventRepository;
 
-    @Autowired
-    private SpaceRepository spaceRepository;
+    private final SpaceRepository spaceRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+    private final RoomMemberRepository roomMemberRepository;
 
-    @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    private final UserRepository userRepository;
+
+    private final FileService fileService;
+
+    private final EmailService emailService;
+
+    private final SimpMessagingTemplate messagingTemplate;
 
     private void broadcastCalendarUpdate(String spaceId, String action, CalendarEventDTO event) {
         Map<String, Object> payload = new HashMap<>();
@@ -48,28 +58,27 @@ public class CalendarEventService {
         messagingTemplate.convertAndSend("/topic/space/" + spaceId + "/calendar", payload);
     }
 
-    // Lấy tất cả event theo spaceId
     public List<CalendarEventDTO> getEventsBySpaceId(UUID spaceId) {
         List<CalendarEventEntity> events = calendarEventRepository.findBySpaceId(spaceId);
         List<CalendarEventDTO> result = new ArrayList<>();
         for (CalendarEventEntity event : events) {
-            result.add(new CalendarEventDTO(event));
+            LocalDate endDate = event.getEndDate() != null ? event.getEndDate() : event.getEventDate();
+            result.addAll(createDisplaySegments(event, event.getEventDate(), endDate));
         }
         return result;
     }
 
-    // Danh sách sự kiện trong khoảng thời gian
     public List<CalendarEventDTO> getEventsByDateRange(UUID spaceId, LocalDate start, LocalDate end) {
-        List<CalendarEventEntity> targetEvents = calendarEventRepository
-                .findBySpaceIdAndEventDateLessThanEqual(Objects.requireNonNull(spaceId, "SpaceID null"), end);
         List<CalendarEventDTO> expandedResults = new ArrayList<>();
 
-        for (CalendarEventEntity event : targetEvents) {
+        for (CalendarEventEntity event : calendarEventRepository.findOverlappingDateRange(spaceId, start, end)) {
             if (isNonRecurring(event)) {
-                addIfInRange(expandedResults, event, start, end);
-            } else {
-                expandedResults.addAll(expandRecurringEvent(event, start, end));
+                expandedResults.addAll(createDisplaySegments(event, start, end));
             }
+        }
+
+        for (CalendarEventEntity event : calendarEventRepository.findRecurringBySpaceIdStartingBeforeOrOn(spaceId, end)) {
+            expandedResults.addAll(expandRecurringEvent(event, start, end));
         }
 
         return expandedResults;
@@ -77,14 +86,6 @@ public class CalendarEventService {
 
     private boolean isNonRecurring(CalendarEventEntity event) {
         return RECURRENCE_NONE.equals(event.getRecurrenceType()) || event.getRecurrenceType() == null;
-    }
-
-    private void addIfInRange(List<CalendarEventDTO> results, CalendarEventEntity event, LocalDate start,
-            LocalDate end) {
-        LocalDate eventDate = event.getEventDate();
-        if (!eventDate.isBefore(start) && !eventDate.isAfter(end)) {
-            results.add(new CalendarEventDTO(event));
-        }
     }
 
     private List<CalendarEventDTO> expandRecurringEvent(CalendarEventEntity event, LocalDate rangeStart,
@@ -99,7 +100,13 @@ public class CalendarEventService {
 
         while (!currentOccurrence.isAfter(recurrenceLimit) && !currentOccurrence.isAfter(rangeEnd)) {
             if (!currentOccurrence.isBefore(rangeStart)) {
-                instances.add(createVirtualInstance(event, currentOccurrence));
+                instances.addAll(createDisplaySegments(
+                        event,
+                        currentOccurrence,
+                        currentOccurrence.plusDays(calculateEventDurationInDays(event)),
+                        rangeStart,
+                        rangeEnd
+                ));
             }
             currentOccurrence = getNextOccurrence(currentOccurrence, event.getRecurrenceType());
             if (currentOccurrence == null)
@@ -115,10 +122,43 @@ public class CalendarEventService {
         return event.getEventDate().plusYears(DEFAULT_RECURRENCE_LIMIT_YEARS);
     }
 
-    private CalendarEventDTO createVirtualInstance(CalendarEventEntity original, LocalDate date) {
-        CalendarEventDTO instance = new CalendarEventDTO(original);
-        instance.setEventDate(date);
-        return instance;
+    private long calculateEventDurationInDays(CalendarEventEntity event) {
+        LocalDate endDate = event.getEndDate() != null ? event.getEndDate() : event.getEventDate();
+        return java.time.temporal.ChronoUnit.DAYS.between(event.getEventDate(), endDate);
+    }
+
+    private List<CalendarEventDTO> createDisplaySegments(CalendarEventEntity event, LocalDate rangeStart, LocalDate rangeEnd) {
+        LocalDate endDate = event.getEndDate() != null ? event.getEndDate() : event.getEventDate();
+        return createDisplaySegments(event, event.getEventDate(), endDate, rangeStart, rangeEnd);
+    }
+
+    private List<CalendarEventDTO> createDisplaySegments(
+            CalendarEventEntity event,
+            LocalDate startDate,
+            LocalDate endDate,
+            LocalDate rangeStart,
+            LocalDate rangeEnd
+    ) {
+        List<CalendarEventDTO> segments = new ArrayList<>();
+        LocalDate segmentDate = startDate.isAfter(rangeStart) ? startDate : rangeStart;
+        LocalDate lastDate = endDate.isBefore(rangeEnd) ? endDate : rangeEnd;
+
+        while (!segmentDate.isAfter(lastDate)) {
+            CalendarEventDTO segment = new CalendarEventDTO(event);
+            segment.setEventDate(startDate);
+            segment.setEndDate(endDate);
+            segment.setDisplayDate(segmentDate);
+            segment.setDisplayStartTime(segmentDate.equals(startDate) ? event.getStartTime() : LocalTime.MIDNIGHT);
+            segment.setDisplayEndTime(segmentDate.equals(endDate) ? event.getEndTime() : LocalTime.of(23, 59));
+            segment.setContinuesFromPreviousDay(segmentDate.isAfter(startDate));
+            segment.setContinuesToNextDay(segmentDate.isBefore(endDate));
+            segment.setOriginalStartDateTime(startDate + "T" + event.getStartTime());
+            segment.setOriginalEndDateTime(endDate + "T" + event.getEndTime());
+            segments.add(segment);
+            segmentDate = segmentDate.plusDays(1);
+        }
+
+        return segments;
     }
 
     private LocalDate getNextOccurrence(LocalDate current, String type) {
@@ -134,7 +174,6 @@ public class CalendarEventService {
         return null;
     }
 
-    // Lấy sự kiện theo ngày cụ thể (bao gồm lịch lặp)
     public List<CalendarEventDTO> getEventsByDate(UUID spaceId, LocalDate date) {
         return getEventsByDateRange(spaceId, date, date);
     }
@@ -142,6 +181,13 @@ public class CalendarEventService {
     private void validateEventTime(CalendarEventDTO eventRequest) {
         LocalDate today = LocalDate.now();
         LocalTime now = LocalTime.now();
+        LocalDate endDate = eventRequest.getEndDate() != null ? eventRequest.getEndDate() : eventRequest.getEventDate();
+        LocalDateTime startsAt = LocalDateTime.of(eventRequest.getEventDate(), eventRequest.getStartTime());
+        LocalDateTime endsAt = LocalDateTime.of(endDate, eventRequest.getEndTime());
+
+        if (!endsAt.isAfter(startsAt)) {
+            throw new IllegalArgumentException("Thời gian kết thúc phải sau thời gian bắt đầu");
+        }
 
         if (eventRequest.getEventDate().isBefore(today)) {
             throw new IllegalArgumentException("Không thể tạo sự kiện ở quá khứ");
@@ -152,12 +198,10 @@ public class CalendarEventService {
         }
     }
 
-    // Tạo event mới
     @Transactional
     public CalendarEventDTO createEvent(CalendarEventDTO eventRequest, UUID creatorId) {
-        // validateEventTime(eventRequest); // Bỏ comment để cho phép tạo sự kiện ở quá khứ
+        validateEventTime(eventRequest);
 
-        // Tận dụng hàm có sẵn getReferenceById để lấy trực tiếp Proxy mà không cần Select DB
         UserEntity creator = userRepository.getReferenceById(creatorId);
 
         CalendarEventEntity calendarEvent = new CalendarEventEntity();
@@ -168,25 +212,27 @@ public class CalendarEventService {
         syncEventRelations(calendarEvent, eventRequest, creator);
 
         CalendarEventEntity savedEvent = calendarEventRepository.save(Objects.requireNonNull(calendarEvent));
+        sendNewAttendeeEmails(savedEvent, savedEvent.getAttendees(), creator);
         CalendarEventDTO result = new CalendarEventDTO(savedEvent);
         broadcastCalendarUpdate(eventRequest.getSpaceId(), "CREATED", result);
         return result;
     }
 
-    // Cập nhật event (kiểm tra quyền: creator hoặc allowEditAll)
     @Transactional
     public CalendarEventDTO updateEvent(UUID eventId, CalendarEventDTO eventRequest, UUID userId) {
-        // Null check cho IDE
         CalendarEventEntity calendarEvent = calendarEventRepository.findById(Objects.requireNonNull(eventId))
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sự kiện"));
 
         if (!hasPermissionToEdit(calendarEvent, userId)) {
             throw new SecurityException("Bạn không có quyền chỉnh sửa sự kiện này! Vui lòng liên hệ đến người tạo sự kiện");
         }
+        validateEventTime(eventRequest);
+        Set<UUID> previousAttendeeIds = getAttendeeUserIds(calendarEvent.getAttendees());
         eventRequest.updateEntity(calendarEvent);
         UserEntity actor = userRepository.getReferenceById(userId);
         syncEventRelations(calendarEvent, eventRequest, actor);
         CalendarEventEntity savedEvent = calendarEventRepository.save(Objects.requireNonNull(calendarEvent));
+        sendNewAttendeeEmails(savedEvent, findNewAttendees(savedEvent.getAttendees(), previousAttendeeIds), actor);
         CalendarEventDTO result = new CalendarEventDTO(savedEvent);
         broadcastCalendarUpdate(result.getSpaceId(), "UPDATED", result);
         return result;
@@ -197,32 +243,29 @@ public class CalendarEventService {
     }
 
     private void syncEventRelations(CalendarEventEntity event, CalendarEventDTO request, UserEntity actor) {
-        event.replaceAttendees(buildAttendees(event, request.getAttendees()));
+        event.replaceAttendees(buildAttendees(event, request.getAttendeeIds()));
         event.replaceAttachments(buildAttachments(event, request.getAttachments(), actor));
     }
 
-    private List<EventAttendeeEntity> buildAttendees(CalendarEventEntity event, List<String> attendeeEmails) {
-        if (attendeeEmails == null || attendeeEmails.isEmpty()) {
+    private List<EventAttendeeEntity> buildAttendees(CalendarEventEntity event, List<UUID> attendeeIds) {
+        if (attendeeIds == null || attendeeIds.isEmpty()) {
             return new ArrayList<>();
         }
 
         List<EventAttendeeEntity> attendees = new ArrayList<>();
-        List<String> missingEmails = new ArrayList<>();
-        Set<String> uniqueEmails = new LinkedHashSet<>();
+        List<UUID> missingMemberIds = new ArrayList<>();
+        Set<UUID> uniqueIds = new LinkedHashSet<>();
+        UUID roomId = event.getSpace().getRoom().getId();
 
-        for (String rawEmail : attendeeEmails) {
-            if (rawEmail == null) {
+        for (UUID attendeeId : attendeeIds) {
+            if (attendeeId == null || !uniqueIds.add(attendeeId)) {
                 continue;
             }
 
-            String email = rawEmail.trim().toLowerCase();
-            if (email.isEmpty() || !uniqueEmails.add(email)) {
-                continue;
-            }
-
-            Optional<UserEntity> matchedUser = userRepository.findByEmail(email);
+            Optional<UserEntity> matchedUser = roomMemberRepository.findByRoom_IdAndUser_Id(roomId, attendeeId)
+                    .map(roomMember -> roomMember.getUser());
             if (matchedUser.isEmpty()) {
-                missingEmails.add(email);
+                missingMemberIds.add(attendeeId);
                 continue;
             }
 
@@ -232,8 +275,8 @@ public class CalendarEventService {
             attendees.add(attendee);
         }
 
-        if (!missingEmails.isEmpty()) {
-            throw new IllegalArgumentException("Không tìm thấy người dùng cho các email: " + String.join(", ", missingEmails));
+        if (!missingMemberIds.isEmpty()) {
+            throw new IllegalArgumentException("Người tham gia không thuộc phòng hiện tại: " + missingMemberIds);
         }
 
         return attendees;
@@ -260,6 +303,8 @@ public class CalendarEventService {
             attachment.setUploadedBy(actor);
             attachment.setFileName(requestAttachment.getName().trim());
             attachment.setFileUrl(normalizeAttachmentUrl(requestAttachment.getFileUrl()));
+            attachment.setPublicId(normalizeAttachmentUrl(requestAttachment.getPublicId()));
+            attachment.setResourceType(normalizeAttachmentUrl(requestAttachment.getResourceType()));
             attachment.setFileSizeKb(normalizeAttachmentSize(requestAttachment.getSize()));
             attachment.setType(resolveAttachmentType(requestAttachment));
             attachments.add(attachment);
@@ -302,10 +347,8 @@ public class CalendarEventService {
         return value == null || value.trim().isEmpty();
     }
 
-    // Xóa event (chỉ creator)
     @Transactional
     public void deleteEvent(UUID eventId, UUID userId) {
-        // Null check cho IDE
         CalendarEventEntity entity = calendarEventRepository.findById(Objects.requireNonNull(eventId))
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sự kiện"));
 
@@ -313,28 +356,144 @@ public class CalendarEventService {
             throw new SecurityException("Bạn không có quyền xóa sự kiện này");
         }
 
-        // Broadcast trước khi xóa
         CalendarEventDTO deletedDto = new CalendarEventDTO(entity);
         calendarEventRepository.delete(entity);
         broadcastCalendarUpdate(deletedDto.getSpaceId(), "DELETED", deletedDto);
     }
 
-    // Kiểm tra sự kiện trùng giờ
-    public List<CalendarEventDTO> findConflicts(UUID spaceId, LocalDate date, LocalTime startTime, LocalTime endTime,
+    public List<CalendarEventDTO> findConflicts(UUID spaceId, LocalDate date, LocalDate requestEndDate, LocalTime startTime, LocalTime endTime,
             UUID excludeEventId) {
-        // Liệt kê mọi sự kiện trong ngày (bao gồm sự kiện lặp) để tìm trùng lặp
-        List<CalendarEventDTO> dayEvents = getEventsByDateRange(spaceId, date, date);
+        LocalDate endDate = requestEndDate != null ? requestEndDate : (endTime.isAfter(startTime) ? date : date.plusDays(1));
+        LocalDateTime requestedStart = LocalDateTime.of(date, startTime);
+        LocalDateTime requestedEnd = LocalDateTime.of(endDate, endTime);
+        List<CalendarEventEntity> dayEvents = calendarEventRepository.findOverlappingDateRange(spaceId, date, endDate);
         List<CalendarEventDTO> conflicts = new ArrayList<>();
 
-        for (CalendarEventDTO event : dayEvents) {
+        for (CalendarEventEntity event : dayEvents) {
             if (excludeEventId != null && event.getId().equals(excludeEventId)) {
                 continue;
             }
-            if (event.getStartTime().isBefore(endTime) && event.getEndTime().isAfter(startTime)) {
-                conflicts.add(event);
+            if (eventsOverlap(requestedStart, requestedEnd, event)) {
+                conflicts.addAll(createDisplaySegments(event, date, endDate));
             }
         }
 
         return conflicts;
+    }
+
+    @Transactional
+    public CalendarEventDTO uploadAttachments(UUID eventId, List<MultipartFile> files, UUID userId) {
+        CalendarEventEntity event = calendarEventRepository.findById(Objects.requireNonNull(eventId))
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sự kiện"));
+
+        if (!hasPermissionToEdit(event, userId)) {
+            throw new SecurityException("Bạn không có quyền chỉnh sửa sự kiện này! Vui lòng liên hệ đến người tạo sự kiện");
+        }
+
+        UserEntity actor = userRepository.getReferenceById(userId);
+        List<EventAttachmentEntity> attachments = new ArrayList<>(event.getAttachments());
+        for (MultipartFile file : files) {
+            if (file == null || file.isEmpty()) {
+                continue;
+            }
+
+            FileUploaded uploaded = isImage(file.getOriginalFilename())
+                    ? fileService.uploadImage(file, "calendar_event/" + eventId)
+                    : fileService.uploadFile(file, "calendar_event/" + eventId);
+
+            EventAttachmentEntity attachment = new EventAttachmentEntity();
+            attachment.setEvent(event);
+            attachment.setUploadedBy(actor);
+            attachment.setFileName(uploaded.originalName());
+            attachment.setFileUrl(uploaded.url());
+            attachment.setPublicId(uploaded.publicId());
+            attachment.setResourceType(uploaded.resourceType());
+            attachment.setFileSizeKb(Math.max(1, (int) Math.ceil(file.getSize() / 1024.0)));
+            attachment.setType(isImage(file.getOriginalFilename()) ? AttachmentTypeEnum.IMAGE : AttachmentTypeEnum.FILE);
+            attachments.add(attachment);
+        }
+
+        event.replaceAttachments(attachments);
+        CalendarEventEntity savedEvent = calendarEventRepository.save(event);
+        CalendarEventDTO result = new CalendarEventDTO(savedEvent);
+        broadcastCalendarUpdate(result.getSpaceId(), "UPDATED", result);
+        return result;
+    }
+
+    private boolean eventsOverlap(LocalDateTime requestedStart, LocalDateTime requestedEnd, CalendarEventEntity event) {
+        LocalDate endDate = event.getEndDate() != null ? event.getEndDate() : event.getEventDate();
+        LocalDateTime eventStart = LocalDateTime.of(event.getEventDate(), event.getStartTime());
+        LocalDateTime eventEnd = LocalDateTime.of(endDate, event.getEndTime());
+        return eventStart.isBefore(requestedEnd) && eventEnd.isAfter(requestedStart);
+    }
+
+    private boolean isImage(String fileName) {
+        if (fileName == null) {
+            return false;
+        }
+        String normalizedName = fileName.toLowerCase();
+        return normalizedName.endsWith(".png")
+                || normalizedName.endsWith(".jpg")
+                || normalizedName.endsWith(".jpeg")
+                || normalizedName.endsWith(".gif")
+                || normalizedName.endsWith(".webp")
+                || normalizedName.endsWith(".svg");
+    }
+
+    private Set<UUID> getAttendeeUserIds(List<EventAttendeeEntity> attendees) {
+        Set<UUID> ids = new HashSet<>();
+        if (attendees == null) {
+            return ids;
+        }
+        for (EventAttendeeEntity attendee : attendees) {
+            ids.add(attendee.getUser().getId());
+        }
+        return ids;
+    }
+
+    private List<EventAttendeeEntity> findNewAttendees(List<EventAttendeeEntity> attendees, Set<UUID> previousAttendeeIds) {
+        List<EventAttendeeEntity> newAttendees = new ArrayList<>();
+        if (attendees == null) {
+            return newAttendees;
+        }
+        for (EventAttendeeEntity attendee : attendees) {
+            if (!previousAttendeeIds.contains(attendee.getUser().getId())) {
+                newAttendees.add(attendee);
+            }
+        }
+        return newAttendees;
+    }
+
+    private void sendNewAttendeeEmails(CalendarEventEntity event, List<EventAttendeeEntity> attendees, UserEntity actor) {
+        if (attendees == null || attendees.isEmpty()) {
+            return;
+        }
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
+        LocalDate endDate = event.getEndDate() != null ? event.getEndDate() : event.getEventDate();
+        String startsAt = LocalDateTime.of(event.getEventDate(), event.getStartTime()).format(formatter);
+        String endsAt = LocalDateTime.of(endDate, event.getEndTime()).format(formatter);
+        String subject = "[Synkork] Bạn được thêm vào sự kiện";
+        String body = """
+                <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto;">
+                    <h2 style="color: #023c3d;">Bạn được thêm vào sự kiện</h2>
+                    <p><b>%s</b> đã thêm bạn vào sự kiện <b>%s</b>.</p>
+                    <p><b>Thời gian:</b> %s - %s</p>
+                    <p style="color:#666;">%s</p>
+                </div>
+                """.formatted(
+                actor.getDisplayName() != null ? actor.getDisplayName() : actor.getUsername(),
+                event.getTitle(),
+                startsAt,
+                endsAt,
+                event.getDescription() != null ? event.getDescription() : ""
+        );
+
+        for (EventAttendeeEntity attendee : attendees) {
+            String email = attendee.getUser().getEmail();
+            if (email != null && !email.isBlank()) {
+                emailService.send(email, subject, body);
+            }
+        }
     }
 }
