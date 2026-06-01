@@ -30,12 +30,8 @@ public class CalendarEventEntity extends BaseEntity {
     @Column(nullable = false)
     private String description;
 
-    private String eventLink;
-
     @Column(nullable = false)
     private LocalDate eventDate;
-
-    private LocalDate endDate;
 
     @Column(nullable = false)
     private LocalTime startTime;

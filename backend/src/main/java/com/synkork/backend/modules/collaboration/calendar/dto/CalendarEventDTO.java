@@ -24,13 +24,9 @@ public class CalendarEventDTO {
     private String spaceId;
     private String title;
     private String description;
-    private String eventLink;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate eventDate;
-
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate endDate;
 
     @JsonFormat(pattern = "HH:mm:ss")
     private LocalTime startTime;
@@ -49,23 +45,8 @@ public class CalendarEventDTO {
     private String createdByUsername;
     private String createdByDisplayName;
     private String createdByAvatarUrl;
-    private List<UUID> attendeeIds = new ArrayList<>();
-    private List<CalendarEventAttendeeDTO> attendees = new ArrayList<>();
+    private List<String> attendees = new ArrayList<>();
     private List<CalendarEventAttachmentDTO> attachments = new ArrayList<>();
-
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate displayDate;
-
-    @JsonFormat(pattern = "HH:mm:ss")
-    private LocalTime displayStartTime;
-
-    @JsonFormat(pattern = "HH:mm:ss")
-    private LocalTime displayEndTime;
-
-    private boolean continuesFromPreviousDay;
-    private boolean continuesToNextDay;
-    private String originalStartDateTime;
-    private String originalEndDateTime;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -76,9 +57,7 @@ public class CalendarEventDTO {
         this.spaceId = entity.getSpace().getId().toString();
         this.title = entity.getTitle();
         this.description = entity.getDescription();
-        this.eventLink = entity.getEventLink();
         this.eventDate = entity.getEventDate();
-        this.endDate = entity.getEndDate() != null ? entity.getEndDate() : entity.getEventDate();
         this.startTime = entity.getStartTime();
         this.endTime = entity.getEndTime();
         this.recurrenceType = entity.getRecurrenceType();
@@ -91,8 +70,7 @@ public class CalendarEventDTO {
         this.createdByAvatarUrl = entity.getCreatedBy().getAvatarUrl();
         if (entity.getAttendees() != null) {
             for (var attendee : entity.getAttendees()) {
-                this.attendeeIds.add(attendee.getUser().getId());
-                this.attendees.add(new CalendarEventAttendeeDTO(attendee.getUser()));
+                this.attendees.add(attendee.getUser().getEmail());
             }
         }
         if (entity.getAttachments() != null) {
@@ -102,32 +80,18 @@ public class CalendarEventDTO {
         }
         this.createdAt = entity.getCreatedAt();
         this.updatedAt = entity.getUpdatedAt();
-        this.displayDate = this.eventDate;
-        this.displayStartTime = this.startTime;
-        this.displayEndTime = this.endTime;
-        this.originalStartDateTime = this.eventDate + "T" + this.startTime;
-        this.originalEndDateTime = this.endDate + "T" + this.endTime;
     }
 
     // Map ngược từ DTO sang Entity
     public void updateEntity(CalendarEventEntity target) {
         target.setTitle(this.title);
         target.setDescription(this.description);
-        target.setEventLink(normalizeEventLink(this.eventLink));
         target.setEventDate(this.eventDate);
-        target.setEndDate(this.endDate != null ? this.endDate : this.eventDate);
         target.setStartTime(this.startTime);
         target.setEndTime(this.endTime);
         target.setRecurrenceType(this.recurrenceType != null ? this.recurrenceType : "NONE");
         target.setRecurrenceEndDate(this.recurrenceEndDate);
         target.setAllowEditAll(this.allowEditAll);
         target.setRemindBeforeMinutes(this.remindBeforeMinutes);
-    }
-
-    private String normalizeEventLink(String eventLink) {
-        if (eventLink == null || eventLink.trim().isEmpty()) {
-            return null;
-        }
-        return eventLink.trim();
     }
 }

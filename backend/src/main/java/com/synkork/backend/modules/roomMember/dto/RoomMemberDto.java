@@ -11,8 +11,6 @@ import java.util.UUID;
 @NoArgsConstructor
 public class RoomMemberDto {
     private UUID memberId;
-    private UUID userId;
-    private String email;
     private String displayName;
     private String username;
     private String avatarUrl;
@@ -22,8 +20,6 @@ public class RoomMemberDto {
 
     public RoomMemberDto(RoomMemberEntity entity) {
         this.memberId = entity.getId();
-        this.userId = entity.getUser().getId();
-        this.email = entity.getUser().getEmail();
         this.displayName = entity.getUser().getDisplayName();
         this.username = entity.getUser().getUsername();
         this.avatarUrl = entity.getUser().getAvatarUrl();

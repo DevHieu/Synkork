@@ -12,16 +12,12 @@ public class CalendarEventAttachmentDTO {
     private String name;
     private Integer size;
     private String fileUrl;
-    private String publicId;
-    private String resourceType;
     private String type;
 
     public CalendarEventAttachmentDTO(EventAttachmentEntity entity) {
         this.name = entity.getFileName();
         this.size = entity.getFileSizeKb();
         this.fileUrl = entity.getFileUrl();
-        this.publicId = entity.getPublicId();
-        this.resourceType = entity.getResourceType();
         this.type = entity.getType() != null ? entity.getType().name() : null;
     }
 }
