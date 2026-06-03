@@ -19,15 +19,11 @@ public class MessageSocketController {
   @MessageMapping("/chat.sendMessage")
   public void sendMessage(@Payload MessageDTO dto, SimpMessageHeaderAccessor headerAccessor) {
 
-      // Lấy cả userId và email để service có thể fallback nếu session claim bị lệch.
       String senderId = (String) headerAccessor
               .getSessionAttributes()
               .get("userId");
-      String senderEmail = (String) headerAccessor
-              .getSessionAttributes()
-              .get("userEmail");
 
-      MessageDTO message = messageService.saveMessage(dto, senderId, senderEmail);
+      MessageDTO message = messageService.saveMessage(dto, senderId);
 
     messagingTemplate.convertAndSend(
         "/topic/space/" + message.getSpaceId() + "/messages",

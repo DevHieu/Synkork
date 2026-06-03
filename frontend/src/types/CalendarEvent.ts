@@ -2,7 +2,17 @@ export interface CalendarEventAttachment {
   name: string;
   size: number;
   fileUrl?: string;
+  publicId?: string;
+  resourceType?: string;
   type?: string;
+}
+
+export interface CalendarEventAttendee {
+  userId: string;
+  email: string;
+  username: string;
+  displayName: string;
+  avatarUrl?: string;
 }
 
 export interface CalendarEvent {
@@ -10,7 +20,9 @@ export interface CalendarEvent {
   spaceId: string;
   title: string;
   description: string;
+  eventLink?: string;
   eventDate: string;
+  endDate: string;
   startTime: string;
   endTime: string;
   recurrenceType?: string;
@@ -21,8 +33,16 @@ export interface CalendarEvent {
   createdByUsername: string;
   createdByDisplayName: string;
   createdByAvatarUrl?: string;
-  attendees?: string[];
+  attendeeIds?: string[];
+  attendees?: CalendarEventAttendee[];
   attachments?: CalendarEventAttachment[];
+  displayDate?: string;
+  displayStartTime?: string;
+  displayEndTime?: string;
+  continuesFromPreviousDay?: boolean;
+  continuesToNextDay?: boolean;
+  originalStartDateTime?: string;
+  originalEndDateTime?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -73,7 +73,7 @@ const recurrenceLabel = computed(() => {
 });
 
 const formattedEventDate = computed(() =>
-  props.event ? dayjs(props.event.eventDate).format("dddd, DD/MM/YYYY") : "",
+  props.event ? dayjs(props.event.displayDate || props.event.eventDate).format("dddd, DD/MM/YYYY") : "",
 );
 
 const formattedCreatedAt = computed(() =>
@@ -85,11 +85,42 @@ const formattedUpdatedAt = computed(() =>
 );
 
 const displayEventDate = computed(() =>
-  props.event?.eventDate ? dayjs(props.event.eventDate).format("DD/MM/YYYY") : "",
+  props.event ? dayjs(props.event.displayDate || props.event.eventDate).format("DD/MM/YYYY") : "",
 );
 
 const attachments = computed(() => props.event?.attachments ?? []);
 const attendees = computed(() => props.event?.attendees ?? []);
+const eventLink = computed(() => props.event?.eventLink?.trim() ?? "");
+const displayStartTime = computed(() =>
+  props.event ? (props.event.displayStartTime || props.event.startTime).substring(0, 5) : "",
+);
+const displayEndTime = computed(() =>
+  props.event ? (props.event.displayEndTime || props.event.endTime).substring(0, 5) : "",
+);
+const formatDateTimeLabel = (value: string | undefined, fallbackDate: string, fallbackTime: string) => {
+  const dateTime = value ? dayjs(value) : dayjs(`${fallbackDate}T${fallbackTime}`);
+  if (!dateTime.isValid()) return fallbackTime.substring(0, 5);
+  return `${dateTime.format("HH:mm")} ${dateTime.format("DD/MM")}`;
+};
+const originalStartLabel = computed(() =>
+  props.event
+    ? formatDateTimeLabel(props.event.originalStartDateTime, props.event.eventDate, props.event.startTime)
+    : "",
+);
+const originalEndLabel = computed(() =>
+  props.event
+    ? formatDateTimeLabel(props.event.originalEndDateTime, props.event.endDate || props.event.eventDate, props.event.endTime)
+    : "",
+);
+const continuationLabel = computed(() => {
+  if (!props.event) return "";
+  if (props.event.continuesFromPreviousDay && props.event.continuesToNextDay) {
+    return "Event này bắt đầu từ ngày hôm trước và tiếp tục ở ngày hôm sau";
+  }
+  if (props.event.continuesFromPreviousDay) return "Event này bắt đầu từ ngày hôm trước";
+  if (props.event.continuesToNextDay) return "Event này tiếp tục ở ngày hôm sau";
+  return "";
+});
 
 const openEdit = () => {
   if (props.event) {
@@ -138,8 +169,12 @@ const openDelete = () => {
               <p class="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 Khung giờ
               </p>
-              <p class="mt-1 font-mono text-sm font-bold uppercase tracking-widest text-primary">
-                {{ event?.startTime?.substring(0, 5) }} → {{ event?.endTime?.substring(0, 5) }}
+              <p class="group mt-1 font-mono text-sm font-bold uppercase tracking-widest text-primary">
+                <span class="group-hover:hidden">{{ displayStartTime }} → {{ displayEndTime }}</span>
+                <span class="hidden group-hover:inline">{{ originalStartLabel }} → {{ originalEndLabel }}</span>
+              </p>
+              <p v-if="continuationLabel" class="mt-2 font-mono text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+                {{ continuationLabel }}
               </p>
             </div>
           </div>
@@ -262,11 +297,11 @@ const openDelete = () => {
               <div v-if="attendees.length > 0" class="mt-4 flex flex-wrap gap-2">
                 <Badge
                   v-for="attendee in attendees"
-                  :key="attendee"
+                  :key="attendee.userId"
                   variant="outline"
                   class="font-mono uppercase tracking-wide"
                 >
-                  {{ attendee }}
+                  {{ attendee.displayName || attendee.username }}
                 </Badge>
               </div>
               <p v-else class="mt-4 font-mono text-xs uppercase tracking-widest text-muted-foreground">
@@ -316,6 +351,34 @@ const openDelete = () => {
               </p>
             </section>
           </div>
+
+          <section
+            v-if="eventLink"
+            class="rounded-2xl border-2 border-border bg-background p-4 cursor-default"
+          >
+            <div class="flex items-center gap-2">
+              <LinkIcon class="text-primary" data-icon="inline-start" />
+              <h3 class="font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                Link sự kiện
+              </h3>
+            </div>
+
+            <div class="mt-4 flex flex-col gap-3 rounded-xl border border-border bg-muted/15 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <p class="min-w-0 break-all font-mono text-xs font-bold tracking-wider text-foreground">
+                {{ eventLink }}
+              </p>
+
+              <a
+                :href="eventLink"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex shrink-0 items-center justify-center gap-1 rounded-full border border-border px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+              >
+                <LinkIcon data-icon="inline-start" />
+                Mở link
+              </a>
+            </div>
+          </section>
         </div>
       </ScrollArea>
 

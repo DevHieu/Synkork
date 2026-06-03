@@ -75,14 +75,14 @@ public class MessageService {
     }
 
     @Transactional
-    public MessageDTO saveMessage(MessageDTO dto, String senderId, String senderEmail) {
+    public MessageDTO saveMessage(MessageDTO dto, String senderId) {
         MessageEntity entity = new MessageEntity();
         UUID spaceId = UUID.fromString(dto.getSpaceId());
 
         SpaceEntity space = spaceRepository.findById(spaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Space not found"));
 
-        RoomMemberEntity sender = resolveSender(space.getRoom().getId(), senderId, senderEmail);
+        RoomMemberEntity sender = resolveSender(space.getRoom().getId(), senderId);
 
         entity.setSender(sender);
         entity.setSpace(space);
@@ -102,8 +102,8 @@ public class MessageService {
         return responseDto;
     }
 
-    private RoomMemberEntity resolveSender(UUID roomId, String senderId, String senderEmail) {
-        // Ưu tiên dùng userId từ websocket session vì đây là định danh ổn định nhất.
+    private RoomMemberEntity resolveSender(UUID roomId, String senderId) {
+        // Dùng userId từ websocket session vì đây là định danh chính xác.
         if (senderId != null && !senderId.isBlank()) {
             try {
                 UUID userId = UUID.fromString(senderId);
@@ -115,25 +115,12 @@ public class MessageService {
                 }
                 System.out.println("[Tin nhan] Khong tim thay sender theo userId=" + senderId + " trong roomId=" + roomId);
             } catch (IllegalArgumentException ignored) {
-                // Bỏ qua để fallback sang email nếu userId trong session không hợp lệ.
                 System.out.println("[Tin nhan] senderId khong phai UUID hop le: " + senderId);
             }
         }
 
-        // Fallback theo email để tránh lỗi nếu claim userId trong websocket session bị lệch.
-        if (senderEmail != null && !senderEmail.isBlank()) {
-            Optional<RoomMemberEntity> senderByEmail = roomMemberRepository
-                    .findByUser_EmailAndRoom_Id(senderEmail, roomId);
-            if (senderByEmail.isPresent()) {
-                System.out.println("[Tin nhan] Tim duoc sender theo email=" + senderEmail + " trong roomId=" + roomId);
-                return senderByEmail.get();
-            }
-            System.out.println("[Tin nhan] Khong tim thay sender theo email=" + senderEmail + " trong roomId=" + roomId);
-        }
-
         System.out.println("[Tin nhan] Khong the xac dinh sender. roomId=" + roomId
-                + ", senderId=" + senderId
-                + ", senderEmail=" + senderEmail);
+                + ", senderId=" + senderId);
         throw new IllegalArgumentException("User is not a member of this room");
     }
 

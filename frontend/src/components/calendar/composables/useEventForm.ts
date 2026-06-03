@@ -9,14 +9,17 @@ dayjs.locale("vi");
 export interface EventFormData {
   title: string;
   description: string;
+  eventLink?: string;
   eventDate: string;
+  endDate: string;
   startTime: string;
   endTime: string;
   recurrenceType?: string;
   recurrenceEndDate?: string;
   allowEditAll: boolean;
-  attendees?: string[];
-  attachments?: CalendarEventAttachment[];
+  attendeeIds?: string[];
+  attendees?: any[];
+  attachments?: (CalendarEventAttachment & { file?: File })[];
 }
 
 // Quản lý data/validate form
@@ -35,11 +38,27 @@ export function useEventForm(
     showWarning.value = true;
   };
 
-  const isEndTimeAfterStartTime = (): boolean =>
-    toMinutes(formData.value.endTime) > toMinutes(formData.value.startTime);
+  const isEndTimeAfterStartTime = (): boolean => {
+    const endDate = formData.value.endDate || formData.value.eventDate;
+    if (endDate !== formData.value.eventDate) {
+      return dayjs(endDate).isAfter(dayjs(formData.value.eventDate));
+    }
+    return toMinutes(formData.value.endTime) > toMinutes(formData.value.startTime);
+  };
 
   const isEventInFuture = (): boolean =>
     dayjs(`${formData.value.eventDate}T${formData.value.startTime}`).isAfter(dayjs());
+
+  const hasInvalidEventLink = (): boolean => {
+    const eventLink = formData.value.eventLink?.trim();
+    return Boolean(eventLink) && !/^https?:\/\//i.test(eventLink);
+  };
+
+  const warnInvalidEventLink = (): void => {
+    if (!hasInvalidEventLink()) return;
+
+    showValidationWarning("Link sự kiện không bắt đầu bằng HTTP:// hoặc HTTPS://. Sự kiện vẫn được lưu, nhưng link có thể không mở đúng.");
+  };
 
   // Validate form
   const validate = (): boolean => {
@@ -68,6 +87,7 @@ export function useEventForm(
     warningMessage,
     showWarning,
     validate,
+    warnInvalidEventLink,
     resetForm,
   };
 }

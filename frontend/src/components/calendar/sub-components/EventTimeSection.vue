@@ -4,16 +4,18 @@ import { useTimeSelector } from "../composables/useTimeSelector";
 
 const props = defineProps<{
   initialDate: string;
+  initialEndDate?: string;
   initialStartTime: string;
   initialEndTime: string;
   show: boolean;
 }>();
 
 const emit = defineEmits<{
-  (e: "change", data: { eventDate: string; startTime: string; endTime: string }): void;
+  (e: "change", data: { eventDate: string; endDate: string; startTime: string; endTime: string }): void;
 }>();
 
 const eventDate = ref(props.initialDate);
+const endDate = ref(props.initialEndDate || props.initialDate);
 
 const {
   timeFormat, hours24, hours12, minutes,
@@ -26,6 +28,7 @@ const {
 // Đồng bộ trạng thái nội bộ với props khi dialog mở hoặc dữ liệu thay đổi
 const syncInternalState = () => {
   eventDate.value = props.initialDate;
+  endDate.value = props.initialEndDate || props.initialDate;
   parseTimeString(props.initialStartTime, true);
   parseTimeString(props.initialEndTime, false);
 };
@@ -41,6 +44,7 @@ const notifyParent = () => {
 
   emit("change", {
     eventDate: eventDate.value,
+    endDate: endDate.value || eventDate.value,
     startTime,
     endTime
   });
@@ -58,7 +62,7 @@ watch([startHour, startMinute, startAmPm], () => {
   notifyParent();
 });
 
-watch([endHour, endMinute, endAmPm, eventDate], notifyParent);
+watch([endHour, endMinute, endAmPm, eventDate, endDate], notifyParent);
 
 watch(timeFormat, () => {
   const start = buildTimeString(startHour.value, startMinute.value, startAmPm.value);
@@ -88,9 +92,14 @@ onMounted(syncInternalState);
 
     <!-- Ngày & Giờ -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div class="md:col-span-2">
-        <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">NGÀY DIỄN RA *</label>
+      <div>
+        <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">NGÀY BẮT ĐẦU *</label>
         <input v-model="eventDate" type="date" required
+          class="w-full rounded-lg border-2 border-border bg-background px-4 py-3 font-mono text-sm uppercase text-foreground transition-colors focus:outline-none focus:border-primary" />
+      </div>
+      <div>
+        <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">NGÀY KẾT THÚC *</label>
+        <input v-model="endDate" type="date" required :min="eventDate"
           class="w-full rounded-lg border-2 border-border bg-background px-4 py-3 font-mono text-sm uppercase text-foreground transition-colors focus:outline-none focus:border-primary" />
       </div>
 

@@ -19,7 +19,7 @@ export function useCalendar(spaceIdRef: any, currentUserId: any) {
   );
 
   // Realtime update
-  useCalendarRealtime(spaceIdRef, calendarEvents.events);
+  useCalendarRealtime(spaceIdRef, calendarEvents.events, calendarEvents.fetchEvents);
 
   return {
     ...calendarDate,

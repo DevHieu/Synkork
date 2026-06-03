@@ -3,6 +3,7 @@ import {
   getEventsByDateRange,
   createEvent as apiCreateEvent,
   updateEvent as apiUpdateEvent,
+  uploadEventAttachments as apiUploadEventAttachments,
   deleteEvent as apiDeleteEvent,
   checkConflicts as apiCheckConflicts,
 } from "@/services/calendarService";
@@ -60,38 +61,42 @@ export function useCalendarEvents(
     };
   };
 
+  const normalizeEventLink = (eventLink?: string) => {
+    const trimmedLink = eventLink?.trim();
+    return trimmedLink || null;
+  };
+
   // Chuẩn hóa payload
   const formatPayload = (data: any, id?: string) => {
-    const normalizedAttendees = Array.isArray(data.attendees)
-      ? data.attendees
-          .map((email: string) => email?.trim())
-          .filter((email: string) => Boolean(email))
+    const normalizedAttendeeIds = Array.isArray(data.attendeeIds)
+      ? data.attendeeIds.filter((id: string) => Boolean(id))
       : [];
 
     const normalizedAttachments = Array.isArray(data.attachments)
       ? data.attachments
-          .filter((attachment: any) => attachment?.name)
+          .filter((attachment: any) => attachment?.name && !attachment?.file)
           .map((attachment: any) => ({
             name: attachment.name,
-            size: attachment.size
-              ? attachment.file
-                ? Math.max(1, Math.ceil(attachment.size / 1024))
-                : attachment.size
-              : 0,
+            size: attachment.size || 0,
             fileUrl: attachment.fileUrl ?? "",
+            publicId: attachment.publicId ?? "",
+            resourceType: attachment.resourceType ?? "",
             type: attachment.type,
           }))
       : [];
 
     const payload = {
       ...data,
+      eventLink: normalizeEventLink(data.eventLink),
+      endDate: data.endDate || data.eventDate,
       startTime: data.startTime.length === 5 ? `${data.startTime}:00` : data.startTime,
       endTime: data.endTime.length === 5 ? `${data.endTime}:00` : data.endTime,
       spaceId: spaceIdRef.value,
       createdById: unref(currentUserId),
-      attendees: normalizedAttendees,
+      attendeeIds: normalizedAttendeeIds,
       attachments: normalizedAttachments,
     };
+    delete payload.attendees;
     if (id) payload.id = id;
     // Xóa recurrenceEndDate khi không áp dụng
     if (payload.recurrenceType === 'NONE' || !payload.recurrenceEndDate) {
@@ -101,25 +106,40 @@ export function useCalendarEvents(
   };
 
   const createEvent = async (data: any) => {
-    await apiCreateEvent(formatPayload(data));
+    const response = await apiCreateEvent(formatPayload(data));
+    const files = extractNewFiles(data);
+    if (files.length > 0) {
+      await apiUploadEventAttachments(response.data.id, files);
+    }
     await fetchEvents();
   };
 
   const updateEvent = async (id: string, data: any) => {
     await apiUpdateEvent(id, formatPayload(data, id));
+    const files = extractNewFiles(data);
+    if (files.length > 0) {
+      await apiUploadEventAttachments(id, files);
+    }
     await fetchEvents();
   };
 
+  const extractNewFiles = (data: any): File[] => {
+    if (!Array.isArray(data.attachments)) return [];
+    return data.attachments
+      .map((attachment: any) => attachment?.file)
+      .filter((file: File | undefined): file is File => file instanceof File);
+  };
+
   const deleteEvent = async (id: string) => {
-    await apiDeleteEvent(id, unref(currentUserId));
+    await apiDeleteEvent(id);
     await fetchEvents();
   };
 
   // Check event trùng lịch
-  const checkConflicts = async (date: string, start: string, end: string, excludeId?: string) => {
+  const checkConflicts = async (date: string, endDate: string, start: string, end: string, excludeId?: string) => {
     if (!spaceIdRef.value) return [];
     try {
-      const res = await apiCheckConflicts(spaceIdRef.value, date, start, end, excludeId);
+      const res = await apiCheckConflicts(spaceIdRef.value, date, endDate, start, end, excludeId);
       return res.data;
     } catch {
       return [];

@@ -35,7 +35,7 @@ const getEventsForDate = (date: dayjs.Dayjs) => {
   
   for (let i = 0; i < props.events.length; i++) {
     const event = props.events[i];
-    if (event && event.eventDate === targetDate) {
+    if (event && (event.displayDate || event.eventDate) === targetDate) {
       result.push(event);
     }
   }
@@ -45,6 +45,23 @@ const getEventsForDate = (date: dayjs.Dayjs) => {
 };
 
 // View tuần render trực tiếp từ mảng event đã được store đồng bộ sẵn.
+const getDisplayStartTime = (event: CalendarEvent) =>
+  (event.displayStartTime || event.startTime).substring(0, 5);
+
+const getOriginalStartLabel = (event: CalendarEvent) => {
+  const dateTime = event.originalStartDateTime
+    ? dayjs(event.originalStartDateTime)
+    : dayjs(`${event.eventDate}T${event.startTime}`);
+  if (!dateTime.isValid()) return event.startTime.substring(0, 5);
+  return `${dateTime.format("HH:mm")} ${dateTime.format("DD/MM")}`;
+};
+
+const getContinuationLabel = (event: CalendarEvent) => {
+  if (event.continuesFromPreviousDay && event.continuesToNextDay) return "TIẾP TỤC";
+  if (event.continuesFromPreviousDay) return "TỪ HÔM TRƯỚC";
+  if (event.continuesToNextDay) return "SANG HÔM SAU";
+  return "";
+};
 </script>
 <template>
   <ScrollArea class="calendar-scroll-area min-h-0 flex-1">
@@ -83,13 +100,17 @@ const getEventsForDate = (date: dayjs.Dayjs) => {
               v-for="event in getEventsForDate(date)"
               :key="event.id"
               @click="emit('viewEvent', event)"
-              class="cursor-pointer rounded-xl border-2 border-border bg-muted/35 p-3 text-foreground shadow-[0_16px_28px_-28px_var(--color-primary)] transition-all hover:-translate-y-0.5 hover:border-primary hover:bg-background"
+              class="group cursor-pointer rounded-xl border-2 border-border bg-muted/35 p-3 text-foreground shadow-[0_16px_28px_-28px_var(--color-primary)] transition-all hover:-translate-y-0.5 hover:border-primary hover:bg-background"
             >
               <p class="text-xs font-mono font-bold truncate uppercase text-primary">
                 {{ event.title }}
               </p>
               <p class="mt-2 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-mono font-bold text-primary w-fit">
-                {{ event.startTime.substring(0, 5) }}
+                <span class="group-hover:hidden">{{ getDisplayStartTime(event) }}</span>
+                <span class="hidden group-hover:inline">{{ getOriginalStartLabel(event) }}</span>
+              </p>
+              <p v-if="getContinuationLabel(event)" class="mt-2 text-[9px] font-mono font-bold uppercase tracking-widest text-muted-foreground">
+                {{ getContinuationLabel(event) }}
               </p>
             </div>
             <div

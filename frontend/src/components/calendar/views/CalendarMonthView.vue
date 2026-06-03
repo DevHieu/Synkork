@@ -53,7 +53,7 @@ const getEventsForDate = (date: dayjs.Dayjs) => {
   
   for (let i = 0; i < props.events.length; i++) {
     const event = props.events[i];
-    if (event && event.eventDate === targetDate) {
+    if (event && (event.displayDate || event.eventDate) === targetDate) {
       result.push(event);
     }
   }
@@ -72,7 +72,7 @@ const hasEvent = (date: dayjs.Dayjs) => {
   const targetDate = date.format("YYYY-MM-DD");
   for (let i = 0; i < props.events.length; i++) {
     const event = props.events[i];
-    if (event && event.eventDate === targetDate) return true;
+    if (event && (event.displayDate || event.eventDate) === targetDate) return true;
   }
   return false;
 };
@@ -84,6 +84,33 @@ const getCreatorLabel = (event: CalendarEvent) => {
     return "Do bạn tạo";
   }
   return event.createdByDisplayName || event.createdByUsername;
+};
+
+const getDisplayStartTime = (event: CalendarEvent) =>
+  (event.displayStartTime || event.startTime).substring(0, 5);
+
+const getDisplayEndTime = (event: CalendarEvent) =>
+  (event.displayEndTime || event.endTime).substring(0, 5);
+
+const formatDateTimeLabel = (value: string | undefined, fallbackDate: string, fallbackTime: string) => {
+  const dateTime = value ? dayjs(value) : dayjs(`${fallbackDate}T${fallbackTime}`);
+  if (!dateTime.isValid()) return fallbackTime.substring(0, 5);
+  return `${dateTime.format("HH:mm")} ${dateTime.format("DD/MM")}`;
+};
+
+const getOriginalStartLabel = (event: CalendarEvent) =>
+  formatDateTimeLabel(event.originalStartDateTime, event.eventDate, event.startTime);
+
+const getOriginalEndLabel = (event: CalendarEvent) =>
+  formatDateTimeLabel(event.originalEndDateTime, event.endDate || event.eventDate, event.endTime);
+
+const getContinuationLabel = (event: CalendarEvent) => {
+  if (event.continuesFromPreviousDay && event.continuesToNextDay) {
+    return "BẮT ĐẦU TỪ NGÀY HÔM TRƯỚC VÀ TIẾP TỤC";
+  }
+  if (event.continuesFromPreviousDay) return "BẮT ĐẦU TỪ NGÀY HÔM TRƯỚC";
+  if (event.continuesToNextDay) return "TIẾP TỤC Ở NGÀY HÔM SAU";
+  return "";
 };
 </script>
 
@@ -192,7 +219,11 @@ const getCreatorLabel = (event: CalendarEvent) => {
               <div class="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
                 <span class="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-wider">THỜI GIAN</span>
                 <div class="font-mono text-sm font-bold mt-1 text-primary">
-                  {{ event.startTime.substring(0, 5) }} &rarr; {{ event.endTime.substring(0, 5) }}
+                  <span class="group-hover:hidden">{{ getDisplayStartTime(event) }} &rarr; {{ getDisplayEndTime(event) }}</span>
+                  <span class="hidden group-hover:inline">{{ getOriginalStartLabel(event) }} &rarr; {{ getOriginalEndLabel(event) }}</span>
+                </div>
+                <div v-if="getContinuationLabel(event)" class="mt-2 text-[9px] font-mono font-bold uppercase tracking-widest text-muted-foreground">
+                  {{ getContinuationLabel(event) }}
                 </div>
               </div>
 

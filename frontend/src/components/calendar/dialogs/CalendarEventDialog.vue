@@ -8,12 +8,14 @@ import EventRecurrenceSection from "../sub-components/EventRecurrenceSection.vue
 import EventAttendeesSection from "../sub-components/EventAttendeesSection.vue";
 import EventAttachmentsSection from "../sub-components/EventAttachmentsSection.vue";
 import { useEventForm, type EventFormData } from "../composables/useEventForm";
+import type { Member } from "@/types/Member";
 
 // Khai báo Props và Emits
 const props = defineProps<{
   show: boolean;
   isEditing: boolean;
   initialData: EventFormData;
+  roomMembers: Member[];
 }>();
 
 const emit = defineEmits<{
@@ -25,12 +27,13 @@ const emit = defineEmits<{
 const {
   formData,
   warningMessage, showWarning,
-  validate, resetForm,
+  validate, warnInvalidEventLink, resetForm,
 } = useEventForm(props.initialData, props.isEditing);
 
 // Các hàm xử lý cập nhật dữ liệu từ component con
-const onTimeChange = (data: { eventDate: string; startTime: string; endTime: string }) => {
+const onTimeChange = (data: { eventDate: string; endDate: string; startTime: string; endTime: string }) => {
   formData.value.eventDate = data.eventDate;
+  formData.value.endDate = data.endDate;
   formData.value.startTime = data.startTime;
   formData.value.endTime = data.endTime;
 };
@@ -41,7 +44,7 @@ const onRecurrenceChange = (data: { recurrenceType: string; recurrenceEndDate?: 
 };
 
 const onAttendeesChange = (list: string[]) => {
-  formData.value.attendees = list;
+  formData.value.attendeeIds = list;
 };
 
 const onAttachmentsChange = (list: any[]) => {
@@ -60,6 +63,7 @@ watch(
 // Xử lý gửi biểu mẫu
 const handleSubmit = (): void => {
   if (validate()) {
+    warnInvalidEventLink();
     emit("save", { ...formData.value });
   }
 };
@@ -111,8 +115,18 @@ const handleSubmit = (): void => {
                   class="w-full resize-none rounded-lg border-2 border-border bg-background px-4 py-3 font-mono text-sm uppercase text-foreground placeholder-muted-foreground transition-colors focus:outline-none focus:border-primary" />
               </div>
 
+              <!-- Link sự kiện -->
+              <div
+                class="rounded-xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)] cursor-default">
+                <label
+                  class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">LINK
+                  SỰ KIỆN</label>
+                <input v-model="formData.eventLink" type="text" placeholder="HTTPS://..."
+                  class="w-full rounded-lg border-2 border-border bg-background px-4 py-3 font-mono text-sm text-foreground placeholder-muted-foreground transition-colors focus:outline-none focus:border-primary" />
+              </div>
+
               <!-- Ngày & Giờ Section -->
-              <EventTimeSection :show="show" :initial-date="initialData.eventDate"
+              <EventTimeSection :show="show" :initial-date="initialData.eventDate" :initial-end-date="initialData.endDate"
                 :initial-start-time="initialData.startTime" :initial-end-time="initialData.endTime"
                 @change="onTimeChange" />
 
@@ -121,7 +135,7 @@ const handleSubmit = (): void => {
                 :initial-end-date="initialData.recurrenceEndDate" :event-date="formData.eventDate"
                 @change="onRecurrenceChange" />
               <!-- Người tham gia Section -->
-              <EventAttendeesSection :show="show" :initial-attendees="initialData.attendees"
+              <EventAttendeesSection :show="show" :room-members="roomMembers" :initial-attendee-ids="initialData.attendeeIds"
                 @change="onAttendeesChange" />
 
               <!-- Tệp đính kèm Section -->

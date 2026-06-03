@@ -52,7 +52,7 @@ const hasEvent = (date: dayjs.Dayjs, monthIndex: number) => {
   
   for (let i = 0; i < props.events.length; i++) {
     const event = props.events[i];
-    if (event && event.eventDate === targetDate) {
+    if (event && (event.displayDate || event.eventDate) === targetDate) {
       return true;
     }
   }

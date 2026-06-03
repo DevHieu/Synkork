@@ -79,11 +79,11 @@ const themeClasses = computed(() => {
       };
     case "warning":
       return {
-        icon: "text-accent",
-        border: "border-accent",
-        bg: "bg-accent/10",
-        btn: "bg-accent text-accent-foreground border-accent hover:bg-background hover:text-accent",
-        shadow: "box-shadow: 4px 4px 0px 0px var(--color-accent);",
+        icon: "text-amber-500",
+        border: "border-amber-500",
+        bg: "bg-amber-500/15",
+        btn: "bg-amber-500 text-black border-amber-500 hover:bg-background hover:text-amber-500",
+        shadow: "box-shadow: 4px 4px 0px 0px rgb(245 158 11);",
       };
     default:
       return {
@@ -104,10 +104,10 @@ const themeClasses = computed(() => {
       :class="themeClasses.border"
     >
       <div class="p-6">
-        <AlertDialogHeader class="flex flex-row items-center gap-4 space-y-0 pb-4">
+        <AlertDialogHeader class="flex flex-row items-center gap-4 space-y-0 rounded-2xl border p-4" :class="[themeClasses.border, themeClasses.bg]">
           <div
-            class="flex size-12 items-center justify-center rounded-full border-2"
-            :class="[themeClasses.border, themeClasses.bg, themeClasses.icon]"
+            class="flex size-12 shrink-0 items-center justify-center rounded-full border-2 bg-background"
+            :class="[themeClasses.border, themeClasses.icon]"
           >
             <component :is="iconComponent" :size="24" stroke-width="2.5" />
           </div>
@@ -118,7 +118,10 @@ const themeClasses = computed(() => {
           </div>
         </AlertDialogHeader>
 
-        <AlertDialogDescription class="font-mono text-sm uppercase text-muted-foreground leading-relaxed">
+        <AlertDialogDescription
+          class="mt-4 rounded-2xl border p-4 font-mono text-sm uppercase leading-relaxed text-foreground"
+          :class="[themeClasses.border, themeClasses.bg]"
+        >
           <span v-html="message"></span>
         </AlertDialogDescription>
       </div>
