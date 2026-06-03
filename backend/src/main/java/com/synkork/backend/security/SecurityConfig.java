@@ -60,7 +60,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/public/**", "/auth/**", "/ws/**").permitAll()
+                        .requestMatchers("/public/**", "/auth/**", "/ws/**", "/payment/**","/payment/momo/callback","/payment/momo/mock-success").permitAll()
                         .requestMatchers("/manage/auth/login").permitAll()
                         .requestMatchers("/manage/auth/check").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/manage/admin/**").hasAnyRole("ADMIN")

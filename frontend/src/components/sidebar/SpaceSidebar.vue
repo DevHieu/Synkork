@@ -49,14 +49,20 @@ const openAddSpaceDialog = (type: string) => {
 const handleCreateSpace = async (name: string, type: string) => {
   const roomId = currentRoom.value?.id ?? "";
 
-  const res = await createSpace(roomId, {
-    name,
-    type,
-  });
+  try {
+    const res = await createSpace(roomId, { name, type });
 
-  if (res.status === 200) {
-    toast.success("Tạo kênh thành công");
-    spaceStore.changeSpaceById(res.data.id, type);
+    if (res.status === 200) {
+      toast.success("Tạo kênh thành công");
+      spaceStore.changeSpaceById(res.data.id, type);
+    }
+  } catch (error: any) {
+    const msg =
+      error?.response?.data?.message ||
+      error?.response?.data ||
+      error?.message ||
+      "Có lỗi xảy ra";
+    toast.error(msg);
   }
 };
 

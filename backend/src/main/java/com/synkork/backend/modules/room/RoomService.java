@@ -18,8 +18,11 @@ import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
 import com.synkork.backend.modules.space.SpaceEntity;
 import com.synkork.backend.modules.space.SpaceService;
 import com.synkork.backend.modules.space.dto.CreateSpaceRequest;
+import com.synkork.backend.modules.user.PlanLimitService;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
+import com.synkork.backend.modules.user.enums.PlanEnum;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -68,25 +71,36 @@ public class RoomService {
     }
 
     public RoomEntity createRoom(CreateRoomDto roomData) {
-        RoomEntity roomEntity = new RoomEntity();
+        if (roomData.ownerId() != null) {
+            UUID ownerId = UUID.fromString(roomData.ownerId());
+            UserEntity owner = userRepository.findById(ownerId)
+                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
 
+            PlanEnum plan = owner.getCurrentPlan();
+            int maxRooms = PlanLimitService.maxRooms(plan);
+            long currentRooms = roomMemberRepository.countGroupRoomsByUserIdAndRole(
+                ownerId, RoomMemberRoleEnum.OWNER
+            );
+
+            if (currentRooms >= maxRooms) {
+                throw new RuntimeException(
+                    "Gói " + plan + " chỉ được tạo tối đa " + maxRooms + " room. Vui lòng nâng cấp gói."
+                );
+            }
+        }
+
+        RoomEntity roomEntity = new RoomEntity();
         roomEntity.setName(roomData.name());
         roomEntity.setInviteCode(generateInviteCode());
 
         if (roomData.imageFile() != null) {
             FileUploaded avatar = imageService.uploadImage(roomData.imageFile(), "roomAvatar");
-
             roomEntity.setAvatarUrl(avatar.url());
             roomEntity.setAvatarId(avatar.publicId());
         }
 
-        UUID ownerId = null;
         if (roomData.ownerId() != null) {
-            ownerId = UUID.fromString(roomData.ownerId());
-            roomEntity.setOwner(userRepository.getReferenceById(ownerId));
-        }
-
-        if (ownerId != null) {
+            UUID ownerId = UUID.fromString(roomData.ownerId());
             roomEntity.setOwner(userRepository.getReferenceById(ownerId));
         }
 

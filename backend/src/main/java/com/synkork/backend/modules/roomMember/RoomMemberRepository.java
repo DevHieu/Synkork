@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.synkork.backend.modules.collaboration.task.column.ColumnEntity;
+import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
 
 import java.util.List;
 import java.util.Optional;
@@ -38,4 +39,7 @@ public interface RoomMemberRepository extends JpaRepository<RoomMemberEntity, UU
     // Optional<RoomMemberEntity> findByUser_Email(String creatorEmail);
 
     Optional<RoomMemberEntity> findByUser_EmailAndRoom_Id(String creatorEmail, UUID roomId);
+
+    @Query("SELECT COUNT(rm) FROM RoomMemberEntity rm WHERE rm.user.id = :userId AND rm.role = :role AND rm.room.type = 'GROUP'")
+long countGroupRoomsByUserIdAndRole(@Param("userId") UUID userId, @Param("role") RoomMemberRoleEnum role);
 }

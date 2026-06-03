@@ -70,22 +70,16 @@ export const useRoomsStore = defineStore("rooms", {
       ownerId: string;
       imageFile?: File;
     }) {
-      try {
-        const userStore = useUserStore();
-        const { user } = storeToRefs(userStore);
-
-        if (!user.value) return;
-
-        roomData.ownerId = (user.value as any).id;
-
-        const newRoom = await createRoom(roomData);
-
-        this.rooms.unshift(newRoom);
-
-        this.changeRoom(newRoom, undefined);
-      } catch (error) {
-        console.error("Error creating room:", error);
-      }
+      const userStore = useUserStore();
+      const { user } = storeToRefs(userStore);
+    
+      if (!user.value) return;
+    
+      roomData.ownerId = (user.value as any).id;
+      const newRoom = await createRoom(roomData);
+    
+      this.rooms.unshift(newRoom);
+      this.changeRoom(newRoom, undefined);
     },
 
     async joinRoom(inviteCode: string) {
