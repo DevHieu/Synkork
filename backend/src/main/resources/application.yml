@@ -1,7 +1,7 @@
 spring:
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/synkork?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
-    username: ${DB_USERNAME:huynhtrunghieu}
+    username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:123}
 
   jpa:
@@ -53,7 +53,7 @@ momo:
   secret-key: K951B6PE1waDMi640xX08PD3vg6EkVlz
   endpoint: https://test-payment.momo.vn/v2/gateway/api/create
   redirect-url: http://localhost:5173/me/subscriptions
-  ipn-url: http://localhost:8080/api/payment/momo/callback
+  ipn-url: https://fbb2-113-173-203-222.ngrok-free.app/api/payment/momo/callback
 
 server:
   port: 8080

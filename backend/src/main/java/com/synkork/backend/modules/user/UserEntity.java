@@ -13,6 +13,8 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "users")
 @Getter @Setter
@@ -49,4 +51,6 @@ public class UserEntity extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private PlanEnum currentPlan = PlanEnum.FREE;
+
+    private LocalDateTime planExpiresAt;
 }

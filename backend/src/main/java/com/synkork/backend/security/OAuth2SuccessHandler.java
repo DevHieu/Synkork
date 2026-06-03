@@ -1,6 +1,7 @@
 package com.synkork.backend.security;
 
 import com.synkork.backend.modules.user.UserEntity;
+import com.synkork.backend.modules.user.UserRepository;
 import com.synkork.backend.modules.user.UserService;
 import com.synkork.backend.modules.user.enums.ProviderEnum;
 import jakarta.servlet.ServletException;
@@ -22,6 +23,9 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     private String frontendUrl;
 
     @Autowired
+    UserRepository userRepository;
+
+    @Autowired
     UserService userService;
 
     @Autowired
@@ -32,7 +36,9 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         OAuth2User oAuth2User =  (OAuth2User) authentication.getPrincipal();
 
         String email = oAuth2User.getAttribute("email");
-        UserEntity existedUser = userService.findByEmail(email);
+
+        // Đoạn này dùng repo để check để còn cho cái trường hợp null. Chứ trong service đang trả về lỗi luôn thaành ra không tạo tk bằng google được
+        UserEntity existedUser = userRepository.findByEmail(email).orElse(null);
 
         if (existedUser != null) {
 

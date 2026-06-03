@@ -1,7 +1,7 @@
-package com.synkork.backend.modules.subscription;
+package com.synkork.backend.modules.payment;
 
-import com.synkork.backend.modules.subscription.enums.InvoiceStatusEnum;
-import com.synkork.backend.modules.subscription.enums.PaymentMethodEnum;
+import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
+import com.synkork.backend.modules.payment.enums.PaymentMethodEnum;
 import com.synkork.backend.modules.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -30,15 +30,8 @@ public class InvoiceEntity {
     @JoinColumn(name = "user_id", nullable = false, columnDefinition = "BINARY(16)")
     private UserEntity user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subscription_id", nullable = false, columnDefinition = "BINARY(16)")
-    private UserSubscriptionEntity subscription;
-
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
-
-    @Column(nullable = false, length = 10)
-    private String currency = "VND";
 
     // PENDING | PAID | FAILED | REFUNDED
     @Enumerated(EnumType.STRING)
@@ -50,7 +43,6 @@ public class InvoiceEntity {
     @Column(length = 20)
     private PaymentMethodEnum paymentMethod;
 
-    // ID trả về từ payment gateway
     @Column(length = 255)
     private String transactionId;
 

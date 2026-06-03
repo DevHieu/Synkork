@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { useRoute } from "vue-router";
-import axios from "@/types/axios";
 import { useUserStore } from "@/stores/userStore";
+import axiosClient from "@/lib/axiosClient";
 
-const route = useRoute();
 const userStore = useUserStore();
 const selectedPlan = ref("");
 const activePlan = ref(""); // gói đang active
@@ -20,7 +18,7 @@ onMounted(async () => {
     await userStore.getUserInfo();
   }
   if (userStore.user?.currentPlan && userStore.user.currentPlan !== "FREE") {
-    activePlan.value = userStore.user.currentPlan.charAt(0).toUpperCase() 
+    activePlan.value = userStore.user.currentPlan.charAt(0).toUpperCase()
       + userStore.user.currentPlan.slice(1).toLowerCase();
   }
 });
@@ -75,33 +73,16 @@ const choosePlan = async (planName: string) => {
   loading.value = true;
 
   try {
-    const response = await axios.post("/payment/momo", {
+    const response = await axiosClient.post("/api/payment/momo", {
       plan: planName.toUpperCase(),
+      billingCycle: "MONTHLY",
     });
 
-    qrUrl.value = response.data.paymentUrl;
+    qrUrl.value = response.data.payUrl;
     showQR.value = true;
     countdown.value = 5;
 
-    // Mở trang MoMo tab mới
-    window.open(qrUrl.value, "_blank");
-
-    countdownTimer = setInterval(() => {
-      countdown.value--;
-      if (countdown.value <= 0) {
-        clearInterval(countdownTimer!);
-        showQR.value = false;
-        paymentStatus.value = "success";
-        activePlan.value = planName; // đánh dấu gói đã mua
-        selectedPlan.value = "";
-
-        // Tự ẩn toast sau 3 giây
-        setTimeout(() => {
-          paymentStatus.value = null;
-        }, 3000);
-      }
-    }, 1000);
-
+    window.location.href = qrUrl.value;
   } catch (error) {
     console.error("Payment error:", error);
     alert("Có lỗi xảy ra, vui lòng thử lại.");
@@ -128,17 +109,14 @@ const cancelQR = () => {
   <div class="min-h-screen background text-white px-6 py-10">
 
     <!-- Modal QR -->
-    <div v-if="showQR"
-      class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+    <div v-if="showQR" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
       <div class="bg-white rounded-3xl p-8 flex flex-col items-center gap-4 max-w-sm w-full mx-4">
 
         <h2 class="text-xl font-bold text-gray-800">Quét mã để thanh toán</h2>
         <p class="text-sm text-gray-500">Tab MoMo đã mở — hoặc quét QR bên dưới</p>
 
-        <img
-          :src="`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}`"
-          class="w-48 h-48 rounded-xl border border-gray-100"
-        />
+        <img :src="`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}`"
+          class="w-48 h-48 rounded-xl border border-gray-100" />
 
         <div class="flex flex-col items-center gap-1">
           <div class="text-4xl font-bold text-pink-500">{{ countdown }}</div>
@@ -146,16 +124,11 @@ const cancelQR = () => {
         </div>
 
         <div class="w-full bg-gray-100 rounded-full h-1.5">
-          <div
-            class="bg-pink-500 h-1.5 rounded-full transition-all duration-1000"
-            :style="{ width: `${((5 - countdown) / 5) * 100}%` }"
-          />
+          <div class="bg-pink-500 h-1.5 rounded-full transition-all duration-1000"
+            :style="{ width: `${((5 - countdown) / 5) * 100}%` }" />
         </div>
 
-        <button
-          @click="cancelQR"
-          class="text-sm text-gray-400 hover:text-gray-600 mt-2 transition"
-        >
+        <button @click="cancelQR" class="text-sm text-gray-400 hover:text-gray-600 mt-2 transition">
           Huỷ thanh toán
         </button>
       </div>
@@ -203,28 +176,19 @@ const cancelQR = () => {
       </div>
 
       <!-- Plan Cards -->
-      <div
-        v-for="plan in plans"
-        :key="plan.name"
-        class="relative rounded-3xl p-6 transition duration-300 hover:scale-105 hover:shadow-2xl"
-        :class="[
+      <div v-for="plan in plans" :key="plan.name"
+        class="relative rounded-3xl p-6 transition duration-300 hover:scale-105 hover:shadow-2xl" :class="[
           plan.cardClass,
           activePlan === plan.name ? 'ring-2 ring-green-400/60' : ''
-        ]"
-      >
+        ]">
         <!-- Popular badge -->
-        <div
-          v-if="plan.popular"
-          class="absolute top-5 right-5 bg-red-600 text-xs px-3 py-1 rounded-full font-semibold"
-        >
+        <div v-if="plan.popular" class="absolute top-5 right-5 bg-red-600 text-xs px-3 py-1 rounded-full font-semibold">
           Popular
         </div>
 
         <!-- Active badge -->
-        <div
-          v-if="activePlan === plan.name"
-          class="absolute top-5 left-5 bg-green-500 text-xs px-3 py-1 rounded-full font-semibold"
-        >
+        <div v-if="activePlan === plan.name"
+          class="absolute top-5 left-5 bg-green-500 text-xs px-3 py-1 rounded-full font-semibold">
           ✅ Đang dùng
         </div>
 
@@ -255,16 +219,12 @@ const cancelQR = () => {
         </div>
 
         <!-- Button -->
-        <button
-          @click="choosePlan(plan.name)"
-          :disabled="loading || plan.name === 'Free' || activePlan === plan.name"
-          class="mt-10 w-full rounded-xl py-3 font-semibold transition"
-          :class="[
+        <button @click="choosePlan(plan.name)" :disabled="loading || plan.name === 'Free' || activePlan === plan.name"
+          class="mt-10 w-full rounded-xl py-3 font-semibold transition" :class="[
             plan.name === 'Free' || activePlan === plan.name
               ? 'bg-white/10 cursor-not-allowed opacity-50 text-white/60'
               : plan.buttonColor,
-          ]"
-        >
+          ]">
           <span v-if="loading && selectedPlan === plan.name">Đang xử lý...</span>
           <span v-else-if="plan.name === 'Free'">Current Plan</span>
           <span v-else-if="activePlan === plan.name">Current Plan</span>
@@ -280,6 +240,7 @@ const cancelQR = () => {
 .fade-leave-active {
   transition: opacity 0.5s ease;
 }
+
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;

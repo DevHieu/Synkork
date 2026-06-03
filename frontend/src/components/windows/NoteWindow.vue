@@ -107,6 +107,7 @@
       <ReminderDialog :open="reminderOpen" :note="reminderNote" @close="reminderOpen = false"
         @confirm="handleReminderConfirm" />
     </div>
+  </div>
 </template>
 
 <script setup lang="ts">
