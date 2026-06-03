@@ -63,8 +63,9 @@ public class SecurityConfig {
                         .requestMatchers("/public/**", "/auth/**", "/ws/**").permitAll()
                         .requestMatchers("/manage/auth/login").permitAll()
                         .requestMatchers("/manage/auth/check").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers("/manage/admin/**").hasAnyRole("ADMIN")
-                        .requestMatchers("/manage/**").hasAnyRole("ADMIN", "MANAGER")
+//                        .requestMatchers("/manage/admin/**").hasAnyRole("ADMIN")
+//                        .requestMatchers("/manage/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers("/manage/**").authenticated()
                         .anyRequest().authenticated())
                 .oauth2Login(oauth -> oauth
                         .successHandler(oAuth2SuccessHandler))
