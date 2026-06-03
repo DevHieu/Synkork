@@ -57,9 +57,9 @@ public class UserService {
         return userRepository.findByEmail(email).orElse(null);
     }
 
-    public UserEntity getUserInfoByUsername(String username) {
-        return userRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("User không tồn tại"));
-    }
+//    public UserEntity getUserInfoByUsername(String username) {
+//        return userRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("User không tồn tại"));
+//    }
 
     public UserEntity updateUser(UserEntity existedUser) {
         return userRepository.save(existedUser);
