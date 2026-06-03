@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.collaboration.note;
 
 import com.synkork.backend.common.utils.EmailService;
+import com.synkork.backend.modules.collaboration.note.dto.NoteResponse;
 import com.synkork.backend.modules.notification.NotificationService;
 import com.synkork.backend.modules.notification.enums.NotificationRefTypeEnum;
 import com.synkork.backend.modules.notification.enums.NotificationTypeEnum;
