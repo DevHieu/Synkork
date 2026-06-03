@@ -29,3 +29,23 @@ export const getSpaceMembers = async (spaceId: string) => {
     const res = await axiosClient.get(`/api/space/${spaceId}/members`);
     return res.data;
 }
+
+export const archiveCard = async (spaceId: string, cardId: string) => {
+    const res = await axiosClient.patch(`/api/space/${spaceId}/card/${cardId}/archive`);
+    return res.data;
+}
+
+export const unarchiveCard = async (spaceId: string, cardId: string) => {
+    const res = await axiosClient.patch(`/api/space/${spaceId}/card/${cardId}/unarchive`);
+    return res.data;
+}
+
+export const getArchivedCards = async (spaceId: string) => {
+    const res = await axiosClient.get(`/api/space/${spaceId}/card/archived`);
+    return res.data;
+}
+
+export const deleteAllArchivedCards = async (spaceId: string) => {
+    const res = await axiosClient.delete(`/api/space/${spaceId}/card/archived/all`);
+    return res.data;
+}

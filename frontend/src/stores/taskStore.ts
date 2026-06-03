@@ -1,7 +1,7 @@
 import type { CardEvent, CardMovePayload, ColumnEvent, TaskMoveEvent } from "@/types/Task";
 import { defineStore } from "pinia";
-import { getAllColumns, createColumn, updateColumn, deleteColumn, moveColumn } from '@/services/task/columnService'
-import { createCard, deleteCard, moveCard, updateCard } from "@/services/task/cardService";
+import { getAllColumns, createColumn, updateColumn, deleteColumn, moveColumn, unarchiveColumn, archiveColumn, getArchivedColumns, deleteAllArchivedColumns } from '@/services/task/columnService'
+import { archiveCard, createCard, deleteAllArchivedCards, deleteCard, getArchivedCards, moveCard, unarchiveCard, updateCard } from "@/services/task/cardService";
 import { socketService } from "@/services/websocket/socketService";
 import { taskSocket } from "@/services/websocket/taskSocket";
 
@@ -9,11 +9,13 @@ export const useTaskStore = defineStore("task", {
     state: () => ({
         tasks: [] as CardEvent[],
         columns: [] as ColumnEvent[],
+        archivedCards: [] as CardEvent[],
+        archivedColumns: [] as ColumnEvent[],
         loading: false,
     }),
 
     actions: {
-        async subscribeTospace (spaceId: string) {
+        async subscribeTospace(spaceId: string) {
             socketService.connect();
 
             taskSocket.subscribeCardCreate(spaceId, (card) => {
@@ -64,6 +66,53 @@ export const useTaskStore = defineStore("task", {
                 };
             });
 
+            taskSocket.subscribeCardArchive(spaceId, (card) => {
+                console.log("Card đã được lưu trữ: ", card)
+                this.columns.forEach(col => {
+                    if (!col.cards) return
+                    const index = col.cards.findIndex(
+                        c => c.id === card.id
+                    )
+                    if (index !== -1) {
+                        col.cards.splice(index, 1)
+                    }
+                })
+                if (!this.archivedCards) {
+                    this.archivedCards = []
+                }
+                this.archivedCards.unshift(card)
+            });
+
+            taskSocket.subscribeCardUnarchive(spaceId, (card) => {
+                console.log("Card đã được khôi phục: ", card)
+                const archivedIndex = this.archivedCards.findIndex(c => c.id === card.id)
+                if (archivedIndex !== -1) {
+                    this.archivedCards.splice(archivedIndex, 1)
+                }
+                const col = this.columns.find(c => c.id === card.columnId)
+                if (col) {
+                    col.cards = col.cards || []
+                    col.cards.push(card)
+                    col.cards.sort((a, b) => a.position - b.position)
+                }
+            });
+
+            taskSocket.subscribeCardDeleteArchived(spaceId, (card) => {
+                console.log("Tất cả thẻ đã lưu trữ bị xóa: ", card)
+                const index = this.archivedCards.findIndex(c => c.id === card.id)
+                if (index !== -1) {
+                    this.archivedCards.splice(index, 1)
+                }
+            });
+
+            taskSocket.subscribeColumnDeleteArchived(spaceId, (column) => {
+                console.log("Tất cả cột đã lưu trữ bị xóa: ", column)
+                const index = this.archivedColumns.findIndex(c => c.id === column.id)
+                if (index !== -1) {
+                    this.archivedColumns.splice(index, 1)
+                }
+            });
+
             taskSocket.subscribeColumnCreate(spaceId, (column) => {
                 console.log("Cột mới:", column);
                 this.columns.push(column);
@@ -75,7 +124,7 @@ export const useTaskStore = defineStore("task", {
                 if (index !== -1) {
                     this.columns[index] = column;
                 }
-            })
+            });
 
             taskSocket.subscribeColumnDelete(spaceId, (columnId) => {
                 console.log("Cột bị xóa:", columnId)
@@ -83,10 +132,10 @@ export const useTaskStore = defineStore("task", {
                 if (index !== -1) {
                     this.columns.splice(index, 1);
                 }
-            })
+            });
 
             taskSocket.subscribeColumnMove(spaceId, (col) => {
-                console.log("Cột di chuyển:", col)    
+                console.log("Cột di chuyển:", col)
                 const columnId = col.id
                 const newPosition = col.position
 
@@ -98,6 +147,28 @@ export const useTaskStore = defineStore("task", {
                     this.columns.splice(newPosition, 0, movedItem);
                 }
             });
+
+
+            taskSocket.subscribeColumnArchive(spaceId, (column) => {
+                console.log("Cột đã được lưu trữ: ", column)
+                const index = this.columns.findIndex(
+                    c => c.id === column.id
+                )
+                if (index !== -1) {
+                    this.columns.splice(index, 1)
+                }
+                this.archivedColumns.unshift(column)
+            });
+
+            taskSocket.subscribeColumnUnarchive(spaceId, (column) => {
+                console.log("Cột đã được khôi phục: ", column)
+                const archivedIndex = this.archivedColumns.findIndex(c => c.id === column.id)
+                if (archivedIndex !== -1) {
+                    this.archivedColumns.splice(archivedIndex, 1)
+                }
+                this.columns.push(column)
+                this.columns.sort((a, b) => a.position - b.position)
+            })
         },
 
         async fetchTasks(spaceId: string) {
@@ -119,12 +190,12 @@ export const useTaskStore = defineStore("task", {
         },
 
         async moveColumn(spaceId: string, event: TaskMoveEvent) {
-            if(!event.moved) return
-    
+            if (!event.moved) return
+
             const columnId = event.moved.element.id;
             const newPosition = event.moved.newIndex;
 
-            await moveColumn(spaceId, columnId, newPosition);        
+            await moveColumn(spaceId, columnId, newPosition);
         },
 
         async setCards(columnIndex: number, cards: CardEvent[]) {
@@ -134,19 +205,19 @@ export const useTaskStore = defineStore("task", {
         },
 
         async saveCard(spaceId: string, cardId: string, columnId: string, title: string, description: string, assigneeIds: string[] = [], dueDate?: string) {
-            if(cardId) await updateCard(spaceId, cardId, { title, description, assigneeIds, dueDate })
+            if (cardId) await updateCard(spaceId, cardId, { title, description, assigneeIds, dueDate })
             else await createCard(spaceId, { columnId, title, description })
         },
-        
+
         async moveCard(spaceId: string, columnId: string, event: TaskMoveEvent) {
             const movedCard = event.moved || event.added
-            if(!movedCard) return
-            
+            if (!movedCard) return
+
             const payload = {
                 targetColumnId: columnId,
                 newPosition: movedCard.newIndex
             }
-            
+
             await moveCard(spaceId, movedCard.element.id, payload);
         },
 
@@ -155,15 +226,76 @@ export const useTaskStore = defineStore("task", {
                 if (deleteType === 'column' && deleteData?.columnId) {
                     await deleteColumn(spaceId, deleteData.columnId)
                     this.columns = this.columns.filter(c => c.id !== deleteData.columnId)
+                    this.archivedColumns = this.archivedColumns.filter(c => c.id !== deleteData.columnId)
                 } else if (deleteType === 'card' && deleteData?.cardId) {
                     await deleteCard(spaceId, deleteData.cardId)
+                    this.archivedCards = this.archivedCards.filter(c => c.id !== deleteData.cardId)
                 }
-                
+
             } catch (e) {
                 console.error("Lỗi:", e)
             }
         },
-    },
 
-    
+        async archiveCard(spaceId: string, cardId: string) {
+            await archiveCard(spaceId, cardId)
+        },
+
+        async archiveColumn(spaceId: string, columnId: string) {
+            await archiveColumn(spaceId, columnId)
+        },
+
+        async unarchiveCard(spaceId: string, cardId: string) {
+            await unarchiveCard(spaceId, cardId)
+        },
+
+        async unarchiveColumn(spaceId: string, columnId: string) {
+            await unarchiveColumn(spaceId, columnId)
+        },
+
+        async fetchArchivedItems(spaceId: string) {
+            const [cardsRes, colsRes] = await Promise.all([
+                getArchivedCards(spaceId),
+                getArchivedColumns(spaceId)
+            ])
+
+            this.archivedCards = cardsRes
+            this.archivedColumns = colsRes.data
+            return { cards: cardsRes.data, columns: colsRes.data }
+            
+        },
+
+        async deleteAllArchivedCards(spaceId: string) {
+            try {
+                await deleteAllArchivedCards(spaceId)
+                this.archivedCards = []
+            } catch (e) {
+                console.error("Lỗi xóa tất cả thẻ đã lưu trữ:", e)
+            }
+        },
+
+        async deleteAllArchivedColumns(spaceId: string) {
+            try {
+                await deleteAllArchivedColumns(spaceId)
+                this.archivedColumns = []
+            } catch (e) {
+                console.error("Lỗi xóa tất cả cột đã lưu trữ:", e)
+            }
+        },
+
+        async deleteAll(deleteAllType: "columns" | "cards", spaceId: string) {
+            try {
+                if (deleteAllType === 'columns') {
+                    await deleteAllArchivedColumns(spaceId)
+                    this.archivedColumns = []
+                } else if (deleteAllType === 'cards') {
+                    await deleteAllArchivedCards(spaceId)
+                    this.archivedCards = []
+                }
+            } catch (e) {
+                console.error("Lỗi:", e)
+            }
+        },
+    }
 });
+                    

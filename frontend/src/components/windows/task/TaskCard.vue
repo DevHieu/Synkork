@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Trash2, Calendar, AlignLeft } from 'lucide-vue-next'
+import { Archive, Calendar, AlignLeft } from 'lucide-vue-next'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -23,7 +23,7 @@ const isCardDetailOpen = ref(false)
 const props = defineProps<{ card: CardEvent, columnName: string, columnId: string }>()
 
 const emit = defineEmits<{
-    delete: [cardId: string]
+    archive: [cardId: string]
 }>()
 
 const openDetail = () => {
@@ -105,14 +105,14 @@ const isOverdue = computed(() => {
                     <h3 class="font-medium text-[13px] leading-snug text-card-foreground break-words flex-1">
                         {{ card.title }}
                     </h3>
-                    <!-- Delete button, appears on hover -->
+                    <!-- Archive button, appears on hover -->
                     <Button
                         variant="ghost"
                         size="icon"
                         class="h-5 w-5 shrink-0 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all duration-150 rounded-md -mt-0.5 -mr-0.5"
-                        @click.stop="emit('delete', card.id)"
+                        @click.stop="emit('archive', card.id)"
                     >
-                        <Trash2 class="w-3 h-3" />
+                        <Archive class="w-3 h-3" />
                     </Button>
                 </div>
 

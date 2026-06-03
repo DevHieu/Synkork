@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { MoreHorizontal, Pencil, Trash2, Plus, GripVertical } from 'lucide-vue-next'
+import { computed } from 'vue'
+import { MoreHorizontal, Pencil, Trash2, Plus, GripVertical, Archive } from 'lucide-vue-next'
 import draggable from 'vuedraggable'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -9,17 +10,26 @@ import {
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import TaskCard from './TaskCard.vue'
-import type { ColumnEvent, TaskMoveEvent } from '@/types/Task'
+import type { CardEvent, ColumnEvent, TaskMoveEvent } from '@/types/Task'
 
-const props = defineProps<{ column: ColumnEvent }>()
+const props = defineProps<{ column: ColumnEvent, spaceName?: string }>()
 
 const emit = defineEmits<{
     editColumn: [column: ColumnEvent]
-    deleteColumn: [columnId: string]
+    archiveColumn: [columnId: string]
     addCard: [columnId: string]
-    deleteCard: [columnId: string, cardId: string]
+    archiveCard: [columnId: string, cardId: string]
     cardMove: [event: TaskMoveEvent, columnId: string]
 }>()
+
+// Dùng computed setter thay vì v-model trực tiếp trên prop
+// tránh Vue warning "mutating prop" và đảm bảo draggable hoạt động đúng
+const localCards = computed<CardEvent[]>({
+    get: () => props.column.cards ?? [],
+    set: (val) => {
+        props.column.cards = val
+    }
+})
 </script>
 
 <template>
@@ -41,7 +51,7 @@ const emit = defineEmits<{
                     variant="secondary"
                     class="text-[10px] font-semibold px-1.5 py-0 h-4 rounded-full shrink-0 bg-primary/10 text-primary border-0"
                 >
-                    {{ column?.cards?.length || 0 }}
+                    {{ localCards.length }}
                 </Badge>
             </div>
 
@@ -69,11 +79,11 @@ const emit = defineEmits<{
                     </DropdownMenuItem>
                     <DropdownMenuSeparator class="mx-2 my-1" />
                     <DropdownMenuItem
-                        @select="emit('deleteColumn', column.id)"
+                        @select="emit('archiveColumn', column.id)"
                         class="gap-2.5 cursor-pointer text-xs font-medium text-destructive focus:text-destructive focus:bg-destructive/10 rounded-lg mx-1 my-0.5"
                     >
-                        <Trash2 class="w-3.5 h-3.5" />
-                        Xóa cột
+                        <Archive class="w-3.5 h-3.5" />
+                        Lưu trữ cột
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
@@ -84,7 +94,7 @@ const emit = defineEmits<{
 
         <!-- Cards list -->
         <draggable
-            v-model="column.cards"
+            v-model="localCards"
             group="tasks"
             item-key="id"
             :animation="200"
@@ -96,7 +106,7 @@ const emit = defineEmits<{
                 <TaskCard
                     :card="card"
                     :column-name="column.name"
-                    @delete="emit('deleteCard', column.id, card.id)"
+                    @archive="emit('archiveCard', column.id, card.id)"
                     :column-id="column.id"
                 />
             </template>
@@ -104,7 +114,7 @@ const emit = defineEmits<{
             <!-- Empty state -->
             <template #footer>
                 <div
-                    v-if="!column.cards?.length"
+                    v-if="!localCards.length"
                     class="flex flex-col items-center justify-center py-8 gap-2 text-muted-foreground/50 select-none pointer-events-none"
                 >
                     <div class="w-8 h-8 rounded-xl border-2 border-dashed border-muted-foreground/20 flex items-center justify-center">

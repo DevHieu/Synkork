@@ -13,7 +13,7 @@ import {
 import {
   Calendar as CalendarIcon,
   UserPlus,
-  Trash2,
+  Archive,
   AlignLeft,
   CreditCard,
   X,
@@ -174,8 +174,8 @@ watch(
         </div>
         <Button variant="ghost" size="sm" @click.stop="handleDelete()"
           class="h-8 text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors mr-5">
-          <Trash2 :size="14" class="mr-1" />
-          <span class="text-xs">Xóa thẻ</span>
+          <Archive :size="14" class="mr-1" />
+          <span class="text-xs">Lưu trữ thẻ</span>
         </Button>
       </div>
 
