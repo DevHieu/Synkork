@@ -35,7 +35,6 @@ export const useFriendStore = defineStore("friend", () => {
         return;
       }
       friends.value = await friendService.getFriends(userId);
-      console.log(friends.value);
 
       subscribeOnlineStatus();
     } catch (e: any) {
@@ -154,6 +153,31 @@ export const useFriendStore = defineStore("friend", () => {
     );
   };
 
+  const getFriendshipStatus = (username: string) => {
+    const friend =
+      friends.value.find((f) => f.username === username) ?? null;
+
+    const sentRequest =
+      sentRequests.value.find(
+        (r) => r.receiverUsername === username,
+      ) ?? null;
+
+    const receivedRequest =
+      pendingRequests.value.find(
+        (r) => r.senderUsername === username,
+      ) ?? null;
+
+    return {
+      friend,
+      sentRequest,
+      receivedRequest,
+      isFriend: !!friend,
+      isPending: !!sentRequest,
+      isReceived: !!receivedRequest,
+      requestId: sentRequest?.id || receivedRequest?.id || null
+    };
+  };
+
   return {
     friends,
     pendingRequests,
@@ -169,5 +193,6 @@ export const useFriendStore = defineStore("friend", () => {
     removeFriend,
     fetchPendingRequests,
     fetchSentRequests,
+    getFriendshipStatus
   };
 });

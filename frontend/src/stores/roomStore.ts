@@ -22,7 +22,7 @@ export const useRoomsStore = defineStore("rooms", {
       this.loading = true;
       try {
         this.rooms = await getUserRooms();
-        console.log(this.rooms);
+        console.trace(this.rooms);
       } finally {
         this.loading = false;
       }
@@ -39,6 +39,8 @@ export const useRoomsStore = defineStore("rooms", {
 
     // Nhận spaceId để check xem khi đổi room có cần redirect đến space nào không
     async changeRoom(room: Room, spaceId?: string, spaceType?: string) {
+      console.log(room);
+
       this.currentRoom = room;
       socketService.unsubscribeAll(); // Hủy tất cả subscription cũ khi đổi room để tránh nhận dữ liệu của phòng trước đó vào
 

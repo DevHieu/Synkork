@@ -97,7 +97,33 @@
       "subtitle": "Chỉ mất 3 phút để bắt đầu sử dụng"
     }
   },
+  "common": {
+    "reset": "Đặt lại"
+  },
+  "pages": {
+    "014": {
+      "ranges": {
+        "7d": "7 ngày",
+        "30d": "30 ngày",
+        "90d": "90 ngày",
+        "1y": "1 năm"
+      },
+      "jumpDate": "Đến ngày",
+      "previousYear": "Năm trước",
+      "previousMonth": "Tháng trước",
+      "nextMonth": "Tháng sau",
+      "nextYear": "Năm sau"
+    }
+  },
   "login": "Đăng nhập",
+  "pagination": {
+    "currentRecord": "Đang hiển thị {from} đến {to} của {total} bản ghi",
+    "first": "Trang đầu",
+    "prev": "Trang trước",
+    "next": "Trang sau",
+    "last": "Trang cuối",
+    "goTo": "Đi đến"
+  },
   "email": "Email",
   "password": "Mật khẩu",
   "download": "Tải xuống",

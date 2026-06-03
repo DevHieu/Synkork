@@ -93,22 +93,16 @@ export const socketService = {
     options?: { persistent?: boolean },
   ) {
     if (!this.isConnected()) {
-      console.error(
-        `[Socket] Khong the dang ky ${destination} vi socket chua ket noi.`,
-      );
       return null;
     }
 
     if (subscriptions.has(destination)) {
-      console.log(`[Socket] Huy dang ky cu de dang ky lai: ${destination}`);
       subscriptions.get(destination)!.unsubscribe();
       subscriptions.delete(destination);
     }
 
-    console.log(`[Socket] Dang ky kenh: ${destination}`);
 
     const sub = stompClient!.subscribe(destination, (msg) => {
-      console.log(`[Socket] Da nhan frame tu kenh ${destination}:`, msg.body);
       try {
         callback(JSON.parse(msg.body));
       } catch {
@@ -121,7 +115,6 @@ export const socketService = {
     // Đánh dấu persistent nếu có
     if (options?.persistent) {
       persistentDestinations.add(destination);
-      console.log(`[Socket] Danh dau kenh persistent: ${destination}`);
     }
 
     return sub;
@@ -129,12 +122,9 @@ export const socketService = {
 
   // unsubscribeAll bỏ qua persistent
   unsubscribeAll() {
-    console.log("changing");
 
     subscriptions.forEach((sub, destination) => {
       if (!persistentDestinations.has(destination)) {
-        console.log("subscribe: ", sub);
-
         sub.unsubscribe();
         subscriptions.delete(destination);
       }

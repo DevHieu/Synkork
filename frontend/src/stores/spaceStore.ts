@@ -9,7 +9,7 @@ import { useRoomMemberStore } from "./roomMemberStore";
 import { storeToRefs } from "pinia";
 import type { Space } from "@/types/Space";
 import { toast } from "vue-sonner";
-import { watch } from "vue";
+import { nextTick, watch } from "vue";
 
 export const useSpaceStore = defineStore("spaces", {
   state: () => ({
@@ -22,6 +22,7 @@ export const useSpaceStore = defineStore("spaces", {
 
     currentVoiceSpace: null as Space | null,
     loading: true,
+    _joiningDMSpaceId: null as string | null,
   }),
 
   actions: {
@@ -175,14 +176,23 @@ export const useSpaceStore = defineStore("spaces", {
     },
 
     async joinDMSpace(spaceId: string) {
+      if (this._joiningDMSpaceId === spaceId) return;
       try {
+        this._joiningDMSpaceId = spaceId;
         this.loading = true;
         useRoomMemberStore().clearMembers();
-        this.currentSpace = await getSpaceById(spaceId);
+
+        const space = await getSpaceById(spaceId);
+
+        // Không hiểu tại sao hoạt động. Thứ tự 3 dòng này để im như này
+        this.currentSpace = null;
+        await router.push(`/me/${spaceId}`);
+        this.currentSpace = space;
       } catch (error) {
         toast.error("Không thể tham gia phòng chat này.");
       } finally {
         this.loading = false;
+        this._joiningDMSpaceId = null;
       }
     },
 

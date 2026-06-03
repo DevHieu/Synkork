@@ -13,7 +13,7 @@ export function zegoMedia(
   isMuted: Ref<boolean>,
   isDeafen: Ref<boolean>,
 ) {
-  const utils = zegoUtils(participants);
+  const utils = zegoUtils(state, participants);
 
   // Tắt micro
   const muteMicro = async (mute: boolean) => {
