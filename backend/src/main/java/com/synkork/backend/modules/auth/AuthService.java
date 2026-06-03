@@ -138,8 +138,7 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Link không hợp lệ");
         }
 
-        UserEntity user = userRepository.findByEmail(verify.getEmail())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tài khoản không tồn tại"));
+        UserEntity user = verify.getUser();
 
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);

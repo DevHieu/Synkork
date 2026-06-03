@@ -61,11 +61,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/public/**", "/auth/**", "/ws/**").permitAll()
-                        .requestMatchers("/manage/auth/login").permitAll()
                         .requestMatchers("/manage/auth/check").hasAnyRole("ADMIN", "MANAGER")
-//                        .requestMatchers("/manage/admin/**").hasAnyRole("ADMIN")
-//                        .requestMatchers("/manage/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers("/manage/**").authenticated()
+                        .requestMatchers("/manage/auth/**").permitAll()
+                        .requestMatchers("/manage/admin/**").hasAnyRole("ADMIN")
+                        .requestMatchers("/manage/**").hasAnyRole("ADMIN", "MANAGER")
                         .anyRequest().authenticated())
                 .oauth2Login(oauth -> oauth
                         .successHandler(oAuth2SuccessHandler))
