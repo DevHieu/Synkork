@@ -1,6 +1,9 @@
 package com.synkork.backend.modules.friend;
 
 import com.synkork.backend.modules.friend.enums.FriendRequestStatus;
+import com.synkork.backend.modules.notification.NotificationService;
+import com.synkork.backend.modules.notification.enums.NotificationRefTypeEnum;
+import com.synkork.backend.modules.notification.enums.NotificationTypeEnum;
 import com.synkork.backend.modules.room.RoomService;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
@@ -26,6 +29,8 @@ public class FriendService {
     @Autowired
     private RoomService roomService;
 
+    @Autowired NotificationService notificationService;
+
     // Gửi lời mời kết bạn
     public void sendRequest(UUID senderId, UUID receiverId, String message) {
         UserEntity sender = userRepo.findById(senderId)
@@ -36,6 +41,8 @@ public class FriendService {
         if (requestRepo.findBySenderAndReceiver(sender, receiver).isPresent()) {
             throw new RuntimeException("Đã gửi lời mời trước đó");
         }
+
+
 
         FriendRequestEntity req = new FriendRequestEntity();
         req.setSender(sender);
@@ -56,8 +63,12 @@ public class FriendService {
         friendRepo.save(new FriendEntity(null, req.getSender(), req.getReceiver(), conversationId, null));
         friendRepo.save(new FriendEntity(null, req.getReceiver(), req.getSender(), conversationId, null));
 
+        // notificationService.sendFriendNotification(req.getReceiver(), req.getSender(), requestId, NotificationRefTypeEnum.FRIEND_ACCEPT);
+
         requestRepo.delete(req);
 
+        notificationService.sendNotification(req.getReceiver(), req.getSender(), requestId, null, NotificationTypeEnum.FRIEND, NotificationRefTypeEnum.FRIEND_ACCEPT);
+        
        return List.of(req.getSender().getEmail(), req.getReceiver().getEmail());
     }
 
@@ -67,6 +78,8 @@ public class FriendService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy lời mời"));
         String senderEmail = req.getSender().getEmail(); // lấy email trước khi xóa
         requestRepo.delete(req);
+
+        notificationService.sendNotification(req.getReceiver(), req.getSender(), requestId, null, NotificationTypeEnum.FRIEND, NotificationRefTypeEnum.FRIEND_REJECT);
         return senderEmail; // ← thêm dòng này
     }
 
@@ -152,6 +165,8 @@ public class FriendService {
         req.setReceiver(receiver);
         req.setStatus(FriendRequestStatus.PENDING);
         requestRepo.save(req);
+
+        notificationService.sendNotification(req.getSender(), req.getReceiver(), null, null, NotificationTypeEnum.FRIEND, NotificationRefTypeEnum.FRIEND_REQUEST);
 
         // Trả về email de lam socket
         return receiver.getEmail();

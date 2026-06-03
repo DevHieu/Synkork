@@ -172,17 +172,22 @@ public class RoomService {
     }
 
     public UUID createDMRoom(UserEntity sender, UserEntity receiver) {
-        RoomEntity room = new RoomEntity();
-        room.setType(RoomTypeEnum.DM);
-        RoomEntity roomSaved = roomRepository.save(room);
+    RoomEntity room = new RoomEntity();
+    room.setType(RoomTypeEnum.DM);
+    
+    // ✨ THÊM DÒNG NÀY VÀO LÀ ĂN TIỀN NGAY:
+    room.setOwner(sender); 
 
-        roomMemberRepository.save(RoomMemberEntity.builder().id(null).room(room).user(sender).build());
-        roomMemberRepository.save(RoomMemberEntity.builder().id(null).room(room).user(receiver).build());
+    RoomEntity roomSaved = roomRepository.save(room);
 
-        SpaceEntity space = spaceService.createSpace(new CreateSpaceRequest("DM", "CHAT"), roomSaved.getId());
+    roomMemberRepository.save(RoomMemberEntity.builder().id(null).room(roomSaved).user(sender).build());
+    roomMemberRepository.save(RoomMemberEntity.builder().id(null).room(roomSaved).user(receiver).build());
 
-        return space.getId();
-    }
+    SpaceEntity space = spaceService.createSpace(new CreateSpaceRequest("DM", "CHAT"), roomSaved.getId());
+
+    return space.getId();
+}
+
 
     public void deleteRoom(UUID roomId) {
         UUID requesterId = AuthUtils.getCurrentUserId();

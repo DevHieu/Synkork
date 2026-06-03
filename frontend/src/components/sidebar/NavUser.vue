@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/sidebar"
 import { ref } from "vue"
 import SettingsModal from "@/components/sidebar/modals/SettingsModal.vue"
+import NotificationBell from "../notification/NotificationBell.vue"
 
 const props = defineProps<{
   user: { name: string; email: string; avatar: string | undefined }
@@ -44,8 +45,8 @@ const showSettings = ref(false)
           <button @click.stop="showSettings = true" class="ml-auto p-1.5 rounded-md opacity-0 group-hover/navuser:opacity-100
                    hover:bg-sidebar-accent transition-all duration-200
                    text-sidebar-foreground hover:text-sidebar-foreground" title="Cài đặt người dùng">
-            <Bell class="size-[18px]" />
           </button>
+          <NotificationBell class="size-[18px]" />
         </template>
 
         <template v-else>

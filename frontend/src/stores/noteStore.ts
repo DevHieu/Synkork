@@ -24,8 +24,6 @@ export const useNoteStore = defineStore('notes', () => {
   const searchQuery = ref('')
   const currentSpaceId = ref<string | null>(null)
 
-  const reminderQueue = ref<any[]>([])
-
   // FILTER
   const filteredNotes = computed(() => {
     if (!notes.value?.length) return []
@@ -50,44 +48,6 @@ export const useNoteStore = defineStore('notes', () => {
   // HELPERS
   function addNoteToList(note: any) {
     notes.value.unshift(note)
-  }
-
-  function removeReminder(id: string) {
-    reminderQueue.value =
-      reminderQueue.value.filter(r => r.id !== id)
-  }
-
-  // BROWSER NOTIFICATION
-  function _fireNotification(note: Note) {
-    const n = new Notification(`🔔 ${note.title}`, {
-      body: note.note
-        ? note.note.slice(0, 100)
-        : 'Bạn có một nhắc nhở mới',
-      icon: '/favicon.ico',
-      badge: '/favicon.ico',
-      tag: `reminder-${note.id}`,
-      requireInteraction: true,
-    })
-
-    n.onclick = () => {
-      window.focus()
-      n.close()
-    }
-  }
-
-  function showBrowserNotification(note: Note) {
-    if (Notification.permission === 'default') {
-      Notification.requestPermission().then(permission => {
-        if (permission === 'granted') {
-          _fireNotification(note)
-        }
-      })
-      return
-    }
-
-    if (Notification.permission === 'granted') {
-      _fireNotification(note)
-    }
   }
 
   // FETCH
@@ -151,35 +111,6 @@ export const useNoteStore = defineStore('notes', () => {
       notes.value.sort(
         (a, b) => Number(b.pinned) - Number(a.pinned)
       )
-    })
-
-    // REMINDER
-    noteSocket.subscribeReminder(spaceId, (payload) => {
-      console.log('🔔 Reminder received:', payload) 
-      // 1. Browser notification
-      showBrowserNotification(payload)
-
-      // 2. Sound
-      const audio = new Audio('/notification.mp3')
-      audio.volume = 0.5
-      audio.play().catch(() => {})
-
-      // 3. Toast popup
-      reminderQueue.value.unshift({
-        ...payload,
-        visible: true
-      })
-
-      // 4. Auto remove toast sau 15s
-      setTimeout(() => {
-        removeReminder(payload.id)
-      }, 15000)
-
-      // 5. Update note trong store (reminderSent = true từ server)
-      const idx = notes.value.findIndex(n => n.id === payload.id)
-      if (idx !== -1) {
-        notes.value[idx] = payload
-      }
     })
   }
 
@@ -289,8 +220,6 @@ export const useNoteStore = defineStore('notes', () => {
     pinnedNotes,
     unpinnedNotes,
 
-    reminderQueue,
-
     fetchNotes,
     createNote,
     updateNote,
@@ -302,8 +231,5 @@ export const useNoteStore = defineStore('notes', () => {
 
     updateNotePosition,
     setNoteReminder,
-
-    removeReminder,
-    showBrowserNotification,
   }
 })

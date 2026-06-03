@@ -21,6 +21,7 @@ import CreateSpaceDialog from "@/components/dialog/CreateSpaceDialog.vue";
 import RoomSettingDialog from "@/components/dialog/RoomSettingDialog/index.vue";
 import InviteDialog from "@/components/dialog/InviteMemberDialog.vue";
 
+
 const roomStore = useRoomsStore();
 const spaceStore = useSpaceStore();
 const voiceSpaceStore = useVoiceSpaceStore();
