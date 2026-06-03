@@ -58,10 +58,9 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | '/auth/'
       | '/auth/forgot-password'
-      | '/auth/otp'
+      | '/auth/reset-password-success'
       | '/auth/sign-in'
-      | '/auth/sign-in-2'
-      | '/auth/sign-up'
+      | '/auth/verify-otp'
     >,
     '/auth/': RouteRecordInfo<
       '/auth/',
@@ -77,9 +76,9 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
-    '/auth/otp': RouteRecordInfo<
-      '/auth/otp',
-      '/auth/otp',
+    '/auth/reset-password-success': RouteRecordInfo<
+      '/auth/reset-password-success',
+      '/auth/reset-password-success',
       Record<never, never>,
       Record<never, never>,
       | never
@@ -91,16 +90,9 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
-    '/auth/sign-in-2': RouteRecordInfo<
-      '/auth/sign-in-2',
-      '/auth/sign-in-2',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
-    '/auth/sign-up': RouteRecordInfo<
-      '/auth/sign-up',
-      '/auth/sign-up',
+    '/auth/verify-otp': RouteRecordInfo<
+      '/auth/verify-otp',
+      '/auth/verify-otp',
       Record<never, never>,
       Record<never, never>,
       | never
@@ -321,10 +313,9 @@ declare module 'vue-router/auto-routes' {
         | '/auth'
         | '/auth/'
         | '/auth/forgot-password'
-        | '/auth/otp'
+        | '/auth/reset-password-success'
         | '/auth/sign-in'
-        | '/auth/sign-in-2'
-        | '/auth/sign-up'
+        | '/auth/verify-otp'
       views:
         | 'default'
     }
@@ -340,9 +331,9 @@ declare module 'vue-router/auto-routes' {
       views:
         | never
     }
-    'src/pages/auth/otp.vue': {
+    'src/pages/auth/reset-password-success.vue': {
       routes:
-        | '/auth/otp'
+        | '/auth/reset-password-success'
       views:
         | never
     }
@@ -352,15 +343,9 @@ declare module 'vue-router/auto-routes' {
       views:
         | never
     }
-    'src/pages/auth/sign-in-2.vue': {
+    'src/pages/auth/verify-otp.vue': {
       routes:
-        | '/auth/sign-in-2'
-      views:
-        | never
-    }
-    'src/pages/auth/sign-up.vue': {
-      routes:
-        | '/auth/sign-up'
+        | '/auth/verify-otp'
       views:
         | never
     }
