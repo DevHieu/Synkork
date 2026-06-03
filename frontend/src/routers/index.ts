@@ -18,6 +18,7 @@ import CalendarWindowLayout from "@/components/windows/CalendarWindowLayout.vue"
 import FriendPage from "@/pages/FriendPage.vue";
 import MePage from "@/pages/MePage.vue";
 import SubscriptionPage from "@/pages/SubscriptionPage.vue";
+import InvitePage from "@/pages/InvitePage.vue";
 
 import PersonLayout from "@/layouts/PersonLayout.vue";
 import RoomLayout from "@/layouts/RoomLayout.vue";
@@ -27,7 +28,14 @@ import { getCookie, setCookie } from "@/lib/cookies";
 
 const routes = [
   {
+    path: "/invite/:code",
+    component: InvitePage,
+    meta: { public: true },
+  },
+
+  {
     path: "/auth",
+    meta: { public: true },
     children: [
       { path: "", component: AuthPage },
       { path: "forgot-password", component: ForgotPage },
@@ -114,6 +122,9 @@ router.beforeEach(async (to) => {
 
   // Bỏ qua oauth2 redirect
   if (to.path.includes("/oauth2")) return;
+
+  // Route public (invite, auth) → không cần check auth
+  if (to.meta.public) return;
 
   // Nếu không có accessToken, thử refresh
   if (!token && !to.path.includes("/auth")) {
