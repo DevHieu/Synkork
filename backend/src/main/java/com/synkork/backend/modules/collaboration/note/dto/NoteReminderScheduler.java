@@ -50,7 +50,7 @@ public class NoteReminderScheduler {
                     response
             );
 
-            notificationService.sendNotification(null, note.getCreatedBy(), null, note.getSpace().getId(), NotificationTypeEnum.NOTE, NotificationRefTypeEnum.NOTE_REMINDER);
+            notificationService.sendNotification(null, note.getCreatedBy(), null, note.getSpace().getRoom().getId(), note.getSpace().getId(), NotificationTypeEnum.NOTE, NotificationRefTypeEnum.NOTE_REMINDER);
 
             noteService.markReminderSent(note);
         }
