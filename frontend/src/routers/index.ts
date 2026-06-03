@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 // import VideoCall from "@/components/videoCall/VideoCall.vue";
 
+import LandingPage from "@/pages/LandingPage.vue";
 import MainPage from "@/pages/MainPage.vue";
 
 import AuthPage from "@/pages/auth/AuthPage.vue";
@@ -34,6 +35,10 @@ const routes = [
       { path: "verify", component: VerifyPage },
       { path: "reset-password", component: ResetPassword },
     ],
+  },
+  {
+    path: "/introduce",
+    component: LandingPage,
   },
   {
     path: "/",
