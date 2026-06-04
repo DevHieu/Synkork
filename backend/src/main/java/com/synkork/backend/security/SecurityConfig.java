@@ -62,7 +62,8 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/public/**", "/auth/**", "/ws/**").permitAll()
                         .requestMatchers("/payment/momo/callback").permitAll() // Cái này cần permit để momo còn trả về. Do Momo ko thể gửi đc JWT Token
-                        .requestMatchers("/manage/auth/check").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers("/auth/check").authenticated()
+                        .requestMatchers("/manage/auth/check-login").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/manage/auth/**").permitAll()
                         .requestMatchers("/manage/admin/**").hasAnyRole("ADMIN")
                         .requestMatchers("/manage/**").hasAnyRole("ADMIN", "MANAGER")

@@ -64,3 +64,8 @@ export const resetPassword = async (token: string, password: string) => {
     throw error; // giữ nguyên error để ResetPasswordPage check status code
   }
 };
+
+export const checkIsLogin = async () => {
+  const res = await axiosClient.get("/api/auth/check-login");
+  return res.data;
+};
