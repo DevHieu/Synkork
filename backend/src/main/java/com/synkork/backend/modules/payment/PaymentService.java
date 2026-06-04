@@ -59,8 +59,8 @@ public class PaymentService {
     public Map<String, Object> createMomoPayment(String plan, String billingCycle, String userEmail) {
         try {
             long amount = switch (plan.toUpperCase()) {
-                case "TEAM"     -> billingCycle.equalsIgnoreCase("YEARLY") ? 990000 : 99000;
-                case "BUSINESS" -> billingCycle.equalsIgnoreCase("YEARLY") ? 1990000 : 199000;
+                case "TEAM"     -> billingCycle.equalsIgnoreCase("MONTHLY") ? 69000 : 659000;
+                case "BUSINESS" -> billingCycle.equalsIgnoreCase("MONTHLY") ? 129000 : 1239000;
                 default        -> throw new RuntimeException("Plan không hợp lệ");
             };
 

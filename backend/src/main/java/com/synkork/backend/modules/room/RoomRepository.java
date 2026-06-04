@@ -3,6 +3,7 @@ package com.synkork.backend.modules.room;
 import com.synkork.backend.modules.room.enums.RoomStatusEnum;
 import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -16,7 +17,7 @@ import java.util.UUID;
 public interface RoomRepository extends JpaRepository<RoomEntity, UUID> {
     List<RoomEntity> findAllByOwnerId(UUID userId);
 
-    @Query("SELECT r FROM RoomEntity r JOIN r.roomMembers roomMembers WHERE roomMembers.user.id = :userId AND r.type = 'GROUP' AND r.status = 'OPEN' ORDER BY roomMembers.joinedAt DESC")
+    @Query("SELECT r FROM RoomEntity r JOIN r.roomMembers roomMembers WHERE roomMembers.user.id = :userId AND r.type = 'GROUP' AND r.status IN ('OPEN', 'PENDING_REMOVAL') ORDER BY roomMembers.joinedAt DESC")
     List<RoomEntity> findRoomMembersJoined(@Param("userId") UUID userId);
 
     Optional<RoomEntity> findByInviteCode(String inviteCode);
@@ -26,4 +27,12 @@ public interface RoomRepository extends JpaRepository<RoomEntity, UUID> {
     long countByType(RoomTypeEnum type);
 
     long countByCreatedAtBetweenAndType(LocalDateTime createdAtAfter, LocalDateTime createdAtBefore, RoomTypeEnum type);
+
+    void deleteByStatus(RoomStatusEnum roomStatusEnum);
+
+    List<RoomEntity> findByOwnerIdOrderByCreatedAtDesc(UUID ownerId);
+
+    @Modifying
+    @Query("UPDATE RoomEntity r SET r.status = :status WHERE r.id IN :ids")
+    void updateStatusByIds(@Param("status") RoomStatusEnum status, @Param("ids") List<UUID> ids);
 }

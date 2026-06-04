@@ -1,9 +1,13 @@
 package com.synkork.backend.modules.space;
 
+import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.space.dto.SpaceDTO;
+import com.synkork.backend.modules.space.enums.SpaceStatusEnum;
 import com.synkork.backend.modules.space.enums.SpaceTypeEnum;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -19,4 +23,12 @@ public interface SpaceRepository extends JpaRepository<SpaceEntity, UUID> {
     List<SpaceDTO> findAllByRoomIdAsDto(@Param("roomId") UUID roomId);
 
     long countByRoom_IdAndType(UUID roomId, SpaceTypeEnum type);
+
+    void deleteByStatus(SpaceStatusEnum spaceStatusEnum);
+
+    List<SpaceEntity> findByRoomIdAndTypeOrderByCreatedAtDesc(UUID roomId, SpaceTypeEnum type);
+
+    @Modifying
+    @Query("UPDATE SpaceEntity s SET s.status = :status WHERE s.id IN :ids")
+    void updateStatusByIds(@Param("status") SpaceStatusEnum status, @Param("ids") List<UUID> ids);
 }
