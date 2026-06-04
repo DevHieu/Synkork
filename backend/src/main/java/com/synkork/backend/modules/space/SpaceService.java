@@ -1,27 +1,25 @@
 package com.synkork.backend.modules.space;
 
 import com.synkork.backend.common.utils.AuthUtils;
+import com.synkork.backend.common.utils.PlanLimitUtils;
 import com.synkork.backend.modules.collaboration.calendar.repository.CalendarEventRepository;
 import com.synkork.backend.modules.collaboration.task.column.ColumnRepository;
 import com.synkork.backend.modules.message.MessageRepository;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.RoomRepository;
-import com.synkork.backend.modules.space.dto.SpaceDTO;
 import com.synkork.backend.modules.space.dto.CreateSpaceRequest;
+import com.synkork.backend.modules.space.dto.SpaceDTO;
 import com.synkork.backend.modules.space.dto.UpdateSpaceRequest;
 import com.synkork.backend.modules.space.enums.SpaceTypeEnum;
-import com.synkork.backend.modules.user.PlanLimitService;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
 import com.synkork.backend.modules.user.enums.PlanEnum;
-
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class SpaceService {
@@ -35,52 +33,49 @@ public class SpaceService {
     private MessageRepository messageRepository;
 
     @Autowired
-    private CalendarEventRepository  calendarEventRepository;
+    private CalendarEventRepository calendarEventRepository;
 
     @Autowired
     private ColumnRepository columnRepository;
 
-    @Autowired 
+    @Autowired
     private UserRepository userRepository;
 
 //    @Autowired
 //    private CalendarEventRepository calendarEventRepository;
 
-public SpaceEntity createSpace(CreateSpaceRequest space, UUID roomId) {
-    RoomEntity roomEntity = roomRepository.getReferenceById(roomId);
+    public SpaceEntity createSpace(CreateSpaceRequest space, UUID roomId) {
+        RoomEntity roomEntity = roomRepository.getReferenceById(roomId);
 
-    SpaceTypeEnum type = SpaceTypeEnum.valueOf(space.type());
+        SpaceTypeEnum type = SpaceTypeEnum.valueOf(space.type());
 
-    // ✅ chỉ kiểm tra với CHAT, VOICE, NOTE — bỏ qua DM, CALENDAR, TASK
-    if (type == SpaceTypeEnum.CHAT || type == SpaceTypeEnum.VOICE || type == SpaceTypeEnum.NOTE) {
         UUID currentUserId = AuthUtils.getCurrentUserId();
         UserEntity user = userRepository.findById(currentUserId)
-    .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
 
         PlanEnum plan = user.getCurrentPlan();
         long current = spaceRepository.countByRoom_IdAndType(roomId, type);
 
         int max = switch (type) {
-            case CHAT  -> PlanLimitService.maxChatSpaces(plan);
-            case VOICE -> PlanLimitService.maxVoiceSpaces(plan);
-            case NOTE  -> PlanLimitService.maxNoteSpaces(plan);
-            default    -> Integer.MAX_VALUE;
+            case CHAT -> PlanLimitUtils.maxChatSpaces(plan);
+            case VOICE -> PlanLimitUtils.maxVoiceSpaces(plan);
+            case NOTE, TASK, CALENDAR -> PlanLimitUtils.maxCollaborationSpaces(plan);
+            default -> Integer.MAX_VALUE;
         };
 
         if (current >= max) {
             throw new RuntimeException(
-                "Gói " + plan + " chỉ được tạo tối đa " + max + " " + type + " space. Vui lòng nâng cấp gói."
+                    "Gói " + plan + " chỉ được tạo tối đa " + max + " " + type + " space. Vui lòng nâng cấp gói."
             );
         }
+
+        SpaceEntity spaceEntity = new SpaceEntity(space.name(), type, roomEntity);
+        return spaceRepository.save(spaceEntity);
     }
 
-    SpaceEntity spaceEntity = new SpaceEntity(space.name(), type, roomEntity);
-    return spaceRepository.save(spaceEntity);
-}
-
-public List<SpaceDTO> getAllSpaceByRoomId(UUID roomId) {
-    return spaceRepository.findAllByRoomIdAsDto(roomId);
-}
+    public List<SpaceDTO> getAllSpaceByRoomId(UUID roomId) {
+        return spaceRepository.findAllByRoomIdAsDto(roomId);
+    }
 
 
     public SpaceEntity updateSpace(UpdateSpaceRequest spaceDto, UUID spaceId) {
@@ -105,10 +100,10 @@ public List<SpaceDTO> getAllSpaceByRoomId(UUID roomId) {
 
     public void deleteItem(UUID spaceId, SpaceTypeEnum type) {
         switch (type) {
-            case CHAT ->  {
+            case CHAT -> {
                 messageRepository.deleteBySpaceId(spaceId);
             }
-            case CALENDAR ->   {
+            case CALENDAR -> {
                 calendarEventRepository.deleteBySpaceId(spaceId);
             }
             case TASK -> {
@@ -118,7 +113,7 @@ public List<SpaceDTO> getAllSpaceByRoomId(UUID roomId) {
     }
 
     public SpaceDTO getSpaceById(UUID spaceId) {
-        SpaceEntity space =  spaceRepository.findById(spaceId)
+        SpaceEntity space = spaceRepository.findById(spaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Space not found"));
 
         return new SpaceDTO(space);

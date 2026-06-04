@@ -18,7 +18,7 @@ import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
 import com.synkork.backend.modules.space.SpaceEntity;
 import com.synkork.backend.modules.space.SpaceService;
 import com.synkork.backend.modules.space.dto.CreateSpaceRequest;
-import com.synkork.backend.modules.user.PlanLimitService;
+import com.synkork.backend.common.utils.PlanLimitUtils;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
 import com.synkork.backend.modules.user.enums.PlanEnum;
@@ -77,7 +77,7 @@ public class RoomService {
                 .orElseThrow(() -> new RuntimeException("User không tồn tại"));
 
             PlanEnum plan = owner.getCurrentPlan();
-            int maxRooms = PlanLimitService.maxRooms(plan);
+            int maxRooms = PlanLimitUtils.maxRooms(plan);
             long currentRooms = roomMemberRepository.countGroupRoomsByUserIdAndRole(
                 ownerId, RoomMemberRoleEnum.OWNER
             );
@@ -167,12 +167,7 @@ public class RoomService {
 
         messagingTemplate.convertAndSend("/topic/room/" + room.getId() + "/members/joined", dto);
 
-        return new RoomDto(
-                room.getId(),
-                room.getName(),
-                room.getDescription(),
-                room.getAvatarUrl()
-        );
+        return new RoomDto(room);
     }
 
     // Reset invite code
