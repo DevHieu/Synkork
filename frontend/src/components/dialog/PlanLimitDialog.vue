@@ -4,7 +4,7 @@ import {
   DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Rocket, FileWarning, LayoutGrid, MessageSquare, Mic, StickyNote } from "lucide-vue-next";
+import { Sparkles, Rocket, FileWarning, LayoutGrid, MessageSquare, Mic, StickyNote, CalendarX, ClipboardList } from "lucide-vue-next";
 import { PlanLimitUtils, type PlanType, type LimitType } from "@/utils/PlanLimitUtils";
 import { computed, type Component } from "vue";
 
@@ -42,27 +42,41 @@ const limitConfig: Record<LimitType, {
       `Gói hiện tại cho phép tối đa ${PlanLimitUtils.maxRooms(plan)} phòng. Nâng cấp để tạo thêm.`,
     getValue: (plan) => `${PlanLimitUtils.maxRooms(plan)} phòng`,
   },
-  chatSpaces: {
+  chat: {
     icon: MessageSquare,
     title: "Đã đạt giới hạn kênh chat",
     getDescription: (plan) =>
       `Gói hiện tại cho phép tối đa ${PlanLimitUtils.maxChatSpaces(plan)} kênh chat. Nâng cấp để tạo thêm.`,
     getValue: (plan) => `${PlanLimitUtils.maxChatSpaces(plan)} kênh`,
   },
-  voiceSpaces: {
+  voice: {
     icon: Mic,
     title: "Đã đạt giới hạn kênh voice",
     getDescription: (plan) =>
       `Gói hiện tại cho phép tối đa ${PlanLimitUtils.maxVoiceSpaces(plan)} kênh voice. Nâng cấp để tạo thêm.`,
     getValue: (plan) => `${PlanLimitUtils.maxVoiceSpaces(plan)} kênh`,
   },
-  noteSpaces: {
+  note: {
     icon: StickyNote,
     title: "Đã đạt giới hạn bảng note",
     getDescription: (plan) =>
-      `Gói hiện tại cho phép tối đa ${PlanLimitUtils.maxNoteSpaces(plan)} bảng note. Nâng cấp để tạo thêm.`,
-    getValue: (plan) => `${PlanLimitUtils.maxNoteSpaces(plan)} bảng`,
+      `Gói hiện tại cho phép tối đa ${PlanLimitUtils.maxCollaborationSpaces(plan)} bảng note. Nâng cấp để tạo thêm.`,
+    getValue: (plan) => `${PlanLimitUtils.maxCollaborationSpaces(plan)} bảng`,
   },
+  calendar: {
+    icon: CalendarX,
+    title: "Đã đạt giới hạn lịch",
+    getDescription: (plan) =>
+      `Gói hiện tại cho phép tối đa ${PlanLimitUtils.maxCollaborationSpaces(plan)} lịch. Nâng cấp để tạo thêm.`,
+    getValue: (plan) => `${PlanLimitUtils.maxCollaborationSpaces(plan)} lịch`,
+  },
+  task: {
+    icon: ClipboardList,
+    title: "Đã đạt giới hạn task",
+    getDescription: (plan) =>
+      `Gói hiện tại cho phép tối đa ${PlanLimitUtils.maxCollaborationSpaces(plan)} task. Nâng cấp để tạo thêm.`,
+    getValue: (plan) => `${PlanLimitUtils.maxCollaborationSpaces(plan)} task`,
+  }
 };
 
 const plan = computed(() => props.currentPlan ?? "FREE");

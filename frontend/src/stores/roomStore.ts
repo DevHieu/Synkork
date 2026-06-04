@@ -77,12 +77,12 @@ export const useRoomsStore = defineStore("rooms", {
     }) {
       const userStore = useUserStore();
       const { user } = storeToRefs(userStore);
-    
+
       if (!user.value) return;
-    
+
       roomData.ownerId = (user.value as any).id;
       const newRoom = await createRoom(roomData);
-    
+
       this.rooms.unshift(newRoom);
       this.changeRoom(newRoom, undefined);
     },
@@ -103,5 +103,13 @@ export const useRoomsStore = defineStore("rooms", {
 
       this.rooms = this.rooms.filter((room) => room.id !== roomId);
     },
+  },
+
+  getters: {
+    isInRoom: (state) => !!state.currentRoom,
+    roomPlan: (state) => {
+      if (!state.currentRoom) return "FREE";
+      return state.currentRoom.currentPlan;
+    }
   },
 });
