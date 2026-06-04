@@ -1,26 +1,23 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, computed } from "vue";
 import { useUserStore } from "@/stores/userStore";
 import { createPaymentLink } from "@/services/subscriptionService";
-import { Check, X, Sparkles, Zap, Shield, Rocket } from "lucide-vue-next";
+import { Check, X, Sparkles, Zap, Rocket } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { storeToRefs } from "pinia";
 
 const userStore = useUserStore();
+const { userPlan } = storeToRefs(userStore);
+
 const loading = ref(false);
 const selectedPlan = ref("");
 const isYearly = ref(false);
 const paymentStatus = ref<"success" | "cancel" | null>(null);
 
-onMounted(async () => {
-  if (!userStore.user) {
-    await userStore.getUserInfo();
-  }
-});
-
 const activePlan = computed(() => {
-  if (!userStore.user?.currentPlan) return "FREE";
-  return userStore.user.currentPlan;
+  if (!userPlan.value) return "FREE";
+  return userPlan.value;
 });
 
 const plans = [
@@ -38,7 +35,6 @@ const plans = [
       { text: "1 Bảng Note / Task", included: true },
       { text: "Giới hạn file 1MB", included: true },
       { text: "Theme cơ bản", included: true },
-      { text: "Google Calendar", included: false },
     ],
     buttonText: "Gói Hiện Tại",
     accentColor: "var(--foreground)",
@@ -49,8 +45,8 @@ const plans = [
     id: "TEAM",
     name: "Gói Team",
     description: "Dành cho nhóm nhỏ và sáng tạo",
-    monthlyPrice: 9.99,
-    yearlyPrice: 95.9,
+    monthlyPrice: 69000,
+    yearlyPrice: 659000,
     icon: Sparkles,
     features: [
       { text: "Tối đa 15 phòng (Rooms)", included: true },
@@ -59,6 +55,7 @@ const plans = [
       { text: "3 Bảng Note / Task", included: true },
       { text: "Giới hạn file 10MB", included: true },
       { text: "Bộ Theme Pastel", included: true },
+      { text: "AI tạo nhanh lịch/note/task từ tin nhắn", included: true },
       { text: "Google Keep", included: true },
     ],
     buttonText: "Nâng cấp gói Team",
@@ -70,8 +67,8 @@ const plans = [
     id: "BUSINESS",
     name: "Gói Business",
     description: "Sức mạnh tối đa cho chuyên nghiệp",
-    monthlyPrice: 19.99,
-    yearlyPrice: 191.9,
+    monthlyPrice: 129000,
+    yearlyPrice: 1239000,
     icon: Rocket,
     popular: true,
     features: [
@@ -81,6 +78,8 @@ const plans = [
       { text: "10 Bảng Note / Task", included: true },
       { text: "Giới hạn file 50MB", included: true },
       { text: "Theme Ombre & Tùy chỉnh", included: true },
+      { text: "AI tạo nhanh lịch/note/task từ tin nhắn", included: true },
+      { text: "AI tóm tắt cuộc họp", included: true },
       { text: "Google Keep", included: true },
       { text: "Google Calendar", included: true },
     ],
@@ -133,7 +132,7 @@ const choosePlan = async (planId: string) => {
       <!-- Toast Notifications -->
       <transition name="toast">
         <div v-if="paymentStatus"
-          class="fixed top-8 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl border backdrop-blur-xl shadow-2xl"
+          class="fixed top-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-6 py-4 rounded-2xl border backdrop-blur-xl shadow-2xl"
           :class="paymentStatus === 'success' ? 'bg-green-500/20 border-green-500/50 text-green-600 dark:text-green-400' : 'bg-destructive/20 border-destructive/50 text-destructive'">
           <Check v-if="paymentStatus === 'success'" class="w-5 h-5" />
           <X v-else class="w-5 h-5" />
@@ -215,16 +214,18 @@ const choosePlan = async (planId: string) => {
           <!-- Price -->
           <div class="mb-10">
             <div class="flex items-baseline gap-1">
-              <span class="text-5xl font-black">${{ isYearly ? plan.yearlyPrice : plan.monthlyPrice }}</span>
+              <span class="text-5xl font-black">
+                {{ (isYearly ? plan.yearlyPrice : plan.monthlyPrice).toLocaleString('vi-VN') }}₫
+              </span>
               <span class="text-muted-foreground font-bold">/{{ isYearly ? 'năm' : 'tháng' }}</span>
             </div>
             <p v-if="isYearly && plan.monthlyPrice > 0" class="text-xs text-green-500 font-bold mt-2">
-              Thanh toán theo năm (~${{ (plan.yearlyPrice / 12).toFixed(2) }}/tháng)
+              Thanh toán theo năm (~{{ Math.round(plan.yearlyPrice / 12).toLocaleString('vi-VN') }}₫/tháng)
             </p>
           </div>
 
           <!-- Features -->
-          <div class="flex-grow space-y-4 mb-10">
+          <div class="grow space-y-4 mb-10">
             <div v-for="feature in plan.features" :key="feature.text" class="flex items-start gap-3">
               <div class="mt-1">
                 <Check v-if="feature.included" class="w-4 h-4 text-foreground" />
@@ -266,6 +267,10 @@ const choosePlan = async (planId: string) => {
 </template>
 
 <style scoped>
+:deep(*) {
+  font-family: "Plus Jakarta Sans", sans-serif;
+}
+
 .toast-enter-active,
 .toast-leave-active {
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);

@@ -1,18 +1,19 @@
 <script setup lang="ts">
-import { useMessageStore } from "@/stores/messageStore";
-import { CirclePlus, Smile } from "lucide-vue-next";
-import { storeToRefs } from "pinia";
 import { watch, ref, onMounted, onUnmounted, computed } from "vue";
+import { CirclePlus, Smile } from "lucide-vue-next";
+import { useUserStore } from "@/stores/userStore.ts";
+import { useMessageStore } from "@/stores/messageStore";
+import { storeToRefs } from "pinia";
+import { PlanLimitUtils } from "@/utils/PlanLimitUtils.ts";
 
 import EmojiPicker from "vue3-emoji-picker";
 import "vue3-emoji-picker/css"; // Nó báo lỗi thì kệ mịa nó đi, sửa lại đúng đường dẫn là ko chạy được đâu á
 
 import ReplyBar from "./sub-components/ReplyBar.vue";
 import FilePreview from "./sub-components/FilePreview.vue";
-import FileSizeDialog from "../dialog/FileSizeDialog.vue";
+import PlanLimitDialog from "../dialog/PlanLimitDialog.vue";
 
-// Hiện tại sẽ set cứng tạm ở đây. Sau này làm cơ chế mua vip rồi sẽ check kĩ sau
-const FILE_LIMIT_BYTES = 10 * 1024 * 1024; // 10 MB cho free
+const { userPlan } = storeToRefs(useUserStore());
 
 const newMessage = ref("");
 const inputRef = ref<HTMLInputElement | null>(null);
@@ -38,7 +39,7 @@ const rejectedFile = ref<File | null>(null);
 
 const addFiles = (newFiles: FileList | File[]) => {
   Array.from(newFiles).forEach((file) => {
-    if (file.size > FILE_LIMIT_BYTES) {
+    if (file.size > PlanLimitUtils.maxFileSizeBytes(userPlan.value)) {
       rejectedFile.value = file;
       fileSizeDialogOpen.value = true;
       return;
@@ -198,16 +199,16 @@ onUnmounted(() =>
       <div
         class="flex-1 flex items-center bg-muted/50 rounded-lg px-3 gap-2 border border-border focus-within:border-primary/50 transition-colors">
         <input ref="inputRef" v-model="newMessage" :placeholder="replyingTo
-            ? `Trả lời ${replyingTo.sender?.displayName}...`
-            : 'Nhắn tin...'
+          ? `Trả lời ${replyingTo.sender?.displayName}...`
+          : 'Nhắn tin...'
           "
           class="flex-1 bg-transparent py-2.5 text-foreground placeholder:text-muted-foreground focus:outline-none text-sm"
           @keydown.esc="messageStore.setReply(null)" @keydown.enter.exact.prevent="handleSubmit" />
         <div class="relative shrink-0">
           <button ref="emojiButtonRef" @click="toggleEmojiPicker" title="Emoji"
             class="w-8 h-8 rounded-full flex items-center justify-center transition-all" :class="showEmojiPicker
-                ? 'text-primary'
-                : 'text-muted-foreground hover:text-foreground'
+              ? 'text-primary'
+              : 'text-muted-foreground hover:text-foreground'
               ">
             <Smile />
           </button>
@@ -223,9 +224,8 @@ onUnmounted(() =>
         <EmojiPicker :native="true" :disable-skin-tones="true" @select="onSelectEmoji" />
       </div>
 
-      <FileSizeDialog v-model:open="fileSizeDialogOpen" :file-name="rejectedFile?.name ?? ''"
-        :file-size="rejectedFile?.size ?? 0" current-plan="free"
-        @upgrade="(plan) => console.log('Navigate to upgrade:', plan)" @dismiss="rejectedFile = null" />
+      <PlanLimitDialog v-model:open="fileSizeDialogOpen" :limit-type="'file'" :file-name="rejectedFile?.name ?? ''"
+        :file-size="rejectedFile?.size ?? 0" :current-plan="userPlan" @dismiss="rejectedFile = null" />
     </Teleport>
   </div>
 </template>
