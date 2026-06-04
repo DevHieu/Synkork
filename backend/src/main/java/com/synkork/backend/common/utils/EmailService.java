@@ -32,53 +32,6 @@ public class EmailService {
     @Value("${gmail.password}")
     private String password;
 
-    @Async
-    public void sendVerificationEmail(String to, String verificationId) {
-        String verifyLink = frontendUrl + "/auth/verify?token=" + verificationId;
-
-        String subject = "[Synkork] Xác thực tài khoản của bạn";
-
-        String body = """
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2 style="color: #023c3d;">Chào mừng đến với Synkork!</h2>
-                    <p>Cảm ơn bạn đã đăng ký. Vui lòng click vào nút bên dưới để xác thực tài khoản.</p>
-                    <a href="%s"
-                       style="display: inline-block; padding: 12px 24px; background-color: #023c3d;
-                              color: white; text-decoration: none; border-radius: 6px; margin: 16px 0;">
-                        Xác thực tài khoản
-                    </a>
-                    <p style="color: #888; font-size: 13px;">Link có hiệu lực trong 5 phút.</p>
-                    <p style="color: #888; font-size: 13px;">Nếu bạn không đăng ký tài khoản, hãy bỏ qua email này.</p>
-                </div>
-                """.formatted(verifyLink);
-
-        send(to, subject, body);
-    }
-
-    @Async
-    public void sendForgotPasswordEmail(String to, String verificationId) {
-        String resetLink = frontendUrl + "/auth/reset-password?token=" + verificationId;
-
-        String subject = "[Synkork] Đặt lại mật khẩu";
-
-        String body = """
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2 style="color: #023c3d;">Đặt lại mật khẩu</h2>
-                    <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>
-                    <a href="%s"
-                       style="display: inline-block; padding: 12px 24px; background-color: #023c3d;
-                              color: white; text-decoration: none; border-radius: 6px; margin: 16px 0;">
-                        Đặt lại mật khẩu
-                    </a>
-                    <p style="color: #888; font-size: 13px;">Link có hiệu lực trong 15 phút.</p>
-                    <p style="color: #888; font-size: 13px;">Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.</p>
-                </div>
-                """
-                .formatted(resetLink);
-
-        send(to, subject, body);
-    }
-
     public boolean send(String to, String subject, String body) {
         Properties props = new Properties();
         props.put("mail.smtp.auth", "true");
@@ -110,6 +63,88 @@ public class EmailService {
         }
     }
 
+    @Async
+    public void sendVerificationEmail(String to, String verificationId) {
+        String verifyLink = frontendUrl + "/auth/verify?token=" + verificationId;
+
+        String subject = "[Synkork] Xác thực tài khoản của bạn";
+
+        String body = """
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #023c3d;">Chào mừng đến với Synkork!</h2>
+                    <p>Cảm ơn bạn đã đăng ký. Vui lòng click vào nút bên dưới để xác thực tài khoản.</p>
+                    <a href="%s"
+                       style="display: inline-block; padding: 12px 24px; background-color: #023c3d;
+                              color: white; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+                        Xác thực tài khoản
+                    </a>
+                    <p style="color: #888; font-size: 13px;">Link có hiệu lực trong 5 phút.</p>
+                    <p style="color: #888; font-size: 13px;">Nếu bạn không đăng ký tài khoản, hãy bỏ qua email này.</p>
+                </div>
+                """.formatted(verifyLink);
+
+        send(to, subject, body);
+    }
+
+    @Async
+    public void sendOTPEmail(String to, String otp) {
+        String subject = "[Synkork] Mã OTP xác thực của bạn";
+
+        String body = """
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #023c3d;">Xác thực tài khoản Synkork</h2>
+                <p>Mã OTP của bạn là:</p>
+                <div style="font-size: 32px; font-weight: bold; letter-spacing: 8px;
+                            color: #023c3d; margin: 24px 0; text-align: center;">
+                    %s
+                </div>
+                <p style="color: #888; font-size: 13px;">Mã có hiệu lực trong 5 phút.</p>
+                <p style="color: #888; font-size: 13px;">Nếu bạn không yêu cầu mã này, hãy bỏ qua email.</p>
+            </div>
+            """.formatted(otp);
+
+        send(to, subject, body);
+    }
+
+    @Async
+    public void sendPasswordResetApprovedEmail(String to) {
+        String subject = "[Synkork] Mật khẩu của bạn đã được đặt lại";
+        String body = """
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #023c3d;">Mật khẩu đã được cập nhật</h2>
+                <p>Yêu cầu đặt lại mật khẩu của bạn đã được admin duyệt.</p>
+                <p>Bạn có thể đăng nhập với mật khẩu mới ngay bây giờ.</p>
+                <p style="color: #888; font-size: 13px;">Nếu bạn không thực hiện yêu cầu này, hãy liên hệ admin ngay.</p>
+            </div>
+            """;
+        send(to, subject, body);
+    }
+
+    @Async
+    public void sendForgotPasswordEmail(String to, String verificationId) {
+        String resetLink = frontendUrl + "/auth/reset-password?token=" + verificationId;
+
+        String subject = "[Synkork] Đặt lại mật khẩu";
+
+        String body = """
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #023c3d;">Đặt lại mật khẩu</h2>
+                    <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>
+                    <a href="%s"
+                       style="display: inline-block; padding: 12px 24px; background-color: #023c3d;
+                              color: white; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+                        Đặt lại mật khẩu
+                    </a>
+                    <p style="color: #888; font-size: 13px;">Link có hiệu lực trong 15 phút.</p>
+                    <p style="color: #888; font-size: 13px;">Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.</p>
+                </div>
+                """
+                .formatted(resetLink);
+
+        send(to, subject, body);
+    }
+
+    @Async
     public void sendDueSoonSummaryMail(List<CardEntity> cards) {
 
         if (cards.isEmpty())
@@ -166,6 +201,7 @@ public class EmailService {
         }
     }
 
+    @Async
     public void sendOverdueSummaryMail(List<CardEntity> cards) {
 
         if (cards.isEmpty())
@@ -218,6 +254,7 @@ public class EmailService {
         }
     }
 
+    @Async
     public void sendNoteReminderEmail(NoteEntity note) {
         String toEmail = note.getCreatedBy().getEmail();
 
@@ -265,5 +302,31 @@ public class EmailService {
     """.formatted(note.getTitle(), noteContent, timeStr);
 
         send(toEmail, "🔔 Nhắc nhở: " + note.getTitle(), body);
+    }
+
+    public void sendPaymentSuccessEmail(String toEmail, String plan) {
+        String subject = "✅ [Synkork] Thanh toán VIP thành công";
+    
+        String body = """
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;
+                        padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px;">
+                <h2 style="color: #023c3d;">🎉 Gói VIP đã được kích hoạt!</h2>
+                <p>Cảm ơn bạn đã nâng cấp lên gói <b>%s</b>.</p>
+                <div style="margin: 24px 0; padding: 16px; background: #f0fdf4;
+                            border-left: 4px solid #22c55e; border-radius: 8px;">
+                    <p style="margin: 0; color: #166534;">
+                        ✔ Gói: <strong>%s</strong><br/>
+                        ✔ Trạng thái: Đã kích hoạt
+                    </p>
+                </div>
+                <p style="color: #888; font-size: 13px;">Nếu có thắc mắc, liên hệ đội ngũ hỗ trợ Synkork.</p>
+                <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0;"/>
+                <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">
+                    Đây là email tự động từ Synkork — vui lòng không reply.
+                </p>
+            </div>
+        """.formatted(plan, plan);
+    
+        send(toEmail, subject, body);
     }
 }
