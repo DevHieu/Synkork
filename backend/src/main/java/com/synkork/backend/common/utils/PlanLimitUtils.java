@@ -28,7 +28,7 @@ public class PlanLimitUtils {
         };
     }
 
-    public static int maxNoteSpaces(PlanEnum plan) {
+    public static int maxCollaborationSpaces(PlanEnum plan) {
         return switch (plan) {
             case FREE     -> 1;
             case TEAM     -> 3;
