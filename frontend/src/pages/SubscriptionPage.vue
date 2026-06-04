@@ -1,248 +1,291 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useUserStore } from "@/stores/userStore";
-import axiosClient from "@/lib/axiosClient";
+import { createPaymentLink } from "@/services/subscriptionService";
+import { Check, X, Sparkles, Zap, Shield, Rocket } from "lucide-vue-next";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const userStore = useUserStore();
-const selectedPlan = ref("");
-const activePlan = ref(""); // gói đang active
 const loading = ref(false);
+const selectedPlan = ref("");
+const isYearly = ref(false);
 const paymentStatus = ref<"success" | "cancel" | null>(null);
-const showQR = ref(false);
-const qrUrl = ref("");
-const countdown = ref(5);
-let countdownTimer: ReturnType<typeof setInterval> | null = null;
 
 onMounted(async () => {
   if (!userStore.user) {
     await userStore.getUserInfo();
   }
-  if (userStore.user?.currentPlan && userStore.user.currentPlan !== "FREE") {
-    activePlan.value = userStore.user.currentPlan.charAt(0).toUpperCase()
-      + userStore.user.currentPlan.slice(1).toLowerCase();
-  }
+});
+
+const activePlan = computed(() => {
+  if (!userStore.user?.currentPlan) return "FREE";
+  return userStore.user.currentPlan;
 });
 
 const plans = [
   {
-    name: "Free",
-    price: "$0",
-    theme: "Màu cơ bản",
-    calendar: false,
-    rooms: 5,
-    chat: 3,
-    voice: 2,
-    note: 1,
-    fileSize: "1MB",
-    buttonColor: "bg-white/20 hover:bg-white/30",
-    cardClass: "border border-white/10 bg-white/5 backdrop-blur-md",
+    id: "FREE",
+    name: "Gói Miễn Phí",
+    description: "Khởi đầu tuyệt vời cho cá nhân",
+    monthlyPrice: 0,
+    yearlyPrice: 0,
+    icon: Zap,
+    features: [
+      { text: "Tối đa 5 phòng (Rooms)", included: true },
+      { text: "3 Kênh Chat", included: true },
+      { text: "2 Kênh Voice", included: true },
+      { text: "1 Bảng Note / Task", included: true },
+      { text: "Giới hạn file 1MB", included: true },
+      { text: "Theme cơ bản", included: true },
+      { text: "Google Calendar", included: false },
+    ],
+    buttonText: "Gói Hiện Tại",
+    accentColor: "var(--foreground)",
+    cardClass: "bg-card/30 border-border hover:border-primary/50 shadow-sm",
+    buttonClass: "bg-muted text-muted-foreground cursor-not-allowed",
   },
   {
-    name: "Team",
-    price: "$9.99",
-    theme: "Pastel",
-    calendar: true,
-    rooms: 10,
-    chat: 10,
-    voice: 5,
-    note: 3,
-    fileSize: "10MB",
-    buttonColor: "bg-pink-500 hover:bg-pink-400",
-    cardClass: "border border-pink-400/30 bg-white/10 backdrop-blur-md",
+    id: "TEAM",
+    name: "Gói Team",
+    description: "Dành cho nhóm nhỏ và sáng tạo",
+    monthlyPrice: 9.99,
+    yearlyPrice: 95.9,
+    icon: Sparkles,
+    features: [
+      { text: "Tối đa 15 phòng (Rooms)", included: true },
+      { text: "10 Kênh Chat", included: true },
+      { text: "5 Kênh Voice", included: true },
+      { text: "3 Bảng Note / Task", included: true },
+      { text: "Giới hạn file 10MB", included: true },
+      { text: "Bộ Theme Pastel", included: true },
+      { text: "Google Keep", included: true },
+    ],
+    buttonText: "Nâng cấp gói Team",
+    accentColor: "var(--primary)",
+    cardClass: "bg-primary/5 border-primary/20 hover:border-primary/40 shadow-sm",
+    buttonClass: "bg-primary hover:opacity-90 text-primary-foreground",
   },
   {
-    name: "Business",
-    price: "$19.99",
-    theme: "Ombre",
-    calendar: true,
-    rooms: 30,
-    chat: 20,
-    voice: 10,
-    note: 10,
-    fileSize: "50MB",
+    id: "BUSINESS",
+    name: "Gói Business",
+    description: "Sức mạnh tối đa cho chuyên nghiệp",
+    monthlyPrice: 19.99,
+    yearlyPrice: 191.9,
+    icon: Rocket,
     popular: true,
-    buttonColor: "bg-red-600 hover:bg-red-500",
-    cardClass: "border border-red-400/30 bg-white/10 backdrop-blur-md",
+    features: [
+      { text: "Tối đa 50 phòng (Rooms)", included: true },
+      { text: "30 Kênh Chat", included: true },
+      { text: "15 Kênh Voice", included: true },
+      { text: "10 Bảng Note / Task", included: true },
+      { text: "Giới hạn file 50MB", included: true },
+      { text: "Theme Ombre & Tùy chỉnh", included: true },
+      { text: "Google Keep", included: true },
+      { text: "Google Calendar", included: true },
+    ],
+    buttonText: "Lên đời Business",
+    accentColor: "var(--secondary)",
+    cardClass: "bg-secondary/5 border-secondary/20 hover:border-secondary/40 shadow-sm",
+    buttonClass: "bg-secondary hover:opacity-90 text-secondary-foreground",
   },
 ];
 
-const choosePlan = async (planName: string) => {
-  if (planName === "Free") return;
+const choosePlan = async (planId: string) => {
+  if (planId === "FREE" || planId === activePlan.value) return;
 
-  selectedPlan.value = planName;
+  selectedPlan.value = planId;
   loading.value = true;
 
   try {
-    const response = await axiosClient.post("/api/payment/momo", {
-      plan: planName.toUpperCase(),
-      billingCycle: "MONTHLY",
+    const billingCycle = isYearly.value ? "YEARLY" : "MONTHLY";
+    const response = await createPaymentLink({
+      plan: planId,
+      billingCycle,
     });
 
-    qrUrl.value = response.data.payUrl;
-    showQR.value = true;
-    countdown.value = 5;
-
-    window.location.href = qrUrl.value;
+    if (response.payUrl) {
+      window.location.href = response.payUrl;
+    }
   } catch (error) {
     console.error("Payment error:", error);
-    alert("Có lỗi xảy ra, vui lòng thử lại.");
-    selectedPlan.value = "";
+    paymentStatus.value = "cancel";
+    setTimeout(() => (paymentStatus.value = null), 3000);
   } finally {
     loading.value = false;
   }
 };
-
-const cancelQR = () => {
-  if (countdownTimer) clearInterval(countdownTimer);
-  showQR.value = false;
-  selectedPlan.value = "";
-  paymentStatus.value = "cancel";
-
-  // Tự ẩn toast sau 3 giây
-  setTimeout(() => {
-    paymentStatus.value = null;
-  }, 3000);
-};
 </script>
 
 <template>
-  <div class="min-h-screen background text-white px-6 py-10">
-
-    <!-- Modal QR -->
-    <div v-if="showQR" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-      <div class="bg-white rounded-3xl p-8 flex flex-col items-center gap-4 max-w-sm w-full mx-4">
-
-        <h2 class="text-xl font-bold text-gray-800">Quét mã để thanh toán</h2>
-        <p class="text-sm text-gray-500">Tab MoMo đã mở — hoặc quét QR bên dưới</p>
-
-        <img :src="`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}`"
-          class="w-48 h-48 rounded-xl border border-gray-100" />
-
-        <div class="flex flex-col items-center gap-1">
-          <div class="text-4xl font-bold text-pink-500">{{ countdown }}</div>
-          <p class="text-xs text-gray-400">Tự động xác nhận sau {{ countdown }} giây</p>
-        </div>
-
-        <div class="w-full bg-gray-100 rounded-full h-1.5">
-          <div class="bg-pink-500 h-1.5 rounded-full transition-all duration-1000"
-            :style="{ width: `${((5 - countdown) / 5) * 100}%` }" />
-        </div>
-
-        <button @click="cancelQR" class="text-sm text-gray-400 hover:text-gray-600 mt-2 transition">
-          Huỷ thanh toán
-        </button>
+  <div
+    class="min-h-screen bg-background text-foreground selection:bg-primary/30 transition-colors duration-300 overflow-x-hidden">
+    <!-- Background Decor -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+      <div class="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] opacity-15 blur-[120px] rounded-full bg-primary">
+      </div>
+      <div
+        class="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] opacity-15 blur-[120px] rounded-full bg-secondary">
       </div>
     </div>
 
-    <!-- Toast thông báo — fixed góc trên, tự ẩn -->
-    <transition name="fade">
-      <div v-if="paymentStatus === 'success'"
-        class="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-2xl bg-green-500/90 text-white text-sm font-medium shadow-lg flex items-center gap-2">
-        ✅ Thanh toán thành công! Gói của bạn đã được kích hoạt.
-      </div>
-    </transition>
-    <transition name="fade">
-      <div v-if="paymentStatus === 'cancel'"
-        class="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-2xl bg-yellow-500/90 text-white text-sm font-medium shadow-lg flex items-center gap-2">
-        ⚠️ Bạn đã huỷ thanh toán.
-      </div>
-    </transition>
-
-    <!-- Header -->
-    <div class="max-w-7xl mx-auto mb-10">
-      <h1 class="text-4xl md:text-5xl font-bold mb-4">
-        Choose the plan that's right for you
-      </h1>
-      <div class="space-y-2 text-white/70">
-        <p>✔ Custom themes for your workspace</p>
-        <p>✔ Upgrade your productivity with more rooms & spaces</p>
-        <p>✔ Cancel or change plan anytime</p>
-      </div>
-    </div>
-
-    <!-- Pricing Table -->
-    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6">
-
-      <!-- Features -->
-      <div class="border border-white/10 bg-white/5 backdrop-blur-md rounded-3xl p-6 hidden lg:block">
-        <h2 class="text-red-400 text-3xl font-bold mb-10">SYNKORK VIP</h2>
-        <div class="space-y-8 text-white/70">
-          <p>🎨 Theme màu</p>
-          <p>📅 Google Calendar / Keep</p>
-          <p>🚪 Room có thể tạo</p>
-          <p>💬 Voice / Chat / Note</p>
-          <p>📂 Giới hạn dung lượng file</p>
+    <div class="relative container mx-auto px-6 py-20 max-w-7xl">
+      <!-- Toast Notifications -->
+      <transition name="toast">
+        <div v-if="paymentStatus"
+          class="fixed top-8 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl border backdrop-blur-xl shadow-2xl"
+          :class="paymentStatus === 'success' ? 'bg-green-500/20 border-green-500/50 text-green-600 dark:text-green-400' : 'bg-destructive/20 border-destructive/50 text-destructive'">
+          <Check v-if="paymentStatus === 'success'" class="w-5 h-5" />
+          <X v-else class="w-5 h-5" />
+          <span class="text-sm font-medium">
+            {{ paymentStatus === 'success' ?
+              'Thanh toán thành công! Chào mừng bạn.' :
+              'Thanh toán thất bại hoặc đã bị hủy.' }}
+          </span>
         </div>
-      </div>
+      </transition>
 
-      <!-- Plan Cards -->
-      <div v-for="plan in plans" :key="plan.name"
-        class="relative rounded-3xl p-6 transition duration-300 hover:scale-105 hover:shadow-2xl" :class="[
-          plan.cardClass,
-          activePlan === plan.name ? 'ring-2 ring-green-400/60' : ''
-        ]">
-        <!-- Popular badge -->
-        <div v-if="plan.popular" class="absolute top-5 right-5 bg-red-600 text-xs px-3 py-1 rounded-full font-semibold">
-          Popular
-        </div>
+      <!-- Header -->
+      <div class="text-center mb-16 space-y-6">
+        <h1 class="text-5xl md:text-7xl font-black tracking-tight text-foreground">
+          Nâng cấp không gian
+        </h1>
+        <p class="text-xl text-muted-foreground max-w-2xl mx-auto font-medium">
+          Chọn gói phù hợp với quy trình làm việc của bạn. Mở khóa các tính năng cao cấp, theme tùy chỉnh và tiềm năng
+          không giới hạn.
+        </p>
 
-        <!-- Active badge -->
-        <div v-if="activePlan === plan.name"
-          class="absolute top-5 left-5 bg-green-500 text-xs px-3 py-1 rounded-full font-semibold">
-          ✅ Đang dùng
-        </div>
-
-        <div class="mb-8">
-          <h2 class="text-2xl font-semibold">{{ plan.name }}</h2>
-          <div class="mt-2">
-            <span class="text-4xl font-bold">{{ plan.price }}</span>
-            <span v-if="plan.name !== 'Free'" class="text-white/50">/month</span>
+        <!-- Billing Selector (Thay thế Switch) -->
+        <div class="flex flex-col items-center gap-4 pt-4">
+          <div class="inline-flex p-1 bg-muted/50 backdrop-blur-sm rounded-2xl border border-border overflow-hidden">
+            <button @click="isYearly = false" :class="cn(
+              'px-8 py-2.5 rounded-xl text-sm font-bold transition-all duration-300',
+              !isYearly ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'
+            )">
+              Thanh toán Tháng
+            </button>
+            <button @click="isYearly = true" :class="cn(
+              'px-8 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2',
+              isYearly ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'
+            )">
+              Thanh toán Năm
+              <span class="px-1.5 py-0.5 rounded-md bg-green-500 text-white text-[10px] font-black uppercase">
+                -20%
+              </span>
+            </button>
           </div>
+          <p class="text-xs font-bold text-green-500" v-if="isYearly">
+            Tiết kiệm được giá của 2 tháng khi đăng ký năm!
+          </p>
         </div>
+      </div>
 
-        <div class="space-y-8 text-center">
-          <div>
-            <p class="text-lg font-medium">{{ plan.theme }}</p>
-          </div>
-          <div>
-            <span class="text-2xl" :class="plan.calendar ? 'text-green-400' : 'text-white/30'">
-              {{ plan.calendar ? "✔" : "✖" }}
-            </span>
-          </div>
-          <div class="text-xl font-semibold">{{ plan.rooms }}</div>
-          <div class="text-sm text-white/60 leading-7">
-            <p>{{ plan.chat }} Chat Room</p>
-            <p>{{ plan.voice }} Voice Room</p>
-            <p>{{ plan.note }} Note / Task</p>
-          </div>
-          <div class="text-xl font-semibold">{{ plan.fileSize }}</div>
-        </div>
-
-        <!-- Button -->
-        <button @click="choosePlan(plan.name)" :disabled="loading || plan.name === 'Free' || activePlan === plan.name"
-          class="mt-10 w-full rounded-xl py-3 font-semibold transition" :class="[
-            plan.name === 'Free' || activePlan === plan.name
-              ? 'bg-white/10 cursor-not-allowed opacity-50 text-white/60'
-              : plan.buttonColor,
+      <!-- Plans Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+        <div v-for="plan in plans" :key="plan.id"
+          class="group relative p-8 rounded-[32px] border backdrop-blur-sm transition-all duration-500 flex flex-col min-h-[660px]"
+          :class="[
+            plan.cardClass,
+            activePlan === plan.id ? 'ring-2 ring-primary/40' : ''
           ]">
-          <span v-if="loading && selectedPlan === plan.name">Đang xử lý...</span>
-          <span v-else-if="plan.name === 'Free'">Current Plan</span>
-          <span v-else-if="activePlan === plan.name">Current Plan</span>
-          <span v-else>Choose Plan</span>
-        </button>
+
+          <!-- Active Badge -->
+          <div v-if="activePlan === plan.id"
+            class="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-foreground text-background text-[10px] font-black uppercase tracking-widest z-10 shadow-xl">
+            Đang sử dụng
+          </div>
+
+          <!-- Popular Badge -->
+          <div v-if="plan.popular && activePlan !== plan.id"
+            class="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-widest z-10 shadow-xl">
+            Phổ biến nhất
+          </div>
+
+          <!-- Icon & Name -->
+          <div class="mb-8">
+            <div
+              class="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3"
+              :style="{ backgroundColor: `color-mix(in oklch, ${plan.accentColor} 15%, transparent)` }">
+              <component :is="plan.icon" class="w-7 h-7" :style="{ color: plan.accentColor }" />
+            </div>
+            <h3 class="text-2xl font-bold mb-2">{{ plan.name }}</h3>
+            <p class="text-sm text-muted-foreground leading-relaxed">{{ plan.description }}</p>
+          </div>
+
+          <!-- Price -->
+          <div class="mb-10">
+            <div class="flex items-baseline gap-1">
+              <span class="text-5xl font-black">${{ isYearly ? plan.yearlyPrice : plan.monthlyPrice }}</span>
+              <span class="text-muted-foreground font-bold">/{{ isYearly ? 'năm' : 'tháng' }}</span>
+            </div>
+            <p v-if="isYearly && plan.monthlyPrice > 0" class="text-xs text-green-500 font-bold mt-2">
+              Thanh toán theo năm (~${{ (plan.yearlyPrice / 12).toFixed(2) }}/tháng)
+            </p>
+          </div>
+
+          <!-- Features -->
+          <div class="flex-grow space-y-4 mb-10">
+            <div v-for="feature in plan.features" :key="feature.text" class="flex items-start gap-3">
+              <div class="mt-1">
+                <Check v-if="feature.included" class="w-4 h-4 text-foreground" />
+                <X v-else class="w-4 h-4 text-muted-foreground/30" />
+              </div>
+              <span class="text-sm font-medium transition-colors"
+                :class="feature.included ? 'text-foreground/80' : 'text-muted-foreground/30'">
+                {{ feature.text }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Action Button -->
+          <Button @click="choosePlan(plan.id)" :disabled="loading || activePlan === plan.id || plan.id === 'FREE'"
+            class="w-full h-14 rounded-2xl font-bold text-base transition-all duration-300 shadow-md" :class="[
+              activePlan === plan.id || plan.id === 'FREE' ? 'bg-muted text-muted-foreground border border-border cursor-not-allowed' : plan.buttonClass
+            ]">
+            <template v-if="loading && selectedPlan === plan.id">
+              <span class="flex items-center gap-2">
+                <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none">
+                  </circle>
+                  <path class="opacity-75" fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                  </path>
+                </svg>
+                Đang xử lý...
+              </span>
+            </template>
+            <template v-else>
+              {{ activePlan === plan.id ? 'Gói Hiện Tại' : plan.buttonText }}
+            </template>
+          </Button>
+        </div>
       </div>
+
     </div>
   </div>
 </template>
 
 <style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.5s ease;
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.fade-enter-from,
-.fade-leave-to {
+.toast-enter-from {
   opacity: 0;
+  transform: translate(-50%, -20px) scale(0.95);
+}
+
+.toast-leave-to {
+  opacity: 0;
+  transform: translate(-50%, -20px) scale(0.95);
+}
+
+.group {
+  scrollbar-width: none;
+}
+
+.group::-webkit-scrollbar {
+  display: none;
 }
 </style>
