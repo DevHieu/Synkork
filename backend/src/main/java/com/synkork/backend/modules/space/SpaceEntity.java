@@ -3,6 +3,7 @@ package com.synkork.backend.modules.space;
 import com.synkork.backend.common.base.BaseEntity;
 import com.synkork.backend.modules.message.MessageEntity;
 import com.synkork.backend.modules.room.RoomEntity;
+import com.synkork.backend.modules.space.enums.SpaceStatusEnum;
 import com.synkork.backend.modules.space.enums.SpaceTypeEnum;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -31,6 +32,9 @@ public class SpaceEntity extends BaseEntity {
 
     @OneToMany(mappedBy = "space", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MessageEntity> messages;
+
+    @Enumerated(EnumType.STRING)
+    private SpaceStatusEnum status =  SpaceStatusEnum.OPEN;
 
     @Column(nullable = false)
     private boolean isRestricted = false;
