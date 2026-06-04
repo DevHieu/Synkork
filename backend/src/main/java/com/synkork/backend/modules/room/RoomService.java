@@ -167,12 +167,7 @@ public class RoomService {
 
         messagingTemplate.convertAndSend("/topic/room/" + room.getId() + "/members/joined", dto);
 
-        return new RoomDto(
-                room.getId(),
-                room.getName(),
-                room.getDescription(),
-                room.getAvatarUrl()
-        );
+        return new RoomDto(room);
     }
 
     // Reset invite code
