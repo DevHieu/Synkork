@@ -10,7 +10,7 @@ import com.synkork.backend.modules.space.dto.SpaceDTO;
 import com.synkork.backend.modules.space.dto.CreateSpaceRequest;
 import com.synkork.backend.modules.space.dto.UpdateSpaceRequest;
 import com.synkork.backend.modules.space.enums.SpaceTypeEnum;
-import com.synkork.backend.modules.user.PlanLimitService;
+import com.synkork.backend.common.utils.PlanLimitUtils;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
 import com.synkork.backend.modules.user.enums.PlanEnum;
@@ -21,7 +21,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class SpaceService {
@@ -61,9 +60,9 @@ public SpaceEntity createSpace(CreateSpaceRequest space, UUID roomId) {
         long current = spaceRepository.countByRoom_IdAndType(roomId, type);
 
         int max = switch (type) {
-            case CHAT  -> PlanLimitService.maxChatSpaces(plan);
-            case VOICE -> PlanLimitService.maxVoiceSpaces(plan);
-            case NOTE  -> PlanLimitService.maxNoteSpaces(plan);
+            case CHAT  -> PlanLimitUtils.maxChatSpaces(plan);
+            case VOICE -> PlanLimitUtils.maxVoiceSpaces(plan);
+            case NOTE  -> PlanLimitUtils.maxNoteSpaces(plan);
             default    -> Integer.MAX_VALUE;
         };
 

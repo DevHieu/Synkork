@@ -1,8 +1,8 @@
-package com.synkork.backend.modules.user;
+package com.synkork.backend.common.utils;
 
 import com.synkork.backend.modules.user.enums.PlanEnum;
 
-public class PlanLimitService {
+public class PlanLimitUtils {
 
     public static int maxRooms(PlanEnum plan) {
         return switch (plan) {

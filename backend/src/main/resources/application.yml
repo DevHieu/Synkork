@@ -49,11 +49,11 @@ spring:
 
 momo:
   partner-code: MOMO
-  access-key: F8BBA842ECF85
-  secret-key: K951B6PE1waDMi640xX08PD3vg6EkVlz
+  access-key: ${MOMO_ACCESS_KEY}
+  secret-key: ${MOMO_SECRET_KEY}
   endpoint: https://test-payment.momo.vn/v2/gateway/api/create
-  redirect-url: http://localhost:5173/me/subscriptions
-  ipn-url: https://fbb2-113-173-203-222.ngrok-free.app/api/payment/momo/callback
+  redirect-url: ${FRONTEND_URL}/me/subscriptions
+  ipn-url: ${SERVER_URL}/api/payment/momo/callback
 
 server:
   port: 8080

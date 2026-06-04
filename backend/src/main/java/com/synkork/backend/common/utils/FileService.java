@@ -1,7 +1,6 @@
 package com.synkork.backend.common.utils;
 
 import com.synkork.backend.common.dtos.FileUploaded;
-import com.synkork.backend.modules.user.PlanLimitService;
 import com.synkork.backend.modules.user.enums.PlanEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -37,7 +36,7 @@ public class FileService {
 
     public FileUploaded uploadFile(MultipartFile file, String folderName, PlanEnum plan) {
         try {
-            long maxSize = PlanLimitService.maxFileSizeBytes(plan);
+            long maxSize = PlanLimitUtils.maxFileSizeBytes(plan);
             if (file.getSize() > maxSize) {
                 long maxMB = maxSize / (1024 * 1024);
                 throw new RuntimeException(
