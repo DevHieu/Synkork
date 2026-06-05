@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import draggable from 'vuedraggable'
 import { useRoute } from 'vue-router'
 import { Plus, Hash, Archive } from 'lucide-vue-next'
@@ -41,9 +41,7 @@ const targetColumnId = ref<string>('')
 const isDeleteOpen = ref(false)
 const deleteType = ref<'column' | 'card'>('column')
 const deleteData = ref<{ cardId: string, columnId: string } | null>(null)
-
 const isDeleteAllOpen = ref(false)
-
 const deleteAllType = ref<'columns' | 'cards'>('columns')
 
 const isArchiveOpen = ref(false)
@@ -53,27 +51,8 @@ const props = defineProps<{
     roomId: String,
 }>()
 
-const executeDelete = async () => {
-    await taskStore.delete(deleteType.value, spaceId, deleteData.value)
-    isDeleteOpen.value = false
-    deleteData.value = null
-    isArchiveOpen.value = true
-}
-
-const handleDeleteAllArchived = async () => {
-    await taskStore.deleteAll(deleteAllType.value, spaceId)
-    isDeleteAllOpen.value = false
-    isArchiveOpen.value = true
-}
-
-const openAddColumnDialog = () => {
-    editingCol.value = null
-    isColumnDialogOpen.value = true
-}
-
-const openEditColumnDialog = async (col: ColumnEvent) => {
+const openColumnDialog = (col: ColumnEvent | null) => {
     editingCol.value = col
-    await nextTick()
     isColumnDialogOpen.value = true
 }
 
@@ -97,6 +76,11 @@ const confirmDeleteColumn = (colId: string) => {
     isDeleteOpen.value = true
 }
 
+const confirmDeleteAllArchivedColumns = () => {
+    deleteAllType.value = 'columns'
+    isDeleteAllOpen.value = true
+}
+
 const onColumnMove = async (event: TaskMoveEvent) => {
     if (!currentSpace.value?.id) return;
     try {
@@ -107,7 +91,8 @@ const onColumnMove = async (event: TaskMoveEvent) => {
     }
 }
 
-const openAddCardDialog = (columnId: string) => {
+
+const openCardDialog = (columnId: string) => {
     targetColumnId.value = columnId
     editingCard.value = null
     isCardDialogOpen.value = true
@@ -128,16 +113,6 @@ const handleSaveCard = async (data: { title: string, description: string }) => {
     }
 }
 
-const onCardMove = async (event: TaskMoveEvent, currentColumnId: string) => {
-    if (!currentSpace.value?.id) return;
-    try {
-        await taskStore.moveCard(currentSpace.value.id, currentColumnId, event)
-    } catch (error) {
-        console.error("Lỗi di chuyển card: ", error);
-        await taskStore.fetchTasks(currentSpace.value.id);
-    }
-}
-
 const confirmDeleteCard = (columnId: string, cardId: string) => {
     deleteType.value = 'card'
     deleteData.value = { columnId, cardId }
@@ -149,16 +124,17 @@ const confirmDeleteAllArchivedCards = () => {
     isDeleteAllOpen.value = true
 }
 
-const confirmDeleteAllArchivedColumns = () => {
-    deleteAllType.value = 'columns'
-    isDeleteAllOpen.value = true
+const onCardMove = async (event: TaskMoveEvent, currentColumnId: string) => {
+    if (!currentSpace.value?.id) return;
+    try {
+        await taskStore.moveCard(currentSpace.value.id, currentColumnId, event)
+    } catch (error) {
+        console.error("Lỗi di chuyển card: ", error);
+        await taskStore.fetchTasks(currentSpace.value.id);
+    }
 }
 
-/* =========================
-    ARCHIVE
-========================= */
-
-
+// lưu trữ
 const loadArchive = async () => {
     if (!currentSpace.value?.id) return
 
@@ -185,6 +161,34 @@ const archive = async (columnId: string, cardId?: string) => {
     }
 }
 
+const handleDeleteArchived = async () => {
+    await taskStore.delete(deleteType.value, spaceId, deleteData.value)
+    isDeleteOpen.value = false
+    deleteData.value = null
+    isArchiveOpen.value = true
+}
+
+const handleDeleteAllArchived = async () => {
+    await taskStore.deleteAllArchived(deleteAllType.value, spaceId)
+    isDeleteAllOpen.value = false
+    isArchiveOpen.value = true
+}
+
+
+const clearAll = async () => {
+    columns.value = []
+}
+
+const joinspace = async (spaceId: string) => {
+    if (!spaceId) return;
+
+    taskSocket.leaveSpace(spaceId);
+
+    await clearAll();
+    await taskStore.fetchTasks(spaceId);
+    await taskStore.subscribeTospace(spaceId);
+}
+
 watch(isArchiveOpen, async (open) => {
     if (open) {
         await loadArchive()
@@ -209,22 +213,6 @@ watch(
     },
     { immediate: true },
 )
-
-const joinspace = async (spaceId: string) => {
-    if (!spaceId) return;
-
-    // Luôn unsubscribe trước, kể cả cùng spaceId
-    // tránh duplicate listeners khi watch trigger nhiều lần
-    taskSocket.leaveSpace(spaceId);
-
-    await clearAll();
-    await taskStore.fetchTasks(spaceId);
-    await taskStore.subscribeTospace(spaceId);
-}
-
-const clearAll = async () => {
-    columns.value = []
-}
 </script>
 
 <template>
@@ -260,12 +248,12 @@ const clearAll = async () => {
                     @change="onColumnMove" class="flex gap-6 items-start h-full">
                     <template #item="{ element: col }">
                         <TaskColumn :column="col" :space-name="currentSpace?.name ?? ''"
-                            @edit-column="openEditColumnDialog" @archive-column="archive(col.id)"
-                            @add-card="openAddCardDialog" @archive-card="archive" @card-move="onCardMove" />
+                            @edit-column="openColumnDialog" @archive-column="archive(col.id)"
+                            @add-card="openCardDialog" @archive-card="archive" @card-move="onCardMove" />
                     </template>
                 </draggable>
 
-                <div @click="openAddColumnDialog"
+                <div @click="openColumnDialog(null)"
                     class="add-column-btn flex-shrink-0 w-72 h-28 border-2 border-dashed border-border/60 rounded-2xl flex flex-col items-center justify-center gap-2.5 group cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all duration-200">
                     <div
                         class="w-8 h-8 rounded-xl bg-muted group-hover:bg-primary/15 flex items-center justify-center transition-colors">
@@ -285,7 +273,7 @@ const clearAll = async () => {
     <ColumnFormDialog v-model:open="isColumnDialogOpen" :column-data="editingCol" @save="handleSaveColumn" />
     <DeleteConfirmDialog v-model:open="isDeleteOpen" :title="deleteType === 'column' ? 'Xóa cột này?' : 'Xóa thẻ này?'"
         :description="deleteType === 'column' ? 'Toàn bộ thẻ trong cột này sẽ bị mất.' : 'Bạn không thể khôi phục thẻ này sau khi xóa.'"
-        @confirm="executeDelete" />
+        @confirm= "handleDeleteArchived" />
     <DeleteConfirmDialog
         v-model:open="isDeleteAllOpen"
         :title="deleteAllType === 'columns' ? 'Xóa tất cả cột?' : 'Xóa tất cả thẻ?'"

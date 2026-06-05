@@ -22,8 +22,6 @@ const emit = defineEmits<{
     cardMove: [event: TaskMoveEvent, columnId: string]
 }>()
 
-// Dùng computed setter thay vì v-model trực tiếp trên prop
-// tránh Vue warning "mutating prop" và đảm bảo draggable hoạt động đúng
 const localCards = computed<CardEvent[]>({
     get: () => props.column.cards ?? [],
     set: (val) => {
@@ -35,14 +33,9 @@ const localCards = computed<CardEvent[]>({
 <template>
     <div class="task-column w-76 flex flex-col max-h-full rounded-2xl border border-border/70 bg-muted/40 backdrop-blur-sm overflow-hidden shadow-sm">
 
-        <!-- Column Header -->
         <div class="flex items-center gap-2 px-4 pt-4 pb-3">
-            <!-- Drag handle -->
-            <GripVertical
-                class="column-handle w-4 h-4 text-muted-foreground/40 cursor-move hover:text-muted-foreground transition-colors shrink-0"
-            />
+            <GripVertical class="column-handle w-4 h-4 text-muted-foreground/40 cursor-move hover:text-muted-foreground transition-colors shrink-0"/>
 
-            <!-- Title & count -->
             <div class="flex-1 flex items-center gap-2 min-w-0">
                 <h3 class="font-semibold text-sm text-foreground truncate leading-tight">
                     {{ column.name }}
@@ -50,12 +43,10 @@ const localCards = computed<CardEvent[]>({
                 <Badge
                     variant="secondary"
                     class="text-[10px] font-semibold px-1.5 py-0 h-4 rounded-full shrink-0 bg-primary/10 text-primary border-0"
-                >
-                    {{ localCards.length }}
+                > {{ localCards.length }}
                 </Badge>
             </div>
 
-            <!-- Options dropdown -->
             <DropdownMenu>
                 <DropdownMenuTrigger as-child>
                     <Button
@@ -66,10 +57,7 @@ const localCards = computed<CardEvent[]>({
                         <MoreHorizontal class="w-4 h-4" />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent
-                    align="end"
-                    class="w-44 rounded-xl shadow-lg border border-border/60 bg-popover/95 backdrop-blur-md"
-                >
+                <DropdownMenuContent align="end" class="w-44 rounded-xl shadow-lg border border-border/60 bg-popover/95 backdrop-blur-md">
                     <DropdownMenuItem
                         @click="emit('editColumn', column)"
                         class="gap-2.5 cursor-pointer text-xs font-medium rounded-lg mx-1 my-0.5"
@@ -89,10 +77,9 @@ const localCards = computed<CardEvent[]>({
             </DropdownMenu>
         </div>
 
-        <!-- Subtle divider -->
+        <!-- để cho đẹp -->
         <div class="mx-4 h-px bg-border/60 mb-3" />
 
-        <!-- Cards list -->
         <draggable
             v-model="localCards"
             group="tasks"
@@ -111,7 +98,6 @@ const localCards = computed<CardEvent[]>({
                 />
             </template>
 
-            <!-- Empty state -->
             <template #footer>
                 <div
                     v-if="!localCards.length"
@@ -125,7 +111,6 @@ const localCards = computed<CardEvent[]>({
             </template>
         </draggable>
 
-        <!-- Add card button -->
         <div class="px-3 pb-3 pt-1">
             <button
                 @click="emit('addCard', column.id)"

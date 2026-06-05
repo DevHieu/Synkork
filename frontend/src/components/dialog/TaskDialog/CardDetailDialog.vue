@@ -72,7 +72,7 @@ const props = defineProps<{
   columnName: string;
 }>();
 
-const emit = defineEmits(["update:open", "save"]);
+const emit = defineEmits(["update:open", "save", "archive"]);
 
 const emitSave = () => {
   if (!form.value.title.trim()) return;
@@ -101,15 +101,12 @@ const filteredMembers = computed(() =>
   roomMemberStore.searchMembers(searchQuery.value),
 );
 
-const handleDelete = () => {
+const handleArchive = () => {
   if (!currentSpace.value) return;
 
-  const data = {
-    columnId: props.card.columnId,
-    cardId: props.card.id,
-  };
+  taskStore.archiveCard(currentSpace.value.id, props.card.id);
 
-  taskStore.delete("card", currentSpace.value.id, data);
+  emit("archive", props.card.id);
   emit("update:open", false);
 };
 
@@ -172,8 +169,8 @@ watch(
           <CreditCard :size="16" />
           <span class="text-xs font-medium uppercase tracking-wider">Chi tiết thẻ</span>
         </div>
-        <Button variant="ghost" size="sm" @click.stop="handleDelete()"
-          class="h-8 text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors mr-5">
+        <Button variant="ghost" size="sm" @click.stop="handleArchive"
+          class="h-8 text-muted-foreground hover:text-amber-500 hover:bg-amber-50 transition-colors mr-5">
           <Archive :size="14" class="mr-1" />
           <span class="text-xs">Lưu trữ thẻ</span>
         </Button>
@@ -259,7 +256,7 @@ watch(
 
           <div class="space-y-2">
             <Label class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-              Hạn chót
+              Ngày hết hạn
             </Label>
             <div class="flex items-center gap-1.5">
               <CalendarIcon class="w-3.5 h-3.5 text-muted-foreground shrink-0" />

@@ -96,16 +96,14 @@ const isOverdue = computed(() => {
             class="task-card group relative rounded-2xl border border-border/60 bg-card shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-grab active:cursor-grabbing overflow-hidden"
             @click="openDetail"
         >
-            <!-- Top accent line using primary color -->
+        <!-- để cho đẹp -->
             <div class="h-0.5 w-full bg-gradient-to-r from-primary/60 via-primary/30 to-transparent" />
 
             <div class="px-3 flex flex-col gap-1">
-                <!-- Title row -->
                 <div class="flex items-start justify-between gap-1.5">
-                    <h3 class="font-medium text-[13px] leading-snug text-card-foreground break-words flex-1">
+                    <h3 class="font-semibold text-[13px] leading-snug text-card-foreground break-words flex-1">
                         {{ card.title }}
                     </h3>
-                    <!-- Archive button, appears on hover -->
                     <Button
                         variant="ghost"
                         size="icon"
@@ -116,17 +114,14 @@ const isOverdue = computed(() => {
                     </Button>
                 </div>
 
-                <!-- Description preview -->
                 <p v-if="card.description"
                     class="text-[11px] text-muted-foreground line-clamp-1 leading-relaxed flex items-start gap-1">
                     <AlignLeft class="w-2.5 h-2.5 mt-0.5 shrink-0 opacity-50" />
                     {{ card.description }}
                 </p>
 
-                <!-- Footer: due date + assignees + date -->
                 <div class="flex justify-between items-center pt-0.5">
                     <div class="flex items-center gap-1.5">
-                        <!-- Due date badge -->
                         <Badge
                             v-if="card.dueDate"
                             variant="outline"
@@ -143,7 +138,6 @@ const isOverdue = computed(() => {
                             {{ new Date(card.dueDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) }}
                         </Badge>
 
-                        <!-- Assignee avatars -->
                         <div class="flex items-center -space-x-1">
                             <div
                                 v-for="assignee in card.assignees?.slice(0, 3)"
@@ -166,7 +160,6 @@ const isOverdue = computed(() => {
                         </div>
                     </div>
 
-                    <!-- Created date -->
                     <span v-if="formattedDate" class="text-[10px] text-muted-foreground/50 tabular-nums">
                         {{ formattedDate }}
                     </span>
@@ -186,7 +179,6 @@ const isOverdue = computed(() => {
 
 <style scoped>
 .task-card {
-    /* Subtle backdrop so card stands out from column bg */
     backdrop-filter: blur(2px);
 }
 </style>

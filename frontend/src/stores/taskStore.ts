@@ -265,25 +265,7 @@ export const useTaskStore = defineStore("task", {
             
         },
 
-        async deleteAllArchivedCards(spaceId: string) {
-            try {
-                await deleteAllArchivedCards(spaceId)
-                this.archivedCards = []
-            } catch (e) {
-                console.error("Lỗi xóa tất cả thẻ đã lưu trữ:", e)
-            }
-        },
-
-        async deleteAllArchivedColumns(spaceId: string) {
-            try {
-                await deleteAllArchivedColumns(spaceId)
-                this.archivedColumns = []
-            } catch (e) {
-                console.error("Lỗi xóa tất cả cột đã lưu trữ:", e)
-            }
-        },
-
-        async deleteAll(deleteAllType: "columns" | "cards", spaceId: string) {
+        async deleteAllArchived(deleteAllType: "columns" | "cards", spaceId: string) {
             try {
                 if (deleteAllType === 'columns') {
                     await deleteAllArchivedColumns(spaceId)
