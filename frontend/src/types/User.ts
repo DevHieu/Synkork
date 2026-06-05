@@ -6,4 +6,6 @@ export interface User {
   avatarUrl?: string;
   currentPlan: "FREE" | "TEAM" | "BUSINESS";
   planExpiresAt: Date | null;
+  personalNoteId: string;
+  personalCalendarId: string;
 }

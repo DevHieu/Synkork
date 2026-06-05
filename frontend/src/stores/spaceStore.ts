@@ -175,7 +175,7 @@ export const useSpaceStore = defineStore("spaces", {
       router.push(`/rooms/${spaceType.toLowerCase()}/${router.currentRoute.value.params.roomId}/${spaceId}`);
     },
 
-    async joinDMSpace(spaceId: string) {
+    async joinDMSpace(spaceId: string, path: string = "/me") {
       if (this._joiningDMSpaceId === spaceId) return;
       try {
         this._joiningDMSpaceId = spaceId;
@@ -186,9 +186,11 @@ export const useSpaceStore = defineStore("spaces", {
 
         // Không hiểu tại sao hoạt động. Thứ tự 3 dòng này để im như này
         this.currentSpace = null;
-        await router.push(`/me/${spaceId}`);
+        await router.push(`${path}/${spaceId}`);
         this.currentSpace = space;
       } catch (error) {
+        console.log(error);
+
         toast.error("Không thể tham gia phòng chat này.");
       } finally {
         this.loading = false;
@@ -313,8 +315,6 @@ export const useSpaceStore = defineStore("spaces", {
 function checkPermission(space: Space | null) {
   const { user } = storeToRefs(useUserStore());
   const { currentAuthority } = storeToRefs(useRoomMemberStore());
-
-  console.log("user: " + currentAuthority.value);
 
   if (!user.value || !space) return false;
 

@@ -1,5 +1,6 @@
 package com.synkork.backend.modules.verification;
 
+import com.synkork.backend.modules.space.SpaceService;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
 import com.synkork.backend.modules.user.UserService;
@@ -11,6 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -22,6 +24,8 @@ public class VerificationService {
 
     @Autowired
     private UserService userService;
+    @Autowired
+    private SpaceService spaceService;
 
     private String generateOTP() {
         return String.format("%06d", new java.security.SecureRandom().nextInt(1000000));
@@ -61,6 +65,12 @@ public class VerificationService {
         UserEntity user = entity.getUser();
 
         user.setStatus(UserStatusEnum.ACTIVE);
+
+        Map<String, UUID> personalId = spaceService.createPersonalSpaces(user);
+
+        user.setPersonalNoteId(personalId.get("noteId"));
+        user.setPersonalCalendarId(personalId.get("calendarId"));
+
         userService.create(user);
 
         // Xoá token sau khi dùng
