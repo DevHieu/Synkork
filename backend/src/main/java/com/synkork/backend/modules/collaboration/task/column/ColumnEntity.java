@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.synkork.backend.modules.collaboration.task.card.CardEntity;
 import com.synkork.backend.modules.space.SpaceEntity;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -39,9 +40,14 @@ public class ColumnEntity {
     @Column(nullable = false)
     private int position;
 
+    @Column(nullable = false)
+    private Boolean archived = false;
+
+    @Column(name = "archived_at")
+    private LocalDateTime archivedAt;
+
     @OneToMany(mappedBy = "column", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC")
     private List<CardEntity> cards = new ArrayList<>();
-
     
 }
