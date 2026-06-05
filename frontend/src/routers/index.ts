@@ -71,6 +71,14 @@ const routes = [
             path: ":spaceId",
             component: ChatWindow,
           },
+          {
+            path: "note/:spaceId",
+            component: NoteWindow,
+          },
+          {
+            path: "calendar/:spaceId",
+            component: CalendarWindowLayout,
+          }
         ],
       },
       {

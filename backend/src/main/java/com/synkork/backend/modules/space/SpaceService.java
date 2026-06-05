@@ -7,6 +7,8 @@ import com.synkork.backend.modules.collaboration.task.column.ColumnRepository;
 import com.synkork.backend.modules.message.MessageRepository;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.RoomRepository;
+import com.synkork.backend.modules.room.dto.CreateRoomDto;
+import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import com.synkork.backend.modules.space.dto.CreateSpaceRequest;
 import com.synkork.backend.modules.space.dto.SpaceDTO;
 import com.synkork.backend.modules.space.dto.UpdateSpaceRequest;
@@ -19,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -117,5 +120,31 @@ public class SpaceService {
                 .orElseThrow(() -> new IllegalArgumentException("Space not found"));
 
         return new SpaceDTO(space);
+    }
+
+    public Map<String, UUID> createPersonalSpaces(UserEntity user) {
+        RoomEntity roomEntity = roomRepository.save(
+                RoomEntity.builder().owner(user).type(RoomTypeEnum.DM).build());
+
+        UUID noteId;
+        if (user.getPersonalNoteId() == null) {
+            noteId = spaceRepository.save(
+                    SpaceEntity.builder().room(roomEntity).name("").type(SpaceTypeEnum.NOTE).isRestricted(true).build()).getId();
+        } else {
+            noteId = user.getPersonalNoteId();
+        }
+
+        UUID calendarId;
+        if (user.getPersonalCalendarId() == null) {
+            calendarId = spaceRepository.save(
+                    SpaceEntity.builder().room(roomEntity).name("").type(SpaceTypeEnum.CALENDAR).build()).getId();
+        } else {
+            calendarId = user.getPersonalCalendarId();
+        }
+
+        return Map.of(
+                "roomId", roomEntity.getId(),
+                "noteId", noteId,
+                "calendarId", calendarId);
     }
 }

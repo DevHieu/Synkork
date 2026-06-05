@@ -1,5 +1,6 @@
 package com.synkork.backend.security;
 
+import com.synkork.backend.modules.space.SpaceService;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
 import com.synkork.backend.modules.user.UserService;
@@ -15,6 +16,8 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.UUID;
 
 @Component
 public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
@@ -30,6 +33,8 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
     @Autowired
     JwtService  jwtService;
+    @Autowired
+    private SpaceService spaceService;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
@@ -41,7 +46,6 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         UserEntity existedUser = userRepository.findByEmail(email).orElse(null);
 
         if (existedUser != null) {
-
             existedUser.setProvider(ProviderEnum.GOOGLE);
             userService.updateUser(existedUser);
         } else {
@@ -54,7 +58,15 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
             newUser.setUsername(username);
 
             newUser.setProvider(ProviderEnum.GOOGLE);
+
             existedUser = userService.create(newUser);
+
+            // Tạo phòng riêng
+            Map<String, UUID> personalId = spaceService.createPersonalSpaces(existedUser);
+            existedUser.setPersonalNoteId(personalId.get("noteId"));
+            existedUser.setPersonalCalendarId(personalId.get("calendarId"));
+
+            userService.updateUser(existedUser);
         }
 
         String refreshToken = jwtService.generateToken(existedUser.getId().toString(), email, existedUser.getRole(), "REFRESH");
