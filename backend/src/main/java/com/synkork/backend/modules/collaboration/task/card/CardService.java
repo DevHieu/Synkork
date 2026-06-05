@@ -254,7 +254,6 @@ public class CardService {
     // }
 
     public List<CardDTO> getArchivedCards(UUID spaceId) {
-        // Lấy tất cả column của space rồi collect archived cards
         return columnRepository.findBySpaceIdOrderByPositionAsc(spaceId)
                 .stream()
                 .flatMap(col -> cardRepository

@@ -82,7 +82,6 @@ public class ColumnService {
 
     @Transactional
     public ColumnDTO moveColumn(UUID columnId, MoveColumnRequest req) {
-
         ColumnEntity movingCol = columnRepository.findById(columnId)
                 .orElseThrow(() -> new RuntimeException("Cột không tồn tại!"));
 
@@ -126,22 +125,17 @@ public class ColumnService {
 
     @Transactional
     public ColumnDTO archiveColumn(UUID columnId) {
-
         ColumnEntity col = columnRepository.findById(columnId)
                 .orElseThrow(() -> new RuntimeException("Cột không tồn tại"));
 
         UUID spaceId = col.getSpace().getId();
         int archivedPos = col.getPosition();
 
-        // Dùng một mốc thời gian DUY NHẤT cho cả cột lẫn card
-        // để unarchive sau này có thể filter chính xác
         LocalDateTime archiveTimestamp = LocalDateTime.now();
 
         col.setArchived(true);
         col.setArchivedAt(archiveTimestamp);
 
-        // Fetch card trực tiếp từ DB thay vì dùng lazy collection
-        // tránh trường hợp Hibernate chưa load cards
         List<com.synkork.backend.modules.collaboration.task.card.CardEntity> cards =
                 cardRepository.findByColumn_IdAndArchivedFalseOrderByPositionAsc(col.getId());
 
@@ -169,24 +163,18 @@ public class ColumnService {
 
     @Transactional
     public ColumnDTO unarchiveColumn(UUID columnId) {
-
         ColumnEntity col = columnRepository.findById(columnId)
                 .orElseThrow(() -> new RuntimeException("Cột không tồn tại"));
 
         UUID spaceId = col.getSpace().getId();
 
-        int nextPosition =
-                columnRepository.findBySpaceIdAndArchivedFalseOrderByPositionAsc(spaceId)
-                        .size();
+        int nextPosition = columnRepository.findBySpaceIdAndArchivedFalseOrderByPositionAsc(spaceId).size();
 
         col.setArchived(false);
         col.setArchivedAt(null);
         col.setPosition(nextPosition);
         columnRepository.save(col);
 
-        // Khôi phục tất cả card archived trong cột này
-        // Không dùng timestamp filter vì MySQL DATETIME truncate về giây,
-        // equals() sẽ luôn false nếu timestamp có nanosecond
         List<com.synkork.backend.modules.collaboration.task.card.CardEntity> archivedCards =
                 cardRepository.findByColumn_IdAndArchivedTrueOrderByPositionAsc(col.getId());
 
@@ -197,7 +185,6 @@ public class ColumnService {
 
         cardRepository.saveAll(archivedCards);
 
-        // Flush + evict cache để ColumnDTO đọc lại cards đã cập nhật
         entityManager.flush();
         entityManager.refresh(col);
 
