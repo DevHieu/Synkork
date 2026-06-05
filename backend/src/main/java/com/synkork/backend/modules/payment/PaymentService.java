@@ -55,6 +55,8 @@ public class PaymentService {
 
     @Value("${momo.ipn-url}")
     private String ipnUrl;
+    @Autowired
+    private ExpiredSubscriptionService expiredSubscriptionService;
 
     public Map<String, Object> createMomoPayment(String plan, String billingCycle, String userEmail) {
         try {
@@ -193,8 +195,9 @@ public class PaymentService {
             // Update user
             UserEntity user = userService.findByEmail(userEmail);
             user.setCurrentPlan(PlanEnum.valueOf(plan.toUpperCase()));
-            user.setPlanExpiresAt(expiresAt);
+            user.setPlanExpiresAt(expiresAt.plusDays(3)); // Cộng thêm 3 ngày để người dùng có thời gian để renew gói
             userService.create(user);
+            expiredSubscriptionService.changePendingRoomAndSpace(user.getId());
 
             emailService.sendPaymentSuccessEmail(userEmail, plan);
 

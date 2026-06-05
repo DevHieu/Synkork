@@ -376,8 +376,8 @@ public class EmailService {
                     padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px;">
             <h2 style="color: #111827;">Gói của bạn sắp hết hạn</h2>
             <p style="color: #374151;">
-                Gói <strong>%s</strong> của bạn sẽ hết hạn
-                <strong style="color: %s;">%s</strong>.
+                Gói <strong>%s</strong> của bạn đã hết hạn. Bạn sẽ còn 
+                <strong style="color: %s;">%s</strong> để gia hạn.
                 Hãy gia hạn để không bị gián đoạn dịch vụ.
             </p>
 

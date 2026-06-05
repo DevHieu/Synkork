@@ -72,7 +72,7 @@ public class SqlSchedule {
         System.out.println("Deleted rooms: " + rooms.size());
     }
 
-    @Scheduled(cron = "0 0 0 * * *")
+    @Scheduled(cron = "0 08 09 * * *")
     public void remindUserToReNewSubscription() {
         LocalDateTime now = LocalDateTime.now();
 
@@ -86,7 +86,7 @@ public class SqlSchedule {
     }
 
     @Transactional
-    @Scheduled(cron = "0 15 0 * * *")
+    @Scheduled(cron = "0 04 09 * * *")
     public void resetExpiredSubscriptions() {
         List<String> userEmails = userRepository.findEmailByPlanExpiresAtAfter(LocalDateTime.now());
         for (String email : userEmails) {

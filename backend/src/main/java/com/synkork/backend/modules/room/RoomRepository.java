@@ -30,9 +30,17 @@ public interface RoomRepository extends JpaRepository<RoomEntity, UUID> {
 
     void deleteByStatus(RoomStatusEnum roomStatusEnum);
 
-    List<RoomEntity> findByOwnerIdOrderByCreatedAtDesc(UUID ownerId);
+    List<RoomEntity> findByOwnerIdAndTypeAndStatusInOrderByCreatedAtDesc(
+            UUID ownerId,
+            RoomTypeEnum type,
+            List<RoomStatusEnum> statuses
+    );
 
     @Modifying
     @Query("UPDATE RoomEntity r SET r.status = :status WHERE r.id IN :ids")
     void updateStatusByIds(@Param("status") RoomStatusEnum status, @Param("ids") List<UUID> ids);
+
+    @Modifying
+    @Query("UPDATE RoomEntity r SET r.status = :newStatus WHERE r.owner.id = :ownerId AND r.status = 'PENDING_REMOVAL'")
+    void updatePendingRoomStatusByOwnerId(@Param("newStatus") RoomStatusEnum status, @Param("ownerId") UUID ownerId);
 }
