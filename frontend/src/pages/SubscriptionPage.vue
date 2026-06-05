@@ -8,16 +8,29 @@ import { cn } from "@/lib/utils";
 import { storeToRefs } from "pinia";
 
 const userStore = useUserStore();
-const { userPlan } = storeToRefs(userStore);
+const { userPlan, planExpiresAt } = storeToRefs(userStore);
 
 const loading = ref(false);
 const selectedPlan = ref("");
 const isYearly = ref(false);
-const paymentStatus = ref<"success" | "cancel" | null>(null);
 
 const activePlan = computed(() => {
   if (!userPlan.value) return "FREE";
   return userPlan.value;
+});
+
+const daysUntilExpiry = computed(() => {
+  if (!userPlan.value || userPlan.value === "FREE" || !planExpiresAt.value) {
+    return null;
+  }
+  const now = new Date();
+  const expiry = new Date(planExpiresAt.value);
+  const diffMs = expiry.getTime() - now.getTime();
+  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+});
+
+const isExpiringSoon = computed(() => {
+  return daysUntilExpiry.value !== null && daysUntilExpiry.value <= 3;
 });
 
 const plans = [
@@ -91,7 +104,7 @@ const plans = [
 ];
 
 const choosePlan = async (planId: string) => {
-  if (planId === "FREE" || planId === activePlan.value) return;
+  if (planId === "FREE") return;
 
   selectedPlan.value = planId;
   loading.value = true;
@@ -108,11 +121,13 @@ const choosePlan = async (planId: string) => {
     }
   } catch (error) {
     console.error("Payment error:", error);
-    paymentStatus.value = "cancel";
-    setTimeout(() => (paymentStatus.value = null), 3000);
   } finally {
     loading.value = false;
   }
+};
+
+const renewPlan = () => {
+  choosePlan(activePlan.value);
 };
 </script>
 
@@ -129,22 +144,6 @@ const choosePlan = async (planId: string) => {
     </div>
 
     <div class="relative container mx-auto px-6 py-20 max-w-7xl">
-      <!-- Toast Notifications -->
-      <transition name="toast">
-        <div v-if="paymentStatus"
-          class="fixed top-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-6 py-4 rounded-2xl border backdrop-blur-xl shadow-2xl"
-          :class="paymentStatus === 'success' ? 'bg-green-500/20 border-green-500/50 text-green-600 dark:text-green-400' : 'bg-destructive/20 border-destructive/50 text-destructive'">
-          <Check v-if="paymentStatus === 'success'" class="w-5 h-5" />
-          <X v-else class="w-5 h-5" />
-          <span class="text-sm font-medium">
-            {{ paymentStatus === 'success' ?
-              'Thanh toán thành công! Chào mừng bạn.' :
-              'Thanh toán thất bại hoặc đã bị hủy.' }}
-          </span>
-        </div>
-      </transition>
-
-      <!-- Header -->
       <div class="text-center mb-16 space-y-6">
         <h1 class="text-5xl md:text-7xl font-black tracking-tight text-foreground">
           Nâng cấp không gian
@@ -154,7 +153,6 @@ const choosePlan = async (planId: string) => {
           không giới hạn.
         </p>
 
-        <!-- Billing Selector (Thay thế Switch) -->
         <div class="flex flex-col items-center gap-4 pt-4">
           <div class="inline-flex p-1 bg-muted/50 backdrop-blur-sm rounded-2xl border border-border overflow-hidden">
             <button @click="isYearly = false" :class="cn(
@@ -179,7 +177,47 @@ const choosePlan = async (planId: string) => {
         </div>
       </div>
 
-      <!-- Plans Grid -->
+
+      <!-- Expiry Warning Banner -->
+      <div v-if="isExpiringSoon" class="mb-10 mx-auto max-w-2xl flex items-center gap-4 
+           rounded-2xl border border-amber-400/50 bg-amber-50 
+           dark:bg-amber-950/30 dark:border-amber-500/30
+           px-6 py-4">
+        <div
+          class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center bg-amber-100 dark:bg-amber-900/40">
+          <svg class="w-5 h-5 text-amber-700 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-bold text-amber-900 dark:text-amber-200">
+            Gói {{ activePlan }} của bạn sắp hết hạn
+          </p>
+          <p class="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+            <template v-if="daysUntilExpiry === 0">
+              Hết hạn hôm nay — gia hạn ngay để không bị gián đoạn.
+            </template>
+            <template v-else>
+              Còn <strong>{{ daysUntilExpiry }} ngày</strong> — gia hạn để giữ toàn bộ tính năng.
+            </template>
+          </p>
+        </div>
+
+        <Button @click="renewPlan" :disabled="loading" class="flex-shrink-0 h-10 px-5 rounded-xl bg-amber-500 hover:bg-amber-600 
+             text-white font-bold text-sm transition-all duration-200 shadow-sm">
+          <span v-if="loading && selectedPlan === activePlan" class="flex items-center gap-2">
+            <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
+              <path class="opacity-75" fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+          </span>
+          <span v-else>Gia hạn ngay</span>
+        </Button>
+      </div>
+
       <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
         <div v-for="plan in plans" :key="plan.id"
           class="group relative p-8 rounded-[32px] border backdrop-blur-sm transition-all duration-500 flex flex-col min-h-[660px]"

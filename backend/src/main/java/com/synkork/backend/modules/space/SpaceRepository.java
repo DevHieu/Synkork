@@ -31,4 +31,8 @@ public interface SpaceRepository extends JpaRepository<SpaceEntity, UUID> {
     @Modifying
     @Query("UPDATE SpaceEntity s SET s.status = :status WHERE s.id IN :ids")
     void updateStatusByIds(@Param("status") SpaceStatusEnum status, @Param("ids") List<UUID> ids);
+
+    @Modifying
+    @Query("UPDATE SpaceEntity s SET s.status = :newStatus WHERE s.room.owner.id = :ownerId AND s.status = 'PENDING_REMOVAL'")
+    void updatePendingSpaceStatusByRoom_OwnerId(@Param("newStatus") SpaceStatusEnum status, @Param("ownerId") UUID ownerId);
 }

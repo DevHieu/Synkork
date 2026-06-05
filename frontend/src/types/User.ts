@@ -5,4 +5,5 @@ export interface User {
   email: string;
   avatarUrl?: string;
   currentPlan: "FREE" | "TEAM" | "BUSINESS";
+  planExpiresAt: Date | null;
 }
