@@ -183,9 +183,6 @@ public class RoomService {
     public UUID createDMRoom(UserEntity sender, UserEntity receiver) {
     RoomEntity room = new RoomEntity();
     room.setType(RoomTypeEnum.DM);
-    
-    // ✨ THÊM DÒNG NÀY VÀO LÀ ĂN TIỀN NGAY:
-    room.setOwner(sender); 
 
     RoomEntity roomSaved = roomRepository.save(room);
 

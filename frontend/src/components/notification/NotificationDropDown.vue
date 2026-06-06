@@ -10,25 +10,48 @@
       </div>
 
       <div class="flex items-center gap-1">
-        <Button v-if="unreadCount > 0" variant="ghost" size="sm"
-          class="text-xs text-muted-foreground hover:text-foreground h-7 px-2" @click="notiStore.markAllAsRead()">
+        <Button
+          v-if="unreadCount > 0"
+          variant="ghost"
+          size="sm"
+          class="text-xs text-muted-foreground hover:text-foreground h-7 px-2"
+          @click="notiStore.markAllAsRead()"
+        >
           Đánh dấu đã đọc
         </Button>
 
-        <Button v-if="notifications.length > 0" variant="ghost" size="icon"
-          class="h-7 w-7 text-muted-foreground hover:text-destructive" @click="confirmDelete">
+        <Button
+          v-if="notifications.length > 0"
+          variant="ghost"
+          size="icon"
+          class="h-7 w-7 text-muted-foreground hover:text-destructive"
+          @click="confirmDelete"
+        >
           <Trash2 class="w-4 h-4" />
         </Button>
       </div>
     </div>
 
+    <!-- Loading state -->
+    <div v-if="isLoading" class="flex items-center justify-center py-12 text-muted-foreground gap-2">
+      <Loader2 class="w-5 h-5 animate-spin opacity-60" />
+      <p class="text-sm">Đang tải thông báo...</p>
+    </div>
+
     <!-- List -->
-    <ScrollArea class="h-[420px]">
+    <ScrollArea v-else class="h-[420px]">
       <div class="py-1">
-        <button v-for="n in notifications" :key="n.id" @click="handleClick(n)"
-          class="group w-full flex items-start gap-3 px-4 py-3 text-left transition-colors" :class="n.read
-            ? 'hover:bg-muted/50'
-            : 'bg-blue-50/60 dark:bg-blue-950/20 hover:bg-blue-100/60 dark:hover:bg-blue-900/20'">
+        <button
+          v-for="n in notifications"
+          :key="n.id"
+          @click="handleClick(n)"
+          class="group w-full flex items-start gap-3 px-4 py-3 text-left transition-colors"
+          :class="
+            n.read
+              ? 'hover:bg-muted/50'
+              : 'bg-blue-50/60 dark:bg-blue-950/20 hover:bg-blue-100/60 dark:hover:bg-blue-900/20'
+          "
+        >
           <!-- Avatar -->
           <Avatar class="w-9 h-9 flex-shrink-0">
             <AvatarImage :src="n.actorAvatar ?? ''" />
@@ -46,42 +69,50 @@
             <p class="text-xs text-muted-foreground">{{ timeAgo(n.createdAt) }}</p>
           </div>
 
-          <!-- Unread dot -->
+          <!-- Unread dot + delete -->
           <div class="flex items-start gap-2">
-            <!-- unread dot -->
             <span v-if="!n.read" class="w-2 h-2 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
 
-            <!-- delete button -->
-            <Button variant="ghost" size="icon"
+            <Button
+              variant="ghost"
+              size="icon"
               class="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
-              @click.stop="notiStore.removeNotification(n.id)">
+              @click.stop="notiStore.removeNotification(n.id)"
+            >
               <Trash2 class="w-4 h-4" />
             </Button>
           </div>
         </button>
 
-
         <!-- Empty state -->
-        <div v-if="notifications.length === 0"
-          class="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
+        <div
+          v-if="notifications.length === 0"
+          class="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2"
+        >
           <BellOff class="w-8 h-8 opacity-40" />
           <p class="text-sm">Không có thông báo nào</p>
         </div>
       </div>
     </ScrollArea>
   </div>
-  <DeleteConfirmDialog v-model:open="isDeleteOpen" :title="'Xóa tất cả thông báo?'"
-    description="Bạn không thể khôi phục lại các thông báo đã xóa." @confirm="clearAll" />
+
+  <DeleteConfirmDialog
+    v-model:open="isDeleteOpen"
+    :title="'Xóa tất cả thông báo?'"
+    description="Bạn không thể khôi phục lại các thông báo đã xóa."
+    @confirm="clearAll"
+  />
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
-import { BellOff, Trash2 } from 'lucide-vue-next'
+import { BellOff, Trash2, Loader2 } from 'lucide-vue-next'
 
 import { useNotificationStore } from '@/stores/notificationStore'
 import { useSpaceStore } from '@/stores/spaceStore'
+import { useRoomsStore } from '@/stores/roomStore'
 
 import type { NotificationDTO } from '@/types/Notification'
 
@@ -92,17 +123,40 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 
 import DeleteConfirmDialog from '@/components/dialog/DeleteConfirmDialog.vue'
 
+// ─── Emits ───────────────────────────────────────────────────────────────────
+
 const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
+// ─── Store & Router ───────────────────────────────────────────────────────────
+
 const router = useRouter()
-
 const notiStore = useNotificationStore()
-
 const { notifications, unreadCount } = storeToRefs(notiStore)
 
+// ─── Local State ──────────────────────────────────────────────────────────────
+
+const isLoading = ref(false)
 const isDeleteOpen = ref(false)
+
+// ─── Lifecycle ────────────────────────────────────────────────────────────────
+
+onMounted(async () => {
+  isLoading.value = true
+  try {
+    await notiStore.fetchNotifications()
+    await notiStore.connect()
+  } finally {
+    isLoading.value = false
+  }
+})
+
+onUnmounted(() => {
+  notiStore.disconnect()
+})
+
+// ─── Handlers ─────────────────────────────────────────────────────────────────
 
 function confirmDelete() {
   isDeleteOpen.value = true
@@ -114,98 +168,77 @@ function clearAll() {
 }
 
 async function handleClick(notification: NotificationDTO) {
+  console.log('[raw notification]', JSON.stringify(notification, null, 2))
   await notiStore.markAsRead(notification.id)
-  emit('close')
+
   const path = getNotificationPath(notification)
+  console.log('[handleClick]', { type: notification.type, roomId: notification.roomId, spaceId: notification.spaceId, path })
   if (!path) return
 
-  if (notification.spaceId) {
-    const spaceStore = useSpaceStore()
-    spaceStore.changeSpaceById(
-      notification.spaceId,
-      notification.type
-    )
+  if (notification.roomId && notification.spaceId) {
+    const roomStore = useRoomsStore()
+    const currentRoomId = roomStore.currentRoom?.id
+
+    if (currentRoomId != notification.roomId) {
+      const targetRoom = roomStore.rooms.find(r => r.id === notification.roomId)
+
+      if (targetRoom) {
+        await roomStore.changeRoom(targetRoom, notification.spaceId, notification.type)
+      }
+    } else {
+      const spaceStore = useSpaceStore()
+
+      await spaceStore.changeSpaceById(notification.spaceId, notification.type)
+    }
+    emit('close')
   }
 
   router.push({
     path,
-    query: {
-      refId: notification.refId
-    }
+    query: { refId: notification.refId }
   })
 }
 
-function notificationMessage(notification: NotificationDTO) {
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function notificationMessage(notification: NotificationDTO): string {
   switch (notification.refType) {
-    case 'CARD_ASSIGNED':
-      return 'đã assign bạn vào một task'
-
-    case 'CARD_DUE_SOON':
-      return 'task của bạn sắp đến hạn'
-
-    case 'CARD_OVER_DUE':
-      return 'task của bạn đã quá hạn'
-
-    case 'FRIEND_REQUEST':
-      return 'đã gửi cho bạn lời mời kết bạn'
-
-    case 'FRIEND_REJECT':
-      return 'đã từ chối lời mời kết bạn của bạn'
-
-    case 'FRIEND_ACCEPT':
-      return 'đã chấp nhận lời mời kết bạn của bạn'
-
-    case 'NOTE_REMINDER':
-      return 'Nhắc nhở: Ghi chú sắp đến hạn'
-
-    case 'EVENT_REMINDER':
-      return 'Nhắc nhở: Sự kiện sắp diễn ra'
-
-    default:
-      return 'có thông báo mới'
+    case 'CARD_ASSIGNED':   return 'đã assign bạn vào một task'
+    case 'CARD_DUE_SOON':   return 'Nhắc nhở: Task của bạn sắp đến hạn'
+    case 'CARD_OVER_DUE':   return 'Nhắc nhở: Task của bạn đã quá hạn'
+    case 'FRIEND_REQUEST':  return 'đã gửi cho bạn lời mời kết bạn'
+    case 'FRIEND_REJECT':   return 'đã từ chối lời mời kết bạn của bạn'
+    case 'FRIEND_ACCEPT':   return 'đã chấp nhận lời mời kết bạn của bạn'
+    case 'NOTE_REMINDER':   return 'Nhắc nhở: Ghi chú sắp đến hạn'
+    case 'EVENT_REMINDER':  return 'Nhắc nhở: Sự kiện sắp diễn ra'
+    default:                return 'có thông báo mới'
   }
 }
 
-function getNotificationPath(notification: NotificationDTO) {
+function getNotificationPath(notification: NotificationDTO): string | null {
   if (notification.type === 'FRIEND') return '/me/friends'
-  
+
   if (!notification.roomId || !notification.spaceId) return null
 
   switch (notification.type) {
-    case 'TASK':
-      return `/rooms/task/${notification.roomId}/${notification.spaceId}`
-
-    case 'NOTE':
-      return `/rooms/note/${notification.roomId}/${notification.spaceId}`
-
-    case 'CALENDAR':
-      return `/rooms/calendar/${notification.roomId}/${notification.spaceId}`
-
-    case 'CHAT':
-      return `/rooms/chat/${notification.roomId}/${notification.spaceId}`
-
-    default:
-      return null
+    case 'TASK':     return `/rooms/task/${notification.roomId}/${notification.spaceId}`
+    case 'NOTE':     return `/rooms/note/${notification.roomId}/${notification.spaceId}`
+    case 'CALENDAR': return `/rooms/calendar/${notification.roomId}/${notification.spaceId}`
+    case 'CHAT':     return `/rooms/chat/${notification.roomId}/${notification.spaceId}`
+    default:         return null
   }
 }
 
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime()
+function timeAgo(dateStr: string | number): string {
+  const date = typeof dateStr === 'number' ? new Date(dateStr) : new Date(dateStr)
+  const diff = Date.now() - date.getTime()
   const minutes = Math.floor(diff / 60000)
 
-  if (minutes < 1) {
-    return 'Vừa xong'
-  }
-
-  if (minutes < 60) {
-    return `${minutes} phút trước`
-  }
+  if (minutes < 1)  return 'Vừa xong'
+  if (minutes < 60) return `${minutes} phút trước`
 
   const hours = Math.floor(minutes / 60)
-
-  if (hours < 24) {
-    return `${hours} giờ trước`
-  }
+  if (hours < 24)   return `${hours} giờ trước`
 
   return `${Math.floor(hours / 24)} ngày trước`
 }
