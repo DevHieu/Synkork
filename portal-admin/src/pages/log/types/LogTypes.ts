@@ -1,20 +1,14 @@
-export enum AuditStatus {
-  SUCCESS = 'SUCCESS',
-  FAILURE = 'FAILURE',
-}
-
 export interface AuditLog {
   id: string
-  actorId?: number
+  actorId?: string
   actorEmail?: string
   action: string
   entityType?: string
   entityId?: string
   entityName?: string
-  workspaceId?: number
+  workspaceId?: string
   description?: string
   metadata?: string
-  status: AuditStatus
   createdAt: string
 }
 export interface LogParams {
@@ -23,8 +17,7 @@ export interface LogParams {
   search?: string
   action?: string
   entityType?: string
-  status?: 'SUCCESS' | 'FAILURE'
-  workspaceId?: number
+  workspaceId?: string
   actorEmail?: string
   fromDate?: string
   toDate?: string

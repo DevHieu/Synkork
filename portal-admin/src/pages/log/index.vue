@@ -15,6 +15,7 @@ import { defaultDateRange, formatTimestamp, formatToISODateTime } from '@/utils/
 
 import type { AuditLog, LogParams } from './types/LogTypes'
 
+import LogDetailDialog from './components/LogDetailDialog.vue'
 import { logService } from './service/logService'
 
 const loading = ref(false)
@@ -30,24 +31,14 @@ const dateRange = ref(defaultDateRange())
 
 const totalPage = computed(() => Math.ceil(totalCount.value / pageSize))
 
+const selectedLog = ref<AuditLog | null>(null)
+const isDetailOpen = ref(false)
+
 const columns = computed<TableColumn<any>[]>(() => [
   { header: 'Hành động', accessor: 'action', minWidth: 150 },
   { header: 'Đối tượng', accessor: 'entityType', minWidth: 120 },
   { header: 'Tên đối tượng', accessor: 'entityName', minWidth: 160 },
   { header: 'Người thực hiện', accessor: 'actorEmail', minWidth: 200 },
-  {
-    header: 'Trạng thái',
-    minWidth: 120,
-    render: row => h(
-      'span',
-      {
-        class: row.status === 'SUCCESS'
-          ? 'px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full dark:bg-green-900/30 dark:text-green-400'
-          : 'px-2 py-1 text-xs font-semibold text-red-700 bg-red-100 rounded-full dark:bg-red-900/30 dark:text-red-400',
-      },
-      row.status,
-    ),
-  },
   {
     header: 'Thời gian',
     minWidth: 160,
@@ -80,10 +71,6 @@ async function fetchLogs() {
       queryParams.search = searchKeyword.value.trim()
     }
 
-    if (selectedStatus.value !== 'ALL') {
-      queryParams.status = selectedStatus.value as 'SUCCESS' | 'FAILURE'
-    }
-
     if (selectedEntityType.value !== 'ALL') {
       queryParams.entityType = selectedEntityType.value
     }
@@ -110,10 +97,9 @@ async function fetchLogs() {
   }
 }
 
-// Xem chi tiết log
-function handleViewDetail(log: any) {
-  console.log('Log detail:', log)
-  alert(`Chi tiết hành động: ${log.description}`)
+function handleViewDetail(log: AuditLog) {
+  selectedLog.value = log
+  isDetailOpen.value = true
 }
 
 watch([searchKeyword, selectedStatus, selectedEntityType, dateRange], () => {
@@ -221,4 +207,9 @@ onMounted(() => {
       />
     </div>
   </BasicPage>
+
+  <LogDetailDialog
+    v-model:open="isDetailOpen"
+    :log="selectedLog"
+  />
 </template>
