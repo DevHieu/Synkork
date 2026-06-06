@@ -2,7 +2,7 @@ package com.synkork.backend.modules.auth;
 
 import com.synkork.backend.modules.auth.dto.LoginRequest;
 import com.synkork.backend.modules.auth.dto.RegisterRequest;
-import com.synkork.backend.modules.auth.dto.OtpVerifyRequest;
+import com.synkork.backend.modules.auth.dto.PasswordResetVerifyRequest;
 import com.synkork.backend.modules.user.enums.RoleEnum;
 import com.synkork.backend.modules.verification.VerificationService;
 import com.synkork.backend.security.JwtService;
@@ -99,16 +99,16 @@ public class AuthController {
         verificationService.verifyAccountRegister(token);
         return ResponseEntity.ok("Xác thực tài khoản thành công");
     }
-//
-//    @PostMapping("/request-password-reset")
-//    public ResponseEntity<String> forgotPassword(@RequestBody Map<String, String> body) {
-//        authService.sendRequestPasswordReset(body.get("email"));
-//        return ResponseEntity.ok("Link đặt lại mật khẩu đã được gửi");
-//    }
-//
-//    @PostMapping("/reset-password")
-//    public ResponseEntity<String> resetPassword(@Valid @RequestBody OtpVerifyRequest request) {
-//        authService.resetPassword(request.getToken(), request.getPassword());
-//        return ResponseEntity.ok("Đặt lại mật khẩu thành công");
-//    }
+
+    @PostMapping("/request-password-reset")
+    public ResponseEntity<String> forgotPassword(@RequestBody Map<String, String> body) {
+        authService.sendRequestPasswordReset(body.get("email"));
+        return ResponseEntity.ok("OTP đã được gửi đến email của bạn");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@Valid @RequestBody PasswordResetVerifyRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok("Đặt lại mật khẩu thành công");
+    }
 }

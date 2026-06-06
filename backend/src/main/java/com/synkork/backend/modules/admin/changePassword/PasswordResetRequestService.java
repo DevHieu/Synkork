@@ -34,33 +34,26 @@ public class PasswordResetRequestService {
     @Autowired
     private VerificationService verificationService;
 
-        public String createRequest(String email, String newPassword) {
-            UserEntity user = userService.findByEmail(email);
+    public String createRequest(String email) {
+        UserEntity user = userService.findByEmail(email);
 
-            if (user.getRole() == RoleEnum.USER) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tài khoản của bạn không phải là tài khoản quản trị viên");
-            }
-
-            // Xoá verification cũ nếu có
-            verificationService.deleteByUserAndType(user, VerifyTypeEnum.FORGOT_PASSWORD);
-
-            // Xoá password reset request cũ nếu có
-            passwordResetRequestRepository.findByUserEmail(email)
-                    .ifPresent(passwordResetRequestRepository::delete);
-
-            // Tạo ra otp code verify
-            VerificationEntity entity = verificationService.createVerifyWithOTP(user, VerifyTypeEnum.FORGOT_PASSWORD);
-            // Lưu tạm request đổi mật khẩu
-
-            PasswordResetRequestEntity request = PasswordResetRequestEntity.builder()
-                    .user(user)
-                    .newPassword(newPassword)
-                    .status(PasswordResetStatusEnum.NOT_VERIFIED)
-                    .build();
-            passwordResetRequestRepository.save(request);
-            emailService.sendOTPEmail(entity.getUser().getEmail(), entity.getOtpCode());
-            return entity.getId().toString();
+        if (user.getRole() == RoleEnum.USER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tài khoản của bạn không phải là tài khoản quản trị viên");
         }
+
+        // Xoá verification cũ nếu có
+        verificationService.deleteByUserAndType(user, VerifyTypeEnum.FORGOT_PASSWORD);
+
+        // Xoá password reset request cũ nếu có
+        passwordResetRequestRepository.findByUserEmail(email)
+                .ifPresent(passwordResetRequestRepository::delete);
+
+        // Tạo ra otp code verify
+        VerificationEntity entity = verificationService.createVerifyWithOTP(user, VerifyTypeEnum.FORGOT_PASSWORD);
+
+        emailService.sendOTPEmail(entity.getUser().getEmail(), entity.getOtpCode());
+        return entity.getId().toString();
+    }
 
     public void approve(UUID id) {
         PasswordResetRequestEntity request = passwordResetRequestRepository.findById(id)
@@ -91,13 +84,13 @@ public class PasswordResetRequestService {
         passwordResetRequestRepository.save(request);
     }
 
-    public void changeStatusByEmail(String email, PasswordResetStatusEnum status) {
-        PasswordResetRequestEntity entity = passwordResetRequestRepository.findByUserEmail(email).orElseThrow(() -> new ResponseStatusException(
-                HttpStatus.NOT_FOUND,
-                "Không có yêu cầu đổi mật khẩu của email này"
-        ));
+    public void buildChangePasswordRequest(UserEntity requester, String newPassword) {
 
-        entity.setStatus(status);
-        passwordResetRequestRepository.save(entity);
+        PasswordResetRequestEntity request = PasswordResetRequestEntity.builder()
+                .user(requester)
+                .newPassword(newPassword)
+                .status(PasswordResetStatusEnum.PENDING)
+                .build();
+        passwordResetRequestRepository.save(request);
     }
 }
