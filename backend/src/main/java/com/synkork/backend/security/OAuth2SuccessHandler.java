@@ -1,6 +1,8 @@
 package com.synkork.backend.security;
 
+import com.synkork.backend.modules.space.SpaceService;
 import com.synkork.backend.modules.user.UserEntity;
+import com.synkork.backend.modules.user.UserRepository;
 import com.synkork.backend.modules.user.UserService;
 import com.synkork.backend.modules.user.enums.ProviderEnum;
 import jakarta.servlet.ServletException;
@@ -14,6 +16,8 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.UUID;
 
 @Component
 public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
@@ -22,20 +26,26 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     private String frontendUrl;
 
     @Autowired
+    UserRepository userRepository;
+
+    @Autowired
     UserService userService;
 
     @Autowired
     JwtService  jwtService;
+    @Autowired
+    private SpaceService spaceService;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
         OAuth2User oAuth2User =  (OAuth2User) authentication.getPrincipal();
 
         String email = oAuth2User.getAttribute("email");
-        UserEntity existedUser = userService.findByEmail(email);
+
+        // Đoạn này dùng repo để check để còn cho cái trường hợp null. Chứ trong service đang trả về lỗi luôn thaành ra không tạo tk bằng google được
+        UserEntity existedUser = userRepository.findByEmail(email).orElse(null);
 
         if (existedUser != null) {
-
             existedUser.setProvider(ProviderEnum.GOOGLE);
             userService.updateUser(existedUser);
         } else {
@@ -48,7 +58,15 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
             newUser.setUsername(username);
 
             newUser.setProvider(ProviderEnum.GOOGLE);
+
             existedUser = userService.create(newUser);
+
+            // Tạo phòng riêng
+            Map<String, UUID> personalId = spaceService.createPersonalSpaces(existedUser);
+            existedUser.setPersonalNoteId(personalId.get("noteId"));
+            existedUser.setPersonalCalendarId(personalId.get("calendarId"));
+
+            userService.updateUser(existedUser);
         }
 
         String refreshToken = jwtService.generateToken(existedUser.getId().toString(), email, existedUser.getRole(), "REFRESH");

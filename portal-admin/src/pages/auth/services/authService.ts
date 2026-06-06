@@ -42,4 +42,14 @@ export const authService = {
       window.location.href = "/auth";
     }
   },
+
+  async requestPasswordReset(email: string, newPassword: string) {
+  const res = await axiosClient.post("/api/manage/auth/reset-password-request", { email, newPassword });
+  return res.data;
+},
+
+async verifyOtp(token: string, otpCode: string) {
+  const res = await axiosClient.post("/api/manage/auth/verify-otp", { token, otpCode });
+  return res.data;
+},
 };

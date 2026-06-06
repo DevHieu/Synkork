@@ -2,12 +2,14 @@ package com.synkork.backend.modules.admin.statistics;
 
 import com.synkork.backend.config.WebSocketEventListener;
 import com.synkork.backend.modules.message.MessageRepository;
+import com.synkork.backend.modules.payment.InvoiceRepository;
+import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
 import com.synkork.backend.modules.room.RoomRepository;
 import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import com.synkork.backend.modules.admin.statistics.dtos.OverviewChartResponse;
 import com.synkork.backend.modules.admin.statistics.dtos.OverviewStatsResponse;
 import com.synkork.backend.modules.admin.statistics.enums.PeriodEnum;
-import com.synkork.backend.modules.subscription.UserSubscriptionRepository;
+//import com.synkork.backend.modules.subscription.UserSubscriptionRepository;
 import com.synkork.backend.modules.user.UserRepository;
 import com.synkork.backend.modules.user.enums.RoleEnum;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +35,7 @@ public class StatisticsService {
     private StatisticsRepository statisticsRepository;
 
     @Autowired
-    private UserSubscriptionRepository userSubscriptionRepository;
+    private InvoiceRepository invoiceRepository;
 
     private LocalDateTime getStart(PeriodEnum period) {
 
@@ -57,12 +59,12 @@ public class StatisticsService {
 
         long newUsers = userRepository.countByCreatedAtBetweenAndRole(start, end, RoleEnum.USER);
         long newRooms = roomRepository.countByCreatedAtBetweenAndType(start, end, RoomTypeEnum.GROUP);
-        long newSubscriptions = userSubscriptionRepository.countByCreatedAtBetween(start, end);
+        long newSubscriptions = invoiceRepository.countByStatusAndPaidAtBetween(InvoiceStatusEnum.PAID, start, end);
         long userOnlines = WebSocketEventListener.onlineUserCounter;
 
         long totalUser = userRepository.countByRole(RoleEnum.USER);
         long totalRoom = roomRepository.countByType(RoomTypeEnum.GROUP);
-        long totalSubscriptions = userSubscriptionRepository.count();
+        long totalSubscriptions = invoiceRepository.countByStatus(InvoiceStatusEnum.PAID);
 
         StatisticsEntity statistics = StatisticsEntity.builder()
                 .createdAt(start)
@@ -99,7 +101,7 @@ public class StatisticsService {
 
         long totalUser = userRepository.countByRole(RoleEnum.USER);
         long totalRoom = roomRepository.countByType(RoomTypeEnum.GROUP);
-        long totalSubscriptions = userSubscriptionRepository.count();
+        long totalSubscriptions = invoiceRepository.countByStatus(InvoiceStatusEnum.PAID);
         long userOnlines = WebSocketEventListener.onlineUsers.size();
 
         StatisticsEntity yesterdayStats = statisticsRepository

@@ -59,11 +59,7 @@ public class RoomController {
 
             spaceService.createSpace(space, roomEntity.getId());
 
-            RoomDto roomDto = new RoomDto(
-                    roomEntity.getId(),
-                    roomEntity.getName(),
-                    roomEntity.getDescription(),
-                    roomEntity.getAvatarUrl());
+            RoomDto roomDto = new RoomDto(roomEntity);
 
             // Return Room để tao làm khi join phòng xong sẽ tự vào room vừa gia nhập
             return ResponseEntity.status(HttpStatus.CREATED).body(roomDto);
@@ -110,12 +106,7 @@ public class RoomController {
         UUID userId = AuthUtils.getCurrentUserId();
         List<RoomEntity> rooms = roomService.findRoomUserJoined(userId);
 
-        List<RoomDto> roomDtos = rooms.stream().map(room -> new RoomDto(
-                room.getId(),
-                room.getName(),
-                room.getDescription(),
-                room.getAvatarUrl()
-        )).toList();
+        List<RoomDto> roomDtos = rooms.stream().map(RoomDto::new).toList();
 
         return ResponseEntity.ok(roomDtos);
     }

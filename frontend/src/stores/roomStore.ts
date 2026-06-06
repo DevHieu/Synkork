@@ -75,22 +75,16 @@ export const useRoomsStore = defineStore("rooms", {
       ownerId: string;
       imageFile?: File;
     }) {
-      try {
-        const userStore = useUserStore();
-        const { user } = storeToRefs(userStore);
+      const userStore = useUserStore();
+      const { user } = storeToRefs(userStore);
 
-        if (!user.value) return;
+      if (!user.value) return;
 
-        roomData.ownerId = (user.value as any).id;
+      roomData.ownerId = (user.value as any).id;
+      const newRoom = await createRoom(roomData);
 
-        const newRoom = await createRoom(roomData);
-
-        this.rooms.unshift(newRoom);
-
-        this.changeRoom(newRoom, undefined);
-      } catch (error) {
-        console.error("Error creating room:", error);
-      }
+      this.rooms.unshift(newRoom);
+      this.changeRoom(newRoom, undefined);
     },
 
     async joinRoom(inviteCode: string) {
@@ -109,5 +103,13 @@ export const useRoomsStore = defineStore("rooms", {
 
       this.rooms = this.rooms.filter((room) => room.id !== roomId);
     },
+  },
+
+  getters: {
+    isInRoom: (state) => !!state.currentRoom,
+    roomPlan: (state) => {
+      if (!state.currentRoom) return "FREE";
+      return state.currentRoom.currentPlan;
+    }
   },
 });

@@ -18,11 +18,20 @@ import {
   FileText,
 } from "lucide-vue-next";
 import { watch } from "vue";
+import { useRoomsStore } from "@/stores/roomStore";
+import { useSpaceStore } from "@/stores/spaceStore";
+import { storeToRefs } from "pinia";
+import { PlanLimitUtils, type LimitType } from "@/utils/PlanLimitUtils";
+import type { SpaceType } from "@/types/Space";
+import PlanLimitDialog from "./PlanLimitDialog.vue";
 
-const props = defineProps<{ open: boolean; type: string }>();
+const { roomPlan } = storeToRefs(useRoomsStore());
+const { getSpaceTypeSize } = storeToRefs(useSpaceStore());
+
+const props = defineProps<{ open: boolean; type: SpaceType }>();
 const emit = defineEmits<{
   "update:open": [value: boolean];
-  created: [data: { name: string; type: string }];
+  created: [data: { name: string; type: SpaceType }];
 }>();
 
 watch(
@@ -34,45 +43,27 @@ watch(
 
 const spaceName = ref("");
 const loading = ref(false);
-const selectedType = ref("CHAT");
+const selectedType = ref<SpaceType>("CHAT");
+const planLimitDialog = ref(false);
 
 const spaceTypes = [
-  {
-    value: "CHAT",
-    label: "Chat",
-    description: "Kênh nhắn tin nhóm",
-    icon: Hash,
-  },
-  {
-    value: "VOICE",
-    label: "Đàm thoại",
-    description: "Kênh thoại & video",
-    icon: Volume2,
-  },
-  {
-    value: "TASK",
-    label: "Task",
-    description: "Quản lý công việc",
-    icon: CheckSquare,
-  },
-  {
-    value: "NOTE",
-    label: "Ghi chú",
-    description: "Ghi chú nhóm",
-    icon: FileText,
-  },
-  {
-    value: "CALENDAR",
-    label: "Lịch trình",
-    description: "Quản lý lịch",
-    icon: Calendar,
-  },
-];
+  { value: "CHAT" as const, label: "Chat", description: "Kênh nhắn tin nhóm", icon: Hash },
+  { value: "VOICE" as const, label: "Đàm thoại", description: "Kênh thoại & video", icon: Volume2 },
+  { value: "TASK" as const, label: "Task", description: "Quản lý công việc", icon: CheckSquare },
+  { value: "NOTE" as const, label: "Ghi chú", description: "Ghi chú nhóm", icon: FileText },
+  { value: "CALENDAR" as const, label: "Lịch trình", description: "Quản lý lịch", icon: Calendar },
+] satisfies { value: SpaceType; label: string; description: string; icon: unknown }[];
 
 const handleCreate = async () => {
   if (!spaceName.value.trim()) return;
   loading.value = true;
   try {
+
+    if (getSpaceTypeSize.value(selectedType.value) >= PlanLimitUtils.maxSpaces(roomPlan.value, selectedType.value)) {
+      planLimitDialog.value = true;
+      return;
+    }
+
     emit("created", { name: spaceName.value.trim(), type: selectedType.value });
     handleClose();
   } finally {
@@ -99,17 +90,12 @@ const handleClose = () => {
         <div class="flex flex-col gap-2">
           <Label>Loại kênh</Label>
           <div class="grid grid-cols-1 gap-2">
-            <button
-              v-for="type in spaceTypes"
-              :key="type.value"
-              @click="selectedType = type.value"
+            <button v-for="type in spaceTypes" :key="type.value" @click="selectedType = type.value"
               class="flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all duration-150 text-left"
-              :class="
-                selectedType === type.value
-                  ? 'border-primary bg-primary/10 text-foreground'
-                  : 'border-border hover:border-muted-foreground/50 hover:bg-muted text-muted-foreground'
-              "
-            >
+              :class="selectedType === type.value
+                ? 'border-primary bg-primary/10 text-foreground'
+                : 'border-border hover:border-muted-foreground/50 hover:bg-muted text-muted-foreground'
+                ">
               <component :is="type.icon" class="h-4 w-4 shrink-0" />
               <div class="flex flex-col">
                 <span class="text-sm font-medium leading-none">{{
@@ -126,12 +112,7 @@ const handleClose = () => {
         <!-- Tên kênh -->
         <div class="flex flex-col gap-2">
           <Label for="space-name">Tên kênh</Label>
-          <Input
-            id="space-name"
-            v-model="spaceName"
-            placeholder="Nhập tên kênh..."
-            @keyup.enter="handleCreate"
-          />
+          <Input id="space-name" v-model="spaceName" placeholder="Nhập tên kênh..." @keyup.enter="handleCreate" />
         </div>
       </div>
 
@@ -143,4 +124,7 @@ const handleClose = () => {
       </DialogFooter>
     </DialogContent>
   </Dialog>
+
+  <PlanLimitDialog v-model:open="planLimitDialog" :limit-type="selectedType.toLowerCase() as LimitType"
+    :current-plan="roomPlan" />
 </template>

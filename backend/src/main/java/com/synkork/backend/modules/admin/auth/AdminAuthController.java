@@ -1,6 +1,15 @@
 package com.synkork.backend.modules.admin.auth;
 
+import com.synkork.backend.common.utils.EmailService;
+import com.synkork.backend.modules.admin.changePassword.PasswordResetRequestEntity;
+import com.synkork.backend.modules.admin.changePassword.PasswordResetRequestService;
+import com.synkork.backend.modules.admin.changePassword.enums.PasswordResetStatusEnum;
 import com.synkork.backend.modules.auth.dto.LoginRequest;
+import com.synkork.backend.modules.auth.dto.OtpVerifyRequest;
+import com.synkork.backend.modules.auth.dto.ResetPasswordRequest;
+import com.synkork.backend.modules.verification.VerificationEntity;
+import com.synkork.backend.modules.verification.VerificationService;
+import com.synkork.backend.modules.verification.VerifyTypeEnum;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -23,6 +33,12 @@ public class AdminAuthController {
 
     @Autowired
     private AdminAuthService authService;
+
+    @Autowired
+    private VerificationService verificationService;
+
+    @Autowired
+    private PasswordResetRequestService  passwordResetRequestService;
 
     @GetMapping("/check")
     public ResponseEntity<?> checkAuth() {
@@ -52,5 +68,19 @@ public class AdminAuthController {
         } catch (ResponseStatusException e) {
             return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
         }
+    }
+
+    @PostMapping("/reset-password-request")
+    public ResponseEntity<String> requestPasswordReset(@RequestBody ResetPasswordRequest request) {
+        String verifyCode =  passwordResetRequestService.createRequest(request.email(), request.newPassword());
+        return ResponseEntity.ok(verifyCode);
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<String> verifyAccount(@Valid @RequestBody OtpVerifyRequest request) {
+        VerificationEntity verify = verificationService.verifyOtp(request.token(), request.otpCode());
+        passwordResetRequestService.changeStatusByEmail(verify.getUser().getEmail(), PasswordResetStatusEnum.PENDING);
+        verificationService.deleteByToken(request.token());
+        return ResponseEntity.ok("Xác thực tài khoản thành công");
     }
 }

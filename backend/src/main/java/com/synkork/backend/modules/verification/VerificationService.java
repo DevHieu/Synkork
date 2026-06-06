@@ -1,14 +1,18 @@
 package com.synkork.backend.modules.verification;
 
+import com.synkork.backend.modules.space.SpaceService;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
+import com.synkork.backend.modules.user.UserService;
 import com.synkork.backend.modules.user.enums.UserStatusEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,18 +20,37 @@ import java.util.UUID;
 public class VerificationService {
 
     @Autowired
-    VerificationRepository verificationRepository;
+    private VerificationRepository verificationRepository;
 
     @Autowired
-    UserRepository userRepository;
+    private UserService userService;
+    @Autowired
+    private SpaceService spaceService;
+
+    private String generateOTP() {
+        return String.format("%06d", new java.security.SecureRandom().nextInt(1000000));
+    }
 
     public VerificationEntity createVerify(String email, VerifyTypeEnum verifyType) {
-        VerificationEntity verificationEntity = VerificationEntity.builder().email(email).type(verifyType).build();
+        UserEntity user = userService.findByEmail(email);
+
+        VerificationEntity verificationEntity = VerificationEntity.builder().user(user).type(verifyType).build();
         verificationRepository.save(verificationEntity);
         return verificationEntity;
     }
 
-    public void verify(String token) {
+    public VerificationEntity createVerifyWithOTP(UserEntity user, VerifyTypeEnum verifyType) {
+        String otpCode = generateOTP();
+        VerificationEntity verificationEntity = VerificationEntity.builder()
+                .user(user)
+                .otpCode(otpCode)
+                .type(verifyType)
+                .build();
+        verificationRepository.save(verificationEntity);
+        return verificationEntity;
+    }
+
+    public void verifyAccountRegister(String token) {
         VerificationEntity entity = verificationRepository.findById(UUID.fromString(token)).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Link không hợp lệ hoặc đã được sử dụng"));;
 
         if (entity.getExpiredAt().isBefore(LocalDateTime.now())) {
@@ -39,14 +62,33 @@ public class VerificationService {
         }
 
         // Kích hoạt user
-        UserEntity user = userRepository.findByEmail(entity.getEmail())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tài khoản không tồn tại"));
+        UserEntity user = entity.getUser();
 
         user.setStatus(UserStatusEnum.ACTIVE);
-        userRepository.save(user);
+
+        Map<String, UUID> personalId = spaceService.createPersonalSpaces(user);
+
+        user.setPersonalNoteId(personalId.get("noteId"));
+        user.setPersonalCalendarId(personalId.get("calendarId"));
+
+        userService.create(user);
 
         // Xoá token sau khi dùng
         verificationRepository.delete(entity);
+    }
+
+    public VerificationEntity verifyOtp(String token, String otpCode) {
+        VerificationEntity entity = verificationRepository.findById(UUID.fromString(token)).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Link không hợp lệ hoặc đã được sử dụng"));;
+
+        if (!entity.getOtpCode().equals(otpCode)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sai mã OTP. Mời nhập lại");
+        }
+
+        if (entity.getExpiredAt().isBefore(LocalDateTime.now())) {
+            throw new ResponseStatusException(HttpStatus.GONE, "Link đã hết hạn"); // 410 Gone
+        }
+
+        return entity;
     }
 
     public Optional<VerificationEntity> findById(UUID uuid) {
@@ -55,5 +97,15 @@ public class VerificationService {
 
     public void delete(VerificationEntity verify) {
         verificationRepository.delete(verify);
+    }
+
+    public void deleteByToken(String token) {
+        verificationRepository.findById(UUID.fromString(token))
+                .ifPresent(verificationRepository::delete);
+    }
+
+    public void deleteByUserAndType(UserEntity user, VerifyTypeEnum type) {
+        verificationRepository.findByUserAndType(user, type)
+                .ifPresent(verificationRepository::delete);
     }
 }

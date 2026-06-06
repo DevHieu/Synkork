@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 // import VideoCall from "@/components/videoCall/VideoCall.vue";
 
+import LandingPage from "@/pages/LandingPage.vue";
 import MainPage from "@/pages/MainPage.vue";
 
 import AuthPage from "@/pages/auth/AuthPage.vue";
@@ -36,6 +37,10 @@ const routes = [
     ],
   },
   {
+    path: "/introduce",
+    component: LandingPage,
+  },
+  {
     path: "/",
     component: MainPage,
     meta: {
@@ -66,6 +71,14 @@ const routes = [
             path: ":spaceId",
             component: ChatWindow,
           },
+          {
+            path: "note/:spaceId",
+            component: NoteWindow,
+          },
+          {
+            path: "calendar/:spaceId",
+            component: CalendarWindowLayout,
+          }
         ],
       },
       {

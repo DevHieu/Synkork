@@ -1,136 +1,112 @@
 <template>
   <div class="min-h-screen background">
+    <div class="min-h-screen background">
 
-    <!-- HEADER -->
-    <header class="sticky top-0 z-40 border-b background/95 backdrop-blur">
-      <div class="mx-auto px-4 h-14 flex items-center gap-4">
+      <!-- HEADER -->
+      <header class="sticky top-0 z-40 border-b background/95 backdrop-blur">
+        <div class="mx-auto px-4 h-14 flex items-center gap-4">
 
-        <!-- LEFT: sidebar trigger + search -->
-        <div class="flex-1 flex items-center gap-3">
-          <SidebarTrigger class="-ml-1 shrink-0" />
-          <Hash class="w-5 h-5 text-teal-600 shrink-0" />
-          <span class="font-semibold shrink-0">{{ currentSpace?.name }}</span>
+          <!-- LEFT: sidebar trigger + search -->
+          <div class="flex-1 flex items-center gap-3">
+            <SidebarTrigger class="-ml-1 shrink-0" />
+            <Hash class="w-5 h-5 text-teal-600 shrink-0" />
+            <span class="font-semibold shrink-0">{{ currentSpace?.name }}</span>
 
-          <div class="relative max-w-xs w-full ">
-            <Search class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-3.5 h-3.5" />
-            <input v-model="store.searchQuery" placeholder="Tìm kiếm ghi chú..."
-              class="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg border bg-muted/50" />
-            <button v-if="store.searchQuery" @click="store.searchQuery = ''"
-              class="absolute right-2 top-1/2 -translate-y-1/2">
-              <X class="w-3.5 h-3.5" />
+            <div class="relative max-w-xs w-full ">
+              <Search class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-3.5 h-3.5" />
+              <input v-model="store.searchQuery" placeholder="Tìm kiếm ghi chú..."
+                class="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg border bg-muted/50" />
+              <button v-if="store.searchQuery" @click="store.searchQuery = ''"
+                class="absolute right-2 top-1/2 -translate-y-1/2">
+                <X class="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          <!-- RIGHT -->
+          <div class="flex items-center gap-3">
+            <span class="text-xs hidden sm:block">
+              {{ store.notes.length }} ghi chú
+            </span>
+            <button @click="openCreate"
+              class="px-3 py-1.5 text-sm rounded-lg bg-primary text-white flex items-center gap-1 cursor-pointer hover:bg-primary/90 transition-colors">
+              <Plus class="w-4 h-4" />
+              Tạo mới
             </button>
           </div>
+
+        </div>
+      </header>
+
+      <!-- MAIN -->
+      <main class="max-w-6xl mx-auto px-4 py-6">
+
+        <div v-if="store.loading && store.notes.length === 0" class="text-center py-20">
+          <Loader2 class="animate-spin mx-auto" />
         </div>
 
-        <!-- RIGHT -->
-        <div class="flex items-center gap-3">
-          <span class="text-xs hidden sm:block">
-            {{ store.notes.length }} ghi chú
-          </span>
-          <button @click="openCreate"
-            class="px-3 py-1.5 text-sm rounded-lg bg-primary text-white flex items-center gap-1 cursor-pointer hover:bg-primary/90 transition-colors">
-            <Plus class="w-4 h-4" />
-            Tạo mới
-          </button>
-        </div>
-
-      </div>
-    </header>
-
-    <!-- MAIN -->
-    <main class="max-w-6xl mx-auto px-4 py-6">
-
-      <!-- LOADING -->
-      <div v-if="store.loading && store.notes.length === 0" class="text-center py-20">
-        <Loader2 class="animate-spin mx-auto" />
-      </div>
-
-      <!-- ERROR -->
-      <div v-else-if="store.error && !store.error.includes('vị trí')" class="text-center py-20">
-        <AlertCircle class="mx-auto mb-3" />
-        <p>{{ store.error }}</p>
-      </div>
-
-      <template v-else>
-
-        <!-- EMPTY -->
-        <div v-if="store.filteredNotes.length === 0 && !store.loading" class="text-center py-20">
-
-          <NotebookPen class="mx-auto mb-3 opacity-20" />
-
-          <p class="text-sm text-muted-foreground">
-
-            {{
-              store.searchQuery
-                ? 'Không tìm thấy ghi chú nào'
-                : 'Chưa có ghi chú nào'
-            }}
-
-          </p>
-
-          <button v-if="!store.searchQuery" @click="openCreate" class="mt-3 text-sm text-primary hover:underline">
-            Tạo ghi chú đầu tiên
-          </button>
-
+        <div v-else-if="store.error && !store.error.includes('vị trí')" class="text-center py-20">
+          <AlertCircle class="mx-auto mb-3" />
+          <p>{{ store.error }}</p>
         </div>
 
         <template v-else>
 
-          <!-- PINNED -->
-          <section v-if="store.pinnedNotes.length > 0" class="mb-6">
+          <div v-if="store.filteredNotes.length === 0 && !store.loading" class="text-center py-20">
+            <NotebookPen class="mx-auto mb-3 opacity-20" />
+            <p class="text-sm text-muted-foreground">
+              {{ store.searchQuery ? 'Không tìm thấy ghi chú nào' : 'Chưa có ghi chú nào' }}
+            </p>
+            <button v-if="!store.searchQuery" @click="openCreate" class="mt-3 text-sm text-primary hover:underline">
+              Tạo ghi chú đầu tiên
+            </button>
+          </div>
 
-            <h2 class="text-xs mb-3 flex items-center gap-1 text-muted-foreground font-semibold uppercase">
-              <Pin class="w-3 h-3" />
-              Đã ghim
-            </h2>
+          <template v-else>
 
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <!-- PINNED -->
+            <section v-if="store.pinnedNotes.length > 0" class="mb-6">
+              <h2 class="text-xs mb-3 flex items-center gap-1 text-muted-foreground font-semibold uppercase">
+                <Pin class="w-3 h-3" />
+                Đã ghim
+              </h2>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <NoteCard v-for="note in store.pinnedNotes" :key="note.id" :note="note" @view="openDetail"
+                  @edit="openEdit" @delete="confirmDelete" @pin="handleTogglePin" @reminder="openReminder" />
+              </div>
+            </section>
 
-              <NoteCard v-for="note in store.pinnedNotes" :key="note.id" :note="note" @view="openDetail"
-                @edit="openEdit" @delete="confirmDelete" @pin="handleTogglePin" @reminder="openReminder" />
+            <!-- UNPINNED -->
+            <section v-if="store.unpinnedNotes.length > 0">
+              <h2 v-if="store.pinnedNotes.length > 0"
+                class="text-xs mb-3 text-muted-foreground font-semibold uppercase">
+                Khác
+              </h2>
+              <GridLayout v-model:layout="layout" :col-num="12" :row-height="100" :is-draggable="true"
+                :is-resizable="true" :margin="[12, 12]" :use-css-transforms="true" @layout-updated="onLayoutUpdated">
+                <GridItem v-for="item in layout" :key="item.i" :x="item.x" :y="item.y" :w="item.w" :h="item.h"
+                  :i="item.i" drag-allow-from=".drag-handle" drag-ignore-from=".no-drag">
+                  <NoteCard v-if="getNoteById(item.i)" :note="getNoteById(item.i)!" @view="openDetail" @edit="openEdit"
+                    @delete="confirmDelete" @pin="handleTogglePin" @reminder="openReminder" />
+                </GridItem>
+              </GridLayout>
+            </section>
 
-            </div>
-
-          </section>
-
-          <!-- UNPINNED -->
-          <section v-if="store.unpinnedNotes.length > 0">
-
-            <h2 v-if="store.pinnedNotes.length > 0" class="text-xs mb-3 text-muted-foreground font-semibold uppercase">
-              Khác
-            </h2>
-
-            <GridLayout v-model:layout="layout" :col-num="12" :row-height="100" :is-draggable="true"
-              :is-resizable="true" :margin="[12, 12]" :use-css-transforms="true" @layout-updated="onLayoutUpdated">
-
-              <GridItem v-for="item in layout" :key="item.i" :x="item.x" :y="item.y" :w="item.w" :h="item.h" :i="item.i"
-                drag-allow-from=".drag-handle" drag-ignore-from=".no-drag">
-
-                <NoteCard v-if="getNoteById(item.i)" :note="getNoteById(item.i)!" @view="openDetail" @edit="openEdit"
-                  @delete="confirmDelete" @pin="handleTogglePin" @reminder="openReminder" />
-
-              </GridItem>
-
-            </GridLayout>
-
-          </section>
+          </template>
 
         </template>
 
-      </template>
+      </main>
 
-    </main>
+      <!-- DIALOGS -->
+      <NoteDialog :space-id="spaceId" :open="dialogOpen" :note="selectedNote" @close="dialogOpen = false" />
 
-    <!-- DIALOGS -->
-    <NoteDialog :space-id="spaceId" :open="dialogOpen" :note="selectedNote" @close="dialogOpen = false" />
-
-    <NoteDetailDialog :open="detailOpen" :note="selectedNote" @close="detailOpen = false" @edit="openEdit"
-      @delete="confirmDelete" />
-
-    <ConfirmDialog :open="confirmOpen" @confirm="handleDelete" @cancel="confirmOpen = false" />
-
-    <ReminderDialog :open="reminderOpen" :note="reminderNote" @close="reminderOpen = false"
-      @confirm="handleReminderConfirm" />
+      <NoteDetailDialog :open="detailOpen" :note="selectedNote" @close="detailOpen = false" @edit="openEdit"
+        @delete="confirmDelete" />
+      <ConfirmDialog :open="confirmOpen" @confirm="handleDelete" @cancel="confirmOpen = false" />
+      <ReminderDialog :open="reminderOpen" :note="reminderNote" @close="reminderOpen = false"
+        @confirm="handleReminderConfirm" />
+    </div>
   </div>
 </template>
 
@@ -164,13 +140,9 @@ import {
 } from 'lucide-vue-next'
 
 import NoteCard from '@/components/note/NoteCard.vue'
-
 import NoteDialog from '@/components/dialog/NoteDialog/NoteDialog.vue'
-
 import NoteDetailDialog from '@/components/dialog/NoteDialog/NoteDetailDialog.vue'
-
 import ConfirmDialog from '@/components/dialog/NoteDialog/ConfirmDialog.vue'
-
 import ReminderDialog from '@/components/dialog/NoteDialog/ReminderDialog.vue'
 
 import type {
@@ -181,9 +153,7 @@ import { storeToRefs } from 'pinia'
 import SidebarTrigger from '../ui/sidebar/SidebarTrigger.vue'
 
 const route = useRoute()
-
-const spaceId =
-  computed(() => route.params.spaceId as string)
+const spaceId = computed(() => route.params.spaceId as string)
 const spaceStore = useSpaceStore()
 const store = useNoteStore()
 const { currentSpace } = storeToRefs(spaceStore)
@@ -191,36 +161,22 @@ const { currentSpace } = storeToRefs(spaceStore)
 const dialogOpen = ref(false)
 const detailOpen = ref(false)
 const selectedNote = ref<Note | null>(null)
-
 const confirmOpen = ref(false)
-
 const deleteTargetId = ref<string | null>(null)
-
 const reminderOpen = ref(false)
 const reminderNote = ref<Note | null>(null)
-
-// Layout
 const layout = ref<any[]>([])
 
 let layoutUpdateCount = 0
-
 let debounceTimer: ReturnType<typeof setTimeout>
 
-// layout sync
 watch(
   () => store.unpinnedNotes,
-
   (newNotes) => {
-
-    const existingIds =
-      new Set(layout.value.map((l) => l.i))
-
+    const existingIds = new Set(layout.value.map((l) => l.i))
     newNotes.forEach((note, index) => {
-
       const id = String(note.id)
-
       if (!existingIds.has(id)) {
-
         layout.value.push({
           i: id,
           x: note.posX ?? (index * 3) % 12,
@@ -230,103 +186,54 @@ watch(
         })
       }
     })
-
-    const noteIds =
-      new Set(newNotes.map((n) => String(n.id)))
-
-    layout.value =
-      layout.value.filter((l) => noteIds.has(l.i))
-
-    nextTick(() => {
-      layoutUpdateCount = 0
-    })
+    const noteIds = new Set(newNotes.map((n) => String(n.id)))
+    layout.value = layout.value.filter((l) => noteIds.has(l.i))
+    nextTick(() => { layoutUpdateCount = 0 })
   },
-
-  {
-    immediate: true,
-    deep: true
-  }
+  { immediate: true, deep: true }
 )
 
 function getNoteById(id: string): Note | undefined {
-
-  return store.unpinnedNotes.find(
-    (n) => String(n.id) === id
-  )
+  return store.unpinnedNotes.find((n) => String(n.id) === id)
 }
 
-// drag
 function onLayoutUpdated(newLayout: any[]) {
-
-  if (layoutUpdateCount < 1) {
-    layoutUpdateCount++
-    return
-  }
-
+  if (layoutUpdateCount < 1) { layoutUpdateCount++; return }
   clearTimeout(debounceTimer)
-
   debounceTimer = setTimeout(() => {
-
     newLayout.forEach((item) => {
-
-      store.updateNotePosition(
-        spaceId.value,
-        item.i,
-        {
-          posX: item.x,
-          posY: item.y,
-          width: item.w,
-          height: item.h,
-        }
-      )
+      store.updateNotePosition(spaceId.value, item.i, {
+        posX: item.x, posY: item.y, width: item.w, height: item.h,
+      })
     })
-
   }, 600)
 }
 
-// mounted
 watch(
   currentSpace,
   (space, prevSpace) => {
     if (!space?.id) return
     if (space.id === prevSpace?.id) return
-
-    if (prevSpace?.id) {
-      store.disconnectSocket(prevSpace.id)
-    }
-
+    if (prevSpace?.id) store.disconnectSocket(prevSpace.id)
     store.notes = []
     layout.value = []
     layoutUpdateCount = 0
-
     store.fetchNotes(space.id)
   },
   { immediate: true }
 )
 
-// change space
 watch(spaceId, (newId, oldId) => {
-
-  if (oldId) {
-    store.disconnectSocket(oldId)
-  }
-
+  if (oldId) store.disconnectSocket(oldId)
   store.notes = []
-
   layout.value = []
-
   layoutUpdateCount = 0
-
   store.fetchNotes(newId)
 })
 
-// unmount
 onUnmounted(() => {
-
   store.disconnectSocket(spaceId.value)
-
   store.notes = []
-
   clearTimeout(debounceTimer)
 })
 
@@ -364,55 +271,27 @@ function confirmDelete(id: string) {
 }
 
 async function handleDelete() {
-
   if (!deleteTargetId.value) return
-
-  await store.deleteNote(
-    spaceId.value,
-    deleteTargetId.value
-  )
-
+  await store.deleteNote(spaceId.value, deleteTargetId.value)
   confirmOpen.value = false
-
   deleteTargetId.value = null
 }
 
 async function handleTogglePin(id: string) {
-
-  await store.changePinStatus(
-    spaceId.value,
-    id
-  )
+  await store.changePinStatus(spaceId.value, id)
 }
 
-// reminder
-function openReminder(note: Note) {
-
-  reminderNote.value = note
-
-  reminderOpen.value = true
-}
+function openReminder(note: Note) { reminderNote.value = note; reminderOpen.value = true }
 
 async function handleReminderConfirm(reminderAt: string | null) {
   if (!reminderNote.value) return
-
-  await store.setNoteReminder(
-    spaceId.value,
-    reminderNote.value.id,
-    reminderAt
-  )
-
+  await store.setNoteReminder(spaceId.value, reminderNote.value.id, reminderAt)
   const idx = store.notes.findIndex(n => n.id === reminderNote.value!.id)
   if (idx !== -1) {
-    const updated: Note = {
-      ...(store.notes[idx] as Note),
-      reminderAt: reminderAt,
-      reminderSent: false
-    }
+    const updated: Note = { ...(store.notes[idx] as Note), reminderAt, reminderSent: false }
     store.notes[idx] = updated
     reminderNote.value = updated
   }
-
   reminderOpen.value = false
 }
 
