@@ -10,4 +10,6 @@ import java.util.UUID;
 @Repository
 public interface VerificationRepository extends JpaRepository<VerificationEntity, UUID> {
     Optional<VerificationEntity> findByUserAndType(UserEntity user, VerifyTypeEnum type);
+
+    Optional<VerificationEntity> findByUser_Email(String userEmail);
 }

@@ -1,11 +1,16 @@
 package com.synkork.backend.modules.auth;
 
 import com.synkork.backend.common.utils.EmailService;
+import com.synkork.backend.modules.admin.changePassword.PasswordResetRequestEntity;
+import com.synkork.backend.modules.admin.changePassword.enums.PasswordResetStatusEnum;
 import com.synkork.backend.modules.auth.dto.LoginRequest;
+import com.synkork.backend.modules.auth.dto.PasswordResetVerifyRequest;
 import com.synkork.backend.modules.auth.dto.RegisterRequest;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
+import com.synkork.backend.modules.user.UserService;
 import com.synkork.backend.modules.user.enums.ProviderEnum;
+import com.synkork.backend.modules.user.enums.RoleEnum;
 import com.synkork.backend.modules.user.enums.UserStatusEnum;
 import com.synkork.backend.modules.verification.VerificationEntity;
 import com.synkork.backend.modules.verification.VerificationService;
@@ -48,6 +53,8 @@ public class AuthService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+    @Autowired
+    private UserService userService;
 
     public String login(LoginRequest request, HttpServletResponse response) {
         UserEntity user = userRepository.findByEmail(request.getUsername())
@@ -110,9 +117,9 @@ public class AuthService {
         emailService.sendVerificationEmail(newUser.getEmail(), verify.getId().toString());
     }
 
+    // return id để đưa cho frontend còn gửi lại lúc nhập OTP xong
     public void sendRequestPasswordReset(String email) {
-        UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Email không tồn tại"));
+        UserEntity user = userService.findByEmail(email);
 
         if (user.getStatus() == UserStatusEnum.INACTIVE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tài khoản chưa được xác thực");
@@ -122,28 +129,19 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tài khoản này đăng nhập bằng Google, vui lòng sử dụng nút 'Đăng nhập với Google'");
         }
 
-        VerificationEntity verify = verificationService.createVerify(email, VerifyTypeEnum.FORGOT_PASSWORD);
-        emailService.sendForgotPasswordEmail(email, verify.getId().toString());
+        verificationService.deleteByUserAndType(user, VerifyTypeEnum.FORGOT_PASSWORD);
+
+        VerificationEntity entity = verificationService.createVerifyWithOTP(user, VerifyTypeEnum.FORGOT_PASSWORD);
+        emailService.sendOTPEmail(entity.getUser().getEmail(), entity.getOtpCode());
     }
 
-    public void resetPassword(String token, String newPassword) {
-        VerificationEntity verify = verificationService.findById(UUID.fromString(token))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Link không hợp lệ hoặc đã được sử dụng"));
-
-        if (verify.getExpiredAt().isBefore(LocalDateTime.now())) {
-            throw new ResponseStatusException(HttpStatus.GONE, "Link đã hết hạn");
-        }
-
-        if (verify.getType() != VerifyTypeEnum.FORGOT_PASSWORD) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Link không hợp lệ");
-        }
+    public void resetPassword(PasswordResetVerifyRequest request) {
+        VerificationEntity verify = verificationService.verifyOtp(request.email(), request.otpCode());
 
         UserEntity user = verify.getUser();
 
-        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPassword(passwordEncoder.encode(request.password()));
         userRepository.save(user);
-
-        verificationService.delete(verify);
     }
 }
 

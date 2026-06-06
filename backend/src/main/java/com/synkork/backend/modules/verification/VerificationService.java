@@ -77,8 +77,8 @@ public class VerificationService {
         verificationRepository.delete(entity);
     }
 
-    public VerificationEntity verifyOtp(String token, String otpCode) {
-        VerificationEntity entity = verificationRepository.findById(UUID.fromString(token)).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Link không hợp lệ hoặc đã được sử dụng"));;
+    public VerificationEntity verifyOtp(String email, String otpCode) {
+        VerificationEntity entity = verificationRepository.findByUser_Email(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Link không hợp lệ hoặc đã được sử dụng"));;
 
         if (!entity.getOtpCode().equals(otpCode)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sai mã OTP. Mời nhập lại");
@@ -87,7 +87,7 @@ public class VerificationService {
         if (entity.getExpiredAt().isBefore(LocalDateTime.now())) {
             throw new ResponseStatusException(HttpStatus.GONE, "Link đã hết hạn"); // 410 Gone
         }
-
+        this.delete(entity);
         return entity;
     }
 
