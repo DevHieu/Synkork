@@ -43,7 +43,6 @@ out/
 .vscode/
 
 # --- Hệ điều hành & Log ---
-log/
 *.log
 .DS_Store
 Thumbs.db

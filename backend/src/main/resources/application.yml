@@ -1,4 +1,7 @@
 spring:
+  application:
+    name: synkork
+
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/synkork?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
     username: ${DB_USERNAME:root}
@@ -46,6 +49,32 @@ spring:
   ai:
     gemini:
       api-key: ${GEMINI_API_KEY}
+
+  logging:
+    pattern:
+      correlation: "[${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: "*"
+    zipkin:
+      tracing:
+        endpoint: "http://tempo:9411/api/v2/spans"
+    endpoint:
+      health:
+        show:
+          details: "always"
+    metrics:
+      distribution:
+        percentiles-histogram:
+          http:
+            server:
+              requests: true
+    tracing:
+      sampling:
+        probability: 1.0
 
 momo:
   partner-code: MOMO
