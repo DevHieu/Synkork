@@ -42,28 +42,28 @@ export const verifyAccount = async (token: string) => {
   }
 };
 
-export const requestPasswordReset = async (email: string) => {
-  try {
-    const res = await axiosClient.post("/api/auth/request-password-reset", {
-      email,
-    });
-    return res.data;
-  } catch (error: any) {
-    throw error;
-  }
+export type PasswordResetRequest = {
+  email: string;
 };
 
-export const resetPassword = async (token: string, password: string) => {
-  try {
-    const res = await axiosClient.post("/api/auth/reset-password", {
-      token,
-      password,
-    });
-    return res.data;
-  } catch (error: any) {
-    throw error; // giữ nguyên error để ResetPasswordPage check status code
-  }
+export const requestPasswordReset = async (email: string) => {
+  const res = await axiosClient.post("/api/auth/request-password-reset", { email });
+  return res.data;
 };
+
+export const verifyOtp = async (
+  email: string,
+  otpCode: string,
+  password?: string,
+) => {
+  const res = await axiosClient.post("/api/auth/reset-password", {
+    email,
+    otpCode,
+    password,
+  });
+  return res.data;
+};
+
 
 export const checkIsLogin = async () => {
   const res = await axiosClient.get("/api/auth/check-login");
