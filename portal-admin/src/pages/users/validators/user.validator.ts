@@ -8,7 +8,6 @@ export const userValidator = z.object({
   lastName: z.string().min(1),
   username: z.string().min(1),
   email: z.email().min(1),
-  phoneNumber: z.string().min(1),
   status: userStatusSchema,
   role: userRoleSchema,
 })
