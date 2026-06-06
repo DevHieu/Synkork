@@ -1,5 +1,6 @@
 package com.synkork.backend.modules.verification;
 
+import com.synkork.backend.modules.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
@@ -26,12 +27,16 @@ public class VerificationEntity {
     @Column(name = "expired_at", nullable = false)
     private LocalDateTime expiredAt;
 
-    @Column(nullable = false, length = 100)
-    private String email;
+    @ManyToOne(fetch = FetchType.EAGER) // EAGER vì chủ yếu sẽ cần lấy email của user
+    @JoinColumn(name = "user_id", nullable = false)
+    private UserEntity user;
 
     @Column(nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     private VerifyTypeEnum type = VerifyTypeEnum.REGISTER;
+
+    @Column(name = "otp-code", nullable = true, length = 6)
+    private String otpCode;
 
     @PrePersist
     public void prePersist() {

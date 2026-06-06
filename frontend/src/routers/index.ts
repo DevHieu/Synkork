@@ -1,13 +1,15 @@
 import { createRouter, createWebHistory } from "vue-router";
 // import VideoCall from "@/components/videoCall/VideoCall.vue";
 
+import LandingPage from "@/pages/LandingPage.vue";
 import MainPage from "@/pages/MainPage.vue";
 
 import AuthPage from "@/pages/auth/AuthPage.vue";
 import ForgotPage from "@/pages/auth/ForgotPage.vue";
 import OAuth2Redirect from "@/pages/auth/OAuth2Redirect.vue";
 import VerifyPage from "@/pages/auth/VerifyPage.vue";
-import ResetPassword from "@/pages/auth/ResetPassword.vue";
+import OtpPage from "@/pages/auth/OtpPage.vue";
+import PasswordResetSuccessPage from "@/pages/auth/PasswordResetSuccessPage.vue";
 
 import ChatWindow from "@/components/windows/ChatWindow.vue";
 import VoiceWindow from "@/components/windows/VoiceWindow.vue";
@@ -31,9 +33,14 @@ const routes = [
     children: [
       { path: "", component: AuthPage },
       { path: "forgot-password", component: ForgotPage },
+      { path: "otp", component: OtpPage },
+      { path: "password-reset-success", component: PasswordResetSuccessPage },
       { path: "verify", component: VerifyPage },
-      { path: "reset-password", component: ResetPassword },
     ],
+  },
+  {
+    path: "/introduce",
+    component: LandingPage,
   },
   {
     path: "/",
@@ -66,6 +73,14 @@ const routes = [
             path: ":spaceId",
             component: ChatWindow,
           },
+          {
+            path: "note/:spaceId",
+            component: NoteWindow,
+          },
+          {
+            path: "calendar/:spaceId",
+            component: CalendarWindowLayout,
+          }
         ],
       },
       {

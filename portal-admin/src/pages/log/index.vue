@@ -1,34 +1,224 @@
 <script lang="ts" setup>
-import { LoaderIcon } from '@lucide/vue'
+import { Eye, LoaderIcon, Search } from '@lucide/vue'
+import { computed, h, onMounted, ref, watch } from 'vue'
 
+import type { TableColumn } from '@/components/base-table.vue'
+
+import BaseTable from '@/components/base-table.vue'
+import DateRangePicker from '@/components/date-range-picker.vue'
 import { BasicPage } from '@/components/global-layout'
+import Pagination from '@/components/pagination.vue'
+import { Button as UiButton } from '@/components/ui/button'
+import { Input as UiInput } from '@/components/ui/input'
+import { SelectContent, SelectItem, SelectTrigger, SelectValue, Select as UiSelect } from '@/components/ui/select'
+import { defaultDateRange, formatTimestamp, formatToISODateTime } from '@/utils/date.utils'
+
+import type { AuditLog, LogParams } from './types/LogTypes'
+
+import { logService } from './service/logService'
 
 const loading = ref(false)
+const logsData = ref<AuditLog[]>([])
+const totalCount = ref(0)
+const currentPage = ref(1)
+const pageSize = 20
 
-function mockLoading() {
+const searchKeyword = ref('')
+const selectedStatus = ref<string>('ALL')
+const selectedEntityType = ref<string>('ALL')
+const dateRange = ref(defaultDateRange())
+
+const totalPage = computed(() => Math.ceil(totalCount.value / pageSize))
+
+const columns = computed<TableColumn<any>[]>(() => [
+  { header: 'Hành động', accessor: 'action', minWidth: 150 },
+  { header: 'Đối tượng', accessor: 'entityType', minWidth: 120 },
+  { header: 'Tên đối tượng', accessor: 'entityName', minWidth: 160 },
+  { header: 'Người thực hiện', accessor: 'actorEmail', minWidth: 200 },
+  {
+    header: 'Trạng thái',
+    minWidth: 120,
+    render: row => h(
+      'span',
+      {
+        class: row.status === 'SUCCESS'
+          ? 'px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full dark:bg-green-900/30 dark:text-green-400'
+          : 'px-2 py-1 text-xs font-semibold text-red-700 bg-red-100 rounded-full dark:bg-red-900/30 dark:text-red-400',
+      },
+      row.status,
+    ),
+  },
+  {
+    header: 'Thời gian',
+    minWidth: 160,
+    render: row => formatTimestamp(row.createdAt),
+  },
+  {
+    header: 'Hành động',
+    minWidth: 120,
+    render: row => h(UiButton, {
+      variant: 'outline',
+      size: 'sm',
+      class: 'h-8 gap-1 px-2 text-xs',
+      onClick: () => handleViewDetail(row),
+    }, () => [
+      h(Eye, { class: 'h-3.5 w-3.5' }),
+      'Chi tiết',
+    ]),
+  },
+])
+
+async function fetchLogs() {
   loading.value = true
-  setTimeout(() => {
+  try {
+    const queryParams: LogParams = {
+      page: currentPage.value - 1,
+      size: pageSize,
+    }
+
+    if (searchKeyword.value.trim()) {
+      queryParams.search = searchKeyword.value.trim()
+    }
+
+    if (selectedStatus.value !== 'ALL') {
+      queryParams.status = selectedStatus.value as 'SUCCESS' | 'FAILURE'
+    }
+
+    if (selectedEntityType.value !== 'ALL') {
+      queryParams.entityType = selectedEntityType.value
+    }
+
+    if (dateRange.value?.from) {
+      const fromDate = typeof dateRange.value.from === 'string' ? new Date(dateRange.value.from) : dateRange.value.from
+      queryParams.fromDate = formatToISODateTime(fromDate)
+    }
+
+    if (dateRange.value?.to) {
+      const toDate = typeof dateRange.value.to === 'string' ? new Date(dateRange.value.to) : dateRange.value.to
+      queryParams.toDate = formatToISODateTime(toDate, true) // true để lấy 23:59:59
+    }
+    const response = await logService.getLogs({ params: queryParams })
+
+    logsData.value = response.content || []
+    totalCount.value = response.totalElements || 0
+  }
+  catch (error) {
+    console.error('Lỗi khi tải danh sách hệ thống log:', error)
+  }
+  finally {
     loading.value = false
-  }, 2000)
+  }
 }
+
+// Xem chi tiết log
+function handleViewDetail(log: any) {
+  console.log('Log detail:', log)
+  alert(`Chi tiết hành động: ${log.description}`)
+}
+
+watch([searchKeyword, selectedStatus, selectedEntityType, dateRange], () => {
+  currentPage.value = 1
+  fetchLogs()
+})
+
+watch(currentPage, () => {
+  fetchLogs()
+})
+
+onMounted(() => {
+  fetchLogs()
+})
 </script>
 
 <template>
-
   <BasicPage
     title="System Log"
-    description="System Log describe here"
+    description="Quản lý và theo dõi nhật ký hoạt động hệ thống"
     sticky
   >
-    <template #actions>
-      <UserInvite />
-      <UserCreate />
-      <UiButton variant="outline" @click="mockLoading">
-        <LoaderIcon />Mock Loading
-      </UiButton>
-    </template>
-    <div class="overflow-x-auto">
-      <!-- <DataTable :loading :data="users" :columns="columns" /> -->
+    <div class="mb-4 flex flex-wrap items-center gap-3">
+      <div class="relative w-full max-w-sm">
+        <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <UiInput
+          v-model="searchKeyword"
+          type="text"
+          placeholder="Tìm theo email, nội dung log..."
+          class="pl-8 h-9"
+        />
+      </div>
+
+      <div class="w-[160px]">
+        <UiSelect v-model="selectedStatus">
+          <SelectTrigger class="h-9 w-full">
+            <SelectValue placeholder="Trạng thái" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">
+              Tất cả trạng thái
+            </SelectItem>
+            <SelectItem value="SUCCESS">
+              Thành công
+            </SelectItem>
+            <SelectItem value="FAILURE">
+              Thất bại
+            </SelectItem>
+          </SelectContent>
+        </UiSelect>
+      </div>
+
+      <div class="w-[180px]">
+        <UiSelect v-model="selectedEntityType">
+          <SelectTrigger class="h-9 w-full">
+            <SelectValue placeholder="Loại đối tượng" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">
+              Tất cả đối tượng
+            </SelectItem>
+            <SelectItem value="USER">
+              User (Người dùng)
+            </SelectItem>
+            <SelectItem value="WORKSPACE">
+              Workspace
+            </SelectItem>
+            <SelectItem value="REPORT">
+              Report (Báo cáo)
+            </SelectItem>
+            <SelectItem value="SUBSCRIPTION">
+              Subscription
+            </SelectItem>
+          </SelectContent>
+        </UiSelect>
+      </div>
+
+      <div>
+        <DateRangePicker v-model="dateRange" />
+      </div>
+    </div>
+
+    <div class="relative rounded-md border border-neutral-200 dark:border-neutral-800">
+      <!-- Loading Overlay -->
+      <div v-if="loading" class="absolute inset-0 z-20 flex items-center justify-center bg-white/50 dark:bg-black/50">
+        <LoaderIcon class="animate-spin text-primary" />
+      </div>
+
+      <div class="overflow-x-auto">
+        <BaseTable
+          :columns="columns"
+          :data="logsData"
+        />
+      </div>
+
+      <div v-if="logsData.length === 0 && !loading" class="p-8 text-center text-muted-foreground text-sm">
+        Không tìm thấy bản ghi nhật ký nào phù hợp.
+      </div>
+
+      <Pagination
+        v-model:current-page="currentPage"
+        :total="totalPage"
+        :total-count="totalCount"
+        :per-page="pageSize"
+      />
     </div>
   </BasicPage>
 </template>

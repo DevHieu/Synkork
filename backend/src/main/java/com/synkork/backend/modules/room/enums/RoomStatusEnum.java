@@ -4,4 +4,5 @@ public enum RoomStatusEnum {
     OPEN,
     LOCKED,
     DELETED,
+    PENDING_REMOVAL
 }
