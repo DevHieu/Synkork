@@ -21,7 +21,7 @@ public class AuditLogEntity {
     @UuidV7Annotation
     private UUID id;
 
-    private Long actorId;
+    private UUID actorId;
     private String actorEmail;
 
     @Column(nullable = false, length = 100)
@@ -32,7 +32,7 @@ public class AuditLogEntity {
 
     private String entityId;
     private String entityName;
-    private Long workspaceId;
+    private UUID workspaceId;
 
     @Column(columnDefinition = "TEXT")
     private String description;
@@ -40,13 +40,6 @@ public class AuditLogEntity {
     @Column(columnDefinition = "JSON")
     private String metadata;
 
-    @Enumerated(EnumType.STRING)
-    private AuditStatus status = AuditStatus.SUCCESS;
-
     @CreationTimestamp
     private LocalDateTime createdAt;
-
-    public enum AuditStatus {
-        SUCCESS, FAILURE
-    }
 }

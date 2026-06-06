@@ -6,6 +6,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -18,12 +19,11 @@ public class AuditLogController {
     private AuditLogService auditLogService;
 
     @GetMapping("")
-    public Page<AuditLogEntity> findAll(
+    public ResponseEntity<Page<AuditLogEntity>> findAll(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String action,
             @RequestParam(required = false) String entityType,
-            @RequestParam(required = false) AuditLogEntity.AuditStatus status,
-            @RequestParam(required = false) Long workspaceId,
+            @RequestParam(required = false) String workspaceId,
             @RequestParam(required = false) String actorEmail,
 
             // Định dạng truyền lên: yyyy-MM-dd'T'HH:mm:ss (Ví dụ: 2026-06-06T00:00:00)
@@ -35,6 +35,11 @@ public class AuditLogController {
     ) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
-        return auditLogService.findAll(search, action, entityType, status, workspaceId, actorEmail, fromDate, toDate, pageable);
+        return ResponseEntity.ok(auditLogService.findAll(search, action, entityType,  workspaceId, actorEmail, fromDate, toDate, pageable));
+    }
+
+    @GetMapping("{id}")
+    public ResponseEntity<AuditLogEntity> findOne(@PathVariable String id) {
+        return ResponseEntity.ok(auditLogService.findById(id));
     }
 }
