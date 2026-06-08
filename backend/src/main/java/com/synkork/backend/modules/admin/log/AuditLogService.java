@@ -1,6 +1,8 @@
 package com.synkork.backend.modules.admin.log;
 
 import com.synkork.backend.common.utils.AuthUtils;
+import com.synkork.backend.modules.admin.log.dtos.AuditLogRequest;
+import com.synkork.backend.modules.admin.log.dtos.BuildLog;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class AuditLogService {
@@ -22,13 +25,13 @@ public class AuditLogService {
             String search,
             String action,
             String entityType,
-            AuditLogEntity.AuditStatus status,
             Long workspaceId,
             String actorEmail,
             LocalDateTime fromDate,
             LocalDateTime toDate,
             Pageable pageable) {
-
+        System.out.println("SEARCH: " + search);
+        System.out.println("ACTION: " + action);
         Specification<AuditLogEntity> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -42,17 +45,13 @@ public class AuditLogService {
 
             // 2. Filter theo Action (Chính xác)
             if (action != null && !action.trim().isEmpty()) {
-                predicates.add(cb.equal(root.get("action"), action));
+                String  keyword = "%" + action.trim().toUpperCase() + "%";
+                predicates.add(cb.like(cb.upper(root.get("action")), keyword));
             }
 
             // 3. Filter theo Entity Type (Chính xác)
             if (entityType != null && !entityType.trim().isEmpty()) {
                 predicates.add(cb.equal(root.get("entityType"), entityType));
-            }
-
-            // 4. Filter theo Status (Enum SUCCESS/FAILURE)
-            if (status != null) {
-                predicates.add(cb.equal(root.get("status"), status));
             }
 
             // 5. Filter theo Workspace ID
@@ -79,23 +78,31 @@ public class AuditLogService {
         return auditLogRepository.findAll(spec, pageable);
     }
 
-    public void log(String action, String entityType, String entityId,
-                    String entityName, Long workspaceId, String description) {
+    public void log(BuildLog data) {
 
         // Lấy actor từ SecurityContext
         String email = AuthUtils.getCurrentUsername();
 
         AuditLogEntity log = AuditLogEntity.builder()
                 .actorEmail(email)
-                .action(action)
-                .entityType(entityType)
-                .entityId(entityId)
-                .entityName(entityName)
-                .workspaceId(workspaceId)
-                .description(description)
-                .status(AuditLogEntity.AuditStatus.SUCCESS)
+                .action(data.getAction())
+                .entityType(data.getEntityType())
+                .entityId(data.getEntityId())
+                .entityName(data.getEntityName())
+                .workspaceId(UUID.fromString(data.getWorkspaceId()))
+                .description(data.getDescription())
+                .metadata(data.getMetadata())
                 .build();
 
         auditLogRepository.save(log);
+    }
+
+    public AuditLogEntity findById(String id) {
+        return auditLogRepository.findById(UUID.fromString(id)).orElseThrow(() -> new RuntimeException("Log không tồn tại"));
+    }
+
+    public AuditLogEntity createLog(AuditLogRequest request) {
+        AuditLogEntity entity = new AuditLogEntity(request);
+        return auditLogRepository.save(entity);
     }
 }

@@ -1,11 +1,14 @@
 package com.synkork.backend.modules.admin.log;
 
+import com.synkork.backend.modules.admin.log.dtos.AuditLogDetailResponse;
+import com.synkork.backend.modules.admin.log.dtos.AuditLogResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -18,11 +21,10 @@ public class AuditLogController {
     private AuditLogService auditLogService;
 
     @GetMapping("")
-    public Page<AuditLogEntity> findAll(
+    public Page<AuditLogResponse> findAll(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String action,
             @RequestParam(required = false) String entityType,
-            @RequestParam(required = false) AuditLogEntity.AuditStatus status,
             @RequestParam(required = false) Long workspaceId,
             @RequestParam(required = false) String actorEmail,
 
@@ -35,6 +37,14 @@ public class AuditLogController {
     ) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
-        return auditLogService.findAll(search, action, entityType, status, workspaceId, actorEmail, fromDate, toDate, pageable);
+        Page<AuditLogEntity> list = auditLogService.findAll(search, action, entityType, workspaceId, actorEmail, fromDate, toDate, pageable);
+
+        return list.map(AuditLogResponse::new);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<AuditLogDetailResponse> findOne(@PathVariable String id) {
+        AuditLogEntity entity = auditLogService.findById(id);
+        return ResponseEntity.ok(new AuditLogDetailResponse(entity));
     }
 }
