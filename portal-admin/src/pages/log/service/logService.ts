@@ -8,4 +8,9 @@ export const logService = {
 
     return res.data
   },
+
+  async getLogDetails(logId: string) {
+    const res = await axiosClient.get(`/api/manage/admin/logs/${logId}`)
+    return res.data
+  },
 }
