@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import type { User } from '../data/schema'
 import type { UserValidator } from '../validators/user.validator'
 
+import { adminUserService } from '../data/userAdminService'
 import { userValidator } from '../validators/user.validator'
 
 const { user } = defineProps<{
@@ -19,9 +20,12 @@ const { user } = defineProps<{
 
 const emits = defineEmits<{
   (e: 'close'): void
+  (e: 'saved', user: User): void
 }>()
 
-const roles = ['superadmin', 'admin', 'cashier', 'manager'] as const
+const isLoading = ref(false)
+
+const roles = ['admin', 'manager', 'user'] as const
 const status = ['active', 'inactive', 'invited', 'suspended'] as const
 
 const initialValues = reactive<UserValidator>({
@@ -29,9 +33,8 @@ const initialValues = reactive<UserValidator>({
   lastName: user?.lastName || '',
   username: user?.username || '',
   email: user?.email || '',
-  phoneNumber: user?.phoneNumber || '',
   status: user?.status || 'active',
-  role: user?.role || 'cashier',
+  role: user?.role || 'admin',
 })
 
 const userFormSchema = toTypedSchema(userValidator)
@@ -40,20 +43,28 @@ const { handleSubmit } = useForm({
   initialValues,
 })
 
-const onSubmit = handleSubmit((values) => {
-  const submitUser = { ...values }
-  if (user) {
-    submitUser.id = user.id
+const onSubmit = handleSubmit(async (values) => {
+  isLoading.value = true
+  try {
+    let result: User
+    if (user?.id) {
+      result = await adminUserService.update(user.id, values)
+      toast.success('Cập nhật người dùng thành công')
+    }
+    else {
+      result = await adminUserService.create(values)
+      toast.success('Tạo người dùng thành công')
+    }
+    emits('saved', result)
+    emits('close')
   }
-  toast('You submitted the following values:', {
-    description: h(
-      'pre',
-      { class: 'mt-2 w-[340px] rounded-md bg-slate-950 p-4' },
-      h('code', { class: 'text-white' }, JSON.stringify(submitUser, null, 2)),
-    ),
-  })
-
-  emits('close')
+  catch (err: any) {
+    const msg = err?.response?.data?.message || err?.message || 'Có lỗi xảy ra'
+    toast.error(msg)
+  }
+  finally {
+    isLoading.value = false
+  }
 })
 </script>
 
@@ -82,7 +93,7 @@ const onSubmit = handleSubmit((values) => {
         <FormItem>
           <FormLabel>User Name</FormLabel>
           <FormControl>
-            <Input type="text" v-bind="componentField" />
+            <Input type="text" v-bind="componentField" :disabled="!!user?.id" />
           </FormControl>
           <FormMessage />
         </FormItem>
@@ -91,16 +102,6 @@ const onSubmit = handleSubmit((values) => {
       <FormField v-slot="{ componentField }" name="email">
         <FormItem>
           <FormLabel>Email address</FormLabel>
-          <FormControl>
-            <Input type="text" v-bind="componentField" />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      </FormField>
-
-      <FormField v-slot="{ componentField }" name="phoneNumber">
-        <FormItem>
-          <FormLabel>Phone Number</FormLabel>
           <FormControl>
             <Input type="text" v-bind="componentField" />
           </FormControl>
@@ -130,6 +131,7 @@ const onSubmit = handleSubmit((values) => {
           <FormMessage />
         </FormItem>
       </FormField>
+
       <FormField v-slot="{ componentField }" name="role">
         <FormItem>
           <FormLabel>Role</FormLabel>
@@ -153,8 +155,8 @@ const onSubmit = handleSubmit((values) => {
         </FormItem>
       </FormField>
 
-      <Button type="submit" class="w-full">
-        SaveChanges
+      <Button type="submit" class="w-full" :disabled="isLoading">
+        {{ isLoading ? 'Đang lưu...' : 'SaveChanges' }}
       </Button>
     </form>
   </div>

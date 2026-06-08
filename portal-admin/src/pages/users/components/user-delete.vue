@@ -1,9 +1,12 @@
 <script lang="ts" setup>
+import { ref } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { ModalClose, ModalDescription, ModalFooter, ModalHeader, ModalTitle } from '@/components/prop-ui/modal'
 
 import type { User } from '../data/schema'
+
+import { adminUserService } from '../data/userAdminService'
 
 const { user } = defineProps<{
   user: User
@@ -13,12 +16,22 @@ const emits = defineEmits<{
   (e: 'remove'): void
 }>()
 
-function handleRemove() {
-  toast(`The following task has been deleted:`, {
-    description: h('pre', { class: 'mt-2 w-[340px] rounded-md bg-slate-950 p-4' }, h('code', { class: 'text-white' }, JSON.stringify(user, null, 2))),
-  })
+const isLoading = ref(false)
 
-  emits('remove')
+async function handleRemove() {
+  isLoading.value = true
+  try {
+    await adminUserService.delete(user.id)
+    toast.success(`Đã xóa người dùng: ${user.username}`)
+    emits('remove')
+  }
+  catch (err: any) {
+    const msg = err?.response?.data?.message || err?.message || 'Xóa thất bại'
+    toast.error(msg)
+  }
+  finally {
+    isLoading.value = false
+  }
 }
 </script>
 
@@ -36,14 +49,14 @@ function handleRemove() {
 
     <ModalFooter>
       <ModalClose as-child>
-        <UiButton variant="outline">
+        <UiButton variant="outline" :disabled="isLoading">
           Cancel
         </UiButton>
       </ModalClose>
 
       <ModalClose as-child>
-        <UiButton variant="destructive" @click="handleRemove">
-          Delete
+        <UiButton variant="destructive" :disabled="isLoading" @click="handleRemove">
+          {{ isLoading ? 'Đang xóa...' : 'Delete' }}
         </UiButton>
       </ModalClose>
     </ModalFooter>

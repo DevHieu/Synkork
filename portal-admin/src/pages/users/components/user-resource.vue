@@ -8,7 +8,11 @@ import UserForm from './user-form.vue'
 const props = defineProps<{
   user?: User
 }>()
-defineEmits(['close'])
+
+defineEmits<{
+  (e: 'close'): void
+  (e: 'saved', user: User): void
+}>()
 
 const user = computed(() => props.user)
 const title = computed(() => user.value?.id ? `Edit User` : 'New User')
@@ -26,6 +30,6 @@ const description = computed(() => user.value?.id ? `Edit user ${user.value.user
       </ModalDescription>
     </ModalHeader>
 
-    <UserForm :user="user" @close="$emit('close')" />
+    <UserForm :user="user" @close="$emit('close')" @saved="(u) => $emit('saved', u)" />
   </div>
 </template>
