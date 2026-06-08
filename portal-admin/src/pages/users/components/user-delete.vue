@@ -4,9 +4,9 @@ import { toast } from 'vue-sonner'
 
 import { ModalClose, ModalDescription, ModalFooter, ModalHeader, ModalTitle } from '@/components/prop-ui/modal'
 
-import type { User } from '../data/schema'
+import type { User } from '../types/userTypes'
 
-import { adminUserService } from '../data/userAdminService'
+import { userService } from '../services/userService'
 
 const { user } = defineProps<{
   user: User
@@ -21,7 +21,7 @@ const isLoading = ref(false)
 async function handleRemove() {
   isLoading.value = true
   try {
-    await adminUserService.delete(user.id)
+    await userService.delete(user.id)
     toast.success(`Đã xóa người dùng: ${user.username}`)
     emits('remove')
   }

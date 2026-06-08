@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ModalDescription, ModalHeader, ModalTitle } from '@/components/prop-ui/modal'
 
-import type { User } from '../data/schema'
+import type { User } from '../types/userTypes.ts'
 
 import UserForm from './user-form.vue'
 
