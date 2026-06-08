@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Eye, LoaderIcon, Search, Trash2 } from '@lucide/vue'
+import { refDebounced } from '@vueuse/core'
 import { computed, h, onMounted, ref, watch } from 'vue'
 
 import type { TableColumn } from '@/components/base-table.vue'
@@ -8,34 +9,29 @@ import DateRangePicker from '@/components/date-range-picker.vue'
 import { BasicPage } from '@/components/global-layout'
 import { Modal, ModalContent } from '@/components/prop-ui/modal'
 import { Button as UiButton } from '@/components/ui/button'
+import SelectContent from '@/components/ui/select/SelectContent.vue'
+import SelectItem from '@/components/ui/select/SelectItem.vue'
+import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
+import SelectValue from '@/components/ui/select/SelectValue.vue'
+import { defaultDateRange, formatToISODateTime } from '@/utils/date.utils.ts'
 
-import type { User } from './data/schema'
+import type { User, UserParams, UserPlan, UserStatus } from './types/userTypes.ts'
 
-import UserCreate from './components/user-create.vue'
 import UserDelete from './components/user-delete.vue'
 import UserResource from './components/user-resource.vue'
-import { adminUserService } from './data/userAdminService'
-
-// ── State ─────────────────────────────────────────────────────────────────────
+import { userService } from './services/userService.ts'
 
 const loading = ref(false)
+const allUsers = ref<User[]>([])
 const keyword = ref('')
-const dateRange = ref<{ from: Date, to: Date } | undefined>(undefined)
+const dateRange = ref(defaultDateRange())
+const selectedStatus = ref<string>('ALL')
+const selectedPlan = ref<string>('ALL')
 const currentPage = ref(1)
 const pageSize = 20
-const allUsers = ref<User[]>([])
 const totalCount = ref(0)
 
-let searchTimer: ReturnType<typeof setTimeout> | null = null
-function onSearch() {
-  if (searchTimer)
-    clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => {
-    currentPage.value = 1
-    fetchData()
-  }, 300)
-}
-
+const debounceKeyword = refDebounced(keyword, 500)
 const totalPage = computed(() => Math.ceil(totalCount.value / pageSize))
 
 const editTarget = ref<User | null>(null)
@@ -43,18 +39,53 @@ const deleteTarget = ref<User | null>(null)
 const showEditModal = ref(false)
 const showDeleteModal = ref(false)
 
-// ── Data fetching ─────────────────────────────────────────────────────────────
+const statusOptions = [
+  { value: 'ALL', label: 'Tất cả trạng thái' },
+  { value: 'ACTIVE', label: 'Đang hoạt động' },
+  { value: 'INACTIVE', label: 'Ngừng hoạt động' },
+  { value: 'BANNED', label: 'Bị khóa' },
+] as const
+
+const planOptions = [
+  { value: 'ALL', label: 'Tất cả' },
+  { value: 'FREE', label: 'FREE' },
+  { value: 'TEAM', label: 'TEAM' },
+  { value: 'BUSINESS', label: 'BUSINESS' },
+] as const
 
 async function fetchData() {
   loading.value = true
   try {
-    const { users, totalElements } = await adminUserService.getAll({
-      keyword: keyword.value || undefined,
+    const queryParams: UserParams = {
       page: currentPage.value - 1,
       size: pageSize,
-    })
-    allUsers.value = users
-    totalCount.value = totalElements
+    }
+
+    if (debounceKeyword.value.trim()) {
+      queryParams.keyword = keyword.value.trim()
+    }
+
+    if (selectedStatus.value !== 'ALL') {
+      queryParams.status = selectedStatus.value as UserStatus
+    }
+
+    if (selectedPlan.value !== 'ALL') {
+      queryParams.plan = selectedPlan.value as UserPlan
+    }
+
+    if (dateRange.value?.from) {
+      const fromDate = typeof dateRange.value.from === 'string' ? new Date(dateRange.value.from) : dateRange.value.from
+      queryParams.fromDate = formatToISODateTime(fromDate)
+    }
+
+    if (dateRange.value?.to) {
+      const toDate = typeof dateRange.value.to === 'string' ? new Date(dateRange.value.to) : dateRange.value.to
+      queryParams.toDate = formatToISODateTime(toDate, true)
+
+      const response = await userService.getAll({ params: queryParams })
+      allUsers.value = response.content || []
+      totalCount.value = response.totalElements || 0
+    }
   }
   catch (err) {
     console.error('Failed to fetch users:', err)
@@ -68,13 +99,11 @@ async function fetchData() {
 
 watch(currentPage, () => fetchData())
 
-watch(dateRange, (newDate) => {
-  console.log('Selected date range:', newDate)
+watch([debounceKeyword, dateRange, selectedStatus, selectedPlan], () => {
+  fetchData()
 })
 
 onMounted(() => fetchData())
-
-// ── Handlers ──────────────────────────────────────────────────────────────────
 
 function handleViewDetail(user: User) {
   editTarget.value = user
@@ -96,14 +125,12 @@ function onUserDeleted() {
   fetchData()
 }
 
-// ── Table columns ─────────────────────────────────────────────────────────────
-
 const columns = computed<TableColumn<User>[]>(() => [
   { header: 'ID', accessor: 'id', minWidth: 100 },
   { header: 'Username', accessor: 'username', minWidth: 150 },
   {
     header: 'Full Name',
-    render: row => `${row.firstName} ${row.lastName}`,
+    render: row => `${row.displayName}`,
     minWidth: 180,
   },
   { header: 'Role', accessor: 'role', minWidth: 120 },
@@ -132,40 +159,64 @@ const columns = computed<TableColumn<User>[]>(() => [
 
 <template>
   <BasicPage
-    title="Users"
-    description="Users description"
+    title="System Log"
+    description="Quản lý và theo dõi nhật ký hoạt động hệ thống"
     sticky
   >
-    <template #actions>
-      <div class="flex items-center gap-2">
-        <div class="relative flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm w-72">
-          <Search class="h-4 w-4 shrink-0 text-muted-foreground" />
-          <input
-            v-model="keyword"
-            placeholder="Tìm theo username hoặc email..."
-            class="flex-1 bg-transparent outline-none placeholder:text-muted-foreground text-sm"
-            @input="onSearch"
-          >
-        </div>
-        <div class="w-36 shrink-0">
-          <DateRangePicker v-model="dateRange" />
-        </div>
-        <UserCreate @saved="onUserSaved" />
+    <div class="mb-4 flex flex-wrap items-center gap-3">
+      <div class="relative w-full max-w-sm">
+        <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <UiInput
+          v-model="keyword"
+          type="text"
+          placeholder="Tìm theo email, tên của user..."
+          class="pl-8 h-9"
+        />
       </div>
-    </template>
 
-    <div class="relative">
-      <div
-        v-if="loading"
-        class="absolute inset-0 z-20 flex items-center justify-center bg-white/50 dark:bg-black/50"
-      >
+      <div class="w-[160px]">
+        <UiSelect v-model="selectedStatus">
+          <SelectTrigger class="h-9 w-full">
+            <SelectValue placeholder="Trạng thái" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem v-for="opt in statusOptions" :key="opt.value" :value="opt.value">
+              {{ opt.label }}
+            </SelectItem>
+          </SelectContent>
+        </UiSelect>
+      </div>
+
+      <div class="w-[160px]">
+        <UiSelect v-model="selectedPlan">
+          <SelectTrigger class="h-9 w-full">
+            <SelectValue placeholder="Trạng thái" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem v-for="opt in planOptions" :key="opt.value" :value="opt.value">
+              {{ opt.label }}
+            </SelectItem>
+          </SelectContent>
+        </UiSelect>
+      </div>
+
+      <div>
+        <DateRangePicker v-model="dateRange" />
+      </div>
+    </div>
+
+    <div class="relative rounded-md border border-neutral-200 dark:border-neutral-800">
+      <!-- Loading Overlay -->
+      <div v-if="loading" class="absolute inset-0 z-20 flex items-center justify-center bg-white/50 dark:bg-black/50">
         <LoaderIcon class="animate-spin text-primary" />
       </div>
 
-      <BaseTable
-        :columns="columns"
-        :data="allUsers"
-      />
+      <div class="overflow-x-auto">
+        <BaseTable
+          :columns="columns"
+          :data="allUsers"
+        />
+      </div>
 
       <Pagination
         v-model:current-page="currentPage"
@@ -198,4 +249,3 @@ const columns = computed<TableColumn<User>[]>(() => [
     </ModalContent>
   </Modal>
 </template>
-cl
