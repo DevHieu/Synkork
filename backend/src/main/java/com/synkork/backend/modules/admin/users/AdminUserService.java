@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -28,10 +30,8 @@ public class AdminUserService {
     @Autowired(required = false)
     private JavaMailSender mailSender;
 
-    // ── GET LIST với search + filter + pagination ─────────────────────
-    @Transactional(readOnly = true)
-    public UserPageResponse getUsers(String keyword, String role, String status, Pageable pageable) {
-        // Convert String → Enum, null nếu không truyền
+    // ── GET LIST ──────────────────────────────────────────────────────
+    public UserPageResponse getUsers(String keyword, String role, String status, String plan, Pageable pageable) {
         RoleEnum roleEnum = null;
         if (role != null && !role.isBlank()) {
             try { roleEnum = RoleEnum.valueOf(role.toUpperCase()); }
@@ -46,7 +46,12 @@ public class AdminUserService {
 
         String kw = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
 
-        Page<UserEntity> page = userAdminRepository.findWithFilters(kw, roleEnum, statusEnum, pageable);
+        Page<UserEntity> page = userAdminRepository.findAll(
+                UserSpecification.hasKeyword(kw)
+                        .and(UserSpecification.hasRole(roleEnum))
+                        .and(UserSpecification.hasStatus(statusEnum)),
+                pageable
+        );
 
         List<AdminUserResponse> content = page.getContent()
                 .stream()
@@ -64,13 +69,11 @@ public class AdminUserService {
     }
 
     // ── GET BY ID ─────────────────────────────────────────────────────
-    @Transactional(readOnly = true)
     public AdminUserResponse getUserById(UUID id) {
         return AdminUserResponse.from(findOrThrow(id));
     }
 
     // ── CREATE ────────────────────────────────────────────────────────
-    @Transactional
     public AdminUserResponse createUser(CreateUserRequest req) {
         if (userAdminRepository.existsByEmail(req.getEmail()))
             throw new IllegalArgumentException("Email đã được sử dụng: " + req.getEmail());
@@ -94,7 +97,6 @@ public class AdminUserService {
     }
 
     // ── UPDATE ────────────────────────────────────────────────────────
-    @Transactional
     public AdminUserResponse updateUser(UUID id, UpdateUserRequest req) {
         UserEntity user = findOrThrow(id);
 
@@ -118,21 +120,12 @@ public class AdminUserService {
 
     // ── DELETE ────────────────────────────────────────────────────────
     @Transactional
-    public void deleteUser(UUID id) {
+    public Map<String, String> deleteUser(UUID id) {
         userAdminRepository.delete(findOrThrow(id));
-    }
-
-
-    // ── UPDATE STATUS ─────────────────────────────────────────────────
-    @Transactional
-    public AdminUserResponse updateStatus(UUID id, UpdateStatusRequest req) {
-        UserEntity user = findOrThrow(id);
-        user.setStatus(UserStatusEnum.valueOf(req.getStatus().toUpperCase()));
-        return AdminUserResponse.from(userAdminRepository.save(user));
+        return Map.of("message", "Xóa người dùng thành công");
     }
 
     // ── HELPERS ───────────────────────────────────────────────────────
-
     private UserEntity findOrThrow(UUID id) {
         return userAdminRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy user: " + id));
@@ -151,5 +144,4 @@ public class AdminUserService {
             mailSender.send(msg);
         } catch (Exception ignored) {}
     }
-
 }

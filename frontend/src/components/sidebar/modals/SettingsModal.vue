@@ -49,8 +49,10 @@ const isOAuth = computed(() => {
 })
 // Sau khi OAuth tạo password thành công → chuyển sang form đổi mật khẩu
 const oauthJustCreatedPassword = ref(false)
-const showChangePasswordForm = computed(() => !isOAuth.value || oauthJustCreatedPassword.value)
-
+const showChangePasswordForm = computed(() => {
+  if (!isOAuth.value) return true                       
+  return currentUser.value?.hasPassword === true       
+})
 const providerLabel = computed(() => {
   const map: Record<string, string> = { GOOGLE: "Google", FACEBOOK: "Facebook", GITHUB: "GitHub" }
   return map[currentUser.value?.provider] ?? currentUser.value?.provider ?? ""
