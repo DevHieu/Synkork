@@ -15,7 +15,7 @@ public class ChatEventLlmService {
 
     private static final String CHAT_REFERER = "http://localhost:5173/rooms/chat";
     private static final String APP_TITLE = "Synkork";
-    private static final String EVENT_MODEL = "liquid/lfm-2.5-1.2b-thinking:free";
+    private static final String EVENT_MODEL = "moonshotai/kimi-k2.6:free";
 
     private final ObjectMapper objectMapper;
     private final OpenRouterClient openRouterClient;
