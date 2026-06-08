@@ -5,8 +5,11 @@ import com.synkork.backend.modules.admin.room.dto.AdminRoomRequest;
 import com.synkork.backend.modules.admin.room.dto.AdminRoomResponse;
 import com.synkork.backend.modules.admin.room.dto.RoomFilterRequest;
 import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/manage/rooms")
@@ -21,11 +24,19 @@ public class AdminRoomController {
     @GetMapping
     public ResponseEntity<Page<AdminRoomResponse>> getRooms(
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createdFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createdTo,
+            @RequestParam(required = false) Integer minMembers,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
         RoomFilterRequest filter = new RoomFilterRequest();
         filter.setSearch(search);
+        filter.setStatus(status);
+        filter.setCreatedFrom(createdFrom);
+        filter.setCreatedTo(createdTo);
+        filter.setMinMembers(minMembers);
         filter.setPage(page);
         filter.setSize(size);
 

@@ -10,6 +10,7 @@ import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -30,11 +31,14 @@ public class AdminRoomService {
         this.userRepository = userRepository;
     }
 
-    @Transactional(readOnly = true)
     public Page<AdminRoomResponse> getRooms(RoomFilterRequest filter) {
         Specification<RoomEntity> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
+            // Chỉ lấy GROUP
+            predicates.add(cb.equal(root.get("type"), RoomTypeEnum.GROUP));
+
+            // Filter theo tên
             if (filter.getSearch() != null && !filter.getSearch().isBlank()) {
                 predicates.add(
                     cb.like(cb.lower(root.get("name")),
@@ -42,7 +46,38 @@ public class AdminRoomService {
                 );
             }
 
-            predicates.add(cb.equal(root.get("type"), RoomTypeEnum.GROUP));
+            // Filter theo status
+            if (filter.getStatus() != null && !filter.getStatus().isBlank()) {
+                try {
+                    RoomStatusEnum statusEnum = RoomStatusEnum.valueOf(filter.getStatus().toUpperCase());
+                    predicates.add(cb.equal(root.get("status"), statusEnum));
+                } catch (IllegalArgumentException ignored) {}
+            }
+
+            // Filter theo ngày tạo từ
+            if (filter.getCreatedFrom() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(
+                    root.get("createdAt"),
+                    filter.getCreatedFrom().atStartOfDay()
+                ));
+            }
+
+            // Filter theo ngày tạo đến
+            if (filter.getCreatedTo() != null) {
+                predicates.add(cb.lessThanOrEqualTo(
+                    root.get("createdAt"),
+                    filter.getCreatedTo().atTime(23, 59, 59)
+                ));
+            }
+
+            // Filter theo số member tối thiểu
+            if (filter.getMinMembers() != null && filter.getMinMembers() > 0) {
+                Subquery<Long> subquery = query.subquery(Long.class);
+                var memberRoot = subquery.from(com.synkork.backend.modules.roomMember.RoomMemberEntity.class);
+                subquery.select(cb.count(memberRoot))
+                        .where(cb.equal(memberRoot.get("room"), root));
+                predicates.add(cb.greaterThanOrEqualTo(subquery, (long) filter.getMinMembers()));
+            }
 
             query.distinct(true);
             return cb.and(predicates.toArray(new Predicate[0]));
@@ -57,7 +92,6 @@ public class AdminRoomService {
         return roomRepository.findAll(spec, pageable).map(this::toResponse);
     }
 
-    @Transactional(readOnly = true)
     public AdminRoomDetailResponse getRoomDetail(String roomId) {
         RoomEntity room = roomRepository.findDetailById(UUID.fromString(roomId))
                 .orElseThrow(() -> new RuntimeException("Room not found: " + roomId));
@@ -91,11 +125,6 @@ public class AdminRoomService {
         if (request.getDescription() != null) room.setDescription(request.getDescription());
         if (request.getStatus() != null) {
             room.setStatus(RoomStatusEnum.valueOf(request.getStatus().toUpperCase()));
-        }
-        if (request.getOwnerId() != null) {
-            UserEntity owner = userRepository.findById(UUID.fromString(request.getOwnerId()))
-                    .orElseThrow(() -> new RuntimeException("User not found: " + request.getOwnerId()));
-            room.setOwner(owner);
         }
 
         return toResponse(roomRepository.save(room));
