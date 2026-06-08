@@ -2,14 +2,13 @@
 import { useColorMode } from '@vueuse/core'
 
 const mode = useColorMode()
-const logo = computed(() => {
-  return mode.value === 'dark' ? '/logo.svg' : '/logo-black.svg'
-})
+
+import icon from "@/assets/icons/DauChimMatMat.svg"
 </script>
 
 <template>
   <h1 class="flex items-center gap-2 text-xl font-bold">
-    <img :src="logo">
-    <span>Shadcn Vue Admin</span>
+    <img :src="icon" class="w-8 h-8" :class="mode === 'dark' ? 'invert' : ''">
+    <span>Synkork Admin</span>
   </h1>
 </template>

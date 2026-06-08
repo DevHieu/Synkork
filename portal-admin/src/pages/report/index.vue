@@ -17,9 +17,9 @@ import {
 } from '@/components/ui/select'
 import DateRangePicker from '@/components/date-range-picker.vue'
 
-import type { Report, ReportStatus, ReportType, ReportFilterParams } from '@/types/Reports.ts'
+import type { Report, ReportStatus, ReportType, ReportFilterParams } from '@/types/Reports'
 import ReportDetail from './components/ReportDetail.vue'
-import { fetchReports, updateReportStatus } from '@/services/reportService'
+import { fetchReports, updateReportStatus } from './service/reportService'
 
 // ── State ──────────────────────────────────────────────────────────────
 const loading    = ref(false)
@@ -167,6 +167,12 @@ const columns = computed<TableColumn<Report>[]>(() => [
     accessor: 'createdAt',
     minWidth: 160,
     render: (row) => new Date(row.createdAt).toLocaleDateString('vi-VN'),
+  },
+  {
+    header: 'Updated At',
+    accessor: 'updatedAt',
+    minWidth: 160,
+    render: (row) => new Date(row.updatedAt).toLocaleDateString('vi-VN'),
   },
   {
     header: 'Actions',

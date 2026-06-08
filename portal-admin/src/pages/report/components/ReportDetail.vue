@@ -110,7 +110,7 @@ function handleAction(status: ReportStatus) {
             {{ report.reportType === 'USER' ? (report.targetUserId) : (report.targetRoomId) }}
           </p>
           <p class="text-xs text-muted-foreground">
-            {{ report.reportType === 'USER' ? report.targetUserId : report.targetRoomId }}
+            {{ report.reportType === 'USER' ? report.targetName : report.targetName }}
           </p>
         </div>
 

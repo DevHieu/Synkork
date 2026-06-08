@@ -10,6 +10,8 @@ import org.springframework.stereotype.Component;
 import com.synkork.backend.common.utils.EmailService;
 import com.synkork.backend.modules.collaboration.task.card.enums.CardStatus;
 import com.synkork.backend.modules.notification.NotificationService;
+import com.synkork.backend.modules.notification.enums.NotificationRefTypeEnum;
+import com.synkork.backend.modules.notification.enums.NotificationTypeEnum;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 
 import jakarta.transaction.Transactional;
@@ -52,12 +54,16 @@ public class CardDeadlineScheduler {
 
                 for (RoomMemberEntity member : card.getAssignees()) {
 
-                    notificationService.sendCardOverDueNotification(
+                    notificationService.sendNotification(
                             null,
                             member.getUser(),
                             card.getId(),
+                            card.getColumn().getSpace().getRoom().getId(),
                             card.getColumn().getSpace().getId(),
-                            card.getColumn().getSpace().getRoom().getId());
+                            NotificationTypeEnum.TASK,
+                            NotificationRefTypeEnum.CARD_OVER_DUE
+                        );
+                            
                 }
             }
 
@@ -69,12 +75,15 @@ public class CardDeadlineScheduler {
 
                 for (RoomMemberEntity member : card.getAssignees()) {
 
-                    notificationService.sendCardDueSoonNotification(
+                    notificationService.sendNotification(
                             null,
                             member.getUser(),
                             card.getId(),
+                            card.getColumn().getSpace().getRoom().getId(),
                             card.getColumn().getSpace().getId(),
-                            card.getColumn().getSpace().getRoom().getId());
+                            NotificationTypeEnum.TASK,
+                            NotificationRefTypeEnum.CARD_DUE_SOON
+                        );
                 }
             }
         }

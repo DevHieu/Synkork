@@ -1,4 +1,4 @@
-import { User } from '@/types/User'
+import { Account } from '@/types/Account'
 import type { LucideProps } from '@lucide/vue'
 import type { FunctionalComponent } from 'vue'
 
@@ -31,6 +31,6 @@ export interface Team {
 }
 
 export interface SidebarData {
-  user: User
+  user: Account
   navMain: NavGroup[]
 }

@@ -13,6 +13,8 @@ export interface Report {
   targetUserId?: string | null
   targetRoomId?: string | null
 
+  targetName: string
+
   reason: string
   description?: string | null
 
