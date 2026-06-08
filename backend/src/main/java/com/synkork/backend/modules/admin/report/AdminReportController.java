@@ -32,6 +32,11 @@ public class AdminReportController {
     public ResponseEntity<ReportPageResponse> getReports(@ModelAttribute ReportFilterRequest filter) {
         return ResponseEntity.ok(reportService.getFilteredReports(filter));
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ReportDTO> getReportById(@PathVariable UUID id) {
+        return ResponseEntity.ok(reportService.getReportById(id));
+    }
  
     @PatchMapping("/{id}/status")
     public ResponseEntity<ReportDTO> updateStatus(@PathVariable UUID id, @Valid @RequestBody ReportUpdateStatusRequest request) {
