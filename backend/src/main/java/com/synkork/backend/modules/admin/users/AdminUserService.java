@@ -74,7 +74,6 @@ public class AdminUserService {
     }
 
     // ── CREATE ────────────────────────────────────────────────────────
-    @Transactional
     public AdminUserResponse createUser(CreateUserRequest req) {
         if (userAdminRepository.existsByEmail(req.getEmail()))
             throw new IllegalArgumentException("Email đã được sử dụng: " + req.getEmail());
@@ -98,7 +97,6 @@ public class AdminUserService {
     }
 
     // ── UPDATE ────────────────────────────────────────────────────────
-    @Transactional
     public AdminUserResponse updateUser(UUID id, UpdateUserRequest req) {
         UserEntity user = findOrThrow(id);
 
