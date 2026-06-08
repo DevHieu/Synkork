@@ -25,7 +25,7 @@ public class AuditLogService {
             String search,
             String action,
             String entityType,
-            Long workspaceId,
+            String workspaceId,
             String actorEmail,
             LocalDateTime fromDate,
             LocalDateTime toDate,
@@ -55,8 +55,8 @@ public class AuditLogService {
             }
 
             // 5. Filter theo Workspace ID
-            if (workspaceId != null) {
-                predicates.add(cb.equal(root.get("workspaceId"), workspaceId));
+            if (workspaceId != null && !workspaceId.trim().isEmpty()) {
+                predicates.add(cb.equal(root.get("workspaceId"), UUID.fromString(workspaceId)));
             }
 
             // 6. Filter theo Actor Email (Chính xác)
@@ -102,7 +102,27 @@ public class AuditLogService {
     }
 
     public AuditLogEntity createLog(AuditLogRequest request) {
+        String email = AuthUtils.getCurrentUsername();
         AuditLogEntity entity = new AuditLogEntity(request);
+        entity.setActorEmail(email);
+        entity.setMetadata(request.metadata());
         return auditLogRepository.save(entity);
+    }
+
+    public AuditLogEntity updateLog(String id, AuditLogRequest request) {
+        AuditLogEntity entity = findById(id);
+        entity.setAction(request.action());
+        entity.setEntityType(request.entityType());
+        entity.setEntityId(request.entityId());
+        entity.setEntityName(request.entityName());
+        entity.setWorkspaceId(request.workspaceId());
+        entity.setDescription(request.description());
+        entity.setMetadata(request.metadata());
+        return auditLogRepository.save(entity);
+    }
+
+    public void deleteLog(String id) {
+        AuditLogEntity entity = findById(id);
+        auditLogRepository.delete(entity);
     }
 }
