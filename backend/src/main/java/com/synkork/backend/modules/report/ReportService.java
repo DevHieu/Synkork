@@ -1,7 +1,7 @@
 package com.synkork.backend.modules.report;
 
 import com.synkork.backend.common.utils.AuthUtils;
-import com.synkork.backend.modules.report.dtos.ReportRequestDto;
+import com.synkork.backend.modules.report.dtos.*;
 import com.synkork.backend.modules.report.enums.ReportStatusEnums;
 import com.synkork.backend.modules.report.enums.ReportTypeEnums;
 import com.synkork.backend.modules.room.RoomEntity;
@@ -10,8 +10,11 @@ import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -64,5 +67,60 @@ public class ReportService {
         }
 
         reportRepository.save(builder.build());
+    }
+
+    public java.util.List<ReportDTO> getAllReports() {
+        return reportRepository.findAll()
+                .stream()
+                .map(ReportDTO::new)
+                .toList();
+    }
+
+    public ReportPageResponse getFilteredReports(ReportFilterRequest filter) {
+        Specification<ReportEntity> spec = ReportSpecification.from(filter);
+ 
+        Pageable pageable = PageRequest.of(
+                filter.getPage(),
+                filter.getSize(),
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+ 
+        Page<ReportEntity> page = reportRepository.findAll(spec, pageable);
+ 
+        List<ReportDTO> content = page.getContent()
+                .stream()
+                .map(ReportDTO::new)
+                .toList();
+ 
+        return new ReportPageResponse(
+                content,
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages()
+        );
+    }
+ 
+    public ReportDTO updateReportStatus(UUID reportId, ReportUpdateStatusRequest request) {
+        ReportEntity report = reportRepository.findById(reportId)
+                .orElseThrow(() -> new RuntimeException("Report không tồn tại: " + reportId));
+ 
+        ReportStatusEnums newStatus = request.status();
+ 
+        if (report.getStatus() == ReportStatusEnums.RESOLVED
+                || report.getStatus() == ReportStatusEnums.DISMISSED) {
+            throw new RuntimeException("Report này đã được xử lý xong, không thể thay đổi trạng thái");
+        }
+ 
+        report.setStatus(newStatus);
+        ReportEntity saved = reportRepository.save(report);
+
+        return new ReportDTO(saved);
+    }
+
+    public void deleteReport(UUID reportId) {
+        ReportEntity report = reportRepository.findById(reportId)
+                .orElseThrow(() -> new RuntimeException("Report không tồn tại: " + reportId));
+        reportRepository.delete(report);
     }
 }
