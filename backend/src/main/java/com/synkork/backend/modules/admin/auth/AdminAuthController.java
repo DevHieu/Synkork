@@ -25,24 +25,24 @@ public class AdminAuthController {
     private AdminAuthService authService;
 
     @GetMapping("/check")
-    public ResponseEntity<?> checkAuth() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+public ResponseEntity<?> checkAuth() {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
-        }
-
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("username", userDetails.getUsername());
-        response.put("roles", userDetails.getAuthorities()
-                .stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList()));
-
-        return ResponseEntity.ok(response);
+    if (authentication == null || !authentication.isAuthenticated()) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
     }
+
+    String username = authentication.getName();
+
+    Map<String, Object> response = new HashMap<>();
+    response.put("username", username);
+    response.put("roles", authentication.getAuthorities()
+            .stream()
+            .map(GrantedAuthority::getAuthority)
+            .collect(Collectors.toList()));
+
+    return ResponseEntity.ok(response);
+}
 
     @PostMapping("/login")
     public ResponseEntity<String> login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {

@@ -1,3 +1,4 @@
+
 package com.synkork.backend.modules.admin.auth;
 
 import com.synkork.backend.modules.auth.dto.LoginRequest;
@@ -39,7 +40,6 @@ public class AdminAuthService {
 //        if (user.getRole() == RoleEnum.USER) {
 //            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tài khoản của bạn không phải là tài khoản quản trị viên");
 //        }
-
         if (user.getStatus() == UserStatusEnum.BANNED) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tài khoản của bạn đã bị khóa do quản trị viên. Vui lòng liên hệ để được giải quyết");
         }
