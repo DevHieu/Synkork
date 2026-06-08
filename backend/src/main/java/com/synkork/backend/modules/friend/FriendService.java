@@ -67,7 +67,7 @@ public class FriendService {
 
         requestRepo.delete(req);
 
-        notificationService.sendNotification(req.getReceiver(), req.getSender(), requestId, null, NotificationTypeEnum.FRIEND, NotificationRefTypeEnum.FRIEND_ACCEPT);
+        notificationService.sendNotification(req.getReceiver(), req.getSender(), requestId, null, null, NotificationTypeEnum.FRIEND, NotificationRefTypeEnum.FRIEND_ACCEPT);
         
        return List.of(req.getSender().getEmail(), req.getReceiver().getEmail());
     }
@@ -79,7 +79,7 @@ public class FriendService {
         String senderEmail = req.getSender().getEmail(); // lấy email trước khi xóa
         requestRepo.delete(req);
 
-        notificationService.sendNotification(req.getReceiver(), req.getSender(), requestId, null, NotificationTypeEnum.FRIEND, NotificationRefTypeEnum.FRIEND_REJECT);
+        notificationService.sendNotification(req.getReceiver(), req.getSender(), requestId, null, null, NotificationTypeEnum.FRIEND, NotificationRefTypeEnum.FRIEND_REJECT);
         return senderEmail; // ← thêm dòng này
     }
 
@@ -166,7 +166,7 @@ public class FriendService {
         req.setStatus(FriendRequestStatus.PENDING);
         requestRepo.save(req);
 
-        notificationService.sendNotification(req.getSender(), req.getReceiver(), null, null, NotificationTypeEnum.FRIEND, NotificationRefTypeEnum.FRIEND_REQUEST);
+        notificationService.sendNotification(req.getSender(), req.getReceiver(), null, null, null, NotificationTypeEnum.FRIEND, NotificationRefTypeEnum.FRIEND_REQUEST);
 
         // Trả về email de lam socket
         return receiver.getEmail();

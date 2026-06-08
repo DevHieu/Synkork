@@ -1,6 +1,12 @@
 package com.synkork.backend.modules.admin.auth;
 
+import com.synkork.backend.modules.admin.changePassword.PasswordResetRequestService;
+import com.synkork.backend.modules.admin.changePassword.enums.PasswordResetStatusEnum;
 import com.synkork.backend.modules.auth.dto.LoginRequest;
+import com.synkork.backend.modules.auth.dto.PasswordResetVerifyRequest;
+import com.synkork.backend.modules.auth.dto.ResetPasswordRequest;
+import com.synkork.backend.modules.verification.VerificationEntity;
+import com.synkork.backend.modules.verification.VerificationService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +29,12 @@ public class AdminAuthController {
 
     @Autowired
     private AdminAuthService authService;
+
+    @Autowired
+    private VerificationService verificationService;
+
+    @Autowired
+    private PasswordResetRequestService  passwordResetRequestService;
 
     @GetMapping("/check")
 public ResponseEntity<?> checkAuth() {
@@ -52,5 +64,18 @@ public ResponseEntity<?> checkAuth() {
         } catch (ResponseStatusException e) {
             return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
         }
+    }
+
+    @PostMapping("/reset-password-request")
+    public ResponseEntity<String> requestPasswordReset(@RequestBody ResetPasswordRequest request) {
+        String verifyCode =  passwordResetRequestService.createRequest(request.email());
+        return ResponseEntity.ok(verifyCode);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> verifyAccount(@Valid @RequestBody PasswordResetVerifyRequest request) {
+        VerificationEntity verify = verificationService.verifyOtp(request.email(), request.otpCode());
+        passwordResetRequestService.buildChangePasswordRequest(verify.getUser(), request.password());
+        return ResponseEntity.ok("Xác thực tài khoản thành công");
     }
 }

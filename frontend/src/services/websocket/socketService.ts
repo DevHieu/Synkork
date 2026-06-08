@@ -41,9 +41,27 @@ const createStompClient = (token: string, onConnected?: () => void): Client => {
         }
       }
     },
-    onStompError: (frame) => {
-      console.error("[STOMP Error]", frame.headers["message"]);
-      return;
+    onStompError: async (frame) => {
+      const message = frame.headers["message"] ?? "";
+
+      console.error("[STOMP Error]", message);
+
+      const isAuthError =
+        message.includes("JWT validation failed") ||
+        message.toLowerCase().includes("unauthorized");
+
+      if (isAuthError) {
+        removeCookie("accessToken");
+
+        try {
+          const freshToken = await getFreshToken();
+
+          stompClient = createStompClient(freshToken);
+          stompClient.activate();
+        } catch {
+          window.location.href = "/auth";
+        }
+      }
     },
   });
 

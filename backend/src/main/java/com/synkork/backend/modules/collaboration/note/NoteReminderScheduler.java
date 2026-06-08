@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.collaboration.note;
 
 import com.synkork.backend.common.utils.EmailService;
+import com.synkork.backend.modules.collaboration.note.dto.NoteResponse;
 import com.synkork.backend.modules.notification.NotificationService;
 import com.synkork.backend.modules.notification.enums.NotificationRefTypeEnum;
 import com.synkork.backend.modules.notification.enums.NotificationTypeEnum;
@@ -33,7 +34,16 @@ public class NoteReminderScheduler {
 
         for (NoteEntity note : pending) {
             emailService.sendNoteReminderEmail(note);
-            notificationService.sendNotification(null, note.getCreatedBy(), null, note.getSpace().getId(), NotificationTypeEnum.NOTE, NotificationRefTypeEnum.NOTE_REMINDER);
+
+            NoteResponse response = new NoteResponse(note);
+            String spaceId = note.getSpace().getId().toString();
+            messageTemplate.convertAndSend(
+                    "/topic/space/" + spaceId + "/notes/reminder",
+                    response
+            );
+
+            notificationService.sendNotification(null, note.getCreatedBy(), null, note.getSpace().getRoom().getId(), note.getSpace().getId(), NotificationTypeEnum.NOTE, NotificationRefTypeEnum.NOTE_REMINDER);
+
             noteService.markReminderSent(note);
         }
     }

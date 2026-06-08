@@ -2,6 +2,7 @@
 import { useRouter } from "vue-router";
 import { SidebarHeader, SidebarContent } from "@/components/ui/sidebar";
 import { useFriendStore } from "@/stores/friendStore";
+import { useUserStore } from "@/stores/userStore";
 import { storeToRefs } from "pinia";
 import { onMounted } from "vue";
 import Avatar from "../ui/avatar/Avatar.vue";
@@ -13,8 +14,11 @@ import { useSpaceStore } from "@/stores/spaceStore";
 const router = useRouter();
 const friendStore = useFriendStore();
 const spaceStore = useSpaceStore();
+const userStore = useUserStore();
 
 const { friends, loading, friendCount } = storeToRefs(friendStore);
+const { userPersonalSpace } = storeToRefs(userStore);
+
 
 onMounted(() => {
   friendStore.fetchFriends();
@@ -22,6 +26,13 @@ onMounted(() => {
 
 const jumpToDm = async (conversationId: string) => {
   await spaceStore.joinDMSpace(conversationId);
+};
+
+const jumpToPersonalRoom = async (type: "NOTE" | "CALENDAR") => {
+  const { noteId, calendarId } = userPersonalSpace.value;
+  await spaceStore.joinDMSpace(type === "NOTE" ? noteId : calendarId);
+  const path = type === "NOTE" ? `note/${noteId}` : `calendar/${calendarId}`;
+  router.push(`/me/${path}`);
 };
 </script>
 
@@ -43,10 +54,12 @@ const jumpToDm = async (conversationId: string) => {
         class="p-2 rounded cursor-pointer hover:bg-[var(--color-sidebar-accent)]">
         Bạn bè
       </div>
-      <div class="p-2 rounded cursor-pointer hover:bg-[var(--color-sidebar-accent)]">
+      <div @click="jumpToPersonalRoom('NOTE')"
+        class="p-2 rounded cursor-pointer hover:bg-[var(--color-sidebar-accent)]">
         Ghi chú
       </div>
-      <div class="p-2 rounded cursor-pointer hover:bg-[var(--color-sidebar-accent)]">
+      <div @click="jumpToPersonalRoom('CALENDAR')"
+        class="p-2 rounded cursor-pointer hover:bg-[var(--color-sidebar-accent)]">
         Lịch
       </div>
     </div>

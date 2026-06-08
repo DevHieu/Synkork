@@ -52,10 +52,6 @@ export const useNoteStore = defineStore('notes', () => {
 
   // FETCH
   async function fetchNotes(spaceId: string) {
-    if (Notification.permission === 'default') {
-      await Notification.requestPermission()
-    }
-
     if (currentSpaceId.value) {
       noteSocket.unsubscribeAll(currentSpaceId.value)
     }

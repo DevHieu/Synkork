@@ -35,6 +35,7 @@ export const useNotificationStore = defineStore('notification', {
     },
 
     addNotification(notification: NotificationDTO) {
+      console.log('[notification]', notification)
       this.notifications.unshift(notification)
 
       const path = getNotificationPath(notification)
@@ -123,16 +124,16 @@ function notificationMessage(n: NotificationDTO) {
   switch (n.refType) {
 
     case 'CARD_ASSIGNED': return 'Bạn vừa được assign vào một task'
-    case 'CARD_DUE_SOON': return 'Task của bạn sắp đến hạn'
-    case 'CARD_OVER_DUE': return 'Task của bạn đã quá hạn'
+    case 'CARD_DUE_SOON': return 'Nhắc nhở: Task của bạn sắp đến hạn'
+    case 'CARD_OVER_DUE': return 'Nhắc nhở: Task của bạn đã quá hạn'
 
     case 'FRIEND_REQUEST': return 'Bạn có lời mời kết bạn mới'
     case 'FRIEND_REJECT': return 'Lời mời kết bạn của bạn đã bị từ chối'
     case 'FRIEND_ACCEPT': return 'Lời mời kết bạn của bạn đã được chấp nhận'
 
-    case 'NOTE_REMINDER': return 'Nhắc nhở: ghi chú sắp đến hạn'
+    case 'NOTE_REMINDER': return 'Nhắc nhở: Ghi chú sắp đến hạn'
 
-    case 'EVENT_REMINDER': return 'Nhắc nhở: sự kiện sắp diễn ra'
+    case 'EVENT_REMINDER': return 'Nhắc nhở: Sự kiện sắp diễn ra'
 
     default: return 'Bạn có thông báo mới'
   }

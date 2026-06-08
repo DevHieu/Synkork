@@ -1,16 +1,16 @@
 package com.synkork.backend.modules.roomMember;
 
-import com.synkork.backend.modules.user.UserEntity;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.synkork.backend.modules.collaboration.task.column.ColumnEntity;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
+import com.synkork.backend.modules.user.UserEntity;
 
 @Repository
 public interface RoomMemberRepository extends JpaRepository<RoomMemberEntity, UUID> {
@@ -21,8 +21,7 @@ public interface RoomMemberRepository extends JpaRepository<RoomMemberEntity, UU
     @Query("SELECT rm FROM RoomMemberEntity rm JOIN FETCH rm.user WHERE rm.user.id = :userId AND rm.room.id = :roomId")
     Optional<RoomMemberEntity> findByUserIdAndRoom_IdWithUser(
             @Param("userId") UUID userId,
-            @Param("roomId") UUID roomId
-    );
+            @Param("roomId") UUID roomId);
 
     List<RoomMemberEntity> findByRoom_Id(UUID roomId);
 
@@ -41,6 +40,8 @@ public interface RoomMemberRepository extends JpaRepository<RoomMemberEntity, UU
     Optional<RoomMemberEntity> findByUser_EmailAndRoom_Id(
             // Query này fetch luôn user để tránh lỗi lazy khi dựng DTO tin nhắn.
             @Param("email") String email,
-            @Param("roomId") UUID roomId
-    );
+            @Param("roomId") UUID roomId);
+
+    @Query("SELECT COUNT(rm) FROM RoomMemberEntity rm WHERE rm.user.id = :userId AND rm.role = :role AND rm.room.type = 'GROUP'")
+    long countGroupRoomsByUserIdAndRole(@Param("userId") UUID userId, @Param("role") RoomMemberRoleEnum role);
 }

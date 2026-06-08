@@ -2,7 +2,7 @@ package com.synkork.backend.modules.auth;
 
 import com.synkork.backend.modules.auth.dto.LoginRequest;
 import com.synkork.backend.modules.auth.dto.RegisterRequest;
-import com.synkork.backend.modules.auth.dto.ResetPasswordRequest;
+import com.synkork.backend.modules.auth.dto.PasswordResetVerifyRequest;
 import com.synkork.backend.modules.user.enums.RoleEnum;
 import com.synkork.backend.modules.verification.VerificationService;
 import com.synkork.backend.security.JwtService;
@@ -31,7 +31,7 @@ public class AuthController {
     @Autowired
     VerificationService verificationService;
 
-    @GetMapping("/check")
+    @GetMapping("/check-login")
     public ResponseEntity<?> checkAuth() {
         return ResponseEntity.ok().build();
     }
@@ -96,31 +96,19 @@ public class AuthController {
 
     @GetMapping("/verify")
     public ResponseEntity<String> verifyAccount(@RequestParam String token) {
-        try {
-            verificationService.verify(token);
-            return ResponseEntity.ok("Xác thực tài khoản thành công");
-        } catch (ResponseStatusException e) {
-            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
-        }
+        verificationService.verifyAccountRegister(token);
+        return ResponseEntity.ok("Xác thực tài khoản thành công");
     }
 
-    @PostMapping("request-password-reset")
+    @PostMapping("/request-password-reset")
     public ResponseEntity<String> forgotPassword(@RequestBody Map<String, String> body) {
-        try {
-            authService.sendRequestPasswordReset(body.get("email"));
-            return ResponseEntity.ok("Link đặt lại mật khẩu đã được gửi");
-        } catch (ResponseStatusException e) {
-            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
-        }
+        authService.sendRequestPasswordReset(body.get("email"));
+        return ResponseEntity.ok("OTP đã được gửi đến email của bạn");
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<String> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
-        try {
-            authService.resetPassword(request.getToken(), request.getPassword());
-            return ResponseEntity.ok("Đặt lại mật khẩu thành công");
-        } catch (ResponseStatusException e) {
-            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
-        }
+    public ResponseEntity<String> resetPassword(@Valid @RequestBody PasswordResetVerifyRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok("Đặt lại mật khẩu thành công");
     }
 }

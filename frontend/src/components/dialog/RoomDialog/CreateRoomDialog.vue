@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Camera } from "lucide-vue-next";
-
+import { toast } from "vue-sonner";
 import { useRoomsStore } from "@/stores/roomStore";
 
 defineProps<{ open: boolean }>();
@@ -40,14 +40,19 @@ const handleCreate = async () => {
   if (!roomName.value.trim()) return;
   loading.value = true;
   try {
-    console.log("Tạo phòng:", roomName.value, avatarFile.value);
     await roomStore.createRoom({
       name: roomName.value.trim(),
       ownerId: "",
-      imageFile: avatarFile.value,
+      imageFile: avatarFile.value ?? undefined,
     });
-
     emit("done");
+  } catch (error: any) {
+    const msg =
+      error?.response?.data?.message ||
+      error?.response?.data ||
+      error?.message ||
+      "Có lỗi xảy ra";
+    toast.error(msg);
   } finally {
     loading.value = false;
     avatarFile.value = null;
@@ -87,13 +92,11 @@ const handleCreate = async () => {
             class="relative w-24 h-24 rounded-full overflow-hidden bg-muted border-2 border-dashed border-muted-foreground/40 hover:border-primary hover:bg-primary/10 transition-all duration-200 group"
             @click="fileInputRef?.click()"
           >
-            <!-- Preview ảnh -->
             <img
               v-if="avatarPreview"
               :src="avatarPreview"
               class="w-full h-full object-cover"
             />
-            <!-- Placeholder -->
             <div
               v-else
               class="w-full h-full flex flex-col items-center justify-center gap-1"
@@ -107,7 +110,6 @@ const handleCreate = async () => {
                 Thêm ảnh
               </span>
             </div>
-            <!-- Overlay khi hover và đã có ảnh -->
             <div
               v-if="avatarPreview"
               class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
@@ -116,11 +118,7 @@ const handleCreate = async () => {
             </div>
           </button>
           <span class="text-xs text-muted-foreground">
-            {{
-              avatarPreview
-                ? "Nhấn để đổi ảnh"
-                : "Ảnh đại diện phòng (tùy chọn)"
-            }}
+            {{ avatarPreview ? "Nhấn để đổi ảnh" : "Ảnh đại diện phòng (tùy chọn)" }}
           </span>
         </div>
 

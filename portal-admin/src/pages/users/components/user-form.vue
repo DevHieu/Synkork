@@ -1,160 +1,107 @@
 <script lang="ts" setup>
-import { toTypedSchema } from '@vee-validate/zod'
-import { useForm } from 'vee-validate'
+import { ref } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
-import type { User } from '../data/schema'
-import type { UserValidator } from '../validators/user.validator'
+import type { User } from '../types/userTypes'
 
-import { userValidator } from '../validators/user.validator'
+import { userService } from '../services/userService'
 
-const { user } = defineProps<{
-  user?: User
-}>()
-
+const { user } = defineProps<{ user?: User }>()
 const emits = defineEmits<{
   (e: 'close'): void
+  (e: 'saved', user: User): void
 }>()
 
-const roles = ['superadmin', 'admin', 'cashier', 'manager'] as const
+const roles = ['admin', 'manager', 'user'] as const
 const status = ['active', 'inactive', 'invited', 'suspended'] as const
 
-const initialValues = reactive<UserValidator>({
-  firstName: user?.firstName || '',
-  lastName: user?.lastName || '',
+const form = ref({
+  displayName: user?.displayName || '',
   username: user?.username || '',
   email: user?.email || '',
-  phoneNumber: user?.phoneNumber || '',
   status: user?.status || 'active',
-  role: user?.role || 'cashier',
+  role: user?.role || 'admin',
 })
 
-const userFormSchema = toTypedSchema(userValidator)
-const { handleSubmit } = useForm({
-  validationSchema: userFormSchema,
-  initialValues,
-})
+const isLoading = ref(false)
 
-const onSubmit = handleSubmit((values) => {
-  const submitUser = { ...values }
-  if (user) {
-    submitUser.id = user.id
+async function onSubmit() {
+  isLoading.value = true
+  try {
+    let result: User
+    if (user?.id) {
+      result = await userService.update(user.id, form.value)
+      toast.success('Cập nhật người dùng thành công')
+    }
+    else {
+      result = await userService.create(form.value)
+      toast.success('Tạo người dùng thành công')
+    }
+    emits('saved', result)
+    emits('close')
   }
-  toast('You submitted the following values:', {
-    description: h(
-      'pre',
-      { class: 'mt-2 w-[340px] rounded-md bg-slate-950 p-4' },
-      h('code', { class: 'text-white' }, JSON.stringify(submitUser, null, 2)),
-    ),
-  })
-
-  emits('close')
-})
+  catch (err: any) {
+    const msg = err?.response?.data?.message || err?.message || 'Có lỗi xảy ra'
+    toast.error(msg)
+  }
+  finally {
+    isLoading.value = false
+  }
+}
 </script>
 
 <template>
   <div class="max-h-[500px] overflow-y-auto">
-    <form class="space-y-8" @submit="onSubmit">
-      <FormField v-slot="{ componentField }" name="firstName">
-        <FormItem>
-          <FormLabel>First Name</FormLabel>
-          <FormControl>
-            <Input type="text" v-bind="componentField" />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      </FormField>
-      <FormField v-slot="{ componentField }" name="lastName">
-        <FormItem>
-          <FormLabel>Last Name</FormLabel>
-          <FormControl>
-            <Input type="text" v-bind="componentField" />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      </FormField>
-      <FormField v-slot="{ componentField }" name="username">
-        <FormItem>
-          <FormLabel>User Name</FormLabel>
-          <FormControl>
-            <Input type="text" v-bind="componentField" />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      </FormField>
+    <form class="space-y-4" @submit.prevent="onSubmit">
+      <div class="space-y-2">
+        <label class="text-sm font-medium">Display Name</label>
+        <Input v-model="form.displayName" type="text" />
+      </div>
+      <div class="space-y-2">
+        <label class="text-sm font-medium">Username</label>
+        <Input v-model="form.username" type="text" :disabled="!!user?.id" />
+      </div>
+      <div class="space-y-2">
+        <label class="text-sm font-medium">Email</label>
+        <Input v-model="form.email" type="text" />
+      </div>
+      <div class="space-y-2">
+        <label class="text-sm font-medium">Status</label>
+        <Select v-model="form.status">
+          <SelectTrigger class="w-full">
+            <SelectValue placeholder="Select a status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem v-for="s in status" :key="s" :value="s">
+                {{ s }}
+              </SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
+      <div class="space-y-2">
+        <label class="text-sm font-medium">Role</label>
+        <Select v-model="form.role">
+          <SelectTrigger class="w-full">
+            <SelectValue placeholder="Select a role" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem v-for="r in roles" :key="r" :value="r">
+                {{ r }}
+              </SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
 
-      <FormField v-slot="{ componentField }" name="email">
-        <FormItem>
-          <FormLabel>Email address</FormLabel>
-          <FormControl>
-            <Input type="text" v-bind="componentField" />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      </FormField>
-
-      <FormField v-slot="{ componentField }" name="phoneNumber">
-        <FormItem>
-          <FormLabel>Phone Number</FormLabel>
-          <FormControl>
-            <Input type="text" v-bind="componentField" />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      </FormField>
-
-      <FormField v-slot="{ componentField }" name="status">
-        <FormItem>
-          <FormLabel>Status</FormLabel>
-          <FormControl>
-            <Select v-bind="componentField">
-              <FormControl>
-                <SelectTrigger class="w-full">
-                  <SelectValue placeholder="Select a status" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem v-for="state in status" :key="state" :value="state">
-                    {{ state }}
-                  </SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      </FormField>
-      <FormField v-slot="{ componentField }" name="role">
-        <FormItem>
-          <FormLabel>Role</FormLabel>
-          <FormControl>
-            <Select v-bind="componentField">
-              <FormControl>
-                <SelectTrigger class="w-full">
-                  <SelectValue placeholder="Select a role" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem v-for="role in roles" :key="role" :value="role">
-                    {{ role }}
-                  </SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      </FormField>
-
-      <Button type="submit" class="w-full">
-        SaveChanges
+      <Button type="submit" class="w-full" :disabled="isLoading">
+        {{ isLoading ? 'Đang lưu...' : 'Save Changes' }}
       </Button>
     </form>
   </div>

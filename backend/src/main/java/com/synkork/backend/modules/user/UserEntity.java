@@ -12,6 +12,10 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import lombok.*;
+import org.checkerframework.common.aliasing.qual.Unique;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "users")
@@ -49,4 +53,12 @@ public class UserEntity extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private PlanEnum currentPlan = PlanEnum.FREE;
+
+    private LocalDateTime planExpiresAt;
+
+    @Unique
+    private UUID personalNoteId;
+
+    @Unique
+    private UUID personalCalendarId;
 }

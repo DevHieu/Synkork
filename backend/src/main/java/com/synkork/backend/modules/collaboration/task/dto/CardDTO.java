@@ -29,6 +29,9 @@ public class CardDTO {
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime dueDate;
 
+    private Boolean isArchived;
+    private LocalDateTime archivedAt;
+
     public CardDTO(CardEntity e) {
         this.id = e.getId();
         this.title = e.getTitle();
@@ -48,5 +51,8 @@ public class CardDTO {
         this.createdAt = e.getCreatedAt();
 
         this.dueDate = e.getDueDate();
+        
+        this.isArchived = e.getArchived();
+        this.archivedAt = e.getArchivedAt();
     }
 }

@@ -1,9 +1,12 @@
 spring:
+  application:
+    name: synkork
+
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/synkork?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
     username: ${DB_USERNAME:huynhtrunghieu}
     password: ${DB_PASSWORD:123}
-    
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -38,9 +41,48 @@ spring:
       max-file-size: 100MB
       max-request-size: 100MB
 
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
   ai:
     gemini:
       api-key: ${GEMINI_API_KEY}
+
+  logging:
+    pattern:
+      correlation: "[${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: "*"
+    zipkin:
+      tracing:
+        endpoint: "http://tempo:9411/api/v2/spans"
+    endpoint:
+      health:
+        show:
+          details: "always"
+    metrics:
+      distribution:
+        percentiles-histogram:
+          http:
+            server:
+              requests: true
+    tracing:
+      sampling:
+        probability: 1.0
+
+momo:
+  partner-code: MOMO
+  access-key: ${MOMO_ACCESS_KEY}
+  secret-key: ${MOMO_SECRET_KEY}
+  endpoint: https://test-payment.momo.vn/v2/gateway/api/create
+  redirect-url: ${FRONTEND_URL}/me/subscriptions
+  ipn-url: ${SERVER_URL}/api/payment/momo/callback
 
 server:
   port: 8080
@@ -68,10 +110,3 @@ cloudinary:
 zego:
   appId: ${ZEGO_APPID}
   secret: ${ZEGO_SERVER_SECRET}
-
-  server:
-    servlet:
-      encoding:
-        charset: UTF-8
-        enabled: true
-        force: true

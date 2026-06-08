@@ -38,7 +38,7 @@ public class NotificationEntity {
     private NotificationTypeEnum type;
 
     @Column(columnDefinition = "BINARY(16)")
-    private UUID refId;
+    private UUID refId; 
 
     @Enumerated(EnumType.STRING)
     @Column(length = 30)
@@ -50,4 +50,10 @@ public class NotificationEntity {
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
+    @Column
+    private UUID roomId;
+
+    @Column
+    private UUID spaceId;
 }
