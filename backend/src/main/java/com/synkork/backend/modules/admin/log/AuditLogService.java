@@ -30,8 +30,6 @@ public class AuditLogService {
             LocalDateTime fromDate,
             LocalDateTime toDate,
             Pageable pageable) {
-        System.out.println("SEARCH: " + search);
-        System.out.println("ACTION: " + action);
         Specification<AuditLogEntity> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
