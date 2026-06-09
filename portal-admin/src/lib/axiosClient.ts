@@ -1,12 +1,14 @@
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios'
 
 import axios from 'axios'
+
 import { getFreshToken } from '@/utils/auth'
+
 import { getCookie, removeCookie } from './cookies'
 
 const axiosClient: AxiosInstance = axios.create({
-  baseURL: `${import.meta.env.VITE_SERVER_API_URL}${import.meta.env.VITE_SERVER_API_PREFIX}`,
-  timeout: Number(import.meta.env.VITE_SERVER_API_TIMEOUT),
+  baseURL: import.meta.env.VITE_SERVER_API_URL as string,
+  timeout: 10000,
   withCredentials: true,
 })
 
