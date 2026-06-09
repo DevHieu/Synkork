@@ -45,7 +45,6 @@ public class AdminUserService {
         );
 
         return userAdminRepository.findAll(spec, pageable);
-
     }
 
     public AdminUserResponse getUserById(UUID id) {
@@ -53,21 +52,21 @@ public class AdminUserService {
     }
 
     public AdminUserResponse createUser(CreateUserRequest req) {
-        if (userAdminRepository.existsByEmail(req.getEmail()))
-            throw new IllegalArgumentException("Email đã được sử dụng: " + req.getEmail());
-        if (userAdminRepository.existsByUsername(req.getUsername()))
-            throw new IllegalArgumentException("Username đã được sử dụng: " + req.getUsername());
+        if (userAdminRepository.existsByEmail(req.email()))
+            throw new IllegalArgumentException("Email đã được sử dụng: " + req.email());
+        if (userAdminRepository.existsByUsername(req.username()))
+            throw new IllegalArgumentException("Username đã được sử dụng: " + req.username());
 
-        String displayName = (req.getFirstName() + " " + req.getLastName()).trim();
+        String displayName = (req.firstName() + " " + req.lastName()).trim();
         String tempPassword = UUID.randomUUID().toString().substring(0, 8);
 
         UserEntity user = new UserEntity();
-        user.setUsername(req.getUsername());
-        user.setEmail(req.getEmail());
+        user.setUsername(req.username());
+        user.setEmail(req.email());
         user.setDisplayName(displayName);
         user.setPassword(passwordEncoder.encode(tempPassword));
-        user.setRole(RoleEnum.valueOf(req.getRole().toUpperCase()));
-        user.setStatus(UserStatusEnum.valueOf(req.getStatus().toUpperCase()));
+        user.setRole(RoleEnum.valueOf(req.role().toUpperCase()));
+        user.setStatus(UserStatusEnum.valueOf(req.status().toUpperCase()));
 
         UserEntity saved = userAdminRepository.save(user);
         sendWelcomeEmail(saved.getEmail(), saved.getUsername(), tempPassword);
@@ -77,20 +76,20 @@ public class AdminUserService {
     public AdminUserResponse updateUser(UUID id, UpdateUserRequest req) {
         UserEntity user = findOrThrow(id);
 
-        if (req.getDisplayName() != null)
-            user.setDisplayName(req.getDisplayName());
+        if (req.displayName() != null)
+            user.setDisplayName(req.displayName());
 
-        if (req.getEmail() != null && !req.getEmail().equals(user.getEmail())) {
-            if (userAdminRepository.existsByEmail(req.getEmail()))
-                throw new IllegalArgumentException("Email đã được sử dụng: " + req.getEmail());
-            user.setEmail(req.getEmail());
+        if (req.email() != null && !req.email().equals(user.getEmail())) {
+            if (userAdminRepository.existsByEmail(req.email()))
+                throw new IllegalArgumentException("Email đã được sử dụng: " + req.email());
+            user.setEmail(req.email());
         }
 
-        if (req.getRole() != null)
-            user.setRole(RoleEnum.valueOf(req.getRole().toUpperCase()));
+        if (req.role() != null)
+            user.setRole(RoleEnum.valueOf(req.role().toUpperCase()));
 
-        if (req.getStatus() != null)
-            user.setStatus(UserStatusEnum.valueOf(req.getStatus().toUpperCase()));
+        if (req.status() != null)
+            user.setStatus(UserStatusEnum.valueOf(req.status().toUpperCase()));
 
         return AdminUserResponse.from(userAdminRepository.save(user));
     }

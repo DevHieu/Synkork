@@ -74,11 +74,11 @@ public class AdminRoomService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         RoomEntity room = RoomEntity.builder()
-                .name(request.getName())
-                .description(request.getDescription())
+                .name(request.name())
+                .description(request.description())
                 .type(RoomTypeEnum.GROUP)
-                .status(request.getStatus() != null
-                        ? request.getStatus()
+                .status(request.status() != null
+                        ? request.status()
                         : RoomStatusEnum.OPEN)
                 .owner(owner)
                 .build();
@@ -90,10 +90,10 @@ public class AdminRoomService {
         RoomEntity room = roomRepository.findById(UUID.fromString(roomId))
                 .orElseThrow(() -> new RuntimeException("Room not found: " + roomId));
 
-        if (request.getName() != null) room.setName(request.getName());
-        if (request.getDescription() != null) room.setDescription(request.getDescription());
-        if (request.getStatus() != null) {
-            room.setStatus(request.getStatus());
+        if (request.name() != null) room.setName(request.name());
+        if (request.description() != null) room.setDescription(request.description());
+        if (request.status() != null) {
+            room.setStatus(request.status());
         }
 
         return new AdminRoomResponse(roomRepository.save(room));
