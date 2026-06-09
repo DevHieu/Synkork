@@ -1,13 +1,17 @@
 package com.synkork.backend.modules.admin.users;
 
+import com.synkork.backend.common.response.ApiResponse;
+import com.synkork.backend.common.response.PageMeta;
 import com.synkork.backend.modules.admin.users.dtos.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -19,39 +23,51 @@ public class AdminUserController {
     private final AdminUserService adminUserService;
 
     @GetMapping
-    public ResponseEntity<UserPageResponse> getUsers(
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String role,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String plan,
-            @RequestParam(defaultValue = "0")  int page,
-            @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(
-                adminUserService.getUsers(keyword, role, status, plan, PageRequest.of(page, size))
+    public ApiResponse<List<AdminUserResponse>> getUsers(@Valid @ModelAttribute UserFilterRequest request) {
+        Page<AdminUserResponse> list = adminUserService.getUsers(request).map(AdminUserResponse::from);
+
+        return ApiResponse.success(
+                "Get user list successfully",
+                list.getContent(),
+                PageMeta.from(list)
+
         );
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<AdminUserResponse> getUserById(@PathVariable UUID id) {
-        return ResponseEntity.ok(adminUserService.getUserById(id));
+    public ApiResponse<AdminUserResponse> getUserById(@PathVariable UUID id) {
+        return ApiResponse.success("Get user successfully", adminUserService.getUserById(id));
     }
 
     @PostMapping
-    public ResponseEntity<AdminUserResponse> createUser(
-            @Valid @RequestBody CreateUserRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(adminUserService.createUser(request));
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<AdminUserResponse> createUser(
+            @Valid @RequestBody CreateUserRequest request
+    ) {
+        return ApiResponse.success(
+                "Create user successfully",
+                adminUserService.createUser(request)
+        );
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<AdminUserResponse> updateUser(
+    public ApiResponse<AdminUserResponse> updateUser(
             @PathVariable UUID id,
-            @Valid @RequestBody UpdateUserRequest request) {
-        return ResponseEntity.ok(adminUserService.updateUser(id, request));
+            @Valid @RequestBody UpdateUserRequest request
+    ) {
+        return ApiResponse.success(
+                "Update user successfully",
+                adminUserService.updateUser(id, request)
+        );
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, String>> deleteUser(@PathVariable UUID id) {
-        return ResponseEntity.ok(adminUserService.deleteUser(id));
+    public ApiResponse<Map<String, String>> deleteUser(
+            @PathVariable UUID id
+    ) {
+        return ApiResponse.success(
+                "Delete user successfully",
+                adminUserService.deleteUser(id)
+        );
     }
 }

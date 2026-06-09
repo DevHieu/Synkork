@@ -1,12 +1,16 @@
 package com.synkork.backend.modules.admin.users;
 
-import com.synkork.backend.modules.admin.users.dtos.*;
+import com.synkork.backend.modules.admin.users.dtos.AdminUserResponse;
+import com.synkork.backend.modules.admin.users.dtos.CreateUserRequest;
+import com.synkork.backend.modules.admin.users.dtos.UpdateUserRequest;
+import com.synkork.backend.modules.admin.users.dtos.UserFilterRequest;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.enums.RoleEnum;
 import com.synkork.backend.modules.user.enums.UserStatusEnum;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.mail.SimpleMailMessage;
@@ -15,10 +19,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -30,50 +32,26 @@ public class AdminUserService {
     @Autowired(required = false)
     private JavaMailSender mailSender;
 
-    // ── GET LIST ──────────────────────────────────────────────────────
-    public UserPageResponse getUsers(String keyword, String role, String status, String plan, Pageable pageable) {
-        RoleEnum roleEnum = null;
-        if (role != null && !role.isBlank()) {
-            try { roleEnum = RoleEnum.valueOf(role.toUpperCase()); }
-            catch (IllegalArgumentException ignored) {}
-        }
+    public Page<UserEntity> getUsers(UserFilterRequest request) {
 
-        UserStatusEnum statusEnum = null;
-        if (status != null && !status.isBlank()) {
-            try { statusEnum = UserStatusEnum.valueOf(status.toUpperCase()); }
-            catch (IllegalArgumentException ignored) {}
-        }
+        request.validate(); // validate dateFrom and dateTo
 
-        String kw = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+        Specification<UserEntity> spec =
+                UserSpecification.filter(request);
 
-        Page<UserEntity> page = userAdminRepository.findAll(
-                UserSpecification.hasKeyword(kw)
-                        .and(UserSpecification.hasRole(roleEnum))
-                        .and(UserSpecification.hasStatus(statusEnum)),
-                pageable
+        Pageable pageable = PageRequest.of(
+                request.getPage(),
+                request.getSize()
         );
 
-        List<AdminUserResponse> content = page.getContent()
-                .stream()
-                .map(AdminUserResponse::from)
-                .collect(Collectors.toList());
+        return userAdminRepository.findAll(spec, pageable);
 
-        return UserPageResponse.builder()
-                .content(content)
-                .page(page.getNumber())
-                .size(page.getSize())
-                .totalElements(page.getTotalElements())
-                .totalPages(page.getTotalPages())
-                .last(page.isLast())
-                .build();
     }
 
-    // ── GET BY ID ─────────────────────────────────────────────────────
     public AdminUserResponse getUserById(UUID id) {
         return AdminUserResponse.from(findOrThrow(id));
     }
 
-    // ── CREATE ────────────────────────────────────────────────────────
     public AdminUserResponse createUser(CreateUserRequest req) {
         if (userAdminRepository.existsByEmail(req.getEmail()))
             throw new IllegalArgumentException("Email đã được sử dụng: " + req.getEmail());
@@ -96,7 +74,6 @@ public class AdminUserService {
         return AdminUserResponse.from(saved);
     }
 
-    // ── UPDATE ────────────────────────────────────────────────────────
     public AdminUserResponse updateUser(UUID id, UpdateUserRequest req) {
         UserEntity user = findOrThrow(id);
 
@@ -118,14 +95,12 @@ public class AdminUserService {
         return AdminUserResponse.from(userAdminRepository.save(user));
     }
 
-    // ── DELETE ────────────────────────────────────────────────────────
     @Transactional
     public Map<String, String> deleteUser(UUID id) {
         userAdminRepository.delete(findOrThrow(id));
         return Map.of("message", "Xóa người dùng thành công");
     }
 
-    // ── HELPERS ───────────────────────────────────────────────────────
     private UserEntity findOrThrow(UUID id) {
         return userAdminRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy user: " + id));
@@ -142,6 +117,7 @@ public class AdminUserService {
                     username, tempPassword
             ));
             mailSender.send(msg);
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
     }
 }
