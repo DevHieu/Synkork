@@ -38,22 +38,22 @@ public class PaymentService {
     @Autowired
     private InvoiceRepository invoiceRepository;
 
-    @Value("${momo.partner-code}")
+    @Value("${momo.partner-code:}")
     private String partnerCode;
 
-    @Value("${momo.access-key}")
+    @Value("${momo.access-key:}")
     private String accessKey;
 
-    @Value("${momo.secret-key}")
+    @Value("${momo.secret-key:}")
     private String secretKey;
 
-    @Value("${momo.endpoint}")
+    @Value("${momo.endpoint:}")
     private String endpoint;
 
-    @Value("${momo.redirect-url}")
+    @Value("${momo.redirect-url:}")
     private String redirectUrl;
 
-    @Value("${momo.ipn-url}")
+    @Value("${momo.ipn-url:}")
     private String ipnUrl;
     @Autowired
     private ExpiredSubscriptionService expiredSubscriptionService;
