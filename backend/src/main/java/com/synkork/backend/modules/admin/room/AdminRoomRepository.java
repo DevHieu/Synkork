@@ -11,14 +11,13 @@ import java.util.UUID;
 
 public interface AdminRoomRepository
         extends JpaRepository<RoomEntity, UUID>,
-                JpaSpecificationExecutor<RoomEntity> { 
-@Query(value = """
-    SELECT r FROM RoomEntity r
-    LEFT JOIN FETCH r.owner
-    LEFT JOIN FETCH r.roomMembers rm
-    LEFT JOIN FETCH rm.user
-    LEFT JOIN FETCH r.spaces
-    WHERE r.id = :id
-""")
-Optional <RoomEntity> findDetailById(@Param("id") UUID id);
+                JpaSpecificationExecutor<RoomEntity> {
+    @Query("""
+        SELECT r FROM RoomEntity r
+        LEFT JOIN FETCH r.owner
+        LEFT JOIN FETCH r.roomMembers
+        LEFT JOIN FETCH r.spaces
+        WHERE r.id = :id
+    """)
+    Optional<RoomEntity> findDetailById(@Param("id") UUID id);
 }
