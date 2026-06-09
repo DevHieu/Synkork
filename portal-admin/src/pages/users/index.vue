@@ -8,6 +8,7 @@ import type { TableColumn } from '@/components/base-table.vue'
 import DateRangePicker from '@/components/date-range-picker.vue'
 import { BasicPage } from '@/components/global-layout'
 import { Modal, ModalContent } from '@/components/prop-ui/modal'
+import { Badge } from '@/components/ui/badge'
 import { Button as UiButton } from '@/components/ui/button'
 import SelectContent from '@/components/ui/select/SelectContent.vue'
 import SelectItem from '@/components/ui/select/SelectItem.vue'
@@ -125,6 +126,43 @@ function onUserDeleted() {
   fetchData()
 }
 
+function renderRole(role: string) {
+  const label = role
+    ? role.charAt(0).toUpperCase() + role.slice(1).toLowerCase()
+    : '-'
+
+  return h(Badge, {
+    variant: 'secondary',
+    class: 'border-0 bg-neutral-100 px-3 text-neutral-950 dark:bg-neutral-800 dark:text-neutral-50',
+  }, () => label)
+}
+
+function renderStatus(status: UserStatus) {
+  const normalizedStatus = status?.toUpperCase() as UserStatus
+  const config = {
+    ACTIVE: {
+      label: 'Hoạt động',
+      class: 'border-emerald-300 bg-emerald-50 px-3 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
+    },
+    INACTIVE: {
+      label: 'Ngừng hoạt động',
+      class: 'border-amber-300 bg-amber-50 px-3 text-amber-700 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300',
+    },
+    BANNED: {
+      label: 'Bị khóa',
+      class: 'border-red-300 bg-red-50 px-3 text-red-700 dark:border-red-700 dark:bg-red-950 dark:text-red-300',
+    },
+  }[normalizedStatus] ?? {
+    label: status || '-',
+    class: 'border-neutral-300 bg-neutral-50 px-3 text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300',
+  }
+
+  return h(Badge, {
+    variant: 'outline',
+    class: config.class,
+  }, () => config.label)
+}
+
 const columns = computed<TableColumn<User>[]>(() => [
   { header: 'ID', accessor: 'id', minWidth: 100 },
   { header: 'Username', accessor: 'username', minWidth: 150 },
@@ -133,8 +171,16 @@ const columns = computed<TableColumn<User>[]>(() => [
     render: row => `${row.displayName}`,
     minWidth: 180,
   },
-  { header: 'Role', accessor: 'role', minWidth: 120 },
-  { header: 'Status', accessor: 'status', minWidth: 120 },
+  {
+    header: 'Role',
+    minWidth: 120,
+    render: row => renderRole(row.role),
+  },
+  {
+    header: 'Status',
+    minWidth: 150,
+    render: row => renderStatus(row.status),
+  },
   { header: 'Email', accessor: 'email', minWidth: 220 },
   {
     header: 'Actions',
