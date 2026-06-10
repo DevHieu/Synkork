@@ -1,6 +1,7 @@
-package com.synkork.backend.modules.report;
+package com.synkork.backend.modules.admin.report;
 
-import com.synkork.backend.modules.report.dtos.ReportFilterRequest;
+import com.synkork.backend.modules.admin.report.dtos.ReportFilterRequest;
+import com.synkork.backend.modules.report.ReportEntity;
 import com.synkork.backend.modules.report.enums.ReportStatusEnums;
 import com.synkork.backend.modules.report.enums.ReportTypeEnums;
 import jakarta.persistence.criteria.Predicate;
@@ -18,7 +19,6 @@ public final class ReportSpecification {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            // --- search: reason ILIKE %keyword% OR description ILIKE %keyword%
             String search = filter.search();
             if (search != null && !search.isBlank()) {
                 String pattern = "%" + search.trim().toLowerCase() + "%";
@@ -27,26 +27,22 @@ public final class ReportSpecification {
                 predicates.add(cb.or(byReason, byDescription));
             }
 
-            // --- status
             ReportStatusEnums status = filter.status();
             if (status != null) {
                 predicates.add(cb.equal(root.get("status"), status));
             }
 
-            // --- reportType
             ReportTypeEnums type = filter.reportType();
             if (type != null) {
                 predicates.add(cb.equal(root.get("reportType"), type));
             }
 
-            // --- dateFrom (createdAt >= dateFrom 00:00)
             LocalDate dateFrom = filter.dateFrom();
             if (dateFrom != null) {
                 predicates.add(cb.greaterThanOrEqualTo(
                         root.get("createdAt"), dateFrom.atStartOfDay()));
             }
 
-            // --- dateTo (createdAt <= dateTo 23:59:59)
             LocalDate dateTo = filter.dateTo();
             if (dateTo != null) {
                 predicates.add(cb.lessThanOrEqualTo(
