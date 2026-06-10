@@ -5,7 +5,6 @@ import com.synkork.backend.modules.user.dto.UpdateprofileDto;
 import com.synkork.backend.modules.user.dto.UserInfoDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -43,7 +42,7 @@ public class UserService {
     public UserInfoDto getUserInfo(String username) {
         UserEntity user = userRepository.findByEmail(username)
                 .orElseGet(() -> userRepository.findByUsername(username)
-                        .orElse(null));
+                        .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng")));
 
         return new UserInfoDto(user);
     }

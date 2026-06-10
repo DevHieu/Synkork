@@ -4,7 +4,15 @@ import com.synkork.backend.modules.user.UserEntity;
 
 import java.util.UUID;
 
-public record UserInfoDto(UUID id, String username, String displayName, String email, String avatarUrl, String provider) {
+public record UserInfoDto(
+        UUID id,
+        String username,
+        String displayName,
+        String email,
+        String avatarUrl,
+        String provider,
+        boolean hasPassword
+) {
     public UserInfoDto(UserEntity user) {
         this(
                 user.getId(),
@@ -12,7 +20,8 @@ public record UserInfoDto(UUID id, String username, String displayName, String e
                 user.getDisplayName(),
                 user.getEmail(),
                 user.getAvatarUrl(),
-                user.getProvider() != null ? user.getProvider().name() : "LOCAL"
+                user.getProvider() != null ? user.getProvider().name() : "LOCAL",
+                user.getPassword() != null && !user.getPassword().isBlank()
         );
     }
 }

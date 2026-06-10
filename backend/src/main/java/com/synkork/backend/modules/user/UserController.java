@@ -41,8 +41,12 @@ public class UserController {
   // Ở đây, do có RestMapping("/users") ở trên rồi nên đường dẫn đầy đủ sẽ là:
   // http:localhost:8080/api/users (TẠI SAO CÓ /api/ THÌ XEM Ở file application.yml , Tao cấu hình cho nó có dòng /api như thế đấy)
   @GetMapping
-  public ResponseEntity<List<UserEntity>> findAll() {
-    return ResponseEntity.ok(userService.findAll());
+  public ResponseEntity<List<UserInfoDto>> findAll() {
+    return ResponseEntity.ok(
+        userService.findAll().stream()
+            .map(UserInfoDto::new)
+            .toList()
+    );
   }
 
   @GetMapping("/me")
