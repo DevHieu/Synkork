@@ -32,7 +32,7 @@ public class UserSpecification {
             }
 
             if (request.plan() != null) {
-                predicates.add(cb.equal(root.get("plan"), request.plan()));
+                predicates.add(cb.equal(root.get("currentPlan"), request.plan()));
             }
 
             if (request.dateFrom() != null) {
