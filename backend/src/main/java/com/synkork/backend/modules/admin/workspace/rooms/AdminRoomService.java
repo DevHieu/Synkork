@@ -1,8 +1,6 @@
 package com.synkork.backend.modules.admin.workspace.rooms;
 
 import com.synkork.backend.common.utils.AuthUtils;
-import com.synkork.backend.modules.admin.log.AuditLogEntity;
-import com.synkork.backend.modules.admin.log.AuditLogSpecification;
 import com.synkork.backend.modules.admin.workspace.members.dtos.AdminRoomMemberResponse;
 import com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminRoomDetailResponse;
 import com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminRoomRequest;
