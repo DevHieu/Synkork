@@ -1,17 +1,15 @@
-package com.synkork.backend.modules.admin.log;
+package com.synkork.backend.modules.admin.auditLog;
 
 import com.synkork.backend.common.response.ApiResponse;
-import com.synkork.backend.common.response.DeleteResponse;
 import com.synkork.backend.common.response.PageMeta;
-import com.synkork.backend.modules.admin.log.dtos.AuditLogDetailResponse;
-import com.synkork.backend.modules.admin.log.dtos.AuditLogFilterRequest;
-import com.synkork.backend.modules.admin.log.dtos.AuditLogRequest;
-import com.synkork.backend.modules.admin.log.dtos.AuditLogResponse;
+import com.synkork.backend.modules.admin.auditLog.dtos.AuditLogDetailResponse;
+import com.synkork.backend.modules.admin.auditLog.dtos.AuditLogFilterRequest;
+import com.synkork.backend.modules.admin.auditLog.dtos.AuditLogRequest;
+import com.synkork.backend.modules.admin.auditLog.dtos.AuditLogResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

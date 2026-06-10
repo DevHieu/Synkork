@@ -1,8 +1,8 @@
-package com.synkork.backend.modules.admin.log;
+package com.synkork.backend.modules.admin.auditLog;
 
 import com.synkork.backend.common.utils.uuid.UuidV7Annotation;
-import com.synkork.backend.modules.admin.log.dtos.AuditLogRequest;
-import com.synkork.backend.modules.admin.log.enums.LogEntityTypeEnum;
+import com.synkork.backend.modules.admin.auditLog.dtos.AuditLogRequest;
+import com.synkork.backend.modules.admin.auditLog.enums.LogEntityTypeEnum;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
