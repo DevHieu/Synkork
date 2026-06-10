@@ -1,14 +1,20 @@
 package com.synkork.backend.modules.admin.log;
 
+import com.synkork.backend.common.response.ApiResponse;
+import com.synkork.backend.common.response.DeleteResponse;
+import com.synkork.backend.common.response.PageMeta;
+import com.synkork.backend.modules.admin.log.dtos.AuditLogDetailResponse;
+import com.synkork.backend.modules.admin.log.dtos.AuditLogFilterRequest;
+import com.synkork.backend.modules.admin.log.dtos.AuditLogRequest;
+import com.synkork.backend.modules.admin.log.dtos.AuditLogResponse;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
 @RequestMapping("/manage/admin/logs")
@@ -18,23 +24,36 @@ public class AuditLogController {
     private AuditLogService auditLogService;
 
     @GetMapping("")
-    public Page<AuditLogEntity> findAll(
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false) String action,
-            @RequestParam(required = false) String entityType,
-            @RequestParam(required = false) AuditLogEntity.AuditStatus status,
-            @RequestParam(required = false) Long workspaceId,
-            @RequestParam(required = false) String actorEmail,
-
-            // Định dạng truyền lên: yyyy-MM-dd'T'HH:mm:ss (Ví dụ: 2026-06-06T00:00:00)
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toDate,
-
-            @RequestParam(defaultValue = "0") Integer page,
-            @RequestParam(defaultValue = "20") Integer size
+    public ApiResponse<List<AuditLogResponse>> findAll(
+            @Valid @ModelAttribute AuditLogFilterRequest request
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<AuditLogResponse> list = auditLogService.findAll(request).map(AuditLogResponse::new);
 
-        return auditLogService.findAll(search, action, entityType, status, workspaceId, actorEmail, fromDate, toDate, pageable);
+        return ApiResponse.success("Get log list successfully", list.getContent(), PageMeta.from(list));
+    }
+
+    @GetMapping("/{id}")
+    public ApiResponse<AuditLogDetailResponse> findOne(@PathVariable String id) {
+        AuditLogEntity entity = auditLogService.findById(id);
+        return ApiResponse.success("Get log detail successfully", new AuditLogDetailResponse(entity));
+    }
+
+    @PostMapping()
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<AuditLogDetailResponse> create(@RequestBody AuditLogRequest request) {
+        AuditLogEntity entity = auditLogService.createLog(request);
+        return ApiResponse.success("Create log successfully", new AuditLogDetailResponse(entity));
+    }
+
+    @PutMapping("/{id}")
+    public ApiResponse<AuditLogDetailResponse> update(@PathVariable String id, @RequestBody AuditLogRequest request) {
+        AuditLogEntity entity = auditLogService.updateLog(id, request);
+        return ApiResponse.success("Update log successfully", new AuditLogDetailResponse(entity));
+    }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(@PathVariable String id) {
+        auditLogService.deleteLog(id);
+        return ApiResponse.success("Log deleted successfully", null);
     }
 }

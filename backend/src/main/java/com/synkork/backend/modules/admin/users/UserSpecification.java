@@ -1,0 +1,59 @@
+package com.synkork.backend.modules.admin.users;
+
+import com.synkork.backend.modules.admin.users.dtos.UserFilterRequest;
+import com.synkork.backend.modules.user.UserEntity;
+import jakarta.persistence.criteria.Predicate;
+import org.springframework.data.jpa.domain.Specification;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class UserSpecification {
+
+    public static Specification<UserEntity> filter(UserFilterRequest request) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (hasText(request.search())) {
+                String keyword = "%" + request.search().trim().toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("username")), keyword),
+                        cb.like(cb.lower(root.get("email")), keyword),
+                        cb.like(cb.lower(root.get("displayName")), keyword)
+                ));
+            }
+
+            if (request.role() != null) {
+                predicates.add(cb.equal(root.get("role"), request.role()));
+            }
+
+            if (request.status() != null) {
+                predicates.add(cb.equal(root.get("status"), request.status()));
+            }
+
+            if (request.plan() != null) {
+                predicates.add(cb.equal(root.get("plan"), request.plan()));
+            }
+
+            if (request.dateFrom() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(
+                        root.get("createdAt"),
+                        request.dateFrom().atStartOfDay()
+                ));
+            }
+
+            if (request.dateTo() != null) {
+                predicates.add(cb.lessThanOrEqualTo(
+                        root.get("createdAt"),
+                        request.dateTo().atTime(23, 59, 59)
+                ));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
+    }
+}

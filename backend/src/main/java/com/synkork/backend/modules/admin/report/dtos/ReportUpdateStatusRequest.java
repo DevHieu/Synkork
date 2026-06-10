@@ -1,4 +1,4 @@
-package com.synkork.backend.modules.report.dtos;
+package com.synkork.backend.modules.admin.report.dtos;
 
 import com.synkork.backend.modules.report.enums.ReportStatusEnums;
 import jakarta.validation.constraints.NotNull;
