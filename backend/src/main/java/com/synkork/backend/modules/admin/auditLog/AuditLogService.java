@@ -1,10 +1,9 @@
-package com.synkork.backend.modules.admin.log;
+package com.synkork.backend.modules.admin.auditLog;
 
 import com.synkork.backend.common.utils.AuthUtils;
-import com.synkork.backend.modules.admin.log.dtos.AuditLogFilterRequest;
-import com.synkork.backend.modules.admin.log.dtos.AuditLogRequest;
-import com.synkork.backend.modules.admin.log.dtos.BuildLog;
-import com.synkork.backend.modules.admin.log.enums.LogEntityTypeEnum;
+import com.synkork.backend.modules.admin.auditLog.dtos.AuditLogFilterRequest;
+import com.synkork.backend.modules.admin.auditLog.dtos.AuditLogRequest;
+import com.synkork.backend.modules.admin.auditLog.dtos.BuildLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
