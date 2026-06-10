@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
 import { logout } from "@/services/authService"
 import { userService } from "@/services/userService"
 import { useUserStore } from "@/stores/userStore"
@@ -19,8 +18,11 @@ import ThemeSettingsTab from "@/components/sidebar/modals/ThemeSettingsTab.vue"
 const emit = defineEmits<{ close: [] }>()
 
 const userStore = useUserStore()
-const currentUser = computed(() => userStore.user as any)
+const currentUser = computed(() => userStore.user)
 const activeTab = ref("account")
+const avatarInput = ref<HTMLInputElement | null>(null)
+const avatarLoading = ref(false)
+const avatarError = ref("")
 
 const settingsTabs = [
   {
@@ -47,16 +49,7 @@ const isOAuth = computed(() => {
   const p = currentUser.value?.provider
   return p && p !== "LOCAL"
 })
-// Sau khi OAuth tạo password thành công → chuyển sang form đổi mật khẩu
-const oauthJustCreatedPassword = ref(false)
-const showChangePasswordForm = computed(() => {
-  if (!isOAuth.value) return true                       
-  return currentUser.value?.hasPassword === true       
-})
-const providerLabel = computed(() => {
-  const map: Record<string, string> = { GOOGLE: "Google", FACEBOOK: "Facebook", GITHUB: "GitHub" }
-  return map[currentUser.value?.provider] ?? currentUser.value?.provider ?? ""
-})
+const showChangePasswordForm = computed(() => !isOAuth.value || currentUser.value?.hasPassword)
 
 // ── Edit states ────────────────────────────────────────────
 const editingField = ref<string | null>(null)
@@ -135,8 +128,6 @@ async function submitCreatePw() {
     await userService.createPassword({ newPassword: createPwForm.next })
     createPwForm.next = createPwForm.confirm = ""
     await userStore.getUserInfo()
-    // Chuyển sang form đổi mật khẩu ngay sau khi tạo thành công
-    oauthJustCreatedPassword.value = true
     pwSuccess.value = "Tạo mật khẩu thành công! Bạn có thể đổi mật khẩu bên dưới."
     setTimeout(() => (pwSuccess.value = ""), 4000)
   } catch (e: any) {
@@ -156,6 +147,36 @@ const displayName = computed(() =>
 )
 
 // ── ESC ───────────────────────────────────────────────────
+function chooseAvatar() {
+  if (!avatarLoading.value) avatarInput.value?.click()
+}
+
+async function uploadAvatar(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ""
+  if (!file) return
+
+  avatarError.value = ""
+  if (!file.type.startsWith("image/")) {
+    avatarError.value = "Vui lòng chọn một tệp ảnh"
+    return
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    avatarError.value = "Ảnh phải nhỏ hơn 5 MB"
+    return
+  }
+
+  avatarLoading.value = true
+  try {
+    userStore.user = await userService.uploadAvatar(file)
+  } catch (e: any) {
+    avatarError.value = e?.response?.data || e?.message || "Không thể tải ảnh lên"
+  } finally {
+    avatarLoading.value = false
+  }
+}
+
 function onKeydown(e: KeyboardEvent) { if (e.key === "Escape") emit("close") }
 onMounted(() => document.addEventListener("keydown", onKeydown))
 onUnmounted(() => document.removeEventListener("keydown", onKeydown))
@@ -163,6 +184,7 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
 
 <template>
   <Teleport to="body">
+    <input ref="avatarInput" type="file" accept="image/*" class="hidden" @change="uploadAvatar" />
     <Transition name="sf">
       <div class="fixed inset-0 z-20 flex items-center justify-center bg-black/75" @click.self="emit('close')">
         <div class="flex w-[min(960px,96vw)] h-[min(660px,95vh)] overflow-hidden rounded-lg shadow-2xl">
@@ -172,7 +194,8 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
 
             <!-- User mini card -->
             <div class="px-4 pb-3">
-              <div class="relative cursor-pointer group/ava w-fit">
+              <button type="button" class="relative cursor-pointer group/ava w-fit disabled:cursor-wait"
+                :disabled="avatarLoading" aria-label="Thay ảnh đại diện" @click="chooseAvatar">
                 <Avatar class="w-[68px] h-[68px] border-2 border-muted">
                   <AvatarImage v-if="currentUser?.avatarUrl" :src="currentUser.avatarUrl" />
                   <AvatarFallback class="bg-primary text-primary-foreground text-2xl font-bold">
@@ -183,7 +206,8 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
                   class="absolute inset-0 rounded-full flex items-center justify-center bg-black/50 opacity-0 group-hover/ava:opacity-100 transition-opacity">
                   <Pencil class="size-4 text-white" />
                 </div>
-              </div>
+              </button>
+              <p v-if="avatarError" class="mt-1 text-[11px] text-destructive">{{ avatarError }}</p>
               <div class="mt-2">
                 <p class="text-sm font-bold text-foreground">{{ displayName }}</p>
                 <button
@@ -247,7 +271,8 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
                 <div class="rounded-xl overflow-hidden bg-muted mb-5">
                   <div class="h-[90px] bg-gradient-to-br from-primary to-secondary" />
                   <div class="flex items-end px-4 -mt-10 mb-3">
-                    <div class="relative cursor-pointer group/ava2">
+                    <button type="button" class="relative cursor-pointer group/ava2 disabled:cursor-wait"
+                      :disabled="avatarLoading" aria-label="Thay ảnh đại diện" @click="chooseAvatar">
                       <Avatar class="w-20 h-20 border-4 border-card">
                         <AvatarImage v-if="currentUser?.avatarUrl" :src="currentUser.avatarUrl" />
                         <AvatarFallback class="bg-primary text-primary-foreground text-3xl font-bold">
@@ -258,9 +283,10 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
                         class="absolute inset-0 rounded-full flex items-center justify-center bg-black/50 opacity-0 group-hover/ava2:opacity-100 transition-opacity">
                         <Pencil class="size-5 text-white" />
                       </div>
-                    </div>
+                    </button>
                   </div>
                   <p class="px-4 pb-3 text-sm font-bold text-foreground">{{ displayName }}</p>
+                  <p v-if="avatarError" class="px-4 pb-3 text-xs text-destructive">{{ avatarError }}</p>
                 </div>
 
                 <!-- Success toast -->
@@ -387,7 +413,7 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
                           </svg>
                         </div>
                         <div>
-                          <p class="text-sm font-bold text-foreground">Đăng nhập qua {{ providerLabel }}</p>
+                          <p class="text-sm font-bold text-foreground">Đăng nhập qua Google</p>
                           <p class="text-xs text-muted-foreground mt-0.5 leading-relaxed">
                             Tài khoản chưa có mật khẩu. Tạo mật khẩu để có thêm cách đăng nhập.
                           </p>

@@ -14,7 +14,7 @@ public class MeetingLlmService {
     private static final String REFERER = "http://localhost:5173";
     private static final String APP_TITLE = "Synkork";
     private static final String TRANSCRIPTION_MODEL = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free";
-    private static final String SUMMARY_MODEL = "liquid/lfm-2.5-1.2b-instruct:free";
+    private static final String SUMMARY_MODEL = "moonshotai/kimi-k2.6:free";
 
     private final ObjectMapper objectMapper;
     private final OpenRouterClient openRouterClient;

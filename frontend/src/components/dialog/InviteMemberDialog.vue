@@ -9,6 +9,7 @@ import { useRoomsStore } from "@/stores/roomStore";
 import { storeToRefs } from "pinia";
 import { getInviteCode, resetInviteCode } from "@/services/roomService";
 import { useRoomMemberStore } from "@/stores/roomMemberStore";
+import { toast } from "vue-sonner";
 
 const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{ "update:open": [value: boolean] }>();
@@ -44,9 +45,22 @@ const fetchInviteCode = async () => {
 
 const resetCode = async () => {
   if (!currentRoom.value?.id) return;
+  if (!canManage.value) {
+    toast.error("Bạn không có quyền làm mới link mời");
+    return;
+  }
+
   isResetting.value = true;
   try {
-    inviteCode.value = await resetInviteCode(currentRoom.value.id);
+    const newCode = await resetInviteCode(currentRoom.value.id);
+    inviteCode.value = String(newCode).trim();
+    isCopied.value = false;
+    toast.success("Đã làm mới link mời");
+  } catch (error: any) {
+    const errorData = error?.response?.data;
+    const message =
+      typeof errorData === "string" ? errorData : errorData?.message;
+    toast.error(message || "Không thể làm mới link mời");
   } finally {
     isResetting.value = false;
   }
@@ -115,7 +129,7 @@ watch(
               Vô hiệu hóa link cũ và tạo link mới
             </p>
           </div>
-          <button @click="resetCode" :disabled="isResetting || !canManage"
+          <button @click="resetCode" :disabled="isResetting"
             class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-input text-sm font-medium text-foreground hover:bg-muted transition disabled:opacity-50 disabled:cursor-not-allowed">
             <RefreshCw :class="['h-3.5 w-3.5', isResetting ? 'animate-spin' : '']" />
             {{ isResetting ? "Đang làm mới..." : "Làm mới" }}

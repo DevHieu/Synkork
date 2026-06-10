@@ -1,4 +1,4 @@
-package com.synkork.backend.modules.admin.log;
+package com.synkork.backend.modules.admin.auditLog;
 
 public final class AuditAction {
 
