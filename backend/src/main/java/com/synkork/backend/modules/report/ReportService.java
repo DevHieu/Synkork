@@ -69,11 +69,17 @@ public class ReportService {
         reportRepository.save(builder.build());
     }
 
-    public java.util.List<ReportDTO> getAllReports() {
+    public List<ReportDTO> getAllReports() {
         return reportRepository.findAll()
                 .stream()
                 .map(ReportDTO::new)
                 .toList();
+    }
+
+    public ReportDTO getReportById(UUID id) {
+        ReportEntity report = reportRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Report không tồn tại: " + id));
+        return new ReportDTO(report);
     }
 
     public ReportPageResponse getFilteredReports(ReportFilterRequest filter) {

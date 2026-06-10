@@ -13,7 +13,6 @@ import lombok.Data;
 public class ReportDTO {
     private UUID id;
     private UUID reporterId;
-    private UUID reporterName;
     private UUID targetUserId;
     private UUID targetRoomId;
     private String targetName;
@@ -27,7 +26,6 @@ public class ReportDTO {
     public ReportDTO(ReportEntity e) {
         this.id = e.getId();
         this.reporterId = e.getReporterId();
-        this.reporterName = e.getReporterId();
         this.reason = e.getReason();
         this.description = e.getDescription();
         this.reportType = e.getReportType();

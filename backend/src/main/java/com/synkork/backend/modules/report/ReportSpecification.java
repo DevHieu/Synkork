@@ -6,7 +6,7 @@ import com.synkork.backend.modules.report.enums.ReportTypeEnums;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,18 +39,18 @@ public final class ReportSpecification {
                 predicates.add(cb.equal(root.get("reportType"), type));
             }
 
-            // --- dateFrom (createdAt >= dateFrom 00:00)
-            LocalDate dateFrom = filter.dateFrom();
-            if (dateFrom != null) {
+            // --- fromDate (createdAt >= fromDate 00:00)
+            LocalDateTime fromDate = filter.fromDate();
+            if (fromDate != null) {
                 predicates.add(cb.greaterThanOrEqualTo(
-                        root.get("createdAt"), dateFrom.atStartOfDay()));
+                        root.get("createdAt"), fromDate));
             }
 
-            // --- dateTo (createdAt <= dateTo 23:59:59)
-            LocalDate dateTo = filter.dateTo();
-            if (dateTo != null) {
+            // --- toDate (createdAt <= toDate 23:59:59)
+            LocalDateTime toDate = filter.toDate();
+            if (toDate != null) {
                 predicates.add(cb.lessThanOrEqualTo(
-                        root.get("createdAt"), dateTo.plusDays(1).atStartOfDay()));
+                        root.get("createdAt"), toDate.plusDays(1)));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));

@@ -1,6 +1,6 @@
 package com.synkork.backend.modules.report.dtos;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -9,17 +9,11 @@ import com.synkork.backend.modules.report.enums.ReportTypeEnums;
 
 public record ReportFilterRequest(
         String search,
-
         ReportStatusEnums status,
-
         ReportTypeEnums reportType,
-
-        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
-
-        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
-
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromDate,
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toDate,
         Integer page,
-
         Integer size
 ) {
     public int getPage() {

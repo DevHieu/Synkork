@@ -20,7 +20,7 @@ public class ReportController {
         reportService.createReport(request, ReportTypeEnums.USER);
 
         return ResponseEntity.status(HttpStatus.CREATED).build();
-    }
+    }   
 
     @PostMapping("/rooms")
     public ResponseEntity<Void> createRoomReport(@RequestBody ReportRequestDto request) {
