@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Trash2, Calendar, AlignLeft } from 'lucide-vue-next'
+import { Archive, Calendar, AlignLeft } from 'lucide-vue-next'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -23,7 +23,7 @@ const isCardDetailOpen = ref(false)
 const props = defineProps<{ card: CardEvent, columnName: string, columnId: string }>()
 
 const emit = defineEmits<{
-    delete: [cardId: string]
+    archive: [cardId: string]
 }>()
 
 const openDetail = () => {
@@ -96,37 +96,32 @@ const isOverdue = computed(() => {
             class="task-card group relative rounded-2xl border border-border/60 bg-card shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-grab active:cursor-grabbing overflow-hidden"
             @click="openDetail"
         >
-            <!-- Top accent line using primary color -->
+        <!-- để cho đẹp -->
             <div class="h-0.5 w-full bg-gradient-to-r from-primary/60 via-primary/30 to-transparent" />
 
             <div class="px-3 flex flex-col gap-1">
-                <!-- Title row -->
                 <div class="flex items-start justify-between gap-1.5">
-                    <h3 class="font-medium text-[13px] leading-snug text-card-foreground break-words flex-1">
+                    <h3 class="font-semibold text-[13px] leading-snug text-card-foreground break-words flex-1">
                         {{ card.title }}
                     </h3>
-                    <!-- Delete button, appears on hover -->
                     <Button
                         variant="ghost"
                         size="icon"
                         class="h-5 w-5 shrink-0 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all duration-150 rounded-md -mt-0.5 -mr-0.5"
-                        @click.stop="emit('delete', card.id)"
+                        @click.stop="emit('archive', card.id)"
                     >
-                        <Trash2 class="w-3 h-3" />
+                        <Archive class="w-3 h-3" />
                     </Button>
                 </div>
 
-                <!-- Description preview -->
                 <p v-if="card.description"
                     class="text-[11px] text-muted-foreground line-clamp-1 leading-relaxed flex items-start gap-1">
                     <AlignLeft class="w-2.5 h-2.5 mt-0.5 shrink-0 opacity-50" />
                     {{ card.description }}
                 </p>
 
-                <!-- Footer: due date + assignees + date -->
                 <div class="flex justify-between items-center pt-0.5">
                     <div class="flex items-center gap-1.5">
-                        <!-- Due date badge -->
                         <Badge
                             v-if="card.dueDate"
                             variant="outline"
@@ -143,7 +138,6 @@ const isOverdue = computed(() => {
                             {{ new Date(card.dueDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) }}
                         </Badge>
 
-                        <!-- Assignee avatars -->
                         <div class="flex items-center -space-x-1">
                             <div
                                 v-for="assignee in card.assignees?.slice(0, 3)"
@@ -166,7 +160,6 @@ const isOverdue = computed(() => {
                         </div>
                     </div>
 
-                    <!-- Created date -->
                     <span v-if="formattedDate" class="text-[10px] text-muted-foreground/50 tabular-nums">
                         {{ formattedDate }}
                     </span>
@@ -186,7 +179,6 @@ const isOverdue = computed(() => {
 
 <style scoped>
 .task-card {
-    /* Subtle backdrop so card stands out from column bg */
     backdrop-filter: blur(2px);
 }
 </style>

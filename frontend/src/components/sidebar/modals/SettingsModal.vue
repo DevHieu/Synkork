@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
 import { logout } from "@/services/authService"
 import { userService } from "@/services/userService"
 import { useUserStore } from "@/stores/userStore"
@@ -51,11 +50,6 @@ const isOAuth = computed(() => {
   return p && p !== "LOCAL"
 })
 const showChangePasswordForm = computed(() => !isOAuth.value || currentUser.value?.hasPassword)
-
-const providerLabel = computed(() => {
-  const map: Record<string, string> = { GOOGLE: "Google", FACEBOOK: "Facebook", GITHUB: "GitHub" }
-  return map[currentUser.value?.provider] ?? currentUser.value?.provider ?? ""
-})
 
 // ── Edit states ────────────────────────────────────────────
 const editingField = ref<string | null>(null)
@@ -419,7 +413,7 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
                           </svg>
                         </div>
                         <div>
-                          <p class="text-sm font-bold text-foreground">Đăng nhập qua {{ providerLabel }}</p>
+                          <p class="text-sm font-bold text-foreground">Đăng nhập qua Google</p>
                           <p class="text-xs text-muted-foreground mt-0.5 leading-relaxed">
                             Tài khoản chưa có mật khẩu. Tạo mật khẩu để có thêm cách đăng nhập.
                           </p>

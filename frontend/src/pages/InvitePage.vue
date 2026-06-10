@@ -20,6 +20,7 @@ interface InviteInfo {
   avatarUrl?: string | null
   roomAvatar?: string | null
   memberCount?: number
+  roomMembers?: number
   onlineCount?: number
   inviterName?: string
   inviterAvatar?: string | null
@@ -28,6 +29,7 @@ interface InviteInfo {
 const getRoomId     = (i: InviteInfo) => i.id        ?? i.roomId   ?? ""
 const getRoomName   = (i: InviteInfo) => i.name      ?? i.roomName ?? "Phòng không tên"
 const getRoomAvatar = (i: InviteInfo) => i.avatarUrl ?? i.roomAvatar ?? null
+const getMemberCount = (i: InviteInfo) => i.memberCount ?? i.roomMembers ?? 0
 
 const inviteInfo  = ref<InviteInfo | null>(null)
 const currentUser = ref<any>(null)
@@ -59,8 +61,13 @@ onMounted(async () => {
 
 // Fetch space đầu tiên của room, ưu tiên CHAT
 const navigateToRoom = async (roomId: string) => {
+  if (!roomId) {
+    await router.push("/me")
+    return
+  }
+
   try {
-    const spacesRes = await axiosClient.get(`/api/spaces/room/${roomId}`)
+    const spacesRes = await axiosClient.get(`/api/rooms/${roomId}/spaces`)
     const spaces: any[] = spacesRes.data ?? []
     const first = spaces.find(s => s.type === "CHAT") ?? spaces[0]
     if (first) {
@@ -68,11 +75,11 @@ const navigateToRoom = async (roomId: string) => {
       await router.push(`/rooms/${type}/${roomId}/${first.id}`)
     } else {
       // Không có space nào — vào room level (fallback)
-      await router.push(`/rooms/${roomId}`)
+      await router.push("/me")
     }
   } catch {
     // Nếu API lỗi thì vào room level, RoomLayout tự xử lý
-    await router.push(`/rooms/${roomId}`)
+    await router.push("/me")
   }
 }
 
@@ -87,7 +94,8 @@ const handleAccept = async () => {
     const res = await axiosClient.post(`/api/rooms/invites/${inviteCode.value}/join`)
     await navigateToRoom(res.data.id)
   } catch (e: any) {
-    const msg = e?.response?.data?.message || ""
+    const errorData = e?.response?.data
+    const msg = typeof errorData === "string" ? errorData : errorData?.message || ""
     if (e?.response?.status === 409 || msg.toLowerCase().includes("already")) {
       // Đã là thành viên → vào luôn
       await navigateToRoom(getRoomId(inviteInfo.value!))
@@ -178,7 +186,7 @@ const handleAccept = async () => {
             </Badge>
             <Badge variant="outline" class="gap-1.5 border-white/10 text-white/55 bg-white/5 text-xs">
               <span class="size-2 rounded-full bg-white/35" />
-              {{ inviteInfo.memberCount ?? 0 }} Thành viên
+              {{ getMemberCount(inviteInfo) }} Thành viên
             </Badge>
           </div>
 

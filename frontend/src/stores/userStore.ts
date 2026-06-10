@@ -31,4 +31,16 @@ export const useUserStore = defineStore("users", {
       }
     }
   },
+
+  getters: {
+    isLoggedIn: (state) => !!state.user,
+    userName: (state) => state.user?.displayName || "",
+    userEmail: (state) => state.user?.email || "",
+    userPlan: (state) => state.user?.currentPlan || "FREE",
+    planExpiresAt: (state) => state.user?.planExpiresAt || null,
+    userPersonalSpace: (state) => ({
+      calendarId: state.user?.personalCalendarId ?? "",
+      noteId: state.user?.personalNoteId ?? "",
+    }),
+  }
 });

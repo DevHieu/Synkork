@@ -7,10 +7,7 @@ import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.space.SpaceEntity;
 import com.synkork.backend.modules.user.UserEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.List;
 
@@ -18,6 +15,7 @@ import java.util.List;
 @Table(name = "rooms")
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class RoomEntity extends BaseEntity {
@@ -33,9 +31,13 @@ public class RoomEntity extends BaseEntity {
     private String description;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
     private RoomTypeEnum type = RoomTypeEnum.GROUP; // GROUP | DM
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
     private RoomStatusEnum status = RoomStatusEnum.OPEN;
 
     @Column(unique = true, nullable = true)

@@ -1,3 +1,4 @@
+
 package com.synkork.backend.modules.admin.auth;
 
 import com.synkork.backend.modules.auth.dto.LoginRequest;
@@ -30,18 +31,25 @@ public class AdminAuthService {
     @Autowired
     private JwtService jwtService;
 
+    public boolean validateAccount(UserEntity user) {
+        if (user.getRole() == RoleEnum.USER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tài khoản của bạn không phải là tài khoản quản trị viên");
+        }
+
+        if (user.getStatus() == UserStatusEnum.BANNED) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tài khoản của bạn đã bị khóa do quản trị viên. Vui lòng liên hệ để được giải quyết");
+        }
+
+        return true;
+    }
+
     public String login(LoginRequest request, HttpServletResponse response) {
         UserEntity user = userRepository.findByEmail(request.getUsername())
                 .orElseGet(() -> userRepository.findByUsername(request.getUsername())
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Username hoặc Email không tồn tại!")));
 
-//
-//        if (user.getRole() == RoleEnum.USER) {
-//            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tài khoản của bạn không phải là tài khoản quản trị viên");
-//        }
-
-        if (user.getStatus() == UserStatusEnum.BANNED) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tài khoản của bạn đã bị khóa do quản trị viên. Vui lòng liên hệ để được giải quyết");
+        if (!validateAccount(user)) {
+            return null;
         }
 
         try {

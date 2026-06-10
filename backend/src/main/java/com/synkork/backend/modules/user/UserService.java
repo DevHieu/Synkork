@@ -31,7 +31,21 @@ public class UserService {
     }
 
     public UserEntity findById(UUID userId) {
-        return userRepository.findById(userId).orElse(null);
+        return userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User không tồn tại"));
+    }
+
+    public UserEntity findByEmail(String email) {
+        return userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User không tồn tại"));
+    }
+
+    public UserEntity getUserInfoByUsername(String username) {
+        return userRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("User không tồn tại"));
+    }
+
+    public UserInfoDto getUserInfo(String username) {
+        UserEntity user = this.findByEmail(username);
+
+        return new UserInfoDto(user);
     }
 
     // @NonNull annotation giúp đảm bảo rằng user không được null, đỡ bị IDE báo
@@ -39,26 +53,6 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public UserInfoDto getUserInfo(String username) {
-        UserEntity user = userRepository.findByEmail(username)
-                .orElseGet(() -> userRepository.findByUsername(username)
-                        .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng")));
-
-        return new UserInfoDto(user);
-    }
-
-    public UserEntity getUserInfoByUsername(String username) {
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy user: " + username));
-    }
-
-    public UserEntity findByEmail(String email) {
-        return userRepository.findByEmail(email).orElse(null);
-    }
-
-//    public UserEntity getUserInfoByUsername(String username) {
-//        return userRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("User không tồn tại"));
-//    }
 
     public UserEntity updateUser(UserEntity existedUser) {
         return userRepository.save(existedUser);

@@ -2,8 +2,10 @@ package com.synkork.backend.modules.user;
 
 //import com.synkork.backend.modules.statistics.StatisticsEntity;
 //import com.synkork.backend.modules.statistics.dtos.CountByDate;
+import com.synkork.backend.modules.user.enums.PlanEnum;
 import com.synkork.backend.modules.user.enums.RoleEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -34,4 +36,13 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
     long countByRole(RoleEnum role);
 
     long countByCreatedAtBetweenAndRole(LocalDateTime createdAtAfter, LocalDateTime createdAtBefore, RoleEnum role);
+
+    List<UserEntity> findByPlanExpiresAtBetween(LocalDateTime now, LocalDateTime localDateTime);
+
+    @Modifying
+    @Query("UPDATE UserEntity u SET u.currentPlan = :plan, u.planExpiresAt = null WHERE u.planExpiresAt < :now")
+    void resetExpiredUsersToPlan(@Param("plan") PlanEnum plan, @Param("now") LocalDateTime now);
+
+    @Query("SELECT u.email FROM UserEntity u WHERE u.planExpiresAt < :now")
+    List<String> findEmailByPlanExpiresAtAfter(LocalDateTime now);
 }

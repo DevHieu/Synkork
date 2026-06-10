@@ -4,6 +4,10 @@ export interface User {
   displayName: string;
   email: string;
   avatarUrl?: string;
-  provider: "LOCAL" | "GOOGLE" | "FACEBOOK" | "GITHUB";
+  provider: "LOCAL" | "GOOGLE";
   hasPassword: boolean;
+  currentPlan: "FREE" | "TEAM" | "BUSINESS";
+  planExpiresAt: Date | null;
+  personalNoteId: string;
+  personalCalendarId: string;
 }

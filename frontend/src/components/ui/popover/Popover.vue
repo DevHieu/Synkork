@@ -1,19 +1,20 @@
 <script setup lang="ts">
+import { PopoverRoot, useForwardProps } from "reka-ui"
 import type { PopoverRootEmits, PopoverRootProps } from "reka-ui"
-import { PopoverRoot, useForwardPropsEmits } from "reka-ui"
+import { useVModel } from "@vueuse/core"
 
 const props = defineProps<PopoverRootProps>()
 const emits = defineEmits<PopoverRootEmits>()
 
-const forwarded = useForwardPropsEmits(props, emits)
+const forwardedProps = useForwardProps(props)
+const open = useVModel(props, "open", emits, {
+  passive: (props.open === undefined) as false,
+  defaultValue: props.defaultOpen,
+})
 </script>
 
 <template>
-  <PopoverRoot
-    v-slot="slotProps"
-    data-slot="popover"
-    v-bind="forwarded"
-  >
-    <slot v-bind="slotProps" />
+  <PopoverRoot v-bind="forwardedProps" v-model:open="open">
+    <slot />
   </PopoverRoot>
 </template>

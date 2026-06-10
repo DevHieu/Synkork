@@ -1,7 +1,7 @@
 package com.synkork.backend.security;
 
-import com.synkork.backend.exception.JwtAuthenticationEntryPoint;
-import com.synkork.backend.filter.JwtFilter;
+import java.util.Arrays;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -13,7 +13,6 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
@@ -22,7 +21,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
+import com.synkork.backend.exception.JwtAuthenticationEntryPoint;
+import com.synkork.backend.filter.JwtFilter;
 
 // Đây sẽ là lớp cấu hình bảo mật cho ứng dụng
 @EnableMethodSecurity
@@ -61,8 +61,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/public/**", "/auth/**", "/ws/**").permitAll()
-                        .requestMatchers("/manage/auth/login").permitAll()
-                        .requestMatchers("/manage/auth/check").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers("/payment/momo/callback").permitAll() // Cái này cần permit để momo còn trả về. Do Momo ko thể gửi đc JWT Token
+                        .requestMatchers("/auth/check").authenticated()
+                        .requestMatchers("/manage/auth/check-login").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers("/manage/auth/**").permitAll()
                         .requestMatchers("/manage/admin/**").hasAnyRole("ADMIN")
                         .requestMatchers("/manage/**").hasAnyRole("ADMIN", "MANAGER")
                         .anyRequest().authenticated())
@@ -71,8 +73,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
-                        .accessDeniedHandler(accessDeniedHandler)
-                )
+                        .accessDeniedHandler(accessDeniedHandler))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
@@ -88,7 +89,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(frontendUrl, adminUrl)); //Bypass cho url frontend
+        configuration.setAllowedOrigins(Arrays.asList(frontendUrl, adminUrl)); // Bypass cho url frontend
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
         configuration.setAllowCredentials(true);

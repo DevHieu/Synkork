@@ -15,7 +15,7 @@ export interface NotificationDTO {
   actorName: string
   actorAvatar: string | null
   read: boolean
-  createdAt: string
+  createdAt: string | number
   spaceId: string | null
   roomId: string | null
 }

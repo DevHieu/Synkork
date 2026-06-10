@@ -11,6 +11,7 @@ import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
 import com.synkork.backend.modules.space.SpaceEntity;
 import com.synkork.backend.modules.space.SpaceRepository;
+import com.synkork.backend.modules.user.enums.PlanEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -97,7 +98,10 @@ public class MessageService {
         MessageDTO responseDto = new MessageDTO(newMessage);
         responseDto.setReplyToId(dto.getReplyToId());
 
-        broadcastSuggestion(newMessage, sender);
+        // Chỉ người có nạp VIP thì mới có cái suggestion này thôiiii
+        if (sender.getUser().getCurrentPlan() != PlanEnum.FREE) {
+            broadcastSuggestion(newMessage, sender);
+        }
 
         return responseDto;
     }

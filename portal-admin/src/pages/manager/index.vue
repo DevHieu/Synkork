@@ -14,7 +14,6 @@ function mockLoading() {
 </script>
 
 <template>
-
   <BasicPage
     title="Manager & Admin"
     description="Manager & Admin describe here"

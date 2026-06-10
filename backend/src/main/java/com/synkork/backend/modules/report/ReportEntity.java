@@ -37,8 +37,9 @@ public class ReportEntity extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private ReportTypeEnums reportType;
 
-    @Column(nullable = false, updatable = false)
-    private UUID reporterId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reporter_id", nullable = false, updatable = false)
+    private UserEntity reporter;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
