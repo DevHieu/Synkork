@@ -18,13 +18,6 @@ public record CreateUserRequest(
         @Email(message = "email không hợp lệ")
         String email,
 
-        @NotBlank(message = "role không được để trống")
-        @Pattern(
-                regexp = "(?i)admin|manager|user",
-                message = "role phải là: admin, manager, user"
-        )
-        String role,
-
         @NotBlank(message = "status không được để trống")
         @Pattern(
                 regexp = "(?i)active|inactive|banned",

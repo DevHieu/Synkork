@@ -1,52 +1,82 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { toast } from 'vue-sonner'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
-import type { User } from '../types/userTypes'
+import type { User, UserPlan, UserStatus } from '../types/userTypes'
 
 import { userService } from '../services/userService'
 
-const { user } = defineProps<{ user?: User }>()
+const props = defineProps<{ user?: User }>()
 const emits = defineEmits<{
   (e: 'close'): void
   (e: 'saved', user: User): void
 }>()
 
-const roles = ['admin', 'manager', 'user'] as const
-const status = ['active', 'inactive', 'invited', 'suspended'] as const
+const isEdit = computed(() => !!props.user?.id)
 
-const form = ref({
-  displayName: user?.displayName || '',
-  username: user?.username || '',
-  email: user?.email || '',
-  status: user?.status || 'active',
-  role: user?.role || 'admin',
+const statusOptions = ['active', 'inactive', 'banned'] as const
+const planOptions = ['FREE', 'TEAM', 'BUSINESS'] as const
+
+const form = ref<{
+  firstName: string
+  lastName: string
+  displayName: string
+  username: string
+  email: string
+  status: UserStatus
+  plan: UserPlan
+}>({
+  firstName: '',
+  lastName: '',
+  displayName: props.user?.displayName || '',
+  username: props.user?.username || '',
+  email: props.user?.email || '',
+  status: (props.user?.status as UserStatus) || 'active',
+  plan: (props.user?.plan as UserPlan) || 'FREE',
 })
 
 const isLoading = ref(false)
+const errorMessage = ref<string | null>(null)
 
 async function onSubmit() {
   isLoading.value = true
+  errorMessage.value = null
   try {
     let result: User
-    if (user?.id) {
-      result = await userService.update(user.id, form.value)
+    if (isEdit.value && props.user?.id) {
+      result = await userService.update(props.user.id, {
+        displayName: form.value.displayName,
+        email: form.value.email,
+        status: form.value.status,
+        plan: form.value.plan,
+      })
       toast.success('Cập nhật người dùng thành công')
     }
     else {
-      result = await userService.create(form.value)
+      result = await userService.create({
+        firstName: form.value.firstName,
+        lastName: form.value.lastName,
+        username: form.value.username,
+        email: form.value.email,
+        status: form.value.status,
+        plan: form.value.plan,
+      })
       toast.success('Tạo người dùng thành công')
     }
     emits('saved', result)
     emits('close')
   }
   catch (err: any) {
-    const msg = err?.response?.data?.message || err?.message || 'Có lỗi xảy ra'
-    toast.error(msg)
+    errorMessage.value = err?.response?.data?.message
+      || err?.response?.data?.error
+      || (typeof err?.response?.data === 'string' ? err.response.data : null)
+      || err?.message
+      || 'Có lỗi xảy ra'
+    toast.error(errorMessage.value ?? 'Có lỗi xảy ra')
   }
   finally {
     isLoading.value = false
@@ -57,43 +87,60 @@ async function onSubmit() {
 <template>
   <div class="max-h-[500px] overflow-y-auto">
     <form class="space-y-4" @submit.prevent="onSubmit">
-      <div class="space-y-2">
+      <!-- First Name & Last Name (Create only) -->
+      <template v-if="!isEdit">
+        <div class="space-y-2">
+          <label class="text-sm font-medium">First Name</label>
+          <Input v-model="form.firstName" type="text" placeholder="Nhập tên" required />
+        </div>
+        <div class="space-y-2">
+          <label class="text-sm font-medium">Last Name</label>
+          <Input v-model="form.lastName" type="text" placeholder="Nhập họ" required />
+        </div>
+      </template>
+
+      <!-- Display Name (Edit only) -->
+      <div v-else class="space-y-2">
         <label class="text-sm font-medium">Display Name</label>
-        <Input v-model="form.displayName" type="text" />
+        <Input v-model="form.displayName" type="text" placeholder="Nhập tên hiển thị" required />
       </div>
+
       <div class="space-y-2">
         <label class="text-sm font-medium">Username</label>
-        <Input v-model="form.username" type="text" :disabled="!!user?.id" />
+        <Input v-model="form.username" type="text" required />
       </div>
+
       <div class="space-y-2">
         <label class="text-sm font-medium">Email</label>
-        <Input v-model="form.email" type="text" />
+        <Input v-model="form.email" type="email" :disabled="isEdit" required />
       </div>
+
       <div class="space-y-2">
         <label class="text-sm font-medium">Status</label>
         <Select v-model="form.status">
-          <SelectTrigger class="w-full">
-            <SelectValue placeholder="Select a status" />
+          <SelectTrigger class="w-full capitalize">
+            <SelectValue placeholder="Chọn trạng thái" />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectItem v-for="s in status" :key="s" :value="s">
+              <SelectItem v-for="s in statusOptions" :key="s" :value="s" class="capitalize">
                 {{ s }}
               </SelectItem>
             </SelectGroup>
           </SelectContent>
         </Select>
       </div>
+
       <div class="space-y-2">
-        <label class="text-sm font-medium">Role</label>
-        <Select v-model="form.role">
+        <label class="text-sm font-medium">Plan</label>
+        <Select v-model="form.plan">
           <SelectTrigger class="w-full">
-            <SelectValue placeholder="Select a role" />
+            <SelectValue placeholder="Chọn gói dịch vụ" />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectItem v-for="r in roles" :key="r" :value="r">
-                {{ r }}
+              <SelectItem v-for="p in planOptions" :key="p" :value="p">
+                {{ p }}
               </SelectItem>
             </SelectGroup>
           </SelectContent>
@@ -101,7 +148,7 @@ async function onSubmit() {
       </div>
 
       <Button type="submit" class="w-full" :disabled="isLoading">
-        {{ isLoading ? 'Đang lưu...' : 'Save Changes' }}
+        {{ isLoading ? 'Đang lưu...' : (isEdit ? 'Save Changes' : 'Create User') }}
       </Button>
     </form>
   </div>

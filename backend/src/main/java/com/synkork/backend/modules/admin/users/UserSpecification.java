@@ -36,17 +36,21 @@ public class UserSpecification {
             }
 
             if (request.dateFrom() != null) {
-                predicates.add(cb.greaterThanOrEqualTo(
-                        root.get("createdAt"),
-                        request.dateFrom().atStartOfDay()
-                ));
+                predicates.add(
+                        cb.greaterThanOrEqualTo(
+                                root.get("createdAt"),
+                                request.dateFrom()
+                        )
+                );
             }
 
             if (request.dateTo() != null) {
-                predicates.add(cb.lessThanOrEqualTo(
-                        root.get("createdAt"),
-                        request.dateTo().atTime(23, 59, 59)
-                ));
+                predicates.add(
+                        cb.lessThanOrEqualTo(
+                                root.get("createdAt"),
+                                request.dateTo()
+                        )
+                );
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
