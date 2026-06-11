@@ -22,7 +22,7 @@ export const useUserStore = defineStore("users", {
           } catch (e) {
             console.warn("Không load được notifications:", e)
           }
-          await notificationStore.connect(this.user.id)
+          await notificationStore.connect()
         }
       } catch (error) {
         console.error("Error fetching user info:", error);

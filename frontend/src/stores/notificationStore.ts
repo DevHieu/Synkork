@@ -7,6 +7,7 @@ import type { NotificationDTO } from '@/types/Notification'
 import { getNotifications, markNotificationAsRead, deleteNotification } from '@/services/notificationService'
 import { useSpaceStore } from '@/stores/spaceStore'
 import { useRoomsStore } from '@/stores/roomStore'
+import globalAudio from '@/utils/appAudioManager'
 
 export const useNotificationStore = defineStore('notification', {
   state: () => ({
@@ -25,6 +26,7 @@ export const useNotificationStore = defineStore('notification', {
     async connect() {
       await notificationSocket.subscribeNotifications(
         (notification: NotificationDTO) => {
+          globalAudio.playSystemSound("/assets/sounds/notiSound.wav")
           this.addNotification(notification)
         }
       )
@@ -41,22 +43,22 @@ export const useNotificationStore = defineStore('notification', {
       const path = getNotificationPath(notification)
 
       toast(notificationMessage(notification), {
-        description: notification.actorName 
-                    ? `từ ${notification.actorName}` 
-                    : 'Thông báo hệ thống',
+        description: notification.actorName
+          ? `từ ${notification.actorName}`
+          : 'Thông báo hệ thống',
         action: path ? {
           label: 'Xem',
           onClick: async () => {
             await this.markAsRead(notification.id)
 
-            if(notification.roomId && notification.spaceId) {
+            if (notification.roomId && notification.spaceId) {
               const roomStore = useRoomsStore()
               const currentRoomId = roomStore.currentRoom?.id
 
-              if(currentRoomId != notification.roomId) {
+              if (currentRoomId != notification.roomId) {
                 const targetRoom = roomStore.rooms.find(r => r.id === notification.roomId)
 
-                if(targetRoom){
+                if (targetRoom) {
                   await roomStore.changeRoom(targetRoom, notification.spaceId, notification.type)
                 }
               } else {
@@ -65,9 +67,9 @@ export const useNotificationStore = defineStore('notification', {
                 await spaceStore.changeSpaceById(
                   notification.spaceId,
                   notification.type
-                ) 
+                )
               }
-            } 
+            }
             router.push({
               path,
               query: {
@@ -107,10 +109,10 @@ export const useNotificationStore = defineStore('notification', {
     clearNotifications() {
       try {
         this.notifications.map(n => deleteNotification(n.id))
-      this.notifications = []
+        this.notifications = []
       } catch (error) {
         console.error('Lỗi xóa thông báo:', error)
-      }  
+      }
     },
 
   },
@@ -156,7 +158,7 @@ function getNotificationPath(n: NotificationDTO) {
 
     case 'CHAT':
       return `/rooms/chat/${n.roomId}/${n.spaceId}`
-  
+
     default:
       return null
   }
