@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { Eye, LoaderIcon, Search } from '@lucide/vue'
+import { refDebounced } from '@vueuse/core'
 import { computed, h, onMounted, ref, watch } from 'vue'
 
 import type { TableColumn } from '@/components/base-table.vue'
@@ -15,39 +16,32 @@ import { defaultDateRange, formatTimestamp, formatToISODateTime } from '@/utils/
 
 import type { AuditLog, LogParams } from './types/LogTypes'
 
+import AuditLogDetailDialog from './components/AuditLogDetailDialog.vue'
 import { logService } from './service/logService'
+
+const selectedLog = ref<AuditLog | null>(null)
+const isDetailOpen = ref(false)
 
 const loading = ref(false)
 const logsData = ref<AuditLog[]>([])
-const totalCount = ref(0)
 const currentPage = ref(1)
 const pageSize = 20
 
 const searchKeyword = ref('')
-const selectedStatus = ref<string>('ALL')
+const actionKeyword = ref('')
 const selectedEntityType = ref<string>('ALL')
 const dateRange = ref(defaultDateRange())
 
-const totalPage = computed(() => Math.ceil(totalCount.value / pageSize))
+const debounceSearchKeyword = refDebounced(searchKeyword, 500)
+const debounceActionKeyword = refDebounced(actionKeyword, 500)
+const totalCount = ref(0)
+const totalPage = ref(0)
 
 const columns = computed<TableColumn<any>[]>(() => [
   { header: 'Hành động', accessor: 'action', minWidth: 150 },
   { header: 'Đối tượng', accessor: 'entityType', minWidth: 120 },
   { header: 'Tên đối tượng', accessor: 'entityName', minWidth: 160 },
   { header: 'Người thực hiện', accessor: 'actorEmail', minWidth: 200 },
-  {
-    header: 'Trạng thái',
-    minWidth: 120,
-    render: row => h(
-      'span',
-      {
-        class: row.status === 'SUCCESS'
-          ? 'px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full dark:bg-green-900/30 dark:text-green-400'
-          : 'px-2 py-1 text-xs font-semibold text-red-700 bg-red-100 rounded-full dark:bg-red-900/30 dark:text-red-400',
-      },
-      row.status,
-    ),
-  },
   {
     header: 'Thời gian',
     minWidth: 160,
@@ -80,8 +74,8 @@ async function fetchLogs() {
       queryParams.search = searchKeyword.value.trim()
     }
 
-    if (selectedStatus.value !== 'ALL') {
-      queryParams.status = selectedStatus.value as 'SUCCESS' | 'FAILURE'
+    if (actionKeyword.value.trim()) {
+      queryParams.action = actionKeyword.value.trim()
     }
 
     if (selectedEntityType.value !== 'ALL') {
@@ -89,18 +83,19 @@ async function fetchLogs() {
     }
 
     if (dateRange.value?.from) {
-      const fromDate = typeof dateRange.value.from === 'string' ? new Date(dateRange.value.from) : dateRange.value.from
-      queryParams.fromDate = formatToISODateTime(fromDate)
+      const dateFrom = typeof dateRange.value.from === 'string' ? new Date(dateRange.value.from) : dateRange.value.from
+      queryParams.dateFrom = formatToISODateTime(dateFrom)
     }
 
     if (dateRange.value?.to) {
-      const toDate = typeof dateRange.value.to === 'string' ? new Date(dateRange.value.to) : dateRange.value.to
-      queryParams.toDate = formatToISODateTime(toDate, true) // true để lấy 23:59:59
+      const dateTo = typeof dateRange.value.to === 'string' ? new Date(dateRange.value.to) : dateRange.value.to
+      queryParams.dateTo = formatToISODateTime(dateTo, true) // true để lấy 23:59:59
     }
     const response = await logService.getLogs({ params: queryParams })
 
-    logsData.value = response.content || []
-    totalCount.value = response.totalElements || 0
+    logsData.value = response.data || []
+    totalCount.value = response.meta.totalElements || 0
+    totalPage.value = response.meta.totalPages || 0
   }
   catch (error) {
     console.error('Lỗi khi tải danh sách hệ thống log:', error)
@@ -110,13 +105,12 @@ async function fetchLogs() {
   }
 }
 
-// Xem chi tiết log
-function handleViewDetail(log: any) {
-  console.log('Log detail:', log)
-  alert(`Chi tiết hành động: ${log.description}`)
+function handleViewDetail(log: AuditLog) {
+  selectedLog.value = log
+  isDetailOpen.value = true
 }
 
-watch([searchKeyword, selectedStatus, selectedEntityType, dateRange], () => {
+watch([debounceSearchKeyword, debounceActionKeyword, selectedEntityType, dateRange], () => {
   currentPage.value = 1
   fetchLogs()
 })
@@ -147,23 +141,14 @@ onMounted(() => {
         />
       </div>
 
-      <div class="w-[160px]">
-        <UiSelect v-model="selectedStatus">
-          <SelectTrigger class="h-9 w-full">
-            <SelectValue placeholder="Trạng thái" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">
-              Tất cả trạng thái
-            </SelectItem>
-            <SelectItem value="SUCCESS">
-              Thành công
-            </SelectItem>
-            <SelectItem value="FAILURE">
-              Thất bại
-            </SelectItem>
-          </SelectContent>
-        </UiSelect>
+      <div class="relative w-full max-w-sm">
+        <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <UiInput
+          v-model="actionKeyword"
+          type="text"
+          placeholder="Tìm theo hành động"
+          class="pl-8 h-9"
+        />
       </div>
 
       <div class="w-[180px]">
@@ -209,10 +194,6 @@ onMounted(() => {
         />
       </div>
 
-      <div v-if="logsData.length === 0 && !loading" class="p-8 text-center text-muted-foreground text-sm">
-        Không tìm thấy bản ghi nhật ký nào phù hợp.
-      </div>
-
       <Pagination
         v-model:current-page="currentPage"
         :total="totalPage"
@@ -221,4 +202,10 @@ onMounted(() => {
       />
     </div>
   </BasicPage>
+
+  <AuditLogDetailDialog
+    v-if="selectedLog"
+    v-model:open="isDetailOpen"
+    :log-id="selectedLog.id"
+  />
 </template>

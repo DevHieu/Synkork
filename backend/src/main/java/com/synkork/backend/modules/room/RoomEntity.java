@@ -31,10 +31,12 @@ public class RoomEntity extends BaseEntity {
     private String description;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     @Builder.Default
     private RoomTypeEnum type = RoomTypeEnum.GROUP; // GROUP | DM
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     @Builder.Default
     private RoomStatusEnum status = RoomStatusEnum.OPEN;
 

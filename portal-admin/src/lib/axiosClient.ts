@@ -1,7 +1,9 @@
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios'
 
 import axios from 'axios'
+
 import { getFreshToken } from '@/utils/auth'
+
 import { getCookie, removeCookie } from './cookies'
 
 const axiosClient: AxiosInstance = axios.create({

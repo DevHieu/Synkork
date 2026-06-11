@@ -11,13 +11,10 @@ export const useUserStore = defineStore("users", {
 
   actions: {
     async getUserInfo() {
-      console.trace("[getUserInfo] Trace");
       this.loading = true;
       try {
         const response = await getUserInfo();
         this.user = response.data;
-        console.log("user: " + JSON.stringify(this.user));
-
         if (this.user?.id) {
           const notificationStore = useNotificationStore()
           try {
