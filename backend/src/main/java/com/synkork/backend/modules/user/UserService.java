@@ -1,5 +1,6 @@
 package com.synkork.backend.modules.user;
 
+import com.synkork.backend.common.utils.FileService;
 import com.synkork.backend.modules.user.dto.ChangePasswordDto;
 import com.synkork.backend.modules.user.dto.UpdateprofileDto;
 import com.synkork.backend.modules.user.dto.UserInfoDto;
@@ -25,6 +26,9 @@ public class UserService {
 
     @Autowired
     PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private FileService fileService;
 
     public List<UserEntity> findAll() {
         return userRepository.findAll();
@@ -125,6 +129,12 @@ public class UserService {
 
     public UserInfoDto updateAvatar(String avatarUrl, String avatarId) {
         UserEntity user = getCurrentUser();
+
+        // Xóa file cũ đi. CDN free nên xóa bớt cho nhẹ :)))
+        if (user.getAvatarId() != null) {
+            fileService.deleteFile(user.getAvatarId(), "image");
+        }
+
         user.setAvatarUrl(avatarUrl);
         user.setAvatarId(avatarId);
         return new UserInfoDto(userRepository.save(user));
