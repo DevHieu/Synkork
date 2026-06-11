@@ -49,7 +49,8 @@ watch(() => props.logId, async (newId) => {
   if (!newId)
     return
   isLoading.value = true
-  log.value = await logService.getLogDetails(newId)
+  const res = await logService.getLogDetails(newId)
+  log.value = res.data
   isLoading.value = false
 }, { immediate: true })
 </script>

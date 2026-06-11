@@ -24,7 +24,6 @@ const isDetailOpen = ref(false)
 
 const loading = ref(false)
 const logsData = ref<AuditLog[]>([])
-const totalCount = ref(0)
 const currentPage = ref(1)
 const pageSize = 20
 
@@ -35,7 +34,8 @@ const dateRange = ref(defaultDateRange())
 
 const debounceSearchKeyword = refDebounced(searchKeyword, 500)
 const debounceActionKeyword = refDebounced(actionKeyword, 500)
-const totalPage = computed(() => Math.ceil(totalCount.value / pageSize))
+const totalCount = ref(0)
+const totalPage = ref(0)
 
 const columns = computed<TableColumn<any>[]>(() => [
   { header: 'Hành động', accessor: 'action', minWidth: 150 },
@@ -83,18 +83,19 @@ async function fetchLogs() {
     }
 
     if (dateRange.value?.from) {
-      const fromDate = typeof dateRange.value.from === 'string' ? new Date(dateRange.value.from) : dateRange.value.from
-      queryParams.fromDate = formatToISODateTime(fromDate)
+      const dateFrom = typeof dateRange.value.from === 'string' ? new Date(dateRange.value.from) : dateRange.value.from
+      queryParams.dateFrom = formatToISODateTime(dateFrom)
     }
 
     if (dateRange.value?.to) {
-      const toDate = typeof dateRange.value.to === 'string' ? new Date(dateRange.value.to) : dateRange.value.to
-      queryParams.toDate = formatToISODateTime(toDate, true) // true để lấy 23:59:59
+      const dateTo = typeof dateRange.value.to === 'string' ? new Date(dateRange.value.to) : dateRange.value.to
+      queryParams.dateTo = formatToISODateTime(dateTo, true) // true để lấy 23:59:59
     }
     const response = await logService.getLogs({ params: queryParams })
 
-    logsData.value = response.content || []
-    totalCount.value = response.totalElements || 0
+    logsData.value = response.data || []
+    totalCount.value = response.meta.totalElements || 0
+    totalPage.value = response.meta.totalPages || 0
   }
   catch (error) {
     console.error('Lỗi khi tải danh sách hệ thống log:', error)

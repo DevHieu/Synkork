@@ -4,7 +4,7 @@ import { ref } from 'vue'
 
 import { Modal, ModalContent, ModalTrigger } from '@/components/prop-ui/modal'
 
-import type { User } from '../data/schema'
+import type { User } from '../types/userTypes.ts'
 
 import UserResource from './user-resource.vue'
 

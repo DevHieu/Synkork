@@ -1,4 +1,4 @@
-package com.synkork.backend.modules.admin.log;
+package com.synkork.backend.modules.admin.auditLog;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;

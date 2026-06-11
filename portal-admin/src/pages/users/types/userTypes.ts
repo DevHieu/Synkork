@@ -8,18 +8,17 @@ export interface User {
   email: string
   status: UserStatus
   plan: UserPlan
-  role: string
   avatarUrl: string | null
   provider: string
   createdAt: string
 }
 
 export interface UserParams {
-  keyword?: string
+  search?: string
   status?: UserStatus
   plan?: UserPlan
   page?: number
   size?: number
-  fromDate?: string
-  toDate?: string
+  dateFrom?: string
+  dateTo?: string
 }

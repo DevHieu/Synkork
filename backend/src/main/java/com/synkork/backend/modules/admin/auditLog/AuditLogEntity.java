@@ -1,7 +1,8 @@
-package com.synkork.backend.modules.admin.log;
+package com.synkork.backend.modules.admin.auditLog;
 
 import com.synkork.backend.common.utils.uuid.UuidV7Annotation;
-import com.synkork.backend.modules.admin.log.dtos.AuditLogRequest;
+import com.synkork.backend.modules.admin.auditLog.dtos.AuditLogRequest;
+import com.synkork.backend.modules.admin.auditLog.enums.LogEntityTypeEnum;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -28,8 +29,8 @@ public class AuditLogEntity {
     @Column(nullable = false, length = 100)
     private String action;
 
-    @Column(length = 50)
-    private String entityType;
+    @Enumerated(EnumType.STRING)
+    private LogEntityTypeEnum entityType;
 
     private String entityId;
     private String entityName;
