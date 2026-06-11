@@ -29,6 +29,6 @@ export interface LogParams {
   entityType?: string
   workspaceId?: number
   actorEmail?: string
-  fromDate?: string
-  toDate?: string
+  dateFrom?: string
+  dateTo?: string
 }
