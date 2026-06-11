@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import {
   LogOut, Sparkles, X, User, Pencil,
-  Eye, EyeOff, Check, AlertCircle, Volume2, Palette
+  Eye, EyeOff, Check, AlertCircle, Volume2, Palette,
+  Loader2
 } from "lucide-vue-next"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -202,9 +203,12 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
                     {{ displayName.charAt(0).toUpperCase() }}
                   </AvatarFallback>
                 </Avatar>
+
                 <div
-                  class="absolute inset-0 rounded-full flex items-center justify-center bg-black/50 opacity-0 group-hover/ava:opacity-100 transition-opacity">
-                  <Pencil class="size-4 text-white" />
+                  class="absolute inset-0 rounded-full flex items-center justify-center bg-black/50 transition-opacity"
+                  :class="avatarLoading ? 'opacity-100' : 'opacity-0 group-hover/ava:opacity-100'">
+                  <Loader2 v-if="avatarLoading" class="size-4 text-white animate-spin" />
+                  <Pencil v-else class="size-4 text-white" />
                 </div>
               </button>
               <p v-if="avatarError" class="mt-1 text-[11px] text-destructive">{{ avatarError }}</p>
@@ -279,9 +283,12 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
                           {{ displayName.charAt(0).toUpperCase() }}
                         </AvatarFallback>
                       </Avatar>
+
                       <div
-                        class="absolute inset-0 rounded-full flex items-center justify-center bg-black/50 opacity-0 group-hover/ava2:opacity-100 transition-opacity">
-                        <Pencil class="size-5 text-white" />
+                        class="absolute inset-0 rounded-full flex items-center justify-center bg-black/50 transition-opacity"
+                        :class="avatarLoading ? 'opacity-100' : 'opacity-0 group-hover/ava2:opacity-100'">
+                        <Loader2 v-if="avatarLoading" class="size-5 text-white animate-spin" />
+                        <Pencil v-else class="size-5 text-white" />
                       </div>
                     </button>
                   </div>
@@ -366,7 +373,8 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
                     <Label class="text-[10px] uppercase tracking-wider text-muted-foreground">Email</Label>
                     <div class="flex items-center gap-2 mt-0.5">
                       <p class="text-sm text-foreground">{{ showEmail ? currentUser?.email : maskedEmail }}</p>
-                      <button class="text-[11px] font-semibold text-primary hover:opacity-75 transition-opacity" @click="showEmail = !showEmail">
+                      <button class="text-[11px] font-semibold text-primary hover:opacity-75 transition-opacity"
+                        @click="showEmail = !showEmail">
                         {{ showEmail ? 'Ẩn' : 'Hiển thị' }}
                       </button>
                     </div>
