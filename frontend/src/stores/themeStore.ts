@@ -26,12 +26,8 @@ export const useThemeStore = defineStore("theme", {
 
     setMode(mode: "dark" | "light" | "system") {
       this.mode = mode;
+      // Lưu thẳng vào localStorage từ store
+      localStorage.setItem(STORAGE_KEY_MODE, mode);
     },
   },
 });
-
-// const themeStore = useThemeStore()
-// themeStore.init() // gọi trong App.vue onMounted
-
-// themeStore.isDark  // true/false, đã resolve system rồi
-// themeStore.mode
