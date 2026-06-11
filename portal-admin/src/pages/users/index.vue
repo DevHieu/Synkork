@@ -5,22 +5,22 @@ import { computed, h, onMounted, ref, watch } from 'vue'
 
 import type { TableColumn } from '@/components/base-table.vue'
 
+import BaseTable from '@/components/base-table.vue'
 import DateRangePicker from '@/components/date-range-picker.vue'
 import { BasicPage } from '@/components/global-layout'
+import Pagination from '@/components/pagination.vue'
 import { Modal, ModalContent } from '@/components/prop-ui/modal'
-import { Badge } from '@/components/ui/badge'
 import { Button as UiButton } from '@/components/ui/button'
-import SelectContent from '@/components/ui/select/SelectContent.vue'
-import SelectItem from '@/components/ui/select/SelectItem.vue'
-import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
-import SelectValue from '@/components/ui/select/SelectValue.vue'
-import { defaultDateRange, formatToISODateTime } from '@/utils/date.utils.ts'
+import { Input as UiInput } from '@/components/ui/input'
+import { SelectContent, SelectItem, SelectTrigger, SelectValue, Select as UiSelect } from '@/components/ui/select'
+import { defaultDateRange, formatToISODateTime } from '@/utils/date.utils'
 
-import type { User, UserParams, UserPlan, UserStatus } from './types/userTypes.ts'
+import type { User, UserParams, UserPlan, UserStatus } from './types/userTypes'
 
+import UserCreate from './components/user-create.vue'
 import UserDelete from './components/user-delete.vue'
 import UserResource from './components/user-resource.vue'
-import { userService } from './services/userService.ts'
+import { userService } from './services/userService'
 
 const loading = ref(false)
 const allUsers = ref<User[]>([])
@@ -31,9 +31,9 @@ const selectedPlan = ref<string>('ALL')
 const currentPage = ref(1)
 const pageSize = 20
 const totalCount = ref(0)
+const totalPage = ref(0)
 
 const debounceKeyword = refDebounced(keyword, 500)
-const totalPage = computed(() => Math.ceil(totalCount.value / pageSize))
 
 const editTarget = ref<User | null>(null)
 const deleteTarget = ref<User | null>(null)
@@ -63,7 +63,7 @@ async function fetchData() {
     }
 
     if (debounceKeyword.value.trim()) {
-      queryParams.keyword = keyword.value.trim()
+      queryParams.search = debounceKeyword.value.trim()
     }
 
     if (selectedStatus.value !== 'ALL') {
@@ -76,35 +76,43 @@ async function fetchData() {
 
     if (dateRange.value?.from) {
       const fromDate = typeof dateRange.value.from === 'string' ? new Date(dateRange.value.from) : dateRange.value.from
-      queryParams.fromDate = formatToISODateTime(fromDate)
+      queryParams.dateFrom = formatToISODateTime(fromDate)
     }
 
     if (dateRange.value?.to) {
       const toDate = typeof dateRange.value.to === 'string' ? new Date(dateRange.value.to) : dateRange.value.to
-      queryParams.toDate = formatToISODateTime(toDate, true)
-
-      const response = await userService.getAll({ params: queryParams })
-      allUsers.value = response.content || []
-      totalCount.value = response.totalElements || 0
+      queryParams.dateTo = formatToISODateTime(toDate)
     }
+
+    const response = await userService.getAll({ params: queryParams })
+
+    allUsers.value = response.data || []
+    totalCount.value = response.meta?.totalElements || 0
+    totalPage.value = response.meta?.totalPages || 0
   }
   catch (err) {
     console.error('Failed to fetch users:', err)
     allUsers.value = []
     totalCount.value = 0
+    totalPage.value = 0
   }
   finally {
     loading.value = false
   }
 }
 
-watch(currentPage, () => fetchData())
-
-watch([debounceKeyword, dateRange, selectedStatus, selectedPlan], () => {
+watch(currentPage, () => {
   fetchData()
 })
 
-onMounted(() => fetchData())
+watch([debounceKeyword, selectedStatus, selectedPlan, dateRange], () => {
+  currentPage.value = 1
+  fetchData()
+})
+
+onMounted(() => {
+  fetchData()
+})
 
 function handleViewDetail(user: User) {
   editTarget.value = user
@@ -126,66 +134,53 @@ function onUserDeleted() {
   fetchData()
 }
 
-function renderRole(role: string) {
-  const label = role
-    ? role.charAt(0).toUpperCase() + role.slice(1).toLowerCase()
-    : '-'
-
-  return h(Badge, {
-    variant: 'secondary',
-    class: 'border-0 bg-neutral-100 px-3 text-neutral-950 dark:bg-neutral-800 dark:text-neutral-50',
-  }, () => label)
-}
-
-function renderStatus(status: UserStatus) {
-  const normalizedStatus = status?.toUpperCase() as UserStatus
-  const config = {
-    ACTIVE: {
-      label: 'Hoạt động',
-      class: 'border-emerald-300 bg-emerald-50 px-3 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
-    },
-    INACTIVE: {
-      label: 'Ngừng hoạt động',
-      class: 'border-amber-300 bg-amber-50 px-3 text-amber-700 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300',
-    },
-    BANNED: {
-      label: 'Bị khóa',
-      class: 'border-red-300 bg-red-50 px-3 text-red-700 dark:border-red-700 dark:bg-red-950 dark:text-red-300',
-    },
-  }[normalizedStatus] ?? {
-    label: status || '-',
-    class: 'border-neutral-300 bg-neutral-50 px-3 text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300',
-  }
-
-  return h(Badge, {
-    variant: 'outline',
-    class: config.class,
-  }, () => config.label)
-}
-
 const columns = computed<TableColumn<User>[]>(() => [
-  { header: 'ID', accessor: 'id', minWidth: 100 },
+  { header: 'ID', accessor: 'id', minWidth: 120 },
   { header: 'Username', accessor: 'username', minWidth: 150 },
   {
     header: 'Full Name',
     render: row => `${row.displayName}`,
     minWidth: 180,
   },
+  { header: 'Email', accessor: 'email', minWidth: 220 },
   {
-    header: 'Role',
+    header: 'Plan',
     minWidth: 120,
-    render: row => renderRole(row.role),
+    render: (row) => {
+      const plan = row.plan?.toUpperCase() || 'FREE'
+      let badgeClass = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold '
+      if (plan === 'BUSINESS')
+        badgeClass += 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+      else if (plan === 'TEAM')
+        badgeClass += 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+      else
+        badgeClass += 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+
+      return h('span', { class: `${badgeClass}` }, plan)
+    },
   },
   {
     header: 'Status',
-    minWidth: 150,
-    render: row => renderStatus(row.status),
+    minWidth: 120,
+    render: (row) => {
+      const status = row.status?.toLowerCase() || 'inactive'
+      let badgeClass = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold '
+      if (status === 'active')
+        badgeClass += 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+      else if (status === 'banned')
+        badgeClass += 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+      else if (status === 'inactive')
+        badgeClass += 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+      else
+        badgeClass += 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
+
+      return h('span', { class: `${badgeClass} capitalize` }, status)
+    },
   },
-  { header: 'Email', accessor: 'email', minWidth: 220 },
   {
     header: 'Actions',
-    minWidth: 160,
-    render: row => h('div', { class: 'flex gap-1' }, [
+    minWidth: 180,
+    render: row => h('div', { class: 'flex justify-center gap-1.5' }, [
       h(UiButton, {
         variant: 'outline',
         size: 'sm',
@@ -195,7 +190,7 @@ const columns = computed<TableColumn<User>[]>(() => [
       h(UiButton, {
         variant: 'outline',
         size: 'sm',
-        class: 'h-8 gap-1 px-2 text-xs text-destructive hover:bg-destructive/10',
+        class: 'h-8 gap-1 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 hover:border-destructive/30',
         onClick: () => handleDelete(row),
       }, () => [h(Trash2, { class: 'h-3.5 w-3.5' }), 'Delete']),
     ]),
@@ -205,8 +200,8 @@ const columns = computed<TableColumn<User>[]>(() => [
 
 <template>
   <BasicPage
-    title="System Log"
-    description="Quản lý và theo dõi nhật ký hoạt động hệ thống"
+    title="User Management"
+    description="Quản lý và theo dõi danh sách người dùng trong hệ thống"
     sticky
   >
     <div class="mb-4 flex flex-wrap items-center gap-3">
@@ -236,7 +231,7 @@ const columns = computed<TableColumn<User>[]>(() => [
       <div class="w-[160px]">
         <UiSelect v-model="selectedPlan">
           <SelectTrigger class="h-9 w-full">
-            <SelectValue placeholder="Trạng thái" />
+            <SelectValue placeholder="Gói dịch vụ" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem v-for="opt in planOptions" :key="opt.value" :value="opt.value">
@@ -248,6 +243,11 @@ const columns = computed<TableColumn<User>[]>(() => [
 
       <div>
         <DateRangePicker v-model="dateRange" />
+      </div>
+
+      <!-- Button tạo mới user -->
+      <div class="ml-auto">
+        <UserCreate @saved="fetchData" />
       </div>
     </div>
 
