@@ -1,13 +1,10 @@
 package com.synkork.backend.modules.message;
 
-import com.synkork.backend.common.utils.FileService;
+import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.modules.message.dto.MessageDTO;
 import com.synkork.backend.modules.message.dto.MessagePageDTO;
+import com.synkork.backend.modules.message.dto.MessageRequest;
 import com.synkork.backend.security.UserPrinciple;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +15,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -40,6 +38,43 @@ public class MessageController {
         UUID spaceUUID = UUID.fromString(spaceId);
         UUID cursorUUID = (cursor != null) ? UUID.fromString(cursor) : null;
         return ResponseEntity.ok(messageService.getMessagesBySpaceId(spaceUUID, cursorUUID, isUp, limit));
+    }
+
+    @PostMapping
+    public ResponseEntity<MessageDTO> createMessage(@PathVariable String spaceId, @RequestBody MessageRequest request) {
+        MessageDTO message = messageService.saveMessage(spaceId, request);
+
+        messagingTemplate.convertAndSend(
+                "/topic/space/" + message.getSpaceId() + "/messages",
+                message);
+
+        return ResponseEntity.ok(message);
+    }
+
+    @PutMapping("/{messageId}")
+    public ResponseEntity<MessageDTO> updateMessage(@PathVariable String spaceId, @PathVariable String messageId, @RequestBody MessageRequest request) {
+        MessageDTO newMessage = messageService.updateMessage(messageId, request);
+
+        messagingTemplate.convertAndSend(
+                "/topic/space/" + spaceId + "/messages/update",
+                newMessage
+        );
+
+        return ResponseEntity.ok(newMessage);
+    }
+
+    @DeleteMapping("/{messageId}")
+    public ResponseEntity<Map<String, String>> deleteMessage(@PathVariable String spaceId, @PathVariable String messageId) {
+        messageService.deleteMessage(UUID.fromString(messageId));
+
+        messagingTemplate.convertAndSend(
+                "/topic/space/" + spaceId + "/messages/delete",
+                messageId
+        );
+
+        return ResponseEntity.ok(
+                Map.of("message", "Delete message successfully")
+        );
     }
 
     @GetMapping("/pin")
@@ -99,4 +134,6 @@ public class MessageController {
 
         return ResponseEntity.ok().build();
     }
+
+
 }

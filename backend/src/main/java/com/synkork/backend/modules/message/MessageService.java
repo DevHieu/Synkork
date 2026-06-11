@@ -1,12 +1,10 @@
 package com.synkork.backend.modules.message;
 
 import com.synkork.backend.common.dtos.FileUploaded;
+import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.common.utils.FileService;
 import com.synkork.backend.common.utils.ChatEventLlmService;
-import com.synkork.backend.modules.message.dto.MessageDTO;
-import com.synkork.backend.modules.message.dto.MessagePageDTO;
-import com.synkork.backend.modules.message.dto.MessageSuggestionDTO;
-import com.synkork.backend.modules.message.dto.ReplyPreviewDTO;
+import com.synkork.backend.modules.message.dto.*;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
 import com.synkork.backend.modules.space.SpaceEntity;
@@ -76,27 +74,32 @@ public class MessageService {
     }
 
     @Transactional
-    public MessageDTO saveMessage(MessageDTO dto, String senderId, String senderEmail) {
-        MessageEntity entity = new MessageEntity();
-        UUID spaceId = UUID.fromString(dto.getSpaceId());
+    public MessageDTO saveMessage(String spaceId, MessageRequest request) {
+        String senderId = AuthUtils.getCurrentUserId().toString();
+        String senderEmail = AuthUtils.getCurrentUsername();
 
-        SpaceEntity space = spaceRepository.findById(spaceId)
+        MessageEntity entity = new MessageEntity();
+        UUID spaceUUID = UUID.fromString(spaceId);
+
+        SpaceEntity space = spaceRepository.findById(spaceUUID)
                 .orElseThrow(() -> new IllegalArgumentException("Space not found"));
 
         RoomMemberEntity sender = resolveSender(space.getRoom().getId(), senderId, senderEmail);
 
         entity.setSender(sender);
         entity.setSpace(space);
-        entity.setContent(dto.getContent());
+        entity.setContent(request.content());
 
-        if (dto.getReplyToId() != null) {
-            entity.setReplyTo(messageRepository.getReferenceById(dto.getReplyToId()));
+        UUID replyUUID = null;
+        if (request.replyToId() != null) {
+            replyUUID  = UUID.fromString(request.replyToId());
+            entity.setReplyTo(messageRepository.getReferenceById(replyUUID));
         }
 
         MessageEntity newMessage = messageRepository.saveAndFlush(entity);
 
         MessageDTO responseDto = new MessageDTO(newMessage);
-        responseDto.setReplyToId(dto.getReplyToId());
+        responseDto.setReplyToId(replyUUID);
 
         // Chỉ người có nạp VIP thì mới có cái suggestion này thôiiii
         if (sender.getUser().getCurrentPlan() != PlanEnum.FREE) {
@@ -159,18 +162,20 @@ public class MessageService {
         }
     }
 
-    public MessageDTO updateMessage(MessageDTO dto) {
-        MessageEntity entity = messageRepository.findById(dto.getId())
+    public MessageDTO updateMessage(String messageId, MessageRequest request) {
+        UUID messageUUID =  UUID.fromString(messageId);
+
+        MessageEntity entity = messageRepository.findById(messageUUID)
                 .orElseThrow(() -> new IllegalArgumentException("Message not found"));
 
-        entity.setContent(dto.getContent());
+        entity.setContent(request.content());
         entity.setEdited(true); // thêm cái này vào là xong
 
         MessageEntity saved = messageRepository.save(entity);
-        dto.setUpdatedAt(saved.getUpdatedAt());
-        dto.setEdited(true);
+        saved.setUpdatedAt(saved.getUpdatedAt());
+        saved.setEdited(true);
 
-        return dto;
+        return new MessageDTO(saved);
     }
 
     public MessageDTO changeMessagePinStatus(UUID messageUUID) {
