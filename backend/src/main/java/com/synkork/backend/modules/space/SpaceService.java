@@ -124,7 +124,7 @@ public class SpaceService {
 
     public Map<String, UUID> createPersonalSpaces(UserEntity user) {
         RoomEntity roomEntity = roomRepository.save(
-                RoomEntity.builder().owner(user).type(RoomTypeEnum.DM).build());
+                RoomEntity.builder().owner(user).type(RoomTypeEnum.PERSONAL).build());
 
         UUID noteId;
         if (user.getPersonalNoteId() == null) {
