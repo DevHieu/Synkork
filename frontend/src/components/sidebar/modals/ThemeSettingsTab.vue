@@ -28,7 +28,21 @@ const saveSuccess = ref(false)
 const themes: ThemeOption[] = [
   { id: "default", label: "Cam & Ngọc (Mặc định)", group: "normal", primaryPreview: "#E3662A", secondaryPreview: "#2A9D8F" },
   { id: "violet-storm", label: "Violet Storm", group: "normal", primaryPreview: "#7C3AED", secondaryPreview: "#9333EA" },
-  // ... (giữ nguyên danh sách themes của bạn) ...
+  { id: "ocean-blue", label: "Ocean Blue", group: "normal", primaryPreview: "#0EA5E9", secondaryPreview: "#0284C7" },
+  { id: "forest-emerald", label: "Forest Emerald", group: "normal", primaryPreview: "#10B981", secondaryPreview: "#059669" },
+  { id: "ruby-red", label: "Ruby Red", group: "normal", primaryPreview: "#E63030", secondaryPreview: "#BE185D" },
+  { id: "golden-amber", label: "Golden Amber", group: "normal", primaryPreview: "#F59E0B", secondaryPreview: "#D97706" },
+  { id: "midnight-slate", label: "Midnight Slate", group: "normal", primaryPreview: "#64748B", secondaryPreview: "#475569" },
+  { id: "pastel-rose", label: "Pastel Rose", group: "pastel", primaryPreview: "#FDA4AF", secondaryPreview: "#F9A8D4" },
+  { id: "pastel-lavender", label: "Pastel Lavender", group: "pastel", primaryPreview: "#C4B5FD", secondaryPreview: "#E9D5FF" },
+  { id: "pastel-mint", label: "Pastel Mint", group: "pastel", primaryPreview: "#6EE7B7", secondaryPreview: "#A7F3D0" },
+  { id: "pastel-sky", label: "Pastel Sky", group: "pastel", primaryPreview: "#7DD3FC", secondaryPreview: "#BAE6FD" },
+  { id: "pastel-peach", label: "Pastel Peach", group: "pastel", primaryPreview: "#FDBA74", secondaryPreview: "#FED7AA" },
+  { id: "pastel-lilac", label: "Pastel Lilac", group: "pastel", primaryPreview: "#E879F9", secondaryPreview: "#D946EF" },
+  { id: "ombre-sunset", label: "Sunset", group: "ombre", primaryPreview: "#F97316", secondaryPreview: "#A855F7" },
+  { id: "ombre-aurora", label: "Aurora", group: "ombre", primaryPreview: "#14B8A6", secondaryPreview: "#8B5CF6" },
+  { id: "ombre-rose-gold", label: "Rose Gold", group: "ombre", primaryPreview: "#F43F5E", secondaryPreview: "#EAB308" },
+  { id: "ombre-ocean", label: "Ocean Mist", group: "ombre", primaryPreview: "#06B6D4", secondaryPreview: "#6366F1" },
   { id: "ombre-forest", label: "Forest Dawn", group: "ombre", primaryPreview: "#22C55E", secondaryPreview: "#EAB308" },
 ]
 
