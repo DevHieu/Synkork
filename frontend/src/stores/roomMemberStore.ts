@@ -50,6 +50,7 @@ export const useRoomMemberStore = defineStore("roomMember", {
         console.log("Running");
 
         this.members = await getRoomMembers(roomId);
+        console.log("MEM: " + this.members);
 
         // Set thông tin sau khi fetch xong
         this.setInfo(username);
@@ -74,7 +75,7 @@ export const useRoomMemberStore = defineStore("roomMember", {
       this.currentAuthority = null;
     },
 
-    
+
   },
 
   getters: {
@@ -95,12 +96,12 @@ export const useRoomMemberStore = defineStore("roomMember", {
     },
 
     searchMembers: (state) => (query: string) => {
-        if (!query.trim()) return state.members
-        const q = query.toLowerCase()
-        return state.members.filter(m =>
-            m.displayName?.toLowerCase().includes(q) ||
-            m.username?.toLowerCase().includes(q)
-        )
+      if (!query.trim()) return state.members
+      const q = query.toLowerCase()
+      return state.members.filter(m =>
+        m.displayName?.toLowerCase().includes(q) ||
+        m.username?.toLowerCase().includes(q)
+      )
     },
   },
 });
