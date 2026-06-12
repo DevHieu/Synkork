@@ -1,11 +1,8 @@
 package com.synkork.backend.modules.space;
 
-import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.space.dto.SpaceDTO;
 import com.synkork.backend.modules.space.enums.SpaceStatusEnum;
 import com.synkork.backend.modules.space.enums.SpaceTypeEnum;
-
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -35,4 +32,16 @@ public interface SpaceRepository extends JpaRepository<SpaceEntity, UUID> {
     @Modifying
     @Query("UPDATE SpaceEntity s SET s.status = :newStatus WHERE s.room.owner.id = :ownerId AND s.status = 'PENDING_REMOVAL'")
     void updatePendingSpaceStatusByRoom_OwnerId(@Param("newStatus") SpaceStatusEnum status, @Param("ownerId") UUID ownerId);
+
+    @Query("""
+             SELECT (COUNT(s) > 0)
+             FROM SpaceEntity s
+             LEFT JOIN RoomMemberEntity rm ON s.room.id = rm.room.id
+             WHERE s.id = :spaceId
+             AND (
+                 rm.user.id = :userId
+                OR s.room.owner.id = :userId
+            )
+            """)
+    boolean hasAccess(@Param("spaceId") UUID spaceId, @Param("userId") UUID userId);
 }

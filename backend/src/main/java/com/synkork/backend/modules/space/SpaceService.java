@@ -147,4 +147,8 @@ public class SpaceService {
                 "noteId", noteId,
                 "calendarId", calendarId);
     }
+
+    public boolean checkUserAccess(UUID spaceId, UUID currentUserId) {
+        return spaceRepository.hasAccess(spaceId, currentUserId);
+    }
 }
