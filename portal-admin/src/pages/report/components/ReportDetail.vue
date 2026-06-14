@@ -1,18 +1,17 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { User, Home, ShieldAlert, Clock, CheckCircle2, XCircle, Eye } from '@lucide/vue'
-import type { Report, ReportStatus } from '@/types/Reports.ts'
-
+import { computed, ref, watch } from 'vue'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog'
+  User, Home, ShieldAlert, Clock, CheckCircle2, XCircle,
+  Eye, Lock, Unlock, ShieldCheck, ShieldX, Loader2,
+} from '@lucide/vue'
+import type { Report, ReportStatus } from '@/pages/report/types/Reports'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
+import { userService } from '@/pages/users/services/userService'
+import { roomService } from '@/pages/rooms/service/roomService'
+import DismissReason from './DismissReason.vue'
 
 const props = defineProps<{
   report: Report
@@ -21,7 +20,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:open', value: boolean): void
-  (e: 'action', payload: { id: string, status: ReportStatus }): void
+  (e: 'action', payload: { id: string; status: ReportStatus; note?: string }): void
+  (e: 'locked', payload: { reportType: 'USER' | 'ROOM'; targetId: string }): void
 }>()
 
 const isOpen = computed({
@@ -29,46 +29,105 @@ const isOpen = computed({
   set: (val) => emit('update:open', val),
 })
 
-const statusConfig = {
-  PENDING: {
-    label: 'Pending',
-    variant: 'secondary' as const,
-    icon: Clock,
-  },
-  REVIEWED: {
-    label: 'Reviewed',
-    variant: 'outline' as const,
-    icon: Eye,
-  },
-  RESOLVED: {
-    label: 'Resolved',
-    variant: 'default' as const,
-    icon: CheckCircle2,
-  },
-  DISMISSED: {
-    label: 'Dismissed',
-    variant: 'destructive' as const,
-    icon: XCircle,
-  },
+
+const STATUS_CONFIG = {
+  PENDING:   { label: 'Pending',   variant: 'secondary'  as const, icon: Clock },
+  REVIEWED:  { label: 'Reviewed',  variant: 'outline'    as const, icon: Eye },
+  RESOLVED:  { label: 'Resolved',  variant: 'default'    as const, icon: CheckCircle2 },
+  DISMISSED: { label: 'Dismissed', variant: 'destructive' as const, icon: XCircle },
 }
 
-const typeConfig = {
+const TYPE_CONFIG = {
   USER: { label: 'User Report', icon: User },
   ROOM: { label: 'Room Report', icon: Home },
 }
 
-const statusInfo = computed(() => statusConfig[props.report.status])
-const typeInfo   = computed(() => typeConfig[props.report.reportType])
+const statusInfo = computed(() => STATUS_CONFIG[props.report.status])
+const typeInfo   = computed(() => TYPE_CONFIG[props.report.reportType])
+
+const targetId = computed(() =>
+  props.report.reportType === 'USER'
+    ? props.report.targetUserId
+    : props.report.targetRoomId,
+)
+
+const isUserReport = computed(() => props.report.reportType === 'USER')
+const LOCKED_STATUS = { USER: 'BANNED', ROOM: 'LOCKED' } as const
+
+const targetStatus     = ref<string | null>(null)
+const checkingTarget   = ref(false)
+const targetCheckError = ref(false)
+const lockLoading      = ref(false)
+
+const isTargetLocked = computed(() =>
+  !!targetStatus.value &&
+  targetStatus.value.toUpperCase() === LOCKED_STATUS[props.report.reportType],
+)
+
+async function checkTargetStatus() {
+  if (!targetId.value) return
+
+  checkingTarget.value = true
+  targetCheckError.value = false
+
+  try {
+    const data = isUserReport.value
+      ? await userService.getById(targetId.value)
+      : await roomService.getRoomDetail(targetId.value)
+
+    targetStatus.value = data.status || data.data?.status || null
+  } catch (error) {
+    targetCheckError.value = true
+  } finally {
+    checkingTarget.value = false
+  }
+}
+
+watch(
+  () => [props.open, props.report.id] as const,
+  ([open]) => { if (open) checkTargetStatus() },
+  { immediate: true },
+)
+
+function handleAction(status: ReportStatus) {
+  emit('action', { id: props.report.id, status })
+}
+
+async function handleLockTarget() {
+  if (!targetId.value) return
+
+  const confirmMsg = isUserReport.value
+    ? 'Bạn có chắc muốn khoá user này?'
+    : 'Bạn có chắc muốn khoá room này?'
+  if (!confirm(confirmMsg)) return
+
+  lockLoading.value = true
+  try {
+    if (isUserReport.value) {
+      await userService.updateStatus(targetId.value, 'BANNED')
+    } else {
+      await roomService.lockRoom(targetId.value, 'LOCKED')
+    }
+    targetStatus.value = LOCKED_STATUS[props.report.reportType]
+    emit('locked', { reportType: props.report.reportType, targetId: targetId.value })
+  } catch (error) {
+    console.error('Lỗi khoá đối tượng:', error)
+  } finally {
+    lockLoading.value = false
+  }
+}
+
+const isDismissDialogOpen = ref(false)
+
+function handleDismiss(reason: string) {
+  emit('action', { id: props.report.id, status: 'DISMISSED', note: reason })
+}
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString('vi-VN', {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   })
-}
-
-function handleAction(status: ReportStatus) {
-  emit('action', { id: props.report.id, status })
 }
 </script>
 
@@ -103,14 +162,33 @@ function handleAction(status: ReportStatus) {
 
         <!-- Target -->
         <div class="space-y-1">
-          <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            {{ report.reportType === 'USER' ? 'Reported User' : 'Reported Room' }}
-          </p>
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              {{ report.reportType === 'USER' ? 'Reported User' : 'Reported Room' }}
+            </p>
+
+            <!-- Target lock status indicator -->
+            <div class="flex items-center gap-1.5 text-xs">
+              <Loader2 v-if="checkingTarget" class="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+              <template v-else-if="!targetCheckError">
+                <Badge v-if="isTargetLocked" variant="destructive" class="gap-1 text-[11px] py-0.5">
+                  <Lock class="h-3 w-3" />
+                  Locked
+                </Badge>
+                <Badge v-else variant="outline" class="gap-1 text-[11px] py-0.5 text-emerald-600 border-emerald-300">
+                  <Unlock class="h-3 w-3" />
+                  Active
+                </Badge>
+              </template>
+              <span v-else class="text-muted-foreground italic text-[11px]">Không thể kiểm tra</span>
+            </div>
+          </div>
+
           <p class="text-sm font-semibold">
-            {{ report.reportType === 'USER' ? (report.targetUserId) : (report.targetRoomId) }}
+            {{ report.reportType === 'USER' ? report.targetUserId : report.targetRoomId }}
           </p>
           <p class="text-xs text-muted-foreground">
-            {{ report.reportType === 'USER' ? report.targetName : report.targetName }}
+            {{ report.targetName }}
           </p>
         </div>
 
@@ -120,7 +198,7 @@ function handleAction(status: ReportStatus) {
         <div class="space-y-1">
           <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reporter</p>
           <p class="text-sm font-semibold">{{ report.reporterId }}</p>
-          <p class="text-xs text-muted-foreground">{{ report.reporterId }}</p>
+          <p class="text-xs text-muted-foreground">{{ report.reporterEmail }}</p>
         </div>
 
         <Separator />
@@ -147,44 +225,62 @@ function handleAction(status: ReportStatus) {
           <div>
             <span class="font-medium">Created:</span> {{ formatDate(report.createdAt) }}
           </div>
-          <div>
-            <span class="font-medium">Updated:</span> {{ formatDate(report.updatedAt) }}
-          </div>
         </div>
 
       </div>
+
       <template v-if="report.status === 'PENDING' || report.status === 'REVIEWED'">
         <Separator class="my-4" />
         <div class="flex flex-col gap-3">
           <p class="text-sm font-medium text-muted-foreground uppercase">Admin Actions</p>
+
+          <!-- Lock target card -->
+          <div class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5"
+            :class="isTargetLocked ? 'border-destructive/30 bg-destructive/5' : 'border-border bg-muted/30'">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+                :class="isTargetLocked ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground'">
+                <component :is="isTargetLocked ? ShieldX : ShieldCheck" class="h-4 w-4" />
+              </div>
+              <div class="min-w-0">
+                <p class="text-sm font-medium leading-tight">
+                  {{ report.reportType === 'USER' ? 'Tài khoản người dùng' : 'Phòng' }}
+                </p>
+                <p class="text-xs text-muted-foreground leading-tight truncate">
+                  <span v-if="checkingTarget">Đang kiểm tra trạng thái…</span>
+                  <span v-else-if="targetCheckError">Không thể kiểm tra trạng thái</span>
+                  <span v-else-if="isTargetLocked">Đối tượng đã bị khoá</span>
+                  <span v-else>Đối tượng đang hoạt động bình thường</span>
+                </p>
+              </div>
+            </div>
+
+            <Button v-if="!isTargetLocked" variant="outline" size="sm"
+              class="gap-1.5 shrink-0 border-destructive text-destructive hover:bg-destructive/10"
+              :disabled="checkingTarget || lockLoading" @click="handleLockTarget">
+              <Loader2 v-if="lockLoading" class="h-3.5 w-3.5 animate-spin" />
+              <Lock v-else class="h-3.5 w-3.5" />
+              {{ report.reportType === 'USER' ? 'Lock User' : 'Lock Room' }}
+            </Button>
+            <Badge v-else variant="destructive" class="gap-1 shrink-0">
+              <Lock class="h-3 w-3" />
+              Locked
+            </Badge>
+          </div>
+
           <div class="flex gap-2">
-            <!-- Nút Duyệt: Chấp nhận tố cáo -->
-            <Button 
-              variant="default" 
-              class="flex-1 gap-2"
-              @click="handleAction('RESOLVED')"
-            >
+            <Button variant="default" class="flex-1 gap-2" @click="handleAction('RESOLVED')">
               <CheckCircle2 class="h-4 w-4" />
               Resolve (Accept)
             </Button>
 
-            <!-- Nút Bác bỏ: Tố cáo sai/không vi phạm -->
-            <Button 
-              variant="destructive" 
-              class="flex-1 gap-2"
-              @click="handleAction('DISMISSED')"
-            >
+            <Button variant="destructive" class="flex-1 gap-2" @click="isDismissDialogOpen = true">
               <XCircle class="h-4 w-4" />
               Dismiss (Reject)
             </Button>
-            
-            <!-- Nút Đánh dấu đã xem (nếu cần) -->
-            <Button 
-              v-if="report.status === 'PENDING'"
-              variant="outline" 
-              class="flex-1 gap-2"
-              @click="handleAction('REVIEWED')"
-            >
+
+            <Button v-if="report.status === 'PENDING'" variant="outline" class="flex-1 gap-2"
+              @click="handleAction('REVIEWED')">
               <Eye class="h-4 w-4" />
               Mark Reviewed
             </Button>
@@ -192,7 +288,6 @@ function handleAction(status: ReportStatus) {
         </div>
       </template>
 
-      <!-- Hiển thị khi đã xử lý xong -->
       <div v-else class="mt-4 p-3 bg-muted rounded-lg border border-dashed text-center">
         <p class="text-xs text-muted-foreground italic">
           This report has been finalized as <span class="font-bold">{{ report.status }}</span>
@@ -200,4 +295,5 @@ function handleAction(status: ReportStatus) {
       </div>
     </DialogContent>
   </Dialog>
+  <DismissReason v-model:open="isDismissDialogOpen" :report="report" @confirm="handleDismiss" />
 </template>

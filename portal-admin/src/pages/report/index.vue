@@ -1,71 +1,62 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, h } from 'vue'
-import { LoaderIcon, Eye, ShieldAlert, Search, X } from '@lucide/vue'
-import { useDebounceFn } from '@vueuse/core'
-
+import { LoaderIcon, Eye, ShieldAlert, Search, X, Trash2 } from '@lucide/vue'
 import { BasicPage } from '@/components/global-layout'
 import type { TableColumn } from '@/components/base-table.vue'
 import { Button as UiButton } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import DateRangePicker from '@/components/date-range-picker.vue'
-
-import type { Report, ReportStatus, ReportType, ReportFilterParams } from '@/types/Reports'
+import type { Report, ReportStatus, ReportType, ReportFilterParams } from '@/pages/report/types/Reports.ts'
 import ReportDetail from './components/ReportDetail.vue'
-import { fetchReports, updateReportStatus } from './service/reportService'
+import { getReports, updateReportStatus, deleteReport } from './service/reportService'
+import { defaultDateRange, formatTimestamp, formatToISODateTime } from '@/utils/date.utils'
+import { refDebounced } from '@vueuse/core'
 
-// ── State ──────────────────────────────────────────────────────────────
 const loading    = ref(false)
-const currentPage = ref(0)   // 0-based (server-side)
-const pageSize    = 10
-const totalElements = ref(0)
+const currentPage = ref(1) 
+const pageSize    = 20
+const totalCount = ref(0)
 const totalPages    = ref(0)
 
 const pagedData = ref<Report[]>([])
 
-// Filter state
 const searchKeyword  = ref('')
-const filterStatus   = ref<ReportStatus | ''>('')
-const filterType     = ref<ReportType | ''>('')
-interface AppDateRange { from: Date; to: Date }
-const dateRange = ref<AppDateRange | null>(null)
-
-// DateRangePicker require non-null modelValue — dùng today làm placeholder khi chưa chọn
-const dateRangeModel = computed<AppDateRange>({
-  get: () => dateRange.value ?? { from: new Date(), to: new Date() },
-  set: (val) => { dateRange.value = val },
-})
+const filterStatus   = ref<ReportStatus | 'ALL'>('ALL')
+const filterType     = ref<ReportType | 'ALL'>('ALL')
+const dateRange = ref(defaultDateRange())
+const debouncedSearch = refDebounced(searchKeyword, 500)
 
 const selectedReport = ref<Report | null>(null)
 const isDetailOpen   = ref(false)
 
-// ── Fetch ──────────────────────────────────────────────────────────────
-const fetchData = async () => {
+const fetchReports = async () => {
   loading.value = true
   try {
     const params: ReportFilterParams = {
-      page: currentPage.value,
+      page: currentPage.value - 1,
       size: pageSize,
     }
 
-    if (searchKeyword.value.trim()) params.search     = searchKeyword.value.trim()
-    if (filterStatus.value)         params.status     = filterStatus.value
-    if (filterType.value)           params.reportType = filterType.value
-    if (dateRange.value?.from) params.dateFrom = dateRange.value.from.toISOString().slice(0, 10)
-    if (dateRange.value?.to)   params.dateTo   = dateRange.value.to.toISOString().slice(0, 10)
+    if (searchKeyword.value.trim()) params.search = searchKeyword.value.trim()
+    if (filterStatus.value && filterStatus.value !== 'ALL') params.status = filterStatus.value
+    if (filterType.value && filterType.value !== 'ALL') params.reportType = filterType.value
+    if (dateRange.value?.from) {
+      const fromDate = typeof dateRange.value.from === 'string' ? new Date(dateRange.value.from) : dateRange.value.from
+      params.fromDate = formatToISODateTime(fromDate)
+    }
 
-    const res = await fetchReports(params)
+    if (dateRange.value?.to) {
+      const toDate = typeof dateRange.value.to === 'string' ? new Date(dateRange.value.to) : dateRange.value.to
+      params.toDate = formatToISODateTime(toDate, true) 
+    }
+    
+    const res = await getReports({ params: params })
 
-    pagedData.value     = res.content
-    totalElements.value = res.totalElements
-    totalPages.value    = res.totalPages
+    pagedData.value = res.data
+    totalCount.value = res.meta.totalElements || 0
+    totalPages.value = res.meta.totalPages
   } catch (error) {
     console.error('Error fetching reports:', error)
   } finally {
@@ -73,60 +64,34 @@ const fetchData = async () => {
   }
 }
 
-// Reset về trang 0 và fetch lại khi filter thay đổi
-const resetAndFetch = () => {
-  currentPage.value = 0
-  fetchData()
-}
-
-// Debounce search để tránh gọi API liên tục khi user đang gõ
-const debouncedSearch = useDebounceFn(resetAndFetch, 400)
-
-watch(searchKeyword, () => debouncedSearch())
-watch([filterStatus, filterType, dateRange], resetAndFetch, { deep: true })
-watch(currentPage, fetchData)
-
-onMounted(fetchData)
-
-// ── Clear filters ──────────────────────────────────────────────────────
 const hasActiveFilter = computed(() =>
-  !!searchKeyword.value || !!filterStatus.value || !!filterType.value ||
-  !!dateRange.value?.from
+  !!searchKeyword.value || !!filterStatus.value && filterStatus.value !== 'ALL' || !!filterType.value && filterType.value !== 'ALL'
 )
 
 function clearFilters() {
   searchKeyword.value = ''
-  filterStatus.value  = ''
-  filterType.value    = ''
-  dateRange.value     = null
+  filterStatus.value  = 'ALL'
+  filterType.value    = 'ALL'
+  dateRange.value     = defaultDateRange()
 }
 
-// ── Detail modal ───────────────────────────────────────────────────────
 function handleViewDetail(report: Report) {
   selectedReport.value = report
   isDetailOpen.value   = true
 }
 
-// ── Update status (gọi API thật) ───────────────────────────────────────
-async function handleUpdateReportStatus({ id, status }: { id: string; status: ReportStatus }) {
+async function handleUpdateReportStatus({ id, status, note }: { id: string; status: ReportStatus; note?: string }) {
   try {
     loading.value = true
+    await updateReportStatus(id, status, note)
 
-    // 1. Gọi API backend
-    await updateReportStatus(id, status)
-
-    // 2. Cập nhật UI cục bộ ngay lập tức
     const item = pagedData.value.find(r => r.id === id)
     if (item) {
-      item.status    = status
-      item.updatedAt = new Date().toISOString()
+      item.status = status
     }
-
-    // 3. Cập nhật report đang mở trong modal (nếu có)
     if (selectedReport.value?.id === id) {
-      selectedReport.value = { ...selectedReport.value, status, updatedAt: new Date().toISOString() }
+      selectedReport.value = { ...selectedReport.value, status }
     }
-
     isDetailOpen.value = false
   } catch (error) {
     console.error('Lỗi cập nhật:', error)
@@ -135,7 +100,20 @@ async function handleUpdateReportStatus({ id, status }: { id: string; status: Re
   }
 }
 
-// ── Table columns ──────────────────────────────────────────────────────
+async function handleDeleteReport(reportId: string){
+  if(!confirm('Bạn có chắc muốn xó cái nì khum?')) return
+
+  try {
+    loading.value = true
+    await deleteReport(reportId)
+  } catch (error) {
+    console.error('Lỗi xóa report:', error)
+  } finally {
+    loading.value = false
+    fetchReports()
+  }
+}
+
 const statusVariantMap: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   PENDING:  'secondary',
   RESOLVED: 'default',
@@ -161,23 +139,18 @@ const columns = computed<TableColumn<Report>[]>(() => [
     render: (row) =>
       h(Badge, { variant: statusVariantMap[row.status] ?? 'default' }, () => row.status),
   },
-  { header: 'Reporter ID', accessor: 'reporterId',  minWidth: 160 },
+  { header: 'Reporter Email', accessor: 'reporterEmail',  minWidth: 160 },
   {
     header: 'Created At',
     accessor: 'createdAt',
     minWidth: 160,
-    render: (row) => new Date(row.createdAt).toLocaleDateString('vi-VN'),
-  },
-  {
-    header: 'Updated At',
-    accessor: 'updatedAt',
-    minWidth: 160,
-    render: (row) => new Date(row.updatedAt).toLocaleDateString('vi-VN'),
+    render: row => formatTimestamp(row.createdAt),
   },
   {
     header: 'Actions',
     minWidth: 140,
     render: (row) =>
+      h('div', { class: 'flex gap-2' }, [
       h(
         UiButton,
         {
@@ -186,22 +159,41 @@ const columns = computed<TableColumn<Report>[]>(() => [
           class: 'h-8 gap-1 px-2 text-xs',
           onClick: () => handleViewDetail(row),
         },
-        () => [h(Eye, { class: 'h-3.5 w-3.5' }), 'View Detail'],
+        () => [
+          h(Eye, { class: 'h-3.5 w-3.5' }),
+          'View',
+        ],
       ),
+
+      h(
+        UiButton,
+        {
+          variant: 'destructive',
+          size: 'sm',
+          class: 'h-8 gap-1 px-2 text-xs',
+          onClick: () => handleDeleteReport(row.id),
+        },
+        () => [
+          h(Trash2, { class: 'h-3.5 w-3.5' }),
+          'Delete',
+        ],
+      ),
+    ]),
   },
 ])
+
+watch([debouncedSearch, filterStatus, filterType, dateRange], () => {
+  currentPage.value = 1
+  fetchReports()
+})
+watch(currentPage, fetchReports)
+
+onMounted(fetchReports)
 </script>
 
 <template>
   <BasicPage title="Reports" description="Manage user and room reports" sticky>
-    <template #actions>
-      <DateRangePicker v-model="dateRangeModel" />
-    </template>
-
-    <!-- ── Toolbar: Search + Filter ──────────────────────────────── -->
     <div class="flex flex-wrap items-center gap-3 mb-4">
-
-      <!-- Search -->
       <div class="relative flex-1 min-w-[200px] max-w-sm">
         <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
         <Input
@@ -218,7 +210,6 @@ const columns = computed<TableColumn<Report>[]>(() => [
         </button>
       </div>
 
-      <!-- Filter: Status -->
       <Select v-model="filterStatus">
         <SelectTrigger class="h-9 w-[150px] text-sm">
           <SelectValue placeholder="All Status" />
@@ -232,7 +223,6 @@ const columns = computed<TableColumn<Report>[]>(() => [
         </SelectContent>
       </Select>
 
-      <!-- Filter: Type -->
       <Select v-model="filterType">
         <SelectTrigger class="h-9 w-[140px] text-sm">
           <SelectValue placeholder="All Types" />
@@ -244,7 +234,10 @@ const columns = computed<TableColumn<Report>[]>(() => [
         </SelectContent>
       </Select>
 
-      <!-- Clear filters -->
+      <div>
+        <DateRangePicker v-model="dateRange" />
+      </div>
+
       <UiButton
         v-if="hasActiveFilter"
         variant="ghost"
@@ -256,13 +249,11 @@ const columns = computed<TableColumn<Report>[]>(() => [
         Clear filters
       </UiButton>
 
-      <!-- Summary badge -->
       <span v-if="!loading" class="ml-auto text-xs text-muted-foreground whitespace-nowrap">
-        {{ totalElements }} report{{ totalElements !== 1 ? 's' : '' }} found
+        {{ totalCount }} report{{ totalCount !== 1 ? 's' : '' }} found
       </span>
     </div>
 
-    <!-- ── Table ──────────────────────────────────────────────────── -->
     <div class="relative">
       <div
         v-if="loading"
@@ -272,7 +263,7 @@ const columns = computed<TableColumn<Report>[]>(() => [
       </div>
 
       <div
-        v-if="!loading && pagedData.length === 0"
+        v-if="!loading && pagedData?.length === 0"
         class="flex flex-col items-center justify-center py-20 text-muted-foreground gap-2"
       >
         <ShieldAlert class="h-10 w-10 opacity-40" />
@@ -287,17 +278,11 @@ const columns = computed<TableColumn<Report>[]>(() => [
       <Pagination
         v-model:current-page="currentPage"
         :total="totalPages"
-        :total-count="totalElements"
+        :total-count="totalCount"
         :per-page="pageSize"
       />
     </div>
   </BasicPage>
 
-  <!-- Detail dialog -->
-  <ReportDetail
-    v-if="selectedReport"
-    v-model:open="isDetailOpen"
-    :report="selectedReport"
-    @action="handleUpdateReportStatus"
-  />
+  <ReportDetail v-if="selectedReport" v-model:open="isDetailOpen" :report="selectedReport" @action="handleUpdateReportStatus" />
 </template>

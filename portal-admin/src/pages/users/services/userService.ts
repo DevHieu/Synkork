@@ -41,4 +41,5 @@ export const userService = {
     const res = await axiosClient.patch(`/api/manage/users/${id}/status`, { status })
     return res.data
   },
+
 }
