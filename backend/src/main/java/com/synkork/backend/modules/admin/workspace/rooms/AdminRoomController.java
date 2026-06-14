@@ -6,13 +6,14 @@ import com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminRoomDetailRes
 import com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminRoomRequest;
 import com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminRoomResponse;
 import com.synkork.backend.modules.admin.workspace.rooms.dtos.RoomFilterRequest;
-import com.synkork.backend.modules.admin.workspace.spaces.dtos.AdminRoomSpaceResponse;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/manage/rooms")
@@ -51,5 +52,10 @@ public class AdminRoomController {
     public ApiResponse<Void> deleteRoom(@PathVariable String roomId) {
         adminRoomService.deleteRoom(roomId);
         return ApiResponse.success("Delete room successfully", null);
+    }
+
+    @PatchMapping("/{roomId}/status")
+    public ApiResponse<AdminRoomResponse> lockRoom(@PathVariable UUID roomId, @RequestBody AdminRoomRequest request){
+        return ApiResponse.success("Lock room successfully", adminRoomService.lockRoom(roomId, request.status()));
     }
 }

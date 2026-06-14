@@ -3,6 +3,8 @@ package com.synkork.backend.modules.user;
 import com.synkork.backend.modules.user.dto.ChangePasswordDto;
 import com.synkork.backend.modules.user.dto.UpdateprofileDto;
 import com.synkork.backend.modules.user.dto.UserInfoDto;
+import com.synkork.backend.modules.user.enums.UserStatusEnum;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -129,6 +131,5 @@ public class UserService {
         user.setAvatarId(avatarId);
         return new UserInfoDto(userRepository.save(user));
     }
-
 
 }

@@ -7,8 +7,6 @@ import com.synkork.backend.modules.report.ReportEntity;
 import com.synkork.backend.modules.report.enums.ReportStatusEnums;
 import com.synkork.backend.modules.report.enums.ReportTypeEnums;
 
-import lombok.Data;
-
 public record ReportDTO(
         UUID id,
         UUID reporterId,
@@ -20,8 +18,7 @@ public record ReportDTO(
         String description,
         ReportTypeEnums reportType,
         ReportStatusEnums status,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime createdAt
 ) {
     public ReportDTO(ReportEntity e) {
         this(
@@ -35,8 +32,7 @@ public record ReportDTO(
                 e.getDescription(),
                 e.getReportType(),
                 e.getStatus(),
-                e.getCreatedAt(),
-                e.getUpdatedAt()
+                e.getCreatedAt()
         );
     }
 }

@@ -104,4 +104,12 @@ public class AdminRoomService {
         roomRepository.delete(room);
     }
 
+    public AdminRoomResponse lockRoom(UUID roomId, RoomStatusEnum status){
+        RoomEntity room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new RuntimeException("Room not found: " + roomId));
+        
+        room.setStatus(status);
+        return new AdminRoomResponse(roomRepository.save(room));
+    }
+
 }
