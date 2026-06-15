@@ -8,7 +8,8 @@ import {
   deleteNote,
   togglePin,
   updatePosition,
-  setReminder
+  setReminder,
+  archiveNote
 } from '@/services/noteService'
 
 import type { Note, NoteRequest } from '@/types/NoteType'
@@ -28,7 +29,6 @@ export const useNoteStore = defineStore('notes', () => {
   const filteredNotes = computed(() => {
     if (!notes.value?.length) return []
     if (!searchQuery.value.trim()) return notes.value
-
     const q = searchQuery.value.toLowerCase()
     return notes.value.filter(
       n =>
@@ -50,9 +50,29 @@ export const useNoteStore = defineStore('notes', () => {
     notes.value.unshift(note)
   }
 
+  // ARCHIVE
+async function archiveNoteStore(
+  spaceId: string,
+  id: string
+): Promise<void> {
+  try {
+    await archiveNote(spaceId, id)
+
+    // remove khỏi UI luôn
+    notes.value = notes.value.filter(
+      n => n.id !== id
+    )
+  } catch (e) {
+    error.value = 'Không thể lưu trữ ghi chú'
+    console.error(e)
+  }
+}
   // FETCH
   async function fetchNotes(spaceId: string) {
-    if (currentSpaceId.value) {
+    // ── Guard: không fetch lại nếu đang xem cùng space và đã có notes
+    if (currentSpaceId.value === spaceId && notes.value.length > 0) return
+
+    if (currentSpaceId.value && currentSpaceId.value !== spaceId) {
       noteSocket.unsubscribeAll(currentSpaceId.value)
     }
 
@@ -80,17 +100,14 @@ export const useNoteStore = defineStore('notes', () => {
   async function connectSocket(spaceId: string) {
     await socketService.connect()
 
-    // CREATE
     noteSocket.subscribeCreateNote(spaceId, (payload) => {
       addNoteToList(payload)
     })
 
-    // DELETE
     noteSocket.subscribeDeleteNote(spaceId, (payload) => {
       notes.value = notes.value.filter(n => n.id !== payload)
     })
 
-    // UPDATE
     noteSocket.subscribeUpdateNote(spaceId, (payload) => {
       const idx = notes.value.findIndex(n => n.id === payload.id)
       if (idx !== -1) {
@@ -98,7 +115,6 @@ export const useNoteStore = defineStore('notes', () => {
       }
     })
 
-    // PIN
     noteSocket.subscribetogglePin(spaceId, (payload) => {
       const idx = notes.value.findIndex(n => n.id === payload.id)
       if (idx !== -1) {
@@ -116,10 +132,7 @@ export const useNoteStore = defineStore('notes', () => {
   }
 
   // CREATE
-  async function createNote(
-    spaceId: string,
-    data: NoteRequest
-  ): Promise<Note | null> {
+  async function createNote(spaceId: string, data: NoteRequest): Promise<Note | null> {
     try {
       const res = await create(spaceId, data)
       return res
@@ -131,11 +144,7 @@ export const useNoteStore = defineStore('notes', () => {
   }
 
   // UPDATE
-  async function updateNote(
-    spaceId: string,
-    id: string,
-    data: NoteRequest
-  ) {
+  async function updateNote(spaceId: string, id: string, data: NoteRequest) {
     try {
       await update(spaceId, id, data)
     } catch (e) {
@@ -146,10 +155,7 @@ export const useNoteStore = defineStore('notes', () => {
   }
 
   // DELETE
-  async function deletedNote(
-    spaceId: string,
-    id: string
-  ): Promise<boolean> {
+  async function deletedNote(spaceId: string, id: string): Promise<boolean> {
     try {
       await deleteNote(spaceId, id)
       return true
@@ -161,10 +167,7 @@ export const useNoteStore = defineStore('notes', () => {
   }
 
   // PIN
-  async function changePinStatus(
-    spaceId: string,
-    id: string
-  ): Promise<void> {
+  async function changePinStatus(spaceId: string, id: string): Promise<void> {
     try {
       await togglePin(spaceId, id)
     } catch (e) {
@@ -177,12 +180,7 @@ export const useNoteStore = defineStore('notes', () => {
   async function updateNotePosition(
     spaceId: string,
     id: string,
-    pos: {
-      posX: number
-      posY: number
-      width: number
-      height: number
-    }
+    pos: { posX: number; posY: number; width: number; height: number }
   ): Promise<void> {
     try {
       await updatePosition(spaceId, id, pos)
@@ -211,21 +209,23 @@ export const useNoteStore = defineStore('notes', () => {
     loading,
     error,
     searchQuery,
-
+  
     filteredNotes,
     pinnedNotes,
     unpinnedNotes,
-
+  
     fetchNotes,
     createNote,
     updateNote,
-
+  
     deleteNote: deletedNote,
-
+  
     changePinStatus,
     disconnectSocket,
-
+  
     updateNotePosition,
     setNoteReminder,
+  
+    archiveNote: archiveNoteStore
   }
 })

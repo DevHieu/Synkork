@@ -12,6 +12,7 @@ import { Button as UiButton } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -27,6 +28,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
+  'edit': [room: RoomDetail]
 }>()
 
 const isOpen = computed({
@@ -36,20 +38,34 @@ const isOpen = computed({
 
 const room = ref<RoomDetail | null>(null)
 const isLoading = ref(false)
+const loadError = ref('')
 
-watch(() => props.roomId, async (newId) => {
-  if (!newId)
+watch(() => props.open, async (opened) => {
+  if (!opened || !props.roomId)
     return
 
   isLoading.value = true
+  loadError.value = ''
+  room.value = null
 
   try {
-    room.value = await roomService.getRoomDetail(newId)
+    room.value = await roomService.getRoomDetail(props.roomId)
+  }
+  catch (error) {
+    console.error('Lỗi khi tải chi tiết room:', error)
+    loadError.value = 'Không thể tải chi tiết room này'
   }
   finally {
     isLoading.value = false
   }
 }, { immediate: true })
+
+function handleEdit() {
+  if (room.value) {
+    emit('edit', room.value)
+    isOpen.value = false
+  }
+}
 </script>
 
 <template>
@@ -61,6 +77,10 @@ watch(() => props.roomId, async (newId) => {
             <DialogTitle class="text-[15px] font-semibold">
               Chi tiết Room
             </DialogTitle>
+
+            <DialogDescription class="sr-only">
+              Thông tin chi tiết của room
+            </DialogDescription>
 
             <p
               v-if="room"
@@ -88,6 +108,14 @@ watch(() => props.roomId, async (newId) => {
         <div class="h-px bg-border" />
 
         <div class="h-28 animate-pulse rounded-lg bg-muted" />
+      </div>
+
+      <!-- Error -->
+      <div
+        v-else-if="loadError"
+        class="px-6 py-10 text-center text-sm text-red-500"
+      >
+        {{ loadError }}
       </div>
 
       <template v-else-if="room">
@@ -125,7 +153,7 @@ watch(() => props.roomId, async (newId) => {
                 </p>
 
                 <p class="text-[13px] font-medium">
-                  {{ room.name }}
+                  {{ room.type === 'DM' ? 'Direct Message' : room.name }}
                 </p>
               </div>
 
@@ -193,11 +221,11 @@ watch(() => props.roomId, async (newId) => {
           <div>
             <p class="mb-2.5 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
               <Users class="h-3.5 w-3.5" />
-              Members ({{ room.members.length }})
+              Members ({{ room.members?.length ?? 0 }})
             </p>
 
             <div
-              v-if="room.members.length"
+              v-if="room.members?.length"
               class="space-y-2"
             >
               <div
@@ -235,11 +263,11 @@ watch(() => props.roomId, async (newId) => {
           <div>
             <p class="mb-2.5 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
               <Layers class="h-3.5 w-3.5" />
-              Spaces ({{ room.spaces.length }})
+              Spaces ({{ room.spaces?.length ?? 0 }})
             </p>
 
             <div
-              v-if="room.spaces.length"
+              v-if="room.spaces?.length"
               class="flex flex-wrap gap-2"
             >
               <div
@@ -283,13 +311,21 @@ watch(() => props.roomId, async (newId) => {
           </div>
         </div>
 
-        <div class="flex justify-end border-t border-border px-6 py-4">
+        <div class="flex justify-end gap-2 border-t border-border px-6 py-4">
           <UiButton
             variant="outline"
             size="sm"
             @click="isOpen = false"
           >
             Đóng
+          </UiButton>
+
+          <UiButton
+            v-if="room.type === 'GROUP'"
+            size="sm"
+            @click="handleEdit"
+          >
+            Sửa Room
           </UiButton>
         </div>
       </template>
