@@ -26,6 +26,7 @@ const searchKeyword  = ref('')
 const filterStatus   = ref<ReportStatus | 'ALL'>('ALL')
 const filterType     = ref<ReportType | 'ALL'>('ALL')
 const dateRange = ref(defaultDateRange())
+const defaultRange = defaultDateRange()
 const debouncedSearch = refDebounced(searchKeyword, 500)
 
 const selectedReport = ref<Report | null>(null)
@@ -65,7 +66,9 @@ const fetchReports = async () => {
 }
 
 const hasActiveFilter = computed(() =>
-  !!searchKeyword.value || !!filterStatus.value && filterStatus.value !== 'ALL' || !!filterType.value && filterType.value !== 'ALL'
+  !!searchKeyword.value || !!filterStatus.value && filterStatus.value !== 'ALL' || !!filterType.value && filterType.value !== 'ALL' 
+  || dateRange.value.from.getTime() !== defaultRange.from.getTime() 
+  || dateRange.value.to.getTime() !== defaultRange.to.getTime()
 )
 
 function clearFilters() {
