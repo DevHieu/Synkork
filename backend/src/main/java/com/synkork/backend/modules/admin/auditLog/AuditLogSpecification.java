@@ -36,10 +36,10 @@ public class AuditLogSpecification {
             }
 
             if (hasText(request.action())) {
+                String actionKeyword = "%" + request.action().trim().toLowerCase() + "%";
                 predicates.add(
-                        cb.equal(
-                                cb.upper(root.get("action")),
-                                request.action().trim().toUpperCase()
+                        cb.like(
+                                cb.upper(root.get("action")), actionKeyword
                         )
                 );
             }

@@ -24,3 +24,8 @@ export interface Message {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface MessageRequest {
+  content: string;
+  replyToId: string | null;
+}

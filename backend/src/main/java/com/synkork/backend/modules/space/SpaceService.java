@@ -124,7 +124,7 @@ public class SpaceService {
 
     public Map<String, UUID> createPersonalSpaces(UserEntity user) {
         RoomEntity roomEntity = roomRepository.save(
-                RoomEntity.builder().owner(user).type(RoomTypeEnum.DM).build());
+                RoomEntity.builder().owner(user).type(RoomTypeEnum.PERSONAL).build());
 
         UUID noteId;
         if (user.getPersonalNoteId() == null) {
@@ -146,5 +146,9 @@ public class SpaceService {
                 "roomId", roomEntity.getId(),
                 "noteId", noteId,
                 "calendarId", calendarId);
+    }
+
+    public boolean checkUserAccess(UUID spaceId, UUID currentUserId) {
+        return spaceRepository.hasAccess(spaceId, currentUserId);
     }
 }

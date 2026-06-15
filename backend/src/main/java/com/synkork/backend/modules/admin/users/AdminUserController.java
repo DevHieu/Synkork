@@ -3,6 +3,8 @@ package com.synkork.backend.modules.admin.users;
 import com.synkork.backend.common.response.ApiResponse;
 import com.synkork.backend.common.response.PageMeta;
 import com.synkork.backend.modules.admin.users.dtos.*;
+import com.synkork.backend.modules.user.enums.UserStatusEnum;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -47,7 +49,7 @@ public class AdminUserController {
         return ApiResponse.success(
                 "Create user successfully",
                 adminUserService.createUser(request)
-        );
+        );  
     }
 
     @PatchMapping("/{id}")
@@ -69,5 +71,10 @@ public class AdminUserController {
                 "Delete user successfully",
                 adminUserService.deleteUser(id)
         );
+    }
+
+    @PatchMapping("/{id}/status")
+    public ApiResponse<AdminUserResponse> lockUser(@PathVariable UUID id, @Valid @RequestBody UpdateUserRequest request){
+        return ApiResponse.success("Lock user successfully", adminUserService.lockUser(id, UserStatusEnum.valueOf(request.status())));
     }
 }

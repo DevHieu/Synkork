@@ -5,6 +5,7 @@ import com.synkork.backend.modules.admin.users.dtos.CreateUserRequest;
 import com.synkork.backend.modules.admin.users.dtos.UpdateUserRequest;
 import com.synkork.backend.modules.admin.users.dtos.UserFilterRequest;
 import com.synkork.backend.modules.user.UserEntity;
+import com.synkork.backend.modules.user.enums.PlanEnum;
 import com.synkork.backend.modules.user.enums.RoleEnum;
 import com.synkork.backend.modules.user.enums.UserStatusEnum;
 import lombok.RequiredArgsConstructor;
@@ -65,7 +66,7 @@ public class AdminUserService {
         user.setEmail(req.email());
         user.setDisplayName(displayName);
         user.setPassword(passwordEncoder.encode(tempPassword));
-        user.setRole(RoleEnum.valueOf(req.role().toUpperCase()));
+        user.setRole(RoleEnum.USER);
         user.setStatus(UserStatusEnum.valueOf(req.status().toUpperCase()));
 
         UserEntity saved = userAdminRepository.save(user);
@@ -85,8 +86,8 @@ public class AdminUserService {
             user.setEmail(req.email());
         }
 
-        if (req.role() != null)
-            user.setRole(RoleEnum.valueOf(req.role().toUpperCase()));
+        if (req.plan() != null)
+            user.setCurrentPlan(PlanEnum.valueOf(req.plan().toUpperCase()));
 
         if (req.status() != null)
             user.setStatus(UserStatusEnum.valueOf(req.status().toUpperCase()));
@@ -118,5 +119,14 @@ public class AdminUserService {
             mailSender.send(msg);
         } catch (Exception ignored) {
         }
+    }
+
+    public AdminUserResponse lockUser(UUID userId, UserStatusEnum status) {
+        UserEntity user = userAdminRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy user!"));
+
+        user.setStatus(status);
+        return AdminUserResponse.from(userAdminRepository.save(user));
+        
     }
 }

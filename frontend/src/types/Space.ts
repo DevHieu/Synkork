@@ -4,6 +4,6 @@ export interface Space {
   id: string;
   name: string;
   type: SpaceType;
-  roomType: "GROUP" | "DM";
+  roomType: "GROUP" | "DM" | "PERSONAL";
   restricted: boolean;
 }

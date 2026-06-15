@@ -12,6 +12,7 @@ import "vue3-emoji-picker/css"; // Nó báo lỗi thì kệ mịa nó đi, sửa
 import ReplyBar from "./sub-components/ReplyBar.vue";
 import FilePreview from "./sub-components/FilePreview.vue";
 import PlanLimitDialog from "../dialog/PlanLimitDialog.vue";
+import { useThemeStore } from "@/stores/themeStore.ts";
 
 const { userPlan } = storeToRefs(useUserStore());
 
@@ -221,7 +222,8 @@ onUnmounted(() =>
         bottom: emojiPickerPos.bottom + 'px',
         right: emojiPickerPos.right + 'px',
       }">
-        <EmojiPicker :native="true" :disable-skin-tones="true" @select="onSelectEmoji" />
+        <EmojiPicker :native="true" :disable-skin-tones="true" @select="onSelectEmoji"
+          :theme="useThemeStore().isDark ? 'dark' : 'light'" />
       </div>
 
       <PlanLimitDialog v-model:open="fileSizeDialogOpen" :limit-type="'file'" :file-name="rejectedFile?.name ?? ''"
@@ -259,22 +261,5 @@ onUnmounted(() =>
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-}
-
-:deep(.v3-emoji-picker) {
-  --v3-picker-bg: var(--popover);
-  --v3-picker-fg: var(--foreground);
-  --v3-picker-border: var(--border);
-  --v3-picker-input-bg: var(--muted);
-  --v3-picker-input-border: var(--border);
-  --v3-picker-input-focus-border: var(--primary);
-  --v3-picker-emoji-hover: var(--accent);
-  --v3-group-image-filter: invert(1);
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-}
-
-:global(.dark) :deep(.v3-emoji-picker) {
-  --v3-group-image-filter: invert(1);
 }
 </style>
