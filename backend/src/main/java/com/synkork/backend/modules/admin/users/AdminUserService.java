@@ -120,4 +120,13 @@ public class AdminUserService {
         } catch (Exception ignored) {
         }
     }
+
+    public AdminUserResponse lockUser(UUID userId, UserStatusEnum status) {
+        UserEntity user = userAdminRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy user!"));
+
+        user.setStatus(status);
+        return AdminUserResponse.from(userAdminRepository.save(user));
+        
+    }
 }

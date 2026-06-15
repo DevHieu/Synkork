@@ -9,37 +9,29 @@ export type ReportStatus =
 export interface Report {
   id: string
   reporterId: string
-
+  reporterEmail: string
   targetUserId?: string | null
   targetRoomId?: string | null
-
   targetName: string
-
   reason: string
+  note: string
   description?: string | null
-
   reportType: ReportType
   status: ReportStatus
-
   createdAt: string
-  updatedAt: string
 }
 
 export interface ReportFilterParams {
   search?: string
   status?: ReportStatus | ''
   reportType?: ReportType | ''
-  dateFrom?: string   // yyyy-MM-dd
-  dateTo?: string     // yyyy-MM-dd
-  page?: number       // 0-based
+  fromDate?: string   
+  toDate?: string
+  page?: number
   size?: number
 }
- 
-// ── Kết quả trả về từ server (phân trang) ────────────────────────────
-export interface ReportPageResponse {
-  content: Report[]
-  page: number
-  size: number
-  totalElements: number
-  totalPages: number
+
+export interface UpdateReportStatusPayload {
+  status: ReportStatus
+  reason?: string
 }

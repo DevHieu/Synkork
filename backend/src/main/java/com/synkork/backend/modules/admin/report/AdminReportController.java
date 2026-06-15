@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.UUID;
 
 import com.synkork.backend.common.response.ApiResponse;
-import com.synkork.backend.common.response.DeleteResponse;
 import com.synkork.backend.common.response.PageMeta;
 import com.synkork.backend.modules.admin.report.dtos.ReportResponse;
 import com.synkork.backend.modules.report.ReportEntity;
@@ -13,7 +12,6 @@ import com.synkork.backend.modules.report.enums.ReportTypeEnums;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.synkork.backend.modules.report.ReportService;
@@ -27,17 +25,20 @@ import jakarta.validation.Valid;
 @RequestMapping("/manage/reports")
 public class AdminReportController {
     @Autowired
+    private AdminReportService adminReportService;
+
+    @Autowired
     private ReportService reportService;
 
     @GetMapping
     public ApiResponse<List<ReportResponse>> getReports(@ModelAttribute ReportFilterRequest filter) {
-        Page<ReportResponse> page = reportService.getFilteredReports(filter).map(ReportResponse::new);
+        Page<ReportResponse> page = adminReportService.getFilteredReports(filter).map(ReportResponse::new);
         return ApiResponse.success("Get report list successfully", page.getContent(), PageMeta.from(page));
     }
 
     @GetMapping("/{id}")
     public ApiResponse<ReportDTO> getReportById(@PathVariable UUID id) {
-        return ApiResponse.success("Get report detail successfully", reportService.getReportById(id));
+        return ApiResponse.success("Get report detail successfully", adminReportService.getReportById(id));
     }
 
     @PostMapping("/users")
@@ -56,13 +57,13 @@ public class AdminReportController {
 
     @PatchMapping("/{id}/status")
     public ApiResponse<ReportResponse> updateStatus(@PathVariable UUID id, @Valid @RequestBody ReportUpdateStatusRequest request) {
-        ReportEntity entity = reportService.updateReportStatus(id, request);
+        ReportEntity entity = adminReportService.updateReportStatus(id, request);
         return ApiResponse.success("Report status updated successfully", new ReportResponse(entity));
     }
 
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deleteReport(@PathVariable UUID id) {
-        reportService.deleteReport(id);
+        adminReportService.deleteReport(id);
         return ApiResponse.success("Report deleted successfully", null);
     }
 }
