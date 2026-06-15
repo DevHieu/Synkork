@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Min;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public record UserFilterRequest(
         String search,
@@ -17,10 +18,10 @@ public record UserFilterRequest(
         PlanEnum plan,
 
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-        LocalDate dateFrom,
+        LocalDateTime dateFrom,
 
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-        LocalDate dateTo,
+        LocalDateTime dateTo,
 
         @Min(value = 0, message = "Page phải >= 0")
         Integer page,

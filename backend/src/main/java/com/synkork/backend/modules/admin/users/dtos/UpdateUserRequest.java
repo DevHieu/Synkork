@@ -10,10 +10,10 @@ public record UpdateUserRequest(
         String email,
 
         @Pattern(
-                regexp = "(?i)superadmin|admin|manager|cashier|user",
-                message = "role phải là: superadmin, admin, manager, cashier, user"
+                regexp = "(?i)free|team|business",
+                message = "plan phải là: free, team, business"
         )
-        String role,
+        String plan,
 
         @Pattern(
                 regexp = "(?i)active|inactive|invited|suspended|banned",

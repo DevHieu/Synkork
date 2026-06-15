@@ -6,7 +6,6 @@ import ReplyQuote from "./sub-components/ReplyQuote.vue";
 import FileAttachment from "./sub-components/FileAttachment.vue";
 import type { Message } from "@/types/Message";
 
-import { chatSocket } from "@/services/websocket/chatSocket";
 import { computed, ref, watch } from "vue";
 import { useMessageStore } from "@/stores/messageStore";
 import { useUserStore } from "@/stores/userStore";
@@ -14,8 +13,10 @@ import { storeToRefs } from "pinia";
 import DeleteConfirmDialog from "@/components/dialog/DeleteConfirmDialog.vue";
 import UserInfoPopover from "../dialog/UserInfoPopover.vue";
 import type { MessageEventSuggestion } from "@/types/CalendarSuggestion";
+import { chatService } from "@/services/chatService.ts";
 
 const props = defineProps<{
+  spaceId: string;
   message: Message;
   isGrouped: boolean;
   isDifferentDay: boolean;
@@ -55,7 +56,7 @@ const handleSaveEdit = () => {
     handleCancelEdit();
     return;
   }
-  chatSocket.updateMessage({ ...props.message, content: trimmed });
+  chatService.updateMessage(props.spaceId, props.message.id, { content: trimmed, replyToId: null }); // Null thì tại update chỉ có update text thôi
   isEditing.value = false;
 };
 
@@ -64,7 +65,7 @@ const handleCancelEdit = () => {
 };
 
 const handleDelete = () => {
-  chatSocket.deleteMessage(props.message);
+  chatService.deleteMessage(props.spaceId, props.message.id);
 };
 
 const handleReply = () => messageStore.setReply(props.message);

@@ -22,7 +22,7 @@ import type { EventFormData } from "@/components/calendar/composables/useEventFo
 const spaceStore = useSpaceStore();
 const userStore = useUserStore();
 const calendarSuggestionStore = useSuggestionStore();
-const { currentSpace } = storeToRefs(spaceStore);
+const { currentSpace, isPersonalSpace } = storeToRefs(spaceStore);
 const { user } = storeToRefs(userStore);
 
 // Current user ID

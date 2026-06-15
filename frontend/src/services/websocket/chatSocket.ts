@@ -17,18 +17,6 @@ export const chatSocket = {
     );
   },
 
-  sendMessage(msg: {
-    content: string;
-    spaceId: string;
-    replyToId?: string | null;
-  }) {
-    if (!socketService.isConnected()) {
-      throw new Error("DISCONNECTED");
-    }
-
-    socketService.publish("/app/chat.sendMessage", msg);
-  },
-
   subscribeMessages(spaceId: string, callback: (msg: Message) => void) {
     return socketService.subscribe(
       `/topic/space/${spaceId}/messages`,
@@ -36,19 +24,11 @@ export const chatSocket = {
     );
   },
 
-  deleteMessage(message: Message) {
-    socketService.publish("/app/chat.deleteMessage", message);
-  },
-
   subscribeDelete(spaceId: string, callback: (id: string) => void) {
     return socketService.subscribe(
       `/topic/space/${spaceId}/messages/delete`,
       callback,
     );
-  },
-
-  updateMessage(message: Message) {
-    socketService.publish("/app/chat.updateMessage", message);
   },
 
   subscribeUpdate(spaceId: string, callback: (msg: Message) => void) {

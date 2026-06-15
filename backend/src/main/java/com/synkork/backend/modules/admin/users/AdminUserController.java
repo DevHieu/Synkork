@@ -49,7 +49,7 @@ public class AdminUserController {
         return ApiResponse.success(
                 "Create user successfully",
                 adminUserService.createUser(request)
-        );
+        );  
     }
 
     @PatchMapping("/{id}")

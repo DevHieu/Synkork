@@ -117,7 +117,8 @@ import {
   computed,
   watch,
   onUnmounted,
-  nextTick
+  nextTick,
+  onMounted
 } from 'vue'
 
 import { useRoute } from 'vue-router'
@@ -156,7 +157,7 @@ const route = useRoute()
 const spaceId = computed(() => route.params.spaceId as string)
 const spaceStore = useSpaceStore()
 const store = useNoteStore()
-const { currentSpace } = storeToRefs(spaceStore)
+const { currentSpace, isPersonalSpace } = storeToRefs(spaceStore)
 
 const dialogOpen = ref(false)
 const detailOpen = ref(false)

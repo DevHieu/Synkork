@@ -10,7 +10,7 @@ import {
 
 import { useTaskStore } from '@/stores/taskStore'
 import { useSpaceStore } from '@/stores/spaceStore'
-import { useRoute } from 'vue-router'
+import { useRoomMemberStore } from '@/stores/roomMemberStore'
 
 const props = defineProps<{
     open: boolean
@@ -29,6 +29,9 @@ const { currentSpace } = storeToRefs(spaceStore)
 
 const taskStore = useTaskStore()
 const { archivedColumns, archivedCards, columns } = storeToRefs(taskStore)
+
+const memberStore = useRoomMemberStore();
+const { canManage } = storeToRefs(memberStore)
 
 const archiveTab = ref<'columns' | 'cards'>('columns')
 const unarchiveError = ref<string | null>(null)
@@ -108,11 +111,9 @@ const handleUnarchiveCard = async (cardId: string) => {
                         Không có cột nào đang lưu trữ
                     </div>
                     <template v-else>
-                        <div class="flex justify-end pb-1">
-                            <button
-                                class="flex items-center gap-1 text-xs text-destructive hover:underline"
-                                @click="emit('deleteAllArchivedColumns')"
-                            >
+                        <div v-if="canManage" class="flex justify-end pb-1">
+                            <button class="flex items-center gap-1 text-xs text-destructive hover:underline"
+                                @click="emit('deleteAllArchivedColumns')">
                                 <Trash2 class="w-3 h-3" />
                                 Xóa tất cả
                             </button>
@@ -124,10 +125,12 @@ const handleUnarchiveCard = async (cardId: string) => {
                                 {{ col.name }}
                             </span>
                             <div>
-                                <button class="text-xs text-primary hover:underline pe-3" @click="emit('deleteColumn', col.id)">
+                                <button v-if="canManage" class="text-xs text-primary hover:underline pe-3"
+                                    @click="emit('deleteColumn', col.id)">
                                     Xóa
                                 </button>
-                                <button class="text-xs text-primary hover:underline" @click="handleUnarchiveColumn(col.id)">
+                                <button class="text-xs text-primary hover:underline"
+                                    @click="handleUnarchiveColumn(col.id)">
                                     Khôi phục
                                 </button>
                             </div>
@@ -142,10 +145,9 @@ const handleUnarchiveCard = async (cardId: string) => {
 
                     <template v-else>
                         <div class="flex justify-end pb-1">
-                            <button
+                            <button v-if="canManage"
                                 class="flex items-center gap-1 text-xs text-destructive hover:underline"
-                                @click="emit('deleteAllArchivedCards')"
-                            >
+                                @click="emit('deleteAllArchivedCards')">
                                 <Trash2 class="w-3 h-3" /> Xóa tất cả
                             </button>
                         </div>
@@ -156,7 +158,8 @@ const handleUnarchiveCard = async (cardId: string) => {
                                     {{ card.title }}
                                 </span>
                                 <div>
-                                    <button class="text-xs text-primary hover:underline pe-3" @click="emit('deleteCard', card.columnId, card.id)">
+                                    <button v-if="canManage" class="text-xs text-primary hover:underline pe-3"
+                                        @click="emit('deleteCard', card.columnId, card.id)">
                                         Xóa
                                     </button>
                                     <button class="text-xs text-primary hover:underline"
@@ -166,7 +169,7 @@ const handleUnarchiveCard = async (cardId: string) => {
                                 </div>
                             </div>
                             <div v-if="card.columnId" class="text-xs text-muted-foreground mt-1">
-                                Cột: {{ columns.find(c => c.id === card.columnId)?.name ?? '—' }}
+                                Cột: {{columns.find(c => c.id === card.columnId)?.name ?? '—'}}
                             </div>
                         </div>
                     </template>

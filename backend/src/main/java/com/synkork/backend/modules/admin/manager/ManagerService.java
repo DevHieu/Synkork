@@ -1,0 +1,144 @@
+package com.synkork.backend.modules.admin.manager;
+
+import com.synkork.backend.modules.admin.manager.dto.CreateManagerRequest;
+import com.synkork.backend.modules.admin.manager.dto.ManagerPageResponse;
+import com.synkork.backend.modules.admin.manager.dto.ManagerResponse;
+import com.synkork.backend.modules.admin.manager.dto.UpdateManagerRequest;
+import com.synkork.backend.modules.user.UserEntity;
+import com.synkork.backend.modules.user.enums.RoleEnum;
+import com.synkork.backend.modules.user.enums.UserStatusEnum;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class ManagerService {
+
+    private final ManagerRepository managerRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    @Autowired(required = false)
+    private JavaMailSender mailSender;
+
+    public ManagerPageResponse getManagers(
+            String keyword,
+            String status,
+            Pageable pageable) {
+        UserStatusEnum statusEnum = parseStatus(status);
+        String normalizedKeyword = keyword == null || keyword.isBlank() ? null : keyword.trim();
+
+        Specification<UserEntity> specification = ManagerSpecification.hasKeyword(normalizedKeyword)
+                .and(ManagerSpecification.hasRole(RoleEnum.MANAGER))
+                .and(ManagerSpecification.hasStatus(statusEnum));
+
+        Page<UserEntity> result = managerRepository.findAll(specification, pageable);
+        return ManagerPageResponse.from(result);
+    }
+
+    public ManagerResponse getManager(UUID id) {
+        return ManagerResponse.from(findManagedAccount(id));
+    }
+
+    @Transactional
+    public ManagerResponse createManager(CreateManagerRequest request) {
+        if (managerRepository.existsByEmail(request.getEmail())) {
+            throw new IllegalArgumentException("Email da duoc su dung");
+        }
+        if (managerRepository.existsByUsername(request.getUsername())) {
+            throw new IllegalArgumentException("Username da duoc su dung");
+        }
+
+        String temporaryPassword = UUID.randomUUID().toString().substring(0, 8);
+        UserEntity account = new UserEntity();
+        account.setDisplayName(request.getDisplayName().trim());
+        account.setUsername(request.getUsername().trim());
+        account.setEmail(request.getEmail().trim());
+        account.setPassword(passwordEncoder.encode(temporaryPassword));
+        account.setRole(RoleEnum.MANAGER);
+        account.setStatus(parseRequiredStatus(request.getStatus()));
+
+        UserEntity saved = managerRepository.save(account);
+        sendWelcomeEmail(saved, temporaryPassword);
+        return ManagerResponse.from(saved);
+    }
+
+    @Transactional
+    public ManagerResponse updateManager(UUID id, UpdateManagerRequest request) {
+        UserEntity account = findManagedAccount(id);
+
+        if (request.getDisplayName() != null) {
+            account.setDisplayName(request.getDisplayName().trim());
+        }
+
+        if (request.getEmail() != null && !request.getEmail().equalsIgnoreCase(account.getEmail())) {
+            if (managerRepository.existsByEmail(request.getEmail())) {
+                throw new IllegalArgumentException("Email da duoc su dung");
+            }
+            account.setEmail(request.getEmail().trim());
+        }
+
+        if (request.getStatus() != null) {
+            account.setStatus(parseRequiredStatus(request.getStatus()));
+        }
+
+        return ManagerResponse.from(managerRepository.save(account));
+    }
+
+    @Transactional
+    public Map<String, String> deleteManager(UUID id) {
+        managerRepository.delete(findManagedAccount(id));
+        return Map.of("message", "Xoa tai khoan manager thanh cong");
+    }
+
+    private UserEntity findManagedAccount(UUID id) {
+        UserEntity account = managerRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay tai khoan"));
+        if (account.getRole() != RoleEnum.MANAGER) {
+            throw new IllegalArgumentException("Tai khoan khong phai manager");
+        }
+        return account;
+    }
+
+    private UserStatusEnum parseStatus(String status) {
+        if (status == null || status.isBlank()) return null;
+        return parseRequiredStatus(status);
+    }
+
+    private UserStatusEnum parseRequiredStatus(String status) {
+        try {
+            return UserStatusEnum.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Trang thai khong hop le");
+        }
+    }
+
+    private void sendWelcomeEmail(UserEntity account, String temporaryPassword) {
+        if (mailSender == null) return;
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(account.getEmail());
+            message.setSubject("[Synkork] Tai khoan quan tri da duoc tao");
+            message.setText(String.format(
+                    "Xin chao %s,\n\nUsername: %s\nMat khau tam thoi: %s\n\n"
+                            + "Vui long doi mat khau sau khi dang nhap.",
+                    account.getDisplayName(),
+                    account.getUsername(),
+                    temporaryPassword
+            ));
+            mailSender.send(message);
+        } catch (Exception ignored) {
+            // Account creation should not fail when email delivery is unavailable.
+        }
+    }
+}

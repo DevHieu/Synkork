@@ -1,5 +1,6 @@
 package com.synkork.backend.modules.user;
 
+import com.synkork.backend.common.utils.FileService;
 import com.synkork.backend.modules.user.dto.ChangePasswordDto;
 import com.synkork.backend.modules.user.dto.UpdateprofileDto;
 import com.synkork.backend.modules.user.dto.UserInfoDto;
@@ -7,7 +8,6 @@ import com.synkork.backend.modules.user.enums.UserStatusEnum;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +28,9 @@ public class UserService {
 
     @Autowired
     PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private FileService fileService;
 
     public List<UserEntity> findAll() {
         return userRepository.findAll();
@@ -55,6 +58,7 @@ public class UserService {
     public UserEntity create(@NonNull UserEntity user) {
         return userRepository.save(user);
     }
+
 
     public UserEntity updateUser(UserEntity existedUser) {
         return userRepository.save(existedUser);
@@ -127,6 +131,12 @@ public class UserService {
 
     public UserInfoDto updateAvatar(String avatarUrl, String avatarId) {
         UserEntity user = getCurrentUser();
+
+        // Xóa file cũ đi. CDN free nên xóa bớt cho nhẹ :)))
+        if (user.getAvatarId() != null) {
+            fileService.deleteFile(user.getAvatarId(), "image");
+        }
+
         user.setAvatarUrl(avatarUrl);
         user.setAvatarId(avatarId);
         return new UserInfoDto(userRepository.save(user));

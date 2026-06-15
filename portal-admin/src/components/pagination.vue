@@ -1,12 +1,12 @@
 <script setup lang="ts">
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+} from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  ChevronsLeft, 
-  ChevronsRight 
-} from '@lucide/vue'
 
 interface Props {
   total: number
@@ -31,7 +31,8 @@ const safeTotal = computed(() => Math.max(1, Number(props.total) || 1))
 const safeCurrentPage = computed(() => Math.min(Math.max(1, props.currentPage), safeTotal.value))
 
 const safeTotalCount = computed(() => {
-  if (typeof props.totalCount === 'number') return props.totalCount
+  if (typeof props.totalCount === 'number')
+    return props.totalCount
   return Math.max(0, (safeTotal.value - 1) * props.perPage + 1)
 })
 
@@ -62,13 +63,15 @@ const pageNumbers = computed(() => {
   }
 
   pages.push(1)
-  if (rangeStart > 2) pages.push('...')
+  if (rangeStart > 2)
+    pages.push('...')
 
   for (let i = rangeStart; i <= rangeEnd; i++) {
     pages.push(i)
   }
 
-  if (rangeEnd < safeTotal.value - 1) pages.push('...')
+  if (rangeEnd < safeTotal.value - 1)
+    pages.push('...')
   pages.push(safeTotal.value)
 
   return pages
@@ -85,12 +88,13 @@ function goToPage(page: number) {
 function handleJumpSubmit(event: Event) {
   event.preventDefault()
   const nextPage = Number(jumpPage.value)
-  if (!Number.isNaN(nextPage)) goToPage(nextPage)
+  if (!Number.isNaN(nextPage))
+    goToPage(nextPage)
 }
 </script>
 
 <template>
-  <div class="mt-4 flex flex-col gap-3 border-t border-border pt-4 lg:flex-row lg:items-center lg:justify-between">
+  <div class="my-3 px-4 flex flex-col gap-3 border-t border-border pt-4 lg:flex-row lg:items-center lg:justify-between">
     <div class="text-sm text-muted-foreground">
       {{ t('pagination.currentRecord', {
         from: showingFrom.toLocaleString(numberLocale),
