@@ -123,6 +123,10 @@ public class AdminUserService {
     public AdminUserResponse lockUser(UUID userId, UserStatusEnum status) {
         UserEntity user = userAdminRepository.findById(userId)
             .orElseThrow(() -> new RuntimeException("Không tìm thấy user!"));
+            
+        if(user.getStatus() == UserStatusEnum.BANNED){
+            throw new RuntimeException("User này đã bị khóa!");
+        }
 
         user.setStatus(status);
         return AdminUserResponse.from(userAdminRepository.save(user));

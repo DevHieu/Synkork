@@ -107,6 +107,10 @@ public class AdminRoomService {
     public AdminRoomResponse lockRoom(UUID roomId, RoomStatusEnum status){
         RoomEntity room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new RuntimeException("Room not found: " + roomId));
+
+        if(room.getStatus() == RoomStatusEnum.LOCKED){
+                throw new RuntimeException("Room already locked!");
+        }
         
         room.setStatus(status);
         return new AdminRoomResponse(roomRepository.save(room));
