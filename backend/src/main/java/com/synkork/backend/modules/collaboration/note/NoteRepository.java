@@ -12,12 +12,10 @@ import java.util.UUID;
 @Repository
 public interface NoteRepository extends JpaRepository<NoteEntity, UUID> {
 
-    List<NoteEntity> findBySpaceIdAndArchivedFalse(UUID spaceUuid);
-
-    List<NoteEntity> findBySpaceIdAndArchivedTrue(UUID spaceUuid);
+    List<NoteEntity> findBySpaceIdAndArchived(UUID spaceUuid, Boolean archived);
 
     List<NoteEntity> findByTitleContainingIgnoreCase(String title);
 
-    @Query("SELECT n FROM NoteEntity n WHERE n.reminderAt <= :now AND n.reminderSent = false AND n.reminderAt IS NOT NULL")
+    @Query("SELECT n FROM NoteEntity n WHERE n.reminderAt <= :now AND n.reminderSent = false")
     List<NoteEntity> findPendingReminders(@Param("now") Instant now);
 }

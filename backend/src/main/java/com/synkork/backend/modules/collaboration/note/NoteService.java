@@ -33,7 +33,7 @@ public class NoteService {
 
     public List<NoteResponse> getAllNotesBySpaceId(String spaceId) {
         UUID spaceUuid = UUID.fromString(spaceId);
-        List<NoteEntity> notes = noteRepository.findBySpaceIdAndArchivedFalse(spaceUuid);
+        List<NoteEntity> notes = noteRepository.findBySpaceIdAndArchived(spaceUuid, false);
         return notes.stream().map(NoteResponse::new).collect(Collectors.toList());
     }
 
