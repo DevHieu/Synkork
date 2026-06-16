@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.admin.auditLog.dtos;
 
 import com.synkork.backend.modules.admin.auditLog.AuditLogEntity;
+import com.synkork.backend.modules.admin.auditLog.enums.LogActionEnum;
 import com.synkork.backend.modules.admin.auditLog.enums.LogEntityTypeEnum;
 
 import java.time.LocalDateTime;
@@ -10,7 +11,7 @@ public record AuditLogDetailResponse(
         UUID id,
         UUID actorId,
         String actorEmail,
-        String action,
+        LogActionEnum action,
         LogEntityTypeEnum entityType,
         String entityId,
         String entityName,
