@@ -26,4 +26,11 @@ public class CreateManagerRequest {
             message = "Trang thai phải là active, inactive hoặc banned"
     )
     private String status;
+
+    @NotBlank(message = "Vai tro khong duoc de trong")
+    @Pattern(
+            regexp = "(?i)manager|admin",
+            message = "Vai tro phai la manager hoac admin"
+    )
+    private String role;
 }

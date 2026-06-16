@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -34,12 +35,15 @@ public class ManagerService {
     public ManagerPageResponse getManagers(
             String keyword,
             String status,
+            String role,
             Pageable pageable) {
         UserStatusEnum statusEnum = parseStatus(status);
+        RoleEnum roleEnum = parseRole(role);
         String normalizedKeyword = keyword == null || keyword.isBlank() ? null : keyword.trim();
 
         Specification<UserEntity> specification = ManagerSpecification.hasKeyword(normalizedKeyword)
-                .and(ManagerSpecification.hasRole(RoleEnum.MANAGER))
+                .and(ManagerSpecification.hasAnyRole(Set.of(RoleEnum.MANAGER, RoleEnum.ADMIN)))
+                .and(ManagerSpecification.hasRole(roleEnum))
                 .and(ManagerSpecification.hasStatus(statusEnum));
 
         Page<UserEntity> result = managerRepository.findAll(specification, pageable);
@@ -65,7 +69,7 @@ public class ManagerService {
         account.setUsername(request.getUsername().trim());
         account.setEmail(request.getEmail().trim());
         account.setPassword(passwordEncoder.encode(temporaryPassword));
-        account.setRole(RoleEnum.MANAGER);
+        account.setRole(parseManagedRole(request.getRole()));
         account.setStatus(parseRequiredStatus(request.getStatus()));
 
         UserEntity saved = managerRepository.save(account);
@@ -92,6 +96,10 @@ public class ManagerService {
             account.setStatus(parseRequiredStatus(request.getStatus()));
         }
 
+        if (request.getRole() != null) {
+            account.setRole(parseManagedRole(request.getRole()));
+        }
+
         return ManagerResponse.from(managerRepository.save(account));
     }
 
@@ -104,10 +112,27 @@ public class ManagerService {
     private UserEntity findManagedAccount(UUID id) {
         UserEntity account = managerRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Khong tim thay tai khoan"));
-        if (account.getRole() != RoleEnum.MANAGER) {
-            throw new IllegalArgumentException("Tai khoan khong phai manager");
+        if (account.getRole() != RoleEnum.MANAGER && account.getRole() != RoleEnum.ADMIN) {
+            throw new IllegalArgumentException("Tai khoan khong phai manager hoac admin");
         }
         return account;
+    }
+
+    private RoleEnum parseManagedRole(String role) {
+        try {
+            RoleEnum parsedRole = RoleEnum.valueOf(role.toUpperCase());
+            if (parsedRole != RoleEnum.MANAGER && parsedRole != RoleEnum.ADMIN) {
+                throw new IllegalArgumentException();
+            }
+            return parsedRole;
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Vai tro phai la manager hoac admin");
+        }
+    }
+
+    private RoleEnum parseRole(String role) {
+        if (role == null || role.isBlank()) return null;
+        return parseManagedRole(role);
     }
 
     private UserStatusEnum parseStatus(String status) {

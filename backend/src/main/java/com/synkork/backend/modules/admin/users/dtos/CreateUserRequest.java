@@ -23,5 +23,11 @@ public record CreateUserRequest(
                 regexp = "(?i)active|inactive|banned",
                 message = "status phải là: active, inactive, banned"
         )
-        String status
+        String status,
+
+        @Pattern(
+                regexp = "(?i)user",
+                message = "role must be user"
+        )
+        String role
 ) {}

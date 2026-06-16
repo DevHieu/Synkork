@@ -17,10 +17,10 @@ public record UserFilterRequest(
         UserStatusEnum status,
         PlanEnum plan,
 
-        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
         LocalDateTime dateFrom,
 
-        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
         LocalDateTime dateTo,
 
         @Min(value = 0, message = "Page phải >= 0")
