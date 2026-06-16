@@ -230,10 +230,8 @@ watch(
                     </div>
                 </div>
 
-                <ArchiveTask v-model:open="isArchiveOpen" 
-                    @delete-column="confirmDeleteColumn" 
-                    @delete-card="confirmDeleteCard"
-                    @delete-all-archived-cards="confirmDeleteAllArchivedCards"
+                <ArchiveTask v-model:open="isArchiveOpen" @delete-column="confirmDeleteColumn"
+                    @delete-card="confirmDeleteCard" @delete-all-archived-cards="confirmDeleteAllArchivedCards"
                     @delete-all-archived-columns="confirmDeleteAllArchivedColumns">
                     <template #trigger>
                         <button class="ms-5">
@@ -247,9 +245,9 @@ watch(
                 <draggable v-model="columns" group="columns" item-key="id" handle=".column-handle"
                     @change="onColumnMove" class="flex gap-6 items-start h-full">
                     <template #item="{ element: col }">
-                        <TaskColumn :column="col" :space-name="currentSpace?.name ?? ''"
-                            @edit-column="openColumnDialog" @archive-column="archive(col.id)"
-                            @add-card="openCardDialog" @archive-card="archive" @card-move="onCardMove" />
+                        <TaskColumn :column="col" :space-name="currentSpace?.name ?? ''" @edit-column="openColumnDialog"
+                            @archive-column="archive(col.id)" @add-card="openCardDialog" @archive-card="archive"
+                            @card-move="onCardMove" />
                     </template>
                 </draggable>
 
@@ -273,13 +271,11 @@ watch(
     <ColumnFormDialog v-model:open="isColumnDialogOpen" :column-data="editingCol" @save="handleSaveColumn" />
     <DeleteConfirmDialog v-model:open="isDeleteOpen" :title="deleteType === 'column' ? 'Xóa cột này?' : 'Xóa thẻ này?'"
         :description="deleteType === 'column' ? 'Toàn bộ thẻ trong cột này sẽ bị mất.' : 'Bạn không thể khôi phục thẻ này sau khi xóa.'"
-        @confirm= "handleDeleteArchived" />
-    <DeleteConfirmDialog
-        v-model:open="isDeleteAllOpen"
+        @confirm="handleDeleteArchived" />
+    <DeleteConfirmDialog v-model:open="isDeleteAllOpen"
         :title="deleteAllType === 'columns' ? 'Xóa tất cả cột?' : 'Xóa tất cả thẻ?'"
         :description="deleteAllType === 'columns' ? 'Toàn bộ các cột và thẻ bên trong sẽ bị xóa vĩnh viễn.' : 'Toàn bộ thẻ đã lưu trữ sẽ bị xóa vĩnh viễn.'"
-        @confirm="handleDeleteAllArchived"
-    />
+        @confirm="handleDeleteAllArchived" />
 </template>
 
 <style scoped></style>

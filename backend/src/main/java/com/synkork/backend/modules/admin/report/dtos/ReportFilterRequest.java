@@ -1,6 +1,6 @@
 package com.synkork.backend.modules.admin.report.dtos;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import com.synkork.backend.common.dtos.PageableFilter;
 import jakarta.validation.constraints.Max;
@@ -15,11 +15,11 @@ public record ReportFilterRequest(
         ReportStatusEnums status,
         ReportTypeEnums reportType,
 
-        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-        LocalDate dateFrom,
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        LocalDateTime fromDate,
 
-        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-        LocalDate dateTo,
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        LocalDateTime toDate,
 
         @Min(value = 0, message = "Page phải >= 0")
         Integer page,
@@ -30,8 +30,8 @@ public record ReportFilterRequest(
 ) implements PageableFilter {
 
     public void validate() {
-        if (dateFrom != null && dateTo != null && dateFrom.isAfter(dateTo)) {
-            throw new IllegalArgumentException("dateFrom phải nhỏ hơn hoặc bằng dateTo");
+        if (fromDate != null && toDate != null && fromDate.isAfter(toDate)) {
+            throw new IllegalArgumentException("fromDate phải nhỏ hơn hoặc bằng toDate");
         }
     }
 }

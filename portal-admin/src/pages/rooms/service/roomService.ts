@@ -40,4 +40,9 @@ export const roomService = {
 
     return res.data.data || []
   },
+  
+  async lockRoom(roomId: string, status: string){
+    const res = await axiosClient.patch(`/api/manage/rooms/${roomId}/status`, { status })
+    return res.data
+  }
 }

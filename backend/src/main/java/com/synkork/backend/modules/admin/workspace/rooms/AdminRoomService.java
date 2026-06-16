@@ -147,4 +147,17 @@ public class AdminRoomService {
         return roomRepository.findById(UUID.fromString(roomId))
                 .orElseThrow(() -> new RuntimeException("Room not found: " + roomId));
     }
+  
+    public AdminRoomResponse lockRoom(UUID roomId, RoomStatusEnum status){
+        RoomEntity room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new RuntimeException("Room not found: " + roomId));
+
+        if(room.getStatus() == RoomStatusEnum.LOCKED){
+                throw new RuntimeException("Room already locked!");
+        }
+        
+        room.setStatus(status);
+        return new AdminRoomResponse(roomRepository.save(room));
+    }
+
 }

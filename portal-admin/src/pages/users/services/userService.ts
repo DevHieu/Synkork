@@ -17,9 +17,12 @@ export const userService = {
 
   // Tạo user mới
   async create(data: {
-    displayName: string
+    firstName: string
+    lastName: string
+    username: string
     email: string
     status: string
+    plan: string
   }) {
     const res = await axiosClient.post('/api/manage/users', data)
     return res.data
@@ -41,4 +44,5 @@ export const userService = {
     const res = await axiosClient.patch(`/api/manage/users/${id}/status`, { status })
     return res.data
   },
+
 }

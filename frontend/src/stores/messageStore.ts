@@ -5,6 +5,7 @@ import {
   getPinnedChatList,
   getAroundMessage,
   sendFileMessage as sendFileMessageApi,
+  chatService,
 } from "@/services/chatService";
 import { chatSocket } from "@/services/websocket/chatSocket";
 import { socketService } from "@/services/websocket/socketService";
@@ -222,11 +223,10 @@ export const useMessageStore = defineStore("message", {
           this.messages = this.messages.filter(
             (m) => !textTempIds.includes(m.id),
           );
-          chatSocket.sendMessage({
+          await chatService.sendMessage(spaceId, {
             content,
-            spaceId,
             replyToId: replyId,
-          });
+          })
         }
 
         if (files && formData) {

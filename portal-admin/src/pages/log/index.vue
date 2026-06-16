@@ -83,13 +83,13 @@ async function fetchLogs() {
     }
 
     if (dateRange.value?.from) {
-      const fromDate = typeof dateRange.value.from === 'string' ? new Date(dateRange.value.from) : dateRange.value.from
-      queryParams.fromDate = formatToISODateTime(fromDate)
+      const dateFrom = typeof dateRange.value.from === 'string' ? new Date(dateRange.value.from) : dateRange.value.from
+      queryParams.dateFrom = formatToISODateTime(dateFrom)
     }
 
     if (dateRange.value?.to) {
-      const toDate = typeof dateRange.value.to === 'string' ? new Date(dateRange.value.to) : dateRange.value.to
-      queryParams.toDate = formatToISODateTime(toDate, true) // true để lấy 23:59:59
+      const dateTo = typeof dateRange.value.to === 'string' ? new Date(dateRange.value.to) : dateRange.value.to
+      queryParams.dateTo = formatToISODateTime(dateTo, true) // true để lấy 23:59:59
     }
     const response = await logService.getLogs({ params: queryParams })
 

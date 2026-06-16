@@ -11,13 +11,10 @@ export const useUserStore = defineStore("users", {
 
   actions: {
     async getUserInfo() {
-      console.trace("[getUserInfo] Trace");
       this.loading = true;
       try {
         const response = await getUserInfo();
         this.user = response.data;
-        console.log("user: " + JSON.stringify(this.user));
-
         if (this.user?.id) {
           const notificationStore = useNotificationStore()
           try {
@@ -25,7 +22,7 @@ export const useUserStore = defineStore("users", {
           } catch (e) {
             console.warn("Không load được notifications:", e)
           }
-          await notificationStore.connect(this.user.id)
+          await notificationStore.connect()
         }
       } catch (error) {
         console.error("Error fetching user info:", error);

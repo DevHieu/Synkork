@@ -253,8 +253,8 @@ import SidebarTrigger from '../ui/sidebar/SidebarTrigger.vue'
 const route      = useRoute()
 const spaceId    = computed(() => route.params.spaceId as string)
 const spaceStore = useSpaceStore()
-const store      = useNoteStore()
-const { currentSpace } = storeToRefs(spaceStore)
+const store = useNoteStore()
+const { currentSpace, isPersonalSpace } = storeToRefs(spaceStore)
 
 const dialogOpen     = ref(false)
 const detailOpen     = ref(false)

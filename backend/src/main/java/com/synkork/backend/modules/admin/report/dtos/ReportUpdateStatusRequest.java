@@ -5,5 +5,7 @@ import jakarta.validation.constraints.NotNull;
 
 public record ReportUpdateStatusRequest(
         @NotNull(message = "Status không được để trống")
-        ReportStatusEnums status
+        ReportStatusEnums status,
+
+        String note
 ) {}
