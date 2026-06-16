@@ -45,7 +45,7 @@ public class AuditLogService {
                 .entityType(data.getEntityType())
                 .entityId(data.getEntityId())
                 .entityName(data.getEntityName())
-                .workspaceId(UUID.fromString(data.getWorkspaceId()))
+                .workspaceId(data.getWorkspaceId())
                 .description(data.getDescription())
                 .metadata(data.getMetadata())
                 .build();
