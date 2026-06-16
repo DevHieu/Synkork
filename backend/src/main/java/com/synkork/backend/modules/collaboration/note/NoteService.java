@@ -33,7 +33,7 @@ public class NoteService {
 
     public List<NoteResponse> getAllNotesBySpaceId(String spaceId) {
         UUID spaceUuid = UUID.fromString(spaceId);
-        List<NoteEntity> notes = noteRepository.findBySpaceId(spaceUuid);
+        List<NoteEntity> notes = noteRepository.findBySpaceIdAndArchivedFalse(spaceUuid);
         return notes.stream().map(NoteResponse::new).collect(Collectors.toList());
     }
 
@@ -65,6 +65,7 @@ public class NoteService {
             .posY(request.getPosY() != null ? request.getPosY() : 0)
             .width(request.getWidth() != null ? request.getWidth() : 3)
             .height(request.getHeight() != null ? request.getHeight() : 2)
+            .archived(false)
             .build();
 
         return new NoteResponse(noteRepository.save(note));
@@ -97,6 +98,15 @@ public class NoteService {
             .orElseThrow(() -> new RuntimeException("Note not found: " + id));
 
         note.setPinned(!note.getPinned());
+        return new NoteResponse(noteRepository.save(note));
+    }
+
+    public NoteResponse toggleArchive(String id) {
+        UUID noteId = UUID.fromString(id);
+        NoteEntity note = noteRepository.findById(noteId)
+            .orElseThrow(() -> new RuntimeException("Note not found: " + id));
+
+        note.setArchived(!Boolean.TRUE.equals(note.getArchived()));
         return new NoteResponse(noteRepository.save(note));
     }
 

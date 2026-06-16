@@ -14,17 +14,29 @@ public class AdminRoomResponse {
     private String name;
     private String avatarUrl;
     private String description;
+    private RoomTypeEnum type;
     private RoomStatusEnum status;
     private int memberCount;
+    private String inviteCode;
     private LocalDateTime createdAt;
+
+    private UUID ownerId;
+    private String ownerUsername;
 
     public AdminRoomResponse(RoomEntity room) {
         this.id = room.getId();
         this.name = room.getName();
         this.avatarUrl = room.getAvatarUrl();
         this.description = room.getDescription();
+        this.type = room.getType();
         this.status = room.getStatus();
         this.memberCount = room.getRoomMembers() != null ? room.getRoomMembers().size() : 0;
+        this.inviteCode = room.getInviteCode();
         this.createdAt = room.getCreatedAt();
+
+        if (room.getOwner() != null) {
+            this.ownerId = room.getOwner().getId();
+            this.ownerUsername = room.getOwner().getUsername();
+        }
     }
 }

@@ -12,7 +12,9 @@ import java.util.UUID;
 @Repository
 public interface NoteRepository extends JpaRepository<NoteEntity, UUID> {
 
-    List<NoteEntity> findBySpaceId(UUID spaceUuid);
+    List<NoteEntity> findBySpaceIdAndArchivedFalse(UUID spaceUuid);
+
+    List<NoteEntity> findBySpaceIdAndArchivedTrue(UUID spaceUuid);
 
     List<NoteEntity> findByTitleContainingIgnoreCase(String title);
 
