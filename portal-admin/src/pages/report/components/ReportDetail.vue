@@ -274,7 +274,7 @@ function formatDate(iso: string) {
               Resolve (Accept)
             </Button>
 
-            <Button variant="destructive" class="flex-1 gap-2" @click="isDismissDialogOpen = true">
+            <Button variant="destructive" class="flex-1 gap-2" @click="isDismissDialogOpen = true" :disabled="isTargetLocked">
               <XCircle class="h-4 w-4" />
               Dismiss (Reject)
             </Button>
