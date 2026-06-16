@@ -29,7 +29,6 @@ const totalPages = ref(0)
 const invoicesData = ref<Invoice[]>([])
 
 const searchKeyword = ref('')
-const usernameKeyword = ref('')
 const selectedStatus = ref('ALL')
 const selectedPlan = ref('ALL')
 const selectedPaymentMethod = ref('ALL')
@@ -37,7 +36,6 @@ const dateFilterMode = ref<'ALL' | 'CUSTOM' | '7D' | '30D' | '90D' | '1Y'>('ALL'
 const dateRange = ref(defaultDateRange())
 
 const debounceSearchKeyword = refDebounced(searchKeyword, 450)
-const debounceUsernameKeyword = refDebounced(usernameKeyword, 450)
 
 const selectedInvoice = ref<Invoice | null>(null)
 const isOpen = ref(false)
@@ -97,12 +95,9 @@ function buildParams(): InvoiceSearchParams {
   }
 
   const search = debounceSearchKeyword.value.trim()
-  const username = debounceUsernameKeyword.value.trim()
 
   if (search)
-    params.email = search
-  if (username)
-    params.username = username
+    params.search = search
   if (selectedStatus.value !== 'ALL')
     params.status = selectedStatus.value
   if (selectedPlan.value !== 'ALL')
@@ -126,9 +121,9 @@ function buildParams(): InvoiceSearchParams {
     }
 
     if (fromDate)
-      params.startDate = formatToISODateTime(fromDate)
+      params.dateFrom = formatToISODateTime(fromDate)
     if (toDate)
-      params.endDate = formatToISODateTime(toDate, true)
+      params.dateTo = formatToISODateTime(toDate, true)
   }
 
   return params
@@ -164,7 +159,7 @@ async function handleSelectDetail(invoice: Invoice) {
   }
 }
 
-watch([debounceSearchKeyword, debounceUsernameKeyword, selectedStatus, selectedPlan, selectedPaymentMethod, dateFilterMode, dateRange], () => {
+watch([debounceSearchKeyword, selectedStatus, selectedPlan, selectedPaymentMethod, dateFilterMode, dateRange], () => {
   currentPage.value = 1
   fetchInvoices()
 })
@@ -239,10 +234,6 @@ const columns = computed<TableColumn<Invoice>[]>(() => [
       <div class="relative w-full max-w-sm">
         <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <UiInput v-model="searchKeyword" placeholder="Tìm theo email..." class="h-9 pl-8" />
-      </div>
-      <div class="relative w-full max-w-sm">
-        <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <UiInput v-model="usernameKeyword" placeholder="Tìm theo username..." class="h-9 pl-8" />
       </div>
       <div class="w-[180px]">
         <UiSelect v-model="selectedStatus">
