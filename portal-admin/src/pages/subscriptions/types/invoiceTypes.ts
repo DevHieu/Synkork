@@ -27,16 +27,6 @@ export const invoiceRequestSchema = z.object({
 
 export type InvoiceRequest = z.infer<typeof invoiceRequestSchema>
 
-export const invoiceSearchResponseSchema = z.object({
-  content: z.array(invoiceSchema).default([]),
-  totalElements: z.number().default(0),
-  totalPages: z.number().default(0),
-  number: z.number().default(0),
-  size: z.number().default(0),
-})
-
-export type InvoiceSearchResponse = z.infer<typeof invoiceSearchResponseSchema>
-
 export interface InvoiceSearchParams {
   page?: number
   size?: number

@@ -1,31 +1,31 @@
 <script setup lang="ts">
-import { computed, h, onMounted, ref, shallowRef, watch } from 'vue'
-import { refDebounced } from '@vueuse/core'
 import { LoaderIcon, Search } from '@lucide/vue'
+import { refDebounced } from '@vueuse/core'
+import dayjs from 'dayjs'
+import { computed, h, onMounted, ref, shallowRef, watch } from 'vue'
 
 import type { TableColumn } from '@/components/base-table.vue'
+
 import BaseTable from '@/components/base-table.vue'
 import DateRangePicker from '@/components/date-range-picker.vue'
 import { BasicPage } from '@/components/global-layout'
 import Pagination from '@/components/pagination.vue'
+import { Modal, ModalContent } from '@/components/prop-ui/modal'
 import { Badge } from '@/components/ui/badge'
 import { Button as UiButton } from '@/components/ui/button'
 import { Input as UiInput } from '@/components/ui/input'
-import { Select as UiSelect, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Modal, ModalContent } from '@/components/prop-ui/modal'
-import dayjs from 'dayjs'
-
+import { SelectContent, SelectItem, SelectTrigger, SelectValue, Select as UiSelect } from '@/components/ui/select'
 import { defaultDateRange, formatTimestamp, formatToISODateTime } from '@/utils/date.utils'
 
 import type { Invoice, InvoiceSearchParams } from './types/invoiceTypes'
-import { invoiceSearchResponseSchema } from './types/invoiceTypes'
+
 import { subscriptionService } from './service/subscriptionService'
 
 const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = 20
-const totalCount = ref(0)
-const totalPage = computed(() => Math.ceil(totalCount.value / pageSize))
+const totalElement = ref(0)
+const totalPages = ref(0)
 const invoicesData = ref<Invoice[]>([])
 
 const searchKeyword = ref('')
@@ -76,9 +76,12 @@ const dateFilterOptions = [
 
 function statusMeta(status?: string | null) {
   const normalized = (status || 'PENDING').toUpperCase()
-  if (normalized === 'PAID') return { label: 'Paid', tone: 'green' }
-  if (normalized === 'FAILED') return { label: 'Failed', tone: 'red' }
-  if (normalized === 'CANCELLED') return { label: 'Cancelled', tone: 'gray' }
+  if (normalized === 'PAID')
+    return { label: 'Paid', tone: 'green' }
+  if (normalized === 'FAILED')
+    return { label: 'Failed', tone: 'red' }
+  if (normalized === 'CANCELLED')
+    return { label: 'Cancelled', tone: 'gray' }
   return { label: 'Pending', tone: 'orange' }
 }
 
@@ -96,11 +99,16 @@ function buildParams(): InvoiceSearchParams {
   const search = debounceSearchKeyword.value.trim()
   const username = debounceUsernameKeyword.value.trim()
 
-  if (search) params.email = search
-  if (username) params.username = username
-  if (selectedStatus.value !== 'ALL') params.status = selectedStatus.value
-  if (selectedPlan.value !== 'ALL') params.plan = selectedPlan.value
-  if (selectedPaymentMethod.value !== 'ALL') params.paymentMethod = selectedPaymentMethod.value
+  if (search)
+    params.email = search
+  if (username)
+    params.username = username
+  if (selectedStatus.value !== 'ALL')
+    params.status = selectedStatus.value
+  if (selectedPlan.value !== 'ALL')
+    params.plan = selectedPlan.value
+  if (selectedPaymentMethod.value !== 'ALL')
+    params.paymentMethod = selectedPaymentMethod.value
 
   if (dateFilterMode.value !== 'ALL') {
     let fromDate: Date | null = null
@@ -117,8 +125,10 @@ function buildParams(): InvoiceSearchParams {
       toDate = now.endOf('day').toDate()
     }
 
-    if (fromDate) params.startDate = formatToISODateTime(fromDate)
-    if (toDate) params.endDate = formatToISODateTime(toDate, true)
+    if (fromDate)
+      params.startDate = formatToISODateTime(fromDate)
+    if (toDate)
+      params.endDate = formatToISODateTime(toDate, true)
   }
 
   return params
@@ -127,14 +137,15 @@ function buildParams(): InvoiceSearchParams {
 async function fetchInvoices() {
   loading.value = true
   try {
-    const res = invoiceSearchResponseSchema.parse(await subscriptionService.getInvoices({ params: buildParams() }))
-    invoicesData.value = res.content
-    totalCount.value = res.totalElements || 0
+    const res = await subscriptionService.getInvoices({ params: buildParams() })
+    invoicesData.value = res.data || []
+    totalElement.value = res.meta.totalElements || 0
+    totalPages.value = res.meta.totalPages || 0
   }
   catch (err) {
     console.error('Lỗi khi tải danh sách invoice:', err)
     invoicesData.value = []
-    totalCount.value = 0
+    totalElement.value = 0
   }
   finally {
     loading.value = false
@@ -186,7 +197,7 @@ const columns = computed<TableColumn<Invoice>[]>(() => [
   {
     header: 'Status',
     minWidth: 150,
-    render: row => {
+    render: (row) => {
       const meta = statusMeta(row.status)
       return h(Badge, {
         class: 'flex max-w-[120px] items-center',
@@ -297,8 +308,8 @@ const columns = computed<TableColumn<Invoice>[]>(() => [
 
       <Pagination
         v-model:current-page="currentPage"
-        :total="totalPage"
-        :total-count="totalCount"
+        :total="totalPages"
+        :total-count="totalElement"
         :per-page="pageSize"
       />
     </div>

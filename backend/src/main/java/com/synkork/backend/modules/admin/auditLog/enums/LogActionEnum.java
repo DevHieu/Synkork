@@ -1,6 +1,9 @@
 package com.synkork.backend.modules.admin.auditLog.enums;
 
 public enum LogActionEnum {
+    CREATE_INVOICE,
+    UPDATE_INVOICE,
+    DELETE_INVOICE,
     CANCEL_SUBSCRIPTION,
     UPDATE_SUBSCRIPTION,
 
