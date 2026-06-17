@@ -3,7 +3,6 @@ import type { DateValue } from '@internationalized/date'
 
 import {
   CalendarDate,
-
   getLocalTimeZone,
   today as getToday,
 } from '@internationalized/date'
@@ -16,9 +15,7 @@ import {
   X,
 } from '@lucide/vue'
 import dayjs from 'dayjs'
-import {
-  RangeCalendarRoot,
-} from 'reka-ui'
+import { RangeCalendarRoot } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -43,9 +40,12 @@ interface AppDateRange {
   to: Date
 }
 
+// null = all time
+type ModelValue = AppDateRange | null
+
 interface DateRangePickerProps {
-  modelValue: AppDateRange
-  resetRange?: AppDateRange
+  modelValue: ModelValue
+  resetRange?: ModelValue
   visibleRange?: AppDateRange
   maxRangeDays?: number
   showOneYearRange?: boolean
@@ -56,7 +56,9 @@ const props = withDefaults(defineProps<DateRangePickerProps>(), {
   showOneYearRange: false,
 })
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits<{
+  'update:modelValue': [value: ModelValue]
+}>()
 
 const { t } = useI18n()
 
@@ -80,6 +82,8 @@ const placeholder = ref<any>(
 )
 
 const dateLabel = computed(() => {
+  if (props.modelValue === null)
+    return t('common.allTime', 'Tất cả thời gian')
   if (!props.modelValue?.from || !props.modelValue?.to)
     return t('common.selectDate', 'Select Date')
   return `${dayjs(props.modelValue.from).format('DD/MM/YYYY')} - ${dayjs(props.modelValue.to).format('DD/MM/YYYY')}`
@@ -100,21 +104,32 @@ watch(() => props.modelValue, (newVal) => {
   }
 }, { deep: true })
 
-const quickRanges = computed(() => {
+interface QuickRange {
+  label: string
+  from: Date | null
+  to: Date | null
+}
+
+const quickRanges = computed<QuickRange[]>(() => {
   const now = dayjs()
-  const ranges = [
+  const ranges: QuickRange[] = [
     {
-      label: t('pages.014.ranges.7d', '7 days'),
+      label: t('pages.014.ranges.all', 'Tất cả'),
+      from: null,
+      to: null,
+    },
+    {
+      label: t('pages.014.ranges.7d', '7 ngày'),
       from: now.subtract(7, 'day').startOf('day').toDate(),
       to: now.endOf('day').toDate(),
     },
     {
-      label: t('pages.014.ranges.30d', '30 days'),
+      label: t('pages.014.ranges.30d', '30 ngày'),
       from: now.subtract(30, 'day').startOf('day').toDate(),
       to: now.endOf('day').toDate(),
     },
     {
-      label: t('pages.014.ranges.90d', '90 days'),
+      label: t('pages.014.ranges.90d', '90 ngày'),
       from: now.subtract(90, 'day').startOf('day').toDate(),
       to: now.endOf('day').toDate(),
     },
@@ -183,8 +198,14 @@ function handleSelect(range: any) {
   emit('update:modelValue', normalized)
 }
 
-function selectQuickRange(range: { from: Date, to: Date }) {
-  const normalized = normalizeRange(range)
+function selectQuickRange(range: QuickRange) {
+  // All time
+  if (range.from === null || range.to === null) {
+    emit('update:modelValue', null)
+    return
+  }
+
+  const normalized = normalizeRange({ from: range.from, to: range.to })
   placeholder.value = toCalendarDate(normalized.from)
   internalRange.value = {
     start: toCalendarDate(normalized.from),
@@ -194,8 +215,13 @@ function selectQuickRange(range: { from: Date, to: Date }) {
 }
 
 function reset() {
-  if (props.resetRange) {
-    selectQuickRange(props.resetRange)
+  if (props.resetRange !== undefined) {
+    if (props.resetRange === null) {
+      emit('update:modelValue', null)
+    }
+    else {
+      selectQuickRange({ label: '', ...props.resetRange })
+    }
   }
 }
 
@@ -267,7 +293,7 @@ function isDateDisabled(date: DateValue) {
               {{ range.label }}
             </button>
             <button
-              v-if="props.resetRange"
+              v-if="props.resetRange !== undefined"
               type="button"
               class="inline-flex items-center justify-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-muted-500 transition-colors hover:bg-white hover:text-muted-800 dark:hover:bg-surface-50"
               @click="reset"

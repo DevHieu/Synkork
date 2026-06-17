@@ -24,10 +24,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.PutMapping;
 
-
-
-
-
 @RestController
 @RequestMapping("/spaces/{spaceId}/notes")
 public class NoteController {
@@ -66,12 +62,12 @@ public class NoteController {
 
         messageTemplate.convertAndSend("/topic/space/" + spaceId + "/notes/update",  response );
 
-
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void>deleteNote(@PathVariable String id, @PathVariable String spaceId) {noteService.deleteNote(id);
+    public ResponseEntity<Void>deleteNote(@PathVariable String id, @PathVariable String spaceId) {
+        noteService.deleteNote(id);
 
         messageTemplate.convertAndSend("/topic/space/" + spaceId + "/notes/delete" ,id );
 
@@ -83,6 +79,16 @@ public class NoteController {
         NoteResponse response = noteService.togglePin(id);
 
         messageTemplate.convertAndSend("/topic/space/" + spaceId + "/notes/pin" , response);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{id}/archive")
+    public ResponseEntity<NoteResponse> toggleArchive(@PathVariable String id, @PathVariable String spaceId) {
+        NoteResponse response = noteService.toggleArchive(id);
+
+        // Báo cho các client khác để remove note khỏi danh sách hiện tại
+        messageTemplate.convertAndSend("/topic/space/" + spaceId + "/notes/delete", id);
 
         return ResponseEntity.ok(response);
     }

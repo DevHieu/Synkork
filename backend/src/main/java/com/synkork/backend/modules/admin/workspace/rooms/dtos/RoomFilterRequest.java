@@ -2,6 +2,7 @@ package com.synkork.backend.modules.admin.workspace.rooms.dtos;
 
 import com.synkork.backend.common.dtos.PageableFilter;
 import com.synkork.backend.modules.room.enums.RoomStatusEnum;
+import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -11,6 +12,7 @@ import java.time.LocalDate;
 public record RoomFilterRequest(
         String search,
         RoomStatusEnum status,
+        RoomTypeEnum type,
         Integer minMembers,
 
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)

@@ -2,6 +2,7 @@ package com.synkork.backend.modules.admin.auditLog;
 
 import com.synkork.backend.common.utils.uuid.UuidV7Annotation;
 import com.synkork.backend.modules.admin.auditLog.dtos.AuditLogRequest;
+import com.synkork.backend.modules.admin.auditLog.enums.LogActionEnum;
 import com.synkork.backend.modules.admin.auditLog.enums.LogEntityTypeEnum;
 import jakarta.persistence.*;
 import lombok.*;
@@ -26,8 +27,9 @@ public class AuditLogEntity {
     private UUID actorId;
     private String actorEmail;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 100)
-    private String action;
+    private LogActionEnum action;
 
     @Enumerated(EnumType.STRING)
     private LogEntityTypeEnum entityType;

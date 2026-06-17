@@ -45,4 +45,6 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
 
     @Query("SELECT u.email FROM UserEntity u WHERE u.planExpiresAt < :now")
     List<String> findEmailByPlanExpiresAtAfter(LocalDateTime now);
+
+    List<UserEntity> findTop10ByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(String username, String email);
 }
