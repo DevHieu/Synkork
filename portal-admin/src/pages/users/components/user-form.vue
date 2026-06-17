@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
-import type { User, UserPlan, UserStatus } from '../types/userTypes'
+import type { User, UserPlan, UserRole, UserStatus } from '../types/userTypes'
 
 import { userService } from '../services/userService'
+import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps<{ user?: User }>()
 const emits = defineEmits<{
@@ -17,6 +18,8 @@ const emits = defineEmits<{
 }>()
 
 const isEdit = computed(() => !!props.user?.id)
+const authStore = useAuthStore()
+const canChangeRole = computed(() => authStore.user?.role === 'ADMIN')
 
 const statusOptions = ['active', 'inactive', 'banned'] as const
 const planOptions = ['FREE', 'TEAM', 'BUSINESS'] as const
@@ -29,6 +32,7 @@ const form = ref<{
   email: string
   status: UserStatus
   plan: UserPlan
+  role: UserRole
 }>({
   firstName: '',
   lastName: '',
@@ -37,6 +41,7 @@ const form = ref<{
   email: props.user?.email || '',
   status: (props.user?.status as UserStatus) || 'active',
   plan: (props.user?.plan as UserPlan) || 'FREE',
+  role: props.user?.role || 'user',
 })
 
 const isLoading = ref(false)
@@ -53,6 +58,7 @@ async function onSubmit() {
         email: form.value.email,
         status: form.value.status,
         plan: form.value.plan,
+        ...(canChangeRole.value ? { role: form.value.role } : {}),
       })
       toast.success('Cập nhật người dùng thành công')
     }
@@ -64,6 +70,7 @@ async function onSubmit() {
         email: form.value.email,
         status: form.value.status,
         plan: form.value.plan,
+        role: 'user',
       })
       toast.success('Tạo người dùng thành công')
     }
@@ -145,6 +152,25 @@ async function onSubmit() {
             </SelectGroup>
           </SelectContent>
         </Select>
+      </div>
+
+      <div v-if="isEdit && canChangeRole" class="space-y-2">
+        <label class="text-sm font-medium">Vai trò</label>
+        <Select v-model="form.role">
+          <SelectTrigger class="w-full">
+            <SelectValue placeholder="Chọn vai trò" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="user">User</SelectItem>
+              <SelectItem value="manager">Manager</SelectItem>
+              <SelectItem value="admin">Admin</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+        <p class="text-xs text-muted-foreground">
+          Khi nâng lên Manager hoặc Admin, tài khoản sẽ chuyển sang trang Manager & Admin.
+        </p>
       </div>
 
       <Button type="submit" class="w-full" :disabled="isLoading">

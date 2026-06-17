@@ -7,6 +7,8 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.Collection;
+
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ManagerSpecification {
 
@@ -25,6 +27,11 @@ public class ManagerSpecification {
     public static Specification<UserEntity> hasRole(RoleEnum role) {
         return (root, query, criteriaBuilder) ->
                 role == null ? null : criteriaBuilder.equal(root.get("role"), role);
+    }
+
+    public static Specification<UserEntity> hasAnyRole(Collection<RoleEnum> roles) {
+        return (root, query, criteriaBuilder) ->
+                roles == null || roles.isEmpty() ? null : root.get("role").in(roles);
     }
 
     public static Specification<UserEntity> hasStatus(UserStatusEnum status) {

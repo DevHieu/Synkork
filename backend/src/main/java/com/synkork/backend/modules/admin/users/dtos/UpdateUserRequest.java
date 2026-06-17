@@ -19,5 +19,11 @@ public record UpdateUserRequest(
                 regexp = "(?i)active|inactive|invited|suspended|banned",
                 message = "status phải là: active, inactive, invited, suspended, banned"
         )
-        String status
+        String status,
+
+        @Pattern(
+                regexp = "(?i)user|manager|admin",
+                message = "role must be user, manager, or admin"
+        )
+        String role
 ) {}

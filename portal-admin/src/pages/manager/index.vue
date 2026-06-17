@@ -19,6 +19,7 @@ import {
 import { formatTimestamp } from '@/utils/date.utils'
 
 import type {
+  ManagementRole,
   ManagerAccount,
   ManagerParams,
   ManagerStatus,
@@ -32,6 +33,7 @@ const loading = ref(false)
 const accounts = ref<ManagerAccount[]>([])
 const keyword = ref('')
 const selectedStatus = ref('ALL')
+const selectedRole = ref('ALL')
 const currentPage = ref(1)
 const pageSize = 20
 const totalCount = ref(0)
@@ -51,6 +53,12 @@ const statusOptions = [
   { value: 'banned', label: 'Bị khóa' },
 ] as const
 
+const roleOptions = [
+  { value: 'ALL', label: 'Tất cả vai trò' },
+  { value: 'admin', label: 'Admin' },
+  { value: 'manager', label: 'Manager' },
+] as const
+
 async function fetchData() {
   loading.value = true
   try {
@@ -63,6 +71,8 @@ async function fetchData() {
       params.keyword = debouncedKeyword.value.trim()
     if (selectedStatus.value !== 'ALL')
       params.status = selectedStatus.value as ManagerStatus
+    if (selectedRole.value !== 'ALL')
+      params.role = selectedRole.value as ManagementRole
 
     const response = await managerService.getAll(params)
     accounts.value = response.content ?? []
@@ -124,10 +134,10 @@ const columns = computed<TableColumn<ManagerAccount>[]>(() => [
   {
     header: 'Vai trò',
     minWidth: 110,
-    render: () => h(Badge, {
+    render: row => h(Badge, {
       variant: 'secondary',
       class: 'border-0 bg-neutral-100 px-3 text-neutral-950 dark:bg-neutral-800 dark:text-neutral-50',
-    }, () => 'Manager'),
+    }, () => row.role === 'admin' ? 'Admin' : 'Manager'),
   },
   {
     header: 'Trạng thái',
@@ -160,7 +170,7 @@ const columns = computed<TableColumn<ManagerAccount>[]>(() => [
 ])
 
 watch(currentPage, fetchData)
-watch([debouncedKeyword, selectedStatus], () => {
+watch([debouncedKeyword, selectedStatus, selectedRole], () => {
   if (currentPage.value !== 1) {
     currentPage.value = 1
     return
@@ -173,8 +183,8 @@ onMounted(fetchData)
 
 <template>
   <BasicPage
-    title="Quản lý Manager"
-    description="Quản lý các tài khoản Manager trong hệ thống"
+    title="Quản lý Manager & Admin"
+    description="Quản lý các tài khoản Manager và Admin trong hệ thống"
     sticky
   >
     <template #actions>
@@ -202,6 +212,19 @@ onMounted(fetchData)
           </SelectTrigger>
           <SelectContent>
             <SelectItem v-for="option in statusOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </SelectItem>
+          </SelectContent>
+        </UiSelect>
+      </div>
+
+      <div class="w-[170px]">
+        <UiSelect v-model="selectedRole">
+          <SelectTrigger class="h-9 w-full">
+            <SelectValue placeholder="Vai trò" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem v-for="option in roleOptions" :key="option.value" :value="option.value">
               {{ option.label }}
             </SelectItem>
           </SelectContent>
