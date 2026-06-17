@@ -1,14 +1,7 @@
 <template>
   <div
     class="group relative rounded-lg border shadow-sm transition-all hover:shadow-md flex flex-col h-full"
-    :style="
-      note.color
-        ? {
-            backgroundColor: note.color + '22',
-            borderColor: note.color + '55'
-          }
-        : {}
-    "
+    :style="note.color ? { backgroundColor: note.color + '22', borderColor: note.color + '55' } : {}"
   >
     <!-- Drag handle -->
     <div
@@ -52,14 +45,46 @@
       class="no-drag opacity-0 group-hover:opacity-100 border-t px-2 py-1.5 flex justify-between"
     >
       <div class="flex gap-1">
-        <!-- Color -->
-        <button
-          title="Đổi màu"
-          @click.stop
-          class="p-1 rounded hover:bg-black/10 transition-colors"
-        >
-          <Palette :size="13" />
-        </button>
+
+        <!-- Color picker -->
+        <div class="relative">
+          <button
+            title="Đổi màu"
+            @click.stop="showColorPicker = !showColorPicker"
+            class="p-1 rounded hover:bg-black/10 transition-colors"
+          >
+            <Palette :size="13" />
+          </button>
+
+          <!-- Color popover -->
+          <div
+            v-if="showColorPicker"
+            class="absolute bottom-8 left-0 z-20 flex items-center gap-1.5 rounded-lg border bg-background shadow-lg px-2.5 py-2"
+            @click.stop
+          >
+            <button
+              v-for="color in COLORS"
+              :key="color"
+              class="w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 shrink-0"
+              :style="{
+                backgroundColor: color,
+                borderColor: note.color === color ? color : 'transparent'
+              }"
+              @click.stop="pickColor(color)"
+            />
+
+            <!-- Clear color -->
+            <button
+              class="w-5 h-5 rounded-full border-2 border-dashed border-border hover:border-muted-foreground flex items-center justify-center shrink-0"
+              @click.stop="pickColor('')"
+            >
+              <X
+                :size="10"
+                class="text-muted-foreground"
+              />
+            </button>
+          </div>
+        </div>
 
         <!-- Reminder -->
         <button
@@ -69,25 +94,25 @@
         >
           <BellPlus
             :size="13"
-            :class="
-              note.reminderAt && !note.reminderSent
-                ? 'text-blue-500 fill-blue-500'
-                : ''
-            "
+            :class="note.reminderAt && !note.reminderSent
+              ? 'text-blue-500 fill-blue-500'
+              : ''"
           />
         </button>
+      </div>
+
+      <!-- RIGHT ACTIONS -->
+      <div class="flex gap-1">
 
         <!-- Archive -->
         <button
           title="Lưu trữ"
-          @click.stop
+          @click.stop="$emit('archive', note.id)"
           class="p-1 rounded hover:bg-black/10 transition-colors"
         >
           <Archive :size="13" />
         </button>
-      </div>
 
-      <div class="flex gap-1">
         <!-- Edit -->
         <button
           @click.stop="$emit('edit', note)"
@@ -114,8 +139,7 @@
       <div
         class="inline-flex items-center gap-1 rounded-full bg-blue-500/10 border border-blue-500/20 px-2 py-1 text-[11px] text-blue-600"
       >
-        <BellPlus :size="10" />
-
+        <Bell :size="10" />
         <span>
           {{ formatReminder(note.reminderAt) }}
         </span>
@@ -125,6 +149,8 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
+
 import {
   Pin,
   Pencil,
@@ -132,18 +158,41 @@ import {
   GripHorizontal,
   Palette,
   BellPlus,
+  Bell,
+  X,
   Archive
 } from 'lucide-vue-next'
 
-defineProps<{ note: any }>()
+const COLORS = [
+  '#ef4444',
+  '#f97316',
+  '#eab308',
+  '#22c55e',
+  '#3b82f6',
+  '#8b5cf6',
+  '#ec4899'
+]
 
-defineEmits([
+const props = defineProps<{
+  note: any
+}>()
+
+const emit = defineEmits([
   'view',
   'edit',
   'delete',
   'pin',
-  'reminder'
+  'reminder',
+  'color',
+  'archive'
 ])
+
+const showColorPicker = ref(false)
+
+function pickColor(color: string) {
+  emit('color', props.note.id, color)
+  showColorPicker.value = false
+}
 
 function formatReminder(dateStr: string) {
   const d = new Date(dateStr)

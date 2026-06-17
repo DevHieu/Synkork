@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminUserOptionResponse;
+
 
 import java.util.List;
 import java.util.UUID;
@@ -54,6 +56,13 @@ public class AdminRoomController {
         return ApiResponse.success("Delete room successfully", null);
     }
 
+    @GetMapping("/owners/search")
+    public ApiResponse<List<AdminUserOptionResponse>> searchOwners(
+            @RequestParam(name = "keyword", required = false, defaultValue = "") String keyword
+    ) {
+        return ApiResponse.success("Search users successfully", adminRoomService.searchUserOptions(keyword));
+    }
+  
     @PatchMapping("/{roomId}/status")
     public ApiResponse<AdminRoomResponse> lockRoom(@PathVariable UUID roomId, @RequestBody AdminRoomRequest request){
         return ApiResponse.success("Lock room successfully", adminRoomService.lockRoom(roomId, request.status()));

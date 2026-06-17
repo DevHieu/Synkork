@@ -1,5 +1,6 @@
 package com.synkork.backend.modules.admin.auditLog.dtos;
 
+import com.synkork.backend.modules.admin.auditLog.enums.LogActionEnum;
 import com.synkork.backend.modules.admin.auditLog.enums.LogEntityTypeEnum;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -10,7 +11,7 @@ import java.util.UUID;
 @Builder
 public record AuditLogRequest(
         @NotBlank(message = "Action không được để trống")
-        String action,
+        LogActionEnum action,
 
         @NotNull(message = "Entity type không được để trống")
         LogEntityTypeEnum entityType,

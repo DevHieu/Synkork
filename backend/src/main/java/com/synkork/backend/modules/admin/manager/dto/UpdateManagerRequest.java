@@ -19,4 +19,10 @@ public class UpdateManagerRequest {
             message = "Trang thai phai la active, inactive hoac banned"
     )
     private String status;
+
+    @Pattern(
+            regexp = "(?i)manager|admin",
+            message = "Vai tro phai la manager hoac admin"
+    )
+    private String role;
 }

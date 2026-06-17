@@ -16,6 +16,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,29 +36,26 @@ public class AdminUserService {
     private JavaMailSender mailSender;
 
     public Page<UserEntity> getUsers(UserFilterRequest request) {
+        request.validate();
 
-        request.validate(); // validate dateFrom and dateTo
-
-        Specification<UserEntity> spec =
-                UserSpecification.filter(request);
-
-        Pageable pageable = PageRequest.of(
-                request.getPage(),
-                request.getSize()
-        );
+        Specification<UserEntity> spec = UserSpecification.filter(request)
+                .and((root, query, cb) -> cb.equal(root.get("role"), RoleEnum.USER));
+        Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
 
         return userAdminRepository.findAll(spec, pageable);
     }
 
     public AdminUserResponse getUserById(UUID id) {
-        return AdminUserResponse.from(findOrThrow(id));
+        return AdminUserResponse.from(findUserOrThrow(id));
     }
 
     public AdminUserResponse createUser(CreateUserRequest req) {
-        if (userAdminRepository.existsByEmail(req.email()))
-            throw new IllegalArgumentException("Email đã được sử dụng: " + req.email());
-        if (userAdminRepository.existsByUsername(req.username()))
-            throw new IllegalArgumentException("Username đã được sử dụng: " + req.username());
+        if (userAdminRepository.existsByEmail(req.email())) {
+            throw new IllegalArgumentException("Email da duoc su dung: " + req.email());
+        }
+        if (userAdminRepository.existsByUsername(req.username())) {
+            throw new IllegalArgumentException("Username da duoc su dung: " + req.username());
+        }
 
         String displayName = (req.firstName() + " " + req.lastName()).trim();
         String tempPassword = UUID.randomUUID().toString().substring(0, 8);
@@ -75,49 +74,82 @@ public class AdminUserService {
     }
 
     public AdminUserResponse updateUser(UUID id, UpdateUserRequest req) {
-        UserEntity user = findOrThrow(id);
+        UserEntity user = findUserOrThrow(id);
 
-        if (req.displayName() != null)
+        if (req.displayName() != null) {
             user.setDisplayName(req.displayName());
+        }
 
         if (req.email() != null && !req.email().equals(user.getEmail())) {
-            if (userAdminRepository.existsByEmail(req.email()))
-                throw new IllegalArgumentException("Email đã được sử dụng: " + req.email());
+            if (userAdminRepository.existsByEmail(req.email())) {
+                throw new IllegalArgumentException("Email da duoc su dung: " + req.email());
+            }
             user.setEmail(req.email());
         }
 
-        if (req.plan() != null)
+        if (req.plan() != null) {
             user.setCurrentPlan(PlanEnum.valueOf(req.plan().toUpperCase()));
+        }
 
-        if (req.status() != null)
+        if (req.status() != null) {
             user.setStatus(UserStatusEnum.valueOf(req.status().toUpperCase()));
+        }
+
+        if (req.role() != null) {
+            requireAdmin();
+            user.setRole(RoleEnum.valueOf(req.role().toUpperCase()));
+        }
 
         return AdminUserResponse.from(userAdminRepository.save(user));
     }
 
     @Transactional
     public Map<String, String> deleteUser(UUID id) {
-        userAdminRepository.delete(findOrThrow(id));
-        return Map.of("message", "Xóa người dùng thành công");
+        userAdminRepository.delete(findUserOrThrow(id));
+        return Map.of("message", "Xoa nguoi dung thanh cong");
     }
 
-    private UserEntity findOrThrow(UUID id) {
-        return userAdminRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy user: " + id));
+    public AdminUserResponse lockUser(UUID userId, UserStatusEnum status) {
+        UserEntity user = findUserOrThrow(userId);
+        user.setStatus(status);
+        return AdminUserResponse.from(userAdminRepository.save(user));
+    }
+
+    private UserEntity findUserOrThrow(UUID id) {
+        UserEntity user = userAdminRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay user: " + id));
+        if (user.getRole() != RoleEnum.USER) {
+            throw new IllegalArgumentException("Tai khoan khong thuoc nhom user");
+        }
+        return user;
+    }
+
+    private void requireAdmin() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+        if (!isAdmin) {
+            throw new AccessDeniedException("Chi admin moi duoc thay doi vai tro tai khoan");
+        }
     }
 
     private void sendWelcomeEmail(String email, String username, String tempPassword) {
-        if (mailSender == null) return;
+        if (mailSender == null) {
+            return;
+        }
         try {
-            SimpleMailMessage msg = new SimpleMailMessage();
-            msg.setTo(email);
-            msg.setSubject("[Synkork] Tài khoản của bạn đã được tạo");
-            msg.setText(String.format(
-                    "Xin chào %s,\n\nMật khẩu tạm thời: %s\n\nVui lòng đổi mật khẩu sau khi đăng nhập.",
-                    username, tempPassword
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(email);
+            message.setSubject("[Synkork] Tai khoan cua ban da duoc tao");
+            message.setText(String.format(
+                    "Xin chao %s,\n\nMat khau tam thoi: %s\n\n"
+                            + "Vui long doi mat khau sau khi dang nhap.",
+                    username,
+                    tempPassword
             ));
-            mailSender.send(msg);
+            mailSender.send(message);
         } catch (Exception ignored) {
+            // Account creation should not fail when email delivery is unavailable.
         }
     }
 

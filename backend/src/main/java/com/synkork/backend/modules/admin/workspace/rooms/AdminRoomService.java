@@ -31,8 +31,7 @@ public class AdminRoomService {
     private UserRepository userRepository;
 
     public Page<RoomEntity> getRooms(RoomFilterRequest request) {
-
-        request.validate(); // validate dateFrom and dateTo
+        request.validate();
 
         Specification<RoomEntity> spec = RoomSpecification.filter(request);
 
@@ -46,52 +45,88 @@ public class AdminRoomService {
     }
 
     public AdminRoomDetailResponse getRoomDetail(String roomId) {
-        RoomEntity room = roomRepository.findById(UUID.fromString(roomId))
-                .orElseThrow(() -> new RuntimeException("Room not found: " + roomId));
+        RoomEntity room = findRoomOrThrow(roomId);
         return new AdminRoomDetailResponse(room);
     }
 
     public List<AdminRoomMemberResponse> getRoomMembers(String roomId) {
-        RoomEntity room = roomRepository.findById(UUID.fromString(roomId))
-                .orElseThrow(() -> new RuntimeException("Room not found: " + roomId));
+        RoomEntity room = findRoomOrThrow(roomId);
         return room.getRoomMembers().stream()
                 .map(AdminRoomMemberResponse::new)
                 .toList();
     }
 
     public List<AdminRoomSpaceResponse> getRoomSpaces(String roomId) {
-        RoomEntity room = roomRepository.findById(UUID.fromString(roomId))
-                .orElseThrow(() -> new RuntimeException("Room not found: " + roomId));
+        RoomEntity room = findRoomOrThrow(roomId);
         return room.getSpaces().stream()
                 .map(AdminRoomSpaceResponse::new)
                 .toList();
     }
 
     public AdminRoomResponse createRoom(AdminRoomRequest request) {
-        UserEntity owner = userRepository.findById(AuthUtils.getCurrentUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (request.name() == null || request.name().isBlank()) {
+            throw new IllegalArgumentException("Tên room không được để trống");
+        }
+
+        UserEntity owner;
+        if (request.ownerId() != null) {
+            owner = userRepository.findById(request.ownerId())
+                    .orElseThrow(() -> new RuntimeException("Owner not found: " + request.ownerId()));
+        } else {
+            owner = userRepository.findById(AuthUtils.getCurrentUserId())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+        }
 
         RoomEntity room = RoomEntity.builder()
-                .name(request.name())
+                .name(request.name().trim())
                 .description(request.description())
+                .avatarUrl(request.avatarUrl())
                 .type(RoomTypeEnum.GROUP)
-                .status(request.status() != null
-                        ? request.status()
-                        : RoomStatusEnum.OPEN)
+                .status(request.status() != null ? request.status() : RoomStatusEnum.OPEN)
                 .owner(owner)
                 .build();
 
         return new AdminRoomResponse(roomRepository.save(room));
     }
 
+    public List<com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminUserOptionResponse> searchUserOptions(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return List.of();
+        }
+        return userRepository
+                .findTop10ByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(keyword, keyword)
+                .stream()
+                .map(com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminUserOptionResponse::new)
+                .toList();
+    }
+    
     public AdminRoomResponse updateRoom(String roomId, AdminRoomRequest request) {
-        RoomEntity room = roomRepository.findById(UUID.fromString(roomId))
-                .orElseThrow(() -> new RuntimeException("Room not found: " + roomId));
+        RoomEntity room = findRoomOrThrow(roomId);
 
-        if (request.name() != null) room.setName(request.name());
-        if (request.description() != null) room.setDescription(request.description());
+        if (room.getType() == RoomTypeEnum.DM) {
+            if (request.status() != null) {
+                room.setStatus(request.status());
+            }
+            return new AdminRoomResponse(roomRepository.save(room));
+        }
+
+        if (request.name() != null && !request.name().isBlank()) {
+            room.setName(request.name().trim());
+        }
+        if (request.description() != null) {
+            room.setDescription(request.description());
+        }
+        if (request.avatarUrl() != null) {
+            room.setAvatarUrl(request.avatarUrl());
+        }
         if (request.status() != null) {
             room.setStatus(request.status());
+        }
+        if (request.ownerId() != null && !request.ownerId().equals(
+                room.getOwner() != null ? room.getOwner().getId() : null)) {
+            UserEntity newOwner = userRepository.findById(request.ownerId())
+                    .orElseThrow(() -> new RuntimeException("Owner not found: " + request.ownerId()));
+            room.setOwner(newOwner);
         }
 
         return new AdminRoomResponse(roomRepository.save(room));
@@ -99,11 +134,20 @@ public class AdminRoomService {
 
     @Transactional
     public void deleteRoom(String roomId) {
-        RoomEntity room = roomRepository.findById(UUID.fromString(roomId))
-                .orElseThrow(() -> new RuntimeException("Room not found: " + roomId));
+        RoomEntity room = findRoomOrThrow(roomId);
+
+        if (room.getType() == RoomTypeEnum.DM) {
+            throw new IllegalArgumentException("Không thể xóa room loại DM từ trang quản trị");
+        }
+
         roomRepository.delete(room);
     }
 
+    private RoomEntity findRoomOrThrow(String roomId) {
+        return roomRepository.findById(UUID.fromString(roomId))
+                .orElseThrow(() -> new RuntimeException("Room not found: " + roomId));
+    }
+  
     public AdminRoomResponse lockRoom(UUID roomId, RoomStatusEnum status){
         RoomEntity room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new RuntimeException("Room not found: " + roomId));

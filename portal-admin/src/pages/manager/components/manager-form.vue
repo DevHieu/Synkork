@@ -14,6 +14,7 @@ import {
 
 import type {
   CreateManagerPayload,
+  ManagementRole,
   ManagerAccount,
   ManagerStatus,
   UpdateManagerPayload,
@@ -37,6 +38,7 @@ const form = reactive({
   username: props.account?.username ?? '',
   email: props.account?.email ?? '',
   status: (props.account?.status ?? 'active') as ManagerStatus,
+  role: (props.account?.role ?? 'manager') as ManagementRole,
 })
 
 function getErrorMessage(error: any) {
@@ -60,6 +62,7 @@ async function onSubmit() {
         displayName: form.displayName.trim(),
         email: form.email.trim(),
         status: form.status,
+        role: form.role,
       }
       result = await managerService.update(props.account.id, payload)
       toast.success('Cập nhật tài khoản quản trị thành công')
@@ -70,6 +73,7 @@ async function onSubmit() {
         username: form.username.trim(),
         email: form.email.trim(),
         status: form.status,
+        role: form.role,
       }
       result = await managerService.create(payload)
       toast.success('Tạo tài khoản quản trị thành công')
@@ -108,21 +112,28 @@ async function onSubmit() {
     </div>
 
     <div class="space-y-2">
+      <label class="text-sm font-medium">Vai trò</label>
+      <Select v-model="form.role">
+        <SelectTrigger class="w-full">
+          <SelectValue placeholder="Chọn vai trò" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="manager">Manager</SelectItem>
+          <SelectItem value="admin">Admin</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+
+    <div class="space-y-2">
       <label class="text-sm font-medium">Trạng thái</label>
       <Select v-model="form.status">
         <SelectTrigger class="w-full">
           <SelectValue placeholder="Chọn trạng thái" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="active">
-            Hoạt động
-          </SelectItem>
-          <SelectItem value="inactive">
-            Ngừng hoạt động
-          </SelectItem>
-          <SelectItem value="banned">
-            Bị khóa
-          </SelectItem>
+          <SelectItem value="active">Hoạt động</SelectItem>
+          <SelectItem value="inactive">Ngừng hoạt động</SelectItem>
+          <SelectItem value="banned">Bị khóa</SelectItem>
         </SelectContent>
       </Select>
     </div>

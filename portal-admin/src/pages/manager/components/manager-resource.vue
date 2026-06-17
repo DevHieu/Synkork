@@ -20,10 +20,12 @@ defineEmits<{
   saved: [account: ManagerAccount]
 }>()
 
-const title = computed(() => props.account ? 'Chỉnh sửa Manager' : 'Tạo tài khoản Manager')
+const title = computed(() =>
+  props.account ? 'Chỉnh sửa tài khoản quản trị' : 'Tạo tài khoản quản trị',
+)
 const description = computed(() => props.account
-  ? `Cập nhật thông tin của ${props.account.username}`
-  : 'Tạo tài khoản Manager mới. Mật khẩu tạm thời sẽ được gửi qua email.')
+  ? `Cập nhật thông tin và vai trò của ${props.account.username}`
+  : 'Tạo tài khoản Manager hoặc Admin mới. Mật khẩu tạm thời sẽ được gửi qua email.')
 </script>
 
 <template>

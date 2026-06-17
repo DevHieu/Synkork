@@ -33,10 +33,11 @@ public class ManagerController {
     public ResponseEntity<ManagerPageResponse> getManagers(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) String role,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(
-                managerService.getManagers(keyword, status, PageRequest.of(page, size))
+                managerService.getManagers(keyword, status, role, PageRequest.of(page, size))
         );
     }
 

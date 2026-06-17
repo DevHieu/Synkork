@@ -1,6 +1,6 @@
 import axiosClient from '@/lib/axiosClient'
 
-import type { User, UserParams } from '../types/userTypes'
+import type { User, UserParams, UserRole } from '../types/userTypes'
 
 export const userService = {
 
@@ -23,13 +23,20 @@ export const userService = {
     email: string
     status: string
     plan: string
+    role: 'user'
   }) {
     const res = await axiosClient.post('/api/manage/users', data)
     return res.data
   },
 
   // Cập nhật user
-  async update(id: string, data: Partial<User>) {
+  async update(id: string, data: {
+    displayName?: string
+    email?: string
+    status?: string
+    plan?: string
+    role?: UserRole
+  }) {
     const res = await axiosClient.patch(`/api/manage/users/${id}`, data)
     return res.data
   },

@@ -7,7 +7,7 @@ export async function getFreshToken(): Promise<string> {
     {},
     { withCredentials: true },
   )
-  const accessToken = response.data
+  const accessToken = response.data.accessToken
   setCookie('accessToken', accessToken, 60 * 60 * 15) // 15 minutes
   return accessToken
 }

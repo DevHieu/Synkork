@@ -34,6 +34,10 @@ public class RoomSpecification {
                 ));
             }
 
+            if (request.type() != null) {
+                predicates.add(cb.equal(root.get("type"), request.type()));
+            }
+
             if (request.dateTo() != null) {
                 predicates.add(cb.lessThanOrEqualTo(
                         root.get("createdAt"),

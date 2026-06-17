@@ -8,6 +8,13 @@ import NavFooter from './nav-footer.vue';
 const {logout} = useAuth()
 
 const { user, loading } = storeToRefs(useAuthStore())
+
+const visibleNavMain = computed(() => sidebarData.navMain.map(group => ({
+  ...group,
+  items: group.items.filter(item =>
+    item.url !== '/manager' || user.value?.role === 'ADMIN',
+  ),
+})))
 </script>
 
 <template>
@@ -24,7 +31,7 @@ const { user, loading } = storeToRefs(useAuthStore())
     </UiSidebarHeader>
 
     <UiSidebarContent>
-      <NavTeam :nav-main="sidebarData.navMain" />
+      <NavTeam :nav-main="visibleNavMain" />
     </UiSidebarContent>
     
     <UiSidebarFooter>
