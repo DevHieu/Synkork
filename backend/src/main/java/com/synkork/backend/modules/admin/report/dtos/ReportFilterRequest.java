@@ -31,7 +31,7 @@ public record ReportFilterRequest(
 
     public void validate() {
         if (fromDate != null && toDate != null && fromDate.isAfter(toDate)) {
-            throw new IllegalArgumentException("fromDate phải nhỏ hơn hoặc bằng toDate");
+            throw new IllegalArgumentException("dateFrom phải nhỏ hơn hoặc bằng dateTo");
         }
     }
 }

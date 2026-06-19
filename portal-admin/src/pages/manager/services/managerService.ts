@@ -3,16 +3,15 @@ import axiosClient from '@/lib/axiosClient'
 import type {
   CreateManagerPayload,
   ManagerAccount,
-  ManagerPage,
   ManagerParams,
   UpdateManagerPayload,
 } from '../types/managerTypes'
 
-const baseUrl = '/api/manage/admin'
+const baseUrl = '/api/manage/admin/manager'
 
 export const managerService = {
   async getAll(params: ManagerParams) {
-    const response = await axiosClient.get<ManagerPage>(baseUrl, { params })
+    const response = await axiosClient.get(baseUrl, { params })
     return response.data
   },
 
