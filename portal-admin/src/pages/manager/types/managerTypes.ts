@@ -20,6 +20,8 @@ export interface ManagerParams {
   role?: ManagementRole
   page?: number
   size?: number
+  dateFrom?: string
+  dateTo?: string
 }
 
 export interface CreateManagerPayload {
@@ -31,12 +33,3 @@ export interface CreateManagerPayload {
 }
 
 export type UpdateManagerPayload = Partial<Omit<CreateManagerPayload, 'username'>>
-
-export interface ManagerPage {
-  content: ManagerAccount[]
-  page: number
-  size: number
-  totalElements: number
-  totalPages: number
-  last: boolean
-}

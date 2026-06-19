@@ -26,11 +26,13 @@ import java.util.Map;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 public class AdminUserService {
 
-    private final UserAdminRepository userAdminRepository;
-    private final PasswordEncoder passwordEncoder;
+    @Autowired
+    private UserAdminRepository userAdminRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Autowired(required = false)
     private JavaMailSender mailSender;
