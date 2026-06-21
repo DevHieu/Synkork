@@ -67,3 +67,8 @@ export const joinRoom = async (inviteCode: string) => {
   const res = await axiosClient.post(`/api/rooms/invites/${inviteCode}/join`);
   return res.data;
 };
+
+export const inviteFriendToRoom = async (roomId: string, friendId: string) => {
+  const res = await axiosClient.post(`/api/rooms/${roomId}/invite/${friendId}`);
+  return res.data;
+};

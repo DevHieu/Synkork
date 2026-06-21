@@ -4,12 +4,14 @@ import Dialog from "@/components/ui/dialog/Dialog.vue";
 import DialogContent from "@/components/ui/dialog/DialogContent.vue";
 import DialogTitle from "@/components/ui/dialog/DialogTitle.vue";
 import DialogHeader from "@/components/ui/dialog/DialogHeader.vue";
-import { Copy, Check, RefreshCw, Link } from "lucide-vue-next";
+import { Copy, Check, RefreshCw, Link, UserPlus, Users } from "lucide-vue-next";
 import { useRoomsStore } from "@/stores/roomStore";
 import { storeToRefs } from "pinia";
-import { getInviteCode, resetInviteCode } from "@/services/roomService";
+import { getInviteCode, resetInviteCode, inviteFriendToRoom } from "@/services/roomService";
 import { useRoomMemberStore } from "@/stores/roomMemberStore";
 import { toast } from "vue-sonner";
+import { useFriendStore } from "@/stores/friendStore";
+import type { Friend } from "@/types/Friends";
 
 const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{ "update:open": [value: boolean] }>();
@@ -20,12 +22,21 @@ const roomStore = useRoomsStore();
 const { currentRoom } = storeToRefs(roomStore);
 
 const roomMemberStore = useRoomMemberStore();
-const { canManage } = storeToRefs(roomMemberStore)
+const { canManage, members } = storeToRefs(roomMemberStore)
+
+const friendStore = useFriendStore();
+const { friends, loading: friendsLoading } = storeToRefs(friendStore);
 
 const inviteCode = ref("");
 const isLoading = ref(false);
 const isCopied = ref(false);
 const isResetting = ref(false);
+
+const invitingFriendId = ref<string | null>(null);
+const invitedFriendIds = ref<Set<string>>(new Set());
+
+const isFriendInRoom = (friend: Friend) =>
+  members.value.some((m) => m.username === friend.username);
 
 const inviteLink = computed(() =>
   inviteCode.value
@@ -73,10 +84,32 @@ const copyLink = async () => {
   setTimeout(() => (isCopied.value = false), 2000);
 };
 
+const handleInviteFriend = async (friend: Friend) => {
+  if (!currentRoom.value?.id || invitingFriendId.value) return;
+
+  invitingFriendId.value = friend.id;
+  try {
+    await inviteFriendToRoom(currentRoom.value.id, friend.id);
+    invitedFriendIds.value.add(friend.id);
+    toast.success(`Đã mời ${friend.username} vào phòng`);
+  } catch (error: any) {
+    const errorData = error?.response?.data;
+    const message =
+      typeof errorData === "string" ? errorData : errorData?.message;
+    toast.error(message || "Không thể mời bạn bè vào phòng");
+  } finally {
+    invitingFriendId.value = null;
+  }
+};
+
 watch(
   () => props.open,
   (val) => {
-    if (val) fetchInviteCode();
+    if (val) {
+      fetchInviteCode();
+      friendStore.fetchFriends();
+      invitedFriendIds.value = new Set();
+    }
   },
 );
 </script>
@@ -94,7 +127,59 @@ watch(
         </p>
       </DialogHeader>
 
-      <div class="px-6 py-5 flex flex-col gap-5">
+      <div class="px-6 pb-5 flex flex-col gap-5">
+        <!-- Friends list -->
+        <div class="flex flex-col gap-2">
+          <label class="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+            <Users class="h-3 w-3" />
+            Mời bạn bè
+          </label>
+
+          <div v-if="friendsLoading && friends.length === 0" class="text-xs text-muted-foreground py-3 text-center">
+            Đang tải danh sách bạn bè...
+          </div>
+
+          <div v-else-if="friends.length === 0" class="text-xs text-muted-foreground py-3 text-center">
+            Bạn chưa có bạn bè nào để mời
+          </div>
+
+          <div v-else class="flex flex-col max-h-48 overflow-y-auto rounded-lg border border-border divide-y divide-border">
+            <div v-for="friend in friends" :key="friend.id" class="flex items-center justify-between gap-2 px-3 py-2">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="relative shrink-0">
+                  <div
+                    class="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold uppercase">
+                    {{ friend.username?.charAt(0) }}
+                  </div>
+                  <span v-if="friend.isOnline"
+                    class="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-background" />
+                </div>
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-foreground truncate">{{ friend.username }}</p>
+                  <p class="text-xs text-muted-foreground">{{ friend.isOnline ? "Đang hoạt động" : "Ngoại tuyến" }}</p>
+                </div>
+              </div>
+
+              <button v-if="isFriendInRoom(friend)" disabled
+                class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted-foreground bg-muted/50 shrink-0 cursor-default">
+                Đã trong phòng
+              </button>
+              <button v-else @click="handleInviteFriend(friend)" :disabled="invitingFriendId === friend.id" :class="[
+                'px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition shrink-0',
+                invitedFriendIds.has(friend.id)
+                  ? 'bg-green-500/10 text-green-600 border border-green-500/30'
+                  : 'bg-primary text-primary-foreground hover:bg-primary/90',
+                invitingFriendId === friend.id ? 'opacity-60 cursor-not-allowed' : '',
+              ]">
+                <Check v-if="invitedFriendIds.has(friend.id)" class="h-3.5 w-3.5" />
+                <Loader2 v-else-if="invitingFriendId === friend.id" class="h-3.5 w-3.5 animate-spin" />
+                <UserPlus v-else class="h-3.5 w-3.5" />
+                {{ invitedFriendIds.has(friend.id) ? "Đã mời" : invitingFriendId === friend.id ? "Đang mời..." : "Mời" }}
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Link box -->
         <div class="flex flex-col gap-2">
           <label class="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
