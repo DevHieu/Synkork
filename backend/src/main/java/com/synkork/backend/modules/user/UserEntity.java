@@ -61,4 +61,12 @@ public class UserEntity extends BaseEntity {
 
     @Unique
     private UUID personalCalendarId;
+
+    @Column(length = 2048)
+    private String googleCalendarRefreshToken;
+
+    @Column(length = 2048)
+    private String googleCalendarAccessToken;
+
+    private LocalDateTime googleCalendarAccessTokenExpiresAt;
 }
