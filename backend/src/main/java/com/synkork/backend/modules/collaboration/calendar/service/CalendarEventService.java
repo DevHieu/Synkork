@@ -10,7 +10,9 @@ import com.synkork.backend.modules.collaboration.calendar.repository.CalendarEve
 import com.synkork.backend.modules.space.SpaceRepository;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
+import com.synkork.backend.modules.collaboration.calendar.dto.CalendarEventAttendeeDTO;
 import org.springframework.beans.factory.annotation.Autowired;
+import java.util.stream.Collectors;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +39,8 @@ public class CalendarEventService {
 
     @Autowired
     private UserRepository userRepository;
+
+
 
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
@@ -165,6 +169,12 @@ public class CalendarEventService {
         calendarEvent.setCreatedBy(creator);
         calendarEvent.setSpace(
                 spaceRepository.getReferenceById(Objects.requireNonNull(UUID.fromString(eventRequest.getSpaceId()))));
+        if (eventRequest.getCallRoomSpaceId() != null && !eventRequest.getCallRoomSpaceId().isEmpty()) {
+            calendarEvent.setCallRoomSpace(
+                    spaceRepository.getReferenceById(UUID.fromString(eventRequest.getCallRoomSpaceId())));
+        } else {
+            calendarEvent.setCallRoomSpace(null);
+        }
         syncEventRelations(calendarEvent, eventRequest, creator);
 
         CalendarEventEntity savedEvent = calendarEventRepository.save(Objects.requireNonNull(calendarEvent));
@@ -184,6 +194,12 @@ public class CalendarEventService {
             throw new SecurityException("Bạn không có quyền chỉnh sửa sự kiện này! Vui lòng liên hệ đến người tạo sự kiện");
         }
         eventRequest.updateEntity(calendarEvent);
+        if (eventRequest.getCallRoomSpaceId() != null && !eventRequest.getCallRoomSpaceId().isEmpty()) {
+            calendarEvent.setCallRoomSpace(
+                    spaceRepository.getReferenceById(UUID.fromString(eventRequest.getCallRoomSpaceId())));
+        } else {
+            calendarEvent.setCallRoomSpace(null);
+        }
         UserEntity actor = userRepository.getReferenceById(userId);
         syncEventRelations(calendarEvent, eventRequest, actor);
         CalendarEventEntity savedEvent = calendarEventRepository.save(Objects.requireNonNull(calendarEvent));
@@ -197,43 +213,34 @@ public class CalendarEventService {
     }
 
     private void syncEventRelations(CalendarEventEntity event, CalendarEventDTO request, UserEntity actor) {
-        event.replaceAttendees(buildAttendees(event, request.getAttendees()));
+        event.replaceAttendees(buildAttendees(event, request.getAttendeeIds()));
         event.replaceAttachments(buildAttachments(event, request.getAttachments(), actor));
     }
 
-    private List<EventAttendeeEntity> buildAttendees(CalendarEventEntity event, List<String> attendeeEmails) {
-        if (attendeeEmails == null || attendeeEmails.isEmpty()) {
+    private List<EventAttendeeEntity> buildAttendees(CalendarEventEntity event, List<String> attendeeIds) {
+        if (attendeeIds == null || attendeeIds.isEmpty()) {
             return new ArrayList<>();
         }
 
         List<EventAttendeeEntity> attendees = new ArrayList<>();
-        List<String> missingEmails = new ArrayList<>();
-        Set<String> uniqueEmails = new LinkedHashSet<>();
+        Set<String> uniqueIds = new LinkedHashSet<>();
 
-        for (String rawEmail : attendeeEmails) {
-            if (rawEmail == null) {
+        for (String idStr : attendeeIds) {
+            if (idStr == null || idStr.trim().isEmpty()) {
                 continue;
             }
 
-            String email = rawEmail.trim().toLowerCase();
-            if (email.isEmpty() || !uniqueEmails.add(email)) {
+            String idTrim = idStr.trim();
+            if (!uniqueIds.add(idTrim)) {
                 continue;
             }
 
-            Optional<UserEntity> matchedUser = userRepository.findByEmail(email);
-            if (matchedUser.isEmpty()) {
-                missingEmails.add(email);
-                continue;
-            }
-
+            UUID userId = UUID.fromString(idTrim);
+            UserEntity user = userRepository.getReferenceById(userId);
             EventAttendeeEntity attendee = new EventAttendeeEntity();
             attendee.setEvent(event);
-            attendee.setUser(matchedUser.get());
+            attendee.setUser(user);
             attendees.add(attendee);
-        }
-
-        if (!missingEmails.isEmpty()) {
-            throw new IllegalArgumentException("Không tìm thấy người dùng cho các email: " + String.join(", ", missingEmails));
         }
 
         return attendees;
@@ -301,6 +308,8 @@ public class CalendarEventService {
     private boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
     }
+
+
 
     // Xóa event (chỉ creator)
     @Transactional

@@ -20,6 +20,7 @@ export interface EventFormData {
   attendeeIds?: string[];
   attendees?: any[];
   attachments?: (CalendarEventAttachment & { file?: File })[];
+  callRoomSpaceId?: string;
 }
 
 // Quản lý data/validate form

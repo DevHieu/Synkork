@@ -45,7 +45,10 @@ public class CalendarEventDTO {
     private String createdByUsername;
     private String createdByDisplayName;
     private String createdByAvatarUrl;
-    private List<String> attendees = new ArrayList<>();
+    private String callRoomSpaceId;
+    private String callRoomSpaceName;
+    private List<String> attendeeIds = new ArrayList<>();
+    private List<CalendarEventAttendeeDTO> attendees = new ArrayList<>();
     private List<CalendarEventAttachmentDTO> attachments = new ArrayList<>();
 
     private LocalDateTime createdAt;
@@ -68,9 +71,21 @@ public class CalendarEventDTO {
         this.createdByUsername = entity.getCreatedBy().getUsername();
         this.createdByDisplayName = entity.getCreatedBy().getDisplayName();
         this.createdByAvatarUrl = entity.getCreatedBy().getAvatarUrl();
+        if (entity.getCallRoomSpace() != null) {
+            this.callRoomSpaceId = entity.getCallRoomSpace().getId().toString();
+            this.callRoomSpaceName = entity.getCallRoomSpace().getName();
+        }
         if (entity.getAttendees() != null) {
             for (var attendee : entity.getAttendees()) {
-                this.attendees.add(attendee.getUser().getEmail());
+                var user = attendee.getUser();
+                this.attendeeIds.add(user.getId().toString());
+                this.attendees.add(new CalendarEventAttendeeDTO(
+                    user.getId(),
+                    user.getUsername(),
+                    user.getDisplayName(),
+                    user.getAvatarUrl(),
+                    user.getEmail()
+                ));
             }
         }
         if (entity.getAttachments() != null) {

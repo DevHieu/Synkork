@@ -21,6 +21,8 @@ export interface CalendarEvent {
   title: string;
   description: string;
   eventLink?: string;
+  callRoomSpaceId?: string;
+  callRoomSpaceName?: string;
   eventDate: string;
   endDate: string;
   startTime: string;

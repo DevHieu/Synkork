@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch } from "vue";
+import { watch, computed } from "vue";
 import { CalendarPlus2, Pencil, X } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
 import CalendarNotificationDialog from "./CalendarNotificationDialog.vue";
@@ -9,6 +9,11 @@ import EventAttendeesSection from "../sub-components/EventAttendeesSection.vue";
 import EventAttachmentsSection from "../sub-components/EventAttachmentsSection.vue";
 import { useEventForm, type EventFormData } from "../composables/useEventForm";
 import type { Member } from "@/types/Member";
+import { useSpaceStore } from "@/stores/spaceStore";
+
+const spaceStore = useSpaceStore();
+
+const voiceSpaces = computed(() => spaceStore.voiceSpaces || []);
 
 // Khai báo Props và Emits
 const props = defineProps<{
@@ -141,6 +146,20 @@ const handleSubmit = (): void => {
               <!-- Tệp đính kèm Section -->
               <EventAttachmentsSection :show="show" :initial-attachments="initialData.attachments"
                 @change="onAttachmentsChange" />
+
+              <!-- Liên kết phòng họp (Voice space) -->
+              <div
+                class="rounded-xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)] cursor-default">
+                <label
+                  class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">PHÒNG HỌP TRỰC TIẾP</label>
+                <select v-model="formData.callRoomSpaceId"
+                  class="w-full rounded-lg border-2 border-border bg-background px-4 py-3 font-mono text-sm uppercase text-foreground transition-colors focus:outline-none focus:border-primary">
+                  <option :value="undefined">KHÔNG LIÊN KẾT</option>
+                  <option v-for="space in voiceSpaces" :key="space.id" :value="space.id">
+                    {{ space.name }}
+                  </option>
+                </select>
+              </div>
 
               <!-- Cho phép chỉnh sửa -->
               <div

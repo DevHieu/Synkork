@@ -24,6 +24,10 @@ public class CalendarEventEntity extends BaseEntity {
     @JoinColumn(name= "space_id", nullable = false, columnDefinition = "BINARY(16)")
     private SpaceEntity space;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "call_room_space_id", columnDefinition = "BINARY(16)", nullable = true)
+    private SpaceEntity callRoomSpace;
+
     @Column(nullable = false)
     private String title;
 

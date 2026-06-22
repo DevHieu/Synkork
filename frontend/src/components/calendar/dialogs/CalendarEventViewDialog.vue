@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import dayjs from "dayjs";
 import {
   CalendarDays,
@@ -12,6 +12,8 @@ import {
   Trash2,
   UserRound,
   Users,
+  PhoneCall,
+  CheckSquare,
 } from "lucide-vue-next";
 import type { CalendarEvent } from "@/types/CalendarEvent";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -25,6 +27,8 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { useVoiceSpaceStore } from "@/stores/voiceSpaceStore";
+import { useSpaceStore } from "@/stores/spaceStore";
 
 const props = defineProps<{
   show: boolean;
@@ -131,6 +135,17 @@ const openEdit = () => {
 const openDelete = () => {
   if (props.event) {
     emit("delete", props.event);
+  }
+};
+
+const voiceSpaceStore = useVoiceSpaceStore();
+const spaceStore = useSpaceStore();
+
+const joinVoiceRoom = () => {
+  if (props.event?.callRoomSpaceId) {
+    spaceStore.changeSpaceById(props.event.callRoomSpaceId, "VOICE");
+    voiceSpaceStore.joinRoom(props.event.callRoomSpaceId, false);
+    emit("update:show", false);
   }
 };
 </script>
@@ -351,6 +366,32 @@ const openDelete = () => {
               </p>
             </section>
           </div>
+
+          <!-- Phòng họp trực tiếp -->
+          <section
+            v-if="event?.callRoomSpaceId"
+            class="rounded-2xl border-2 border-border bg-background p-4 cursor-default"
+          >
+            <div class="flex items-center gap-2">
+              <PhoneCall class="text-primary" data-icon="inline-start" />
+              <h3 class="font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                Phòng họp trực tiếp
+              </h3>
+            </div>
+
+            <div class="mt-4 flex flex-col gap-3 rounded-xl border border-border bg-muted/15 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <p class="min-w-0 break-all font-mono text-xs font-bold tracking-wider text-foreground">
+                {{ event?.callRoomSpaceName || 'Phòng voice' }}
+              </p>
+
+              <Button
+                @click="joinVoiceRoom"
+                class="rounded-full border-2 border-primary bg-primary font-mono text-xs font-bold uppercase tracking-widest text-primary-foreground shadow-[0_16px_34px_-22px_var(--color-primary)] hover:bg-background hover:text-primary"
+              >
+                Vào phòng call
+              </Button>
+            </div>
+          </section>
 
           <section
             v-if="eventLink"

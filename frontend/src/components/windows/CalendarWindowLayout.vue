@@ -74,6 +74,7 @@ const initialFormData = ref<EventFormData>({
   allowEditAll: false,
   attendees: [],
   attachments: [],
+  callRoomSpaceId: undefined,
 });
 
 const createInitialFormData = (overrides: Partial<EventFormData> = {}): EventFormData => ({
@@ -89,6 +90,7 @@ const createInitialFormData = (overrides: Partial<EventFormData> = {}): EventFor
   allowEditAll: false,
   attendees: [],
   attachments: [],
+  callRoomSpaceId: undefined,
   ...overrides,
 });
 
@@ -106,6 +108,7 @@ const createFormDataFromEvent = (event: CalendarEvent): EventFormData => createI
   attendeeIds: event.attendeeIds || event.attendees?.map((attendee) => attendee.userId) || [],
   attendees: event.attendees || [],
   attachments: event.attachments || [],
+  callRoomSpaceId: event.callRoomSpaceId,
 });
 
 // Điều hướng bằng bàn phím
