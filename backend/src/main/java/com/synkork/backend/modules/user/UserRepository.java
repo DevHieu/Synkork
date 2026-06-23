@@ -50,4 +50,6 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
 
     @Query("SELECT COUNT(u) FROM UserEntity u WHERE u.currentPlan != :freePlan AND (u.planExpiresAt IS NULL OR u.planExpiresAt > :now)")
     long countActiveSubscriptions(@Param("freePlan") PlanEnum freePlan, @Param("now") LocalDateTime now);
+
+    List<UserEntity> findTop10ByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(String username, String email);
 }

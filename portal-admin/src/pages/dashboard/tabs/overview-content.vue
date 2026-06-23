@@ -52,13 +52,14 @@ onMounted(async () => {
     <OverviewChart class="col-span-1 lg:col-span-4" />
     <UiCard class="col-span-1 lg:col-span-3">
       <UiCardHeader>
-        <UiCardTitle>Recent Sales</UiCardTitle>
-        <UiCardDescription>
-          You made 265 sales this month.
-        </UiCardDescription>
+        <UiCardTitle class="flex items-center gap-2">
+          <Flag class="h-4 w-4 text-destructive" />
+          Tố cáo gần đây
+        </UiCardTitle>
+        <UiCardDescription>Các report đang chờ xử lý gần đây.</UiCardDescription>
       </UiCardHeader>
       <UiCardContent>
-        <RecentSales />
+        <RecentReports />
       </UiCardContent>
     </UiCard>
   </div>

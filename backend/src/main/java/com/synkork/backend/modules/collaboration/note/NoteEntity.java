@@ -62,4 +62,8 @@ public class NoteEntity extends BaseEntity {
     @Builder.Default
     @Column(name = "reminder_sent")
     private Boolean reminderSent = false;
+
+    @Builder.Default
+    @Column(name = "archived")
+    private Boolean archived = false;
 }

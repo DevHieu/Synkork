@@ -3,7 +3,6 @@ package com.synkork.backend.modules.friend;
 import com.synkork.backend.config.WebSocketEventListener;
 import com.synkork.backend.modules.friend.dto.FriendDto;
 import com.synkork.backend.modules.friend.dto.FriendRequestDto;
-import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -31,7 +30,7 @@ public class FriendController {
         try {
             String email = friendService.sendFriendRequestByUsername(username);
 
-            messagingTemplate.convertAndSendToUser(email, "queue/friend-request", "Đã gửi lời mời kết bạn");
+            messagingTemplate.convertAndSendToUser(email, "/queue/friend-request", "Đã gửi lời mời kết bạn");
 
             return ResponseEntity.ok("Đã gửi lời mời kết bạn");
         } catch (Exception e) {
@@ -46,7 +45,7 @@ public class FriendController {
         try {
             String email = friendService.cancelRequest(requestId);
             // Fix: dùng đúng topic friend-cancel
-            messagingTemplate.convertAndSendToUser(email, "queue/friend-cancel", "Lời mời đã bị hủy");
+            messagingTemplate.convertAndSendToUser(email, "/queue/friend-cancel", "Lời mời đã bị hủy");
             return ResponseEntity.ok("Đã hủy lời mời kết bạn");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -54,14 +53,13 @@ public class FriendController {
     }
 
     //CHẤP NHẬN LỜI MỜI
-    @Transactional
     @PostMapping("/accept/{requestId}")
     public ResponseEntity<String> accept(@PathVariable UUID requestId) {
         try {
             List<String> emails = friendService.acceptRequest(requestId);
 
-            messagingTemplate.convertAndSendToUser(emails.get(0), "queue/friend-accept", "Đã chấp nhận lời mời kết bạn");
-            messagingTemplate.convertAndSendToUser(emails.get(1), "queue/friend-accept", "Bạn đã chấp nhận lời mời");
+            messagingTemplate.convertAndSendToUser(emails.get(0), "/queue/friend-accept", "Đã chấp nhận lời mời kết bạn");
+            messagingTemplate.convertAndSendToUser(emails.get(1), "/queue/friend-accept", "Bạn đã chấp nhận lời mời");
 
             return ResponseEntity.ok("Đã chấp nhận lời mời kết bạn");
         } catch (Exception e) {
@@ -74,7 +72,7 @@ public class FriendController {
     public ResponseEntity<String> reject(@PathVariable UUID requestId) {
         try {
             String senderEmail = friendService.rejectRequest(requestId); // đổi void → String
-            messagingTemplate.convertAndSendToUser(senderEmail, "queue/friend-reject", "Lời mời bị từ chối");
+            messagingTemplate.convertAndSendToUser(senderEmail, "/queue/friend-reject", "Lời mời bị từ chối");
             return ResponseEntity.ok("Đã từ chối lời mời");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -108,8 +106,8 @@ public class FriendController {
             @RequestParam UUID friendId) {
         try {
             List<String> emails = friendService.removeFriend(userId, friendId);
-            messagingTemplate.convertAndSendToUser(emails.get(0), "queue/friend-remove", "Đã xóa bạn bè thành công");
-            messagingTemplate.convertAndSendToUser(emails.get(1), "queue/friend-remove", "Đã bị xóa khỏi danh sách bạn bè");
+            messagingTemplate.convertAndSendToUser(emails.get(0), "/queue/friend-remove", "Đã xóa bạn bè thành công");
+            messagingTemplate.convertAndSendToUser(emails.get(1), "/queue/friend-remove", "Đã bị xóa khỏi danh sách bạn bè");
             return ResponseEntity.ok("Đã xóa bạn bè thành công");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

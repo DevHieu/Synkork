@@ -1,25 +1,28 @@
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'BANNED'
 export type UserPlan = 'FREE' | 'TEAM' | 'BUSINESS'
+export type UserRole = 'user' | 'manager' | 'admin'
 
 export interface User {
   id: string
   displayName: string
   username: string
   email: string
+  role: UserRole
   status: UserStatus
   plan: UserPlan
-  role: string
   avatarUrl: string | null
   provider: string
   createdAt: string
 }
 
 export interface UserParams {
-  keyword?: string
+  search?: string
   status?: UserStatus
   plan?: UserPlan
   page?: number
   size?: number
-  fromDate?: string
-  toDate?: string
+  dateFrom?: string
+  dateTo?: string
 }
+
+

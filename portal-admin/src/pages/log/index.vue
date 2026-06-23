@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { Eye, LoaderIcon, Search } from '@lucide/vue'
+import { Eye, LoaderIcon, Search, X } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
 import { computed, h, onMounted, ref, watch } from 'vue'
 
@@ -24,7 +24,6 @@ const isDetailOpen = ref(false)
 
 const loading = ref(false)
 const logsData = ref<AuditLog[]>([])
-const totalCount = ref(0)
 const currentPage = ref(1)
 const pageSize = 20
 
@@ -35,7 +34,14 @@ const dateRange = ref(defaultDateRange())
 
 const debounceSearchKeyword = refDebounced(searchKeyword, 500)
 const debounceActionKeyword = refDebounced(actionKeyword, 500)
-const totalPage = computed(() => Math.ceil(totalCount.value / pageSize))
+const totalCount = ref(0)
+const totalPage = ref(0)
+
+const hasActiveFilter = computed(() =>
+  !!searchKeyword.value
+  || (selectedEntityType.value !== 'ALL')
+  || dateRange.value !== null, // null = tất cả = không active, có value = đang filter
+)
 
 const columns = computed<TableColumn<any>[]>(() => [
   { header: 'Hành động', accessor: 'action', minWidth: 150 },
@@ -83,18 +89,17 @@ async function fetchLogs() {
     }
 
     if (dateRange.value?.from) {
-      const fromDate = typeof dateRange.value.from === 'string' ? new Date(dateRange.value.from) : dateRange.value.from
-      queryParams.fromDate = formatToISODateTime(fromDate)
+      queryParams.dateFrom = formatToISODateTime(dateRange.value.from)
     }
 
     if (dateRange.value?.to) {
-      const toDate = typeof dateRange.value.to === 'string' ? new Date(dateRange.value.to) : dateRange.value.to
-      queryParams.toDate = formatToISODateTime(toDate, true) // true để lấy 23:59:59
+      queryParams.dateTo = formatToISODateTime(dateRange.value.to, true)
     }
     const response = await logService.getLogs({ params: queryParams })
 
-    logsData.value = response.content || []
-    totalCount.value = response.totalElements || 0
+    logsData.value = response.data || []
+    totalCount.value = response.meta.totalElements || 0
+    totalPage.value = response.meta.totalPages || 0
   }
   catch (error) {
     console.error('Lỗi khi tải danh sách hệ thống log:', error)
@@ -121,6 +126,12 @@ watch(currentPage, () => {
 onMounted(() => {
   fetchLogs()
 })
+
+function clearFilters() {
+  searchKeyword.value = ''
+  selectedEntityType.value = 'ALL'
+  dateRange.value = defaultDateRange()
+}
 </script>
 
 <template>
@@ -178,6 +189,17 @@ onMounted(() => {
       <div>
         <DateRangePicker v-model="dateRange" />
       </div>
+
+      <UiButton
+        v-if="hasActiveFilter"
+        variant="ghost"
+        size="sm"
+        class="h-9 gap-1.5 text-sm text-muted-foreground"
+        @click="clearFilters"
+      >
+        <X class="h-3.5 w-3.5" />
+        Clear filters
+      </UiButton>
     </div>
 
     <div class="relative rounded-md border border-neutral-200 dark:border-neutral-800">

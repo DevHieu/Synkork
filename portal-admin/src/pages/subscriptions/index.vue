@@ -1,43 +1,39 @@
 <script setup lang="ts">
-import { computed, h, onMounted, ref, shallowRef, watch } from 'vue'
+import { LoaderIcon, Search, X } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
-import { LoaderIcon, Search } from '@lucide/vue'
+import { computed, h, onMounted, ref, shallowRef, watch } from 'vue'
 
 import type { TableColumn } from '@/components/base-table.vue'
+
 import BaseTable from '@/components/base-table.vue'
 import DateRangePicker from '@/components/date-range-picker.vue'
 import { BasicPage } from '@/components/global-layout'
 import Pagination from '@/components/pagination.vue'
+import { Modal, ModalContent } from '@/components/prop-ui/modal'
 import { Badge } from '@/components/ui/badge'
 import { Button as UiButton } from '@/components/ui/button'
 import { Input as UiInput } from '@/components/ui/input'
-import { Select as UiSelect, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Modal, ModalContent } from '@/components/prop-ui/modal'
-import dayjs from 'dayjs'
-
+import { SelectContent, SelectItem, SelectTrigger, SelectValue, Select as UiSelect } from '@/components/ui/select'
 import { defaultDateRange, formatTimestamp, formatToISODateTime } from '@/utils/date.utils'
 
 import type { Invoice, InvoiceSearchParams } from './types/invoiceTypes'
-import { invoiceSearchResponseSchema } from './types/invoiceTypes'
+
 import { subscriptionService } from './service/subscriptionService'
 
 const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = 20
-const totalCount = ref(0)
-const totalPage = computed(() => Math.ceil(totalCount.value / pageSize))
+const totalElement = ref(0)
+const totalPages = ref(0)
 const invoicesData = ref<Invoice[]>([])
 
 const searchKeyword = ref('')
-const usernameKeyword = ref('')
 const selectedStatus = ref('ALL')
 const selectedPlan = ref('ALL')
 const selectedPaymentMethod = ref('ALL')
-const dateFilterMode = ref<'ALL' | 'CUSTOM' | '7D' | '30D' | '90D' | '1Y'>('ALL')
 const dateRange = ref(defaultDateRange())
 
 const debounceSearchKeyword = refDebounced(searchKeyword, 450)
-const debounceUsernameKeyword = refDebounced(usernameKeyword, 450)
 
 const selectedInvoice = ref<Invoice | null>(null)
 const isOpen = ref(false)
@@ -65,20 +61,14 @@ const paymentMethodOptions = [
   { value: 'BANK_TRANSFER', label: 'Bank transfer' },
 ]
 
-const dateFilterOptions = [
-  { value: 'ALL', label: 'Tất cả thời gian' },
-  { value: '7D', label: '7 ngày gần đây' },
-  { value: '30D', label: '30 ngày gần đây' },
-  { value: '90D', label: '90 ngày gần đây' },
-  { value: '1Y', label: '1 năm gần đây' },
-  { value: 'CUSTOM', label: 'Tự chọn' },
-]
-
 function statusMeta(status?: string | null) {
   const normalized = (status || 'PENDING').toUpperCase()
-  if (normalized === 'PAID') return { label: 'Paid', tone: 'green' }
-  if (normalized === 'FAILED') return { label: 'Failed', tone: 'red' }
-  if (normalized === 'CANCELLED') return { label: 'Cancelled', tone: 'gray' }
+  if (normalized === 'PAID')
+    return { label: 'Paid', tone: 'green' }
+  if (normalized === 'FAILED')
+    return { label: 'Failed', tone: 'red' }
+  if (normalized === 'CANCELLED')
+    return { label: 'Cancelled', tone: 'gray' }
   return { label: 'Pending', tone: 'orange' }
 }
 
@@ -94,31 +84,22 @@ function buildParams(): InvoiceSearchParams {
   }
 
   const search = debounceSearchKeyword.value.trim()
-  const username = debounceUsernameKeyword.value.trim()
 
-  if (search) params.email = search
-  if (username) params.username = username
-  if (selectedStatus.value !== 'ALL') params.status = selectedStatus.value
-  if (selectedPlan.value !== 'ALL') params.plan = selectedPlan.value
-  if (selectedPaymentMethod.value !== 'ALL') params.paymentMethod = selectedPaymentMethod.value
+  if (search)
+    params.search = search
+  if (selectedStatus.value !== 'ALL')
+    params.status = selectedStatus.value
+  if (selectedPlan.value !== 'ALL')
+    params.plan = selectedPlan.value
+  if (selectedPaymentMethod.value !== 'ALL')
+    params.paymentMethod = selectedPaymentMethod.value
 
-  if (dateFilterMode.value !== 'ALL') {
-    let fromDate: Date | null = null
-    let toDate: Date | null = null
+  if (dateRange.value?.from) {
+    params.dateFrom = formatToISODateTime(dateRange.value.from)
+  }
 
-    if (dateFilterMode.value === 'CUSTOM') {
-      fromDate = dateRange.value?.from ?? null
-      toDate = dateRange.value?.to ?? null
-    }
-    else {
-      const now = dayjs()
-      const days = dateFilterMode.value === '7D' ? 7 : dateFilterMode.value === '30D' ? 30 : dateFilterMode.value === '90D' ? 90 : 365
-      fromDate = now.subtract(days, 'day').startOf('day').toDate()
-      toDate = now.endOf('day').toDate()
-    }
-
-    if (fromDate) params.startDate = formatToISODateTime(fromDate)
-    if (toDate) params.endDate = formatToISODateTime(toDate, true)
+  if (dateRange.value?.to) {
+    params.dateTo = formatToISODateTime(dateRange.value.to, true)
   }
 
   return params
@@ -127,14 +108,15 @@ function buildParams(): InvoiceSearchParams {
 async function fetchInvoices() {
   loading.value = true
   try {
-    const res = invoiceSearchResponseSchema.parse(await subscriptionService.getInvoices({ params: buildParams() }))
-    invoicesData.value = res.content
-    totalCount.value = res.totalElements || 0
+    const res = await subscriptionService.getInvoices({ params: buildParams() })
+    invoicesData.value = res.data || []
+    totalElement.value = res.meta.totalElements || 0
+    totalPages.value = res.meta.totalPages || 0
   }
   catch (err) {
     console.error('Lỗi khi tải danh sách invoice:', err)
     invoicesData.value = []
-    totalCount.value = 0
+    totalElement.value = 0
   }
   finally {
     loading.value = false
@@ -153,7 +135,23 @@ async function handleSelectDetail(invoice: Invoice) {
   }
 }
 
-watch([debounceSearchKeyword, debounceUsernameKeyword, selectedStatus, selectedPlan, selectedPaymentMethod, dateFilterMode, dateRange], () => {
+const hasActiveFilter = computed(() =>
+  !!searchKeyword.value
+  || (selectedStatus.value !== 'ALL')
+  || (selectedPlan.value !== 'ALL')
+  || (selectedPaymentMethod.value !== 'ALL')
+  || dateRange.value !== null, // null = tất cả = không active, có value = đang filter
+)
+
+function clearFilters() {
+  searchKeyword.value = ''
+  selectedStatus.value = 'ALL'
+  selectedPlan.value = 'ALL'
+  selectedPaymentMethod.value = 'ALL'
+  dateRange.value = defaultDateRange()
+}
+
+watch([debounceSearchKeyword, selectedStatus, selectedPlan, selectedPaymentMethod, dateRange], () => {
   currentPage.value = 1
   fetchInvoices()
 })
@@ -191,7 +189,7 @@ const columns = computed<TableColumn<Invoice>[]>(() => [
   {
     header: 'Status',
     minWidth: 150,
-    render: row => {
+    render: (row) => {
       const meta = statusMeta(row.status)
       return h(Badge, {
         class: 'flex max-w-[120px] items-center',
@@ -234,10 +232,6 @@ const columns = computed<TableColumn<Invoice>[]>(() => [
         <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <UiInput v-model="searchKeyword" placeholder="Tìm theo email..." class="h-9 pl-8" />
       </div>
-      <div class="relative w-full max-w-sm">
-        <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <UiInput v-model="usernameKeyword" placeholder="Tìm theo username..." class="h-9 pl-8" />
-      </div>
       <div class="w-[180px]">
         <UiSelect v-model="selectedStatus">
           <SelectTrigger class="h-9 w-full">
@@ -274,21 +268,20 @@ const columns = computed<TableColumn<Invoice>[]>(() => [
           </SelectContent>
         </UiSelect>
       </div>
-      <div class="w-[190px]">
-        <UiSelect v-model="dateFilterMode">
-          <SelectTrigger class="h-9 w-full">
-            <SelectValue placeholder="Thời gian" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem v-for="item in dateFilterOptions" :key="item.value" :value="item.value">
-              {{ item.label }}
-            </SelectItem>
-          </SelectContent>
-        </UiSelect>
-      </div>
-      <div class="ml-auto" :class="dateFilterMode === 'CUSTOM' ? '' : 'pointer-events-none opacity-50'">
+      <div>
         <DateRangePicker v-model="dateRange" />
       </div>
+
+      <UiButton
+        v-if="hasActiveFilter"
+        variant="ghost"
+        size="sm"
+        class="h-9 gap-1.5 text-sm text-muted-foreground"
+        @click="clearFilters"
+      >
+        <X class="h-3.5 w-3.5" />
+        Clear filters
+      </UiButton>
     </div>
 
     <div class="relative rounded-md border border-neutral-200 dark:border-neutral-800">
@@ -302,8 +295,8 @@ const columns = computed<TableColumn<Invoice>[]>(() => [
 
       <Pagination
         v-model:current-page="currentPage"
-        :total="totalPage"
-        :total-count="totalCount"
+        :total="totalPages"
+        :total-count="totalElement"
         :per-page="pageSize"
       />
     </div>

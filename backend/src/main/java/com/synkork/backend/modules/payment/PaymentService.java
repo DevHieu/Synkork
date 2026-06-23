@@ -10,6 +10,7 @@ import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
 import com.synkork.backend.modules.user.UserService;
 import com.synkork.backend.modules.user.enums.PlanEnum;
+import jakarta.transaction.Transactional;
 import org.apache.commons.codec.digest.HmacUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -135,6 +136,7 @@ public class PaymentService {
         }
     }
 
+    @Transactional
     public void handleMomoCallback(Map<String, Object> payload) {
         try {
             String rawHash =

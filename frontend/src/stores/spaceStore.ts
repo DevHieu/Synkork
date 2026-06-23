@@ -308,6 +308,10 @@ export const useSpaceStore = defineStore("spaces", {
         default:
           return 0;
       }
+    },
+
+    isPersonalSpace: (state) => {
+      return state.currentSpace?.roomType === "PERSONAL";
     }
   },
 });

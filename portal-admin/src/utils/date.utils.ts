@@ -1,14 +1,12 @@
 import dayjs from 'dayjs'
 
+import type { AppDateRange } from '@/types/Date'
+
 export const today = new Date()
 
-export function defaultDateRange() {
-  return {
-    from: dayjs(today).subtract(30, 'day').startOf('day').toDate(),
-    to: dayjs(today).endOf('day').toDate(),
-  }
+export function defaultDateRange(): AppDateRange {
+  return null
 }
-
 export const toStartTime = (value: Date) => dayjs(value).startOf('day').valueOf()
 
 export const toEndTime = (value: Date) => dayjs(value).endOf('day').valueOf()

@@ -7,14 +7,11 @@ import com.synkork.backend.modules.report.enums.ReportTypeEnums;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.RoomRepository;
 import com.synkork.backend.modules.user.UserEntity;
-import com.synkork.backend.modules.user.UserRepository;
+import com.synkork.backend.modules.user.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.*;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -25,12 +22,12 @@ public class ReportService {
     private ReportRepository reportRepository;
 
     @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
     private RoomRepository roomRepository;
 
-    public void createReport(ReportRequestDto request, ReportTypeEnums type) {
+    @Autowired
+    private UserService userService;
+
+    public ReportEntity createReport(ReportRequestDto request, ReportTypeEnums type) {
         UUID reporterId = AuthUtils.getCurrentUserId();
         UUID targetId = UUID.fromString(request.targetId());
 
@@ -39,16 +36,17 @@ public class ReportService {
             throw new RuntimeException("Không thể tự báo cáo bản thân");
         }
 
+        UserEntity reporter = userService.findById(reporterId);
+
         ReportEntity.ReportEntityBuilder builder = ReportEntity.builder()
                 .reason(request.reason())
                 .description(request.description())
-                .reporterId(reporterId)
+                .reporter(reporter)
                 .reportType(type)
                 .status(ReportStatusEnums.PENDING);
 
         if (type == ReportTypeEnums.USER) {
-            UserEntity targetUser = userRepository.findById(targetId)
-                    .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+            UserEntity targetUser = userService.findById(targetId);
 
             if (reportRepository.existsByReporterIdAndTargetUserAndReportType(reporterId, targetUser, type)) {
                 throw new RuntimeException("Bạn đã báo cáo người dùng này rồi");
@@ -122,11 +120,7 @@ public class ReportService {
         ReportEntity saved = reportRepository.save(report);
 
         return new ReportDTO(saved);
+        return reportRepository.save(builder.build());
     }
 
-    public void deleteReport(UUID reportId) {
-        ReportEntity report = reportRepository.findById(reportId)
-                .orElseThrow(() -> new RuntimeException("Report không tồn tại: " + reportId));
-        reportRepository.delete(report);
-    }
 }

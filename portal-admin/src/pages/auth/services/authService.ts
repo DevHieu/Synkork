@@ -23,7 +23,7 @@ export const authService = {
   async login(loginData: LoginData) {
     const res = await axiosClient.post('/api/manage/auth/login', loginData)
 
-    setCookie('accessToken', res.data, 60 * 60 * 15) // 15 minutes
+    setCookie('accessToken', res.data.accessToken, 60 * 60 * 15) // 15 minutes
 
     return res.data
   },

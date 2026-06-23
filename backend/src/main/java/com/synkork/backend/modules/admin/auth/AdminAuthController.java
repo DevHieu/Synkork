@@ -57,25 +57,21 @@ public ResponseEntity<?> checkAuth() {
 }
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
-        try {
-            String accessToken = authService.login(request, response);
-            return ResponseEntity.status(HttpStatus.ACCEPTED).body(accessToken);
-        } catch (ResponseStatusException e) {
-            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
-        }
+    public ResponseEntity<Map<String, String>> login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
+        String accessToken = authService.login(request, response);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(Map.of("accessToken", accessToken));
     }
 
     @PostMapping("/reset-password-request")
-    public ResponseEntity<String> requestPasswordReset(@RequestBody ResetPasswordRequest request) {
+    public ResponseEntity<Map<String, String>> requestPasswordReset(@RequestBody ResetPasswordRequest request) {
         String verifyCode =  passwordResetRequestService.createRequest(request.email());
-        return ResponseEntity.ok(verifyCode);
+        return ResponseEntity.ok(Map.of("verifyCode", verifyCode));
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<String> verifyAccount(@Valid @RequestBody PasswordResetVerifyRequest request) {
+    public ResponseEntity<Map<String, String>> verifyAccount(@Valid @RequestBody PasswordResetVerifyRequest request) {
         VerificationEntity verify = verificationService.verifyOtp(request.email(), request.otpCode());
         passwordResetRequestService.buildChangePasswordRequest(verify.getUser(), request.password());
-        return ResponseEntity.ok("Xác thực tài khoản thành công");
+        return ResponseEntity.ok(Map.of("message", "Xác thực và đổi mật khẩu tài khoản thành công"));
     }
 }

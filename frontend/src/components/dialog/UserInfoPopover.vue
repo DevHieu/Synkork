@@ -41,7 +41,7 @@ const isFriendLoading = ref(false);
 onMounted(async () => {
   isLoading.value = true;
   userInfo.value = await getUserInfoByUsername(props.username);
-  isMyself.value = (useUserStore().user as any)?.username === props.username;
+  isMyself.value = useUserStore().user?.username === props.username;
   isLoading.value = false;
 });
 

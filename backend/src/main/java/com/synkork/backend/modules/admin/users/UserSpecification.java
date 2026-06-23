@@ -1,32 +1,63 @@
 package com.synkork.backend.modules.admin.users;
 
+import com.synkork.backend.modules.admin.users.dtos.UserFilterRequest;
 import com.synkork.backend.modules.user.UserEntity;
-import com.synkork.backend.modules.user.enums.RoleEnum;
-import com.synkork.backend.modules.user.enums.UserStatusEnum;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+import java.util.ArrayList;
+import java.util.List;
+
 public class UserSpecification {
 
-    public static Specification<UserEntity> hasKeyword(String keyword) {
+    public static Specification<UserEntity> filter(UserFilterRequest request) {
         return (root, query, cb) -> {
-            if (keyword == null || keyword.isBlank()) return null;
-            String pattern = "%" + keyword.toLowerCase() + "%";
-            return cb.or(
-                    cb.like(cb.lower(root.get("username")), pattern),
-                    cb.like(cb.lower(root.get("email")), pattern),
-                    cb.like(cb.lower(root.get("displayName")), pattern)
-            );
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (hasText(request.search())) {
+                String keyword = "%" + request.search().trim().toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("username")), keyword),
+                        cb.like(cb.lower(root.get("email")), keyword),
+                        cb.like(cb.lower(root.get("displayName")), keyword)
+                ));
+            }
+
+            if (request.role() != null) {
+                predicates.add(cb.equal(root.get("role"), request.role()));
+            }
+
+            if (request.status() != null) {
+                predicates.add(cb.equal(root.get("status"), request.status()));
+            }
+
+            if (request.plan() != null) {
+                predicates.add(cb.equal(root.get("currentPlan"), request.plan()));
+            }
+
+            if (request.dateFrom() != null) {
+                predicates.add(
+                        cb.greaterThanOrEqualTo(
+                                root.get("createdAt"),
+                                request.dateFrom()
+                        )
+                );
+            }
+
+            if (request.dateTo() != null) {
+                predicates.add(
+                        cb.lessThanOrEqualTo(
+                                root.get("createdAt"),
+                                request.dateTo()
+                        )
+                );
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
         };
     }
 
-    public static Specification<UserEntity> hasRole(RoleEnum role) {
-        return (root, query, cb) -> role == null ? null : cb.equal(root.get("role"), role);
-    }
-
-    public static Specification<UserEntity> hasStatus(UserStatusEnum status) {
-        return (root, query, cb) -> status == null ? null : cb.equal(root.get("status"), status);
+    private static boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 }
