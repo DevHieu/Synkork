@@ -2,6 +2,7 @@ package com.synkork.backend.modules.admin.statistics;
 
 import com.synkork.backend.modules.admin.statistics.dtos.OverviewChartResponse;
 import com.synkork.backend.modules.admin.statistics.dtos.OverviewStatsResponse;
+import com.synkork.backend.modules.admin.statistics.dtos.SubscriptionDashboardResponse;
 import com.synkork.backend.modules.admin.statistics.enums.PeriodEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -29,5 +30,10 @@ public class StatisticsController {
         PeriodEnum periodEnum = PeriodEnum.valueOf(period);
 
         return ResponseEntity.ok(statisticsService.getOverviewChartData(periodEnum));
+    }
+
+    @GetMapping("/dashboard/subscriptions")
+    public ResponseEntity<SubscriptionDashboardResponse> getSubscriptionDashboardData() {
+        return ResponseEntity.ok(statisticsService.getSubscriptionDashboardData());
     }
 }

@@ -35,6 +35,8 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
 
     long countByRole(RoleEnum role);
 
+    List<UserEntity> findByRole(RoleEnum role);
+
     long countByCreatedAtBetweenAndRole(LocalDateTime createdAtAfter, LocalDateTime createdAtBefore, RoleEnum role);
 
     List<UserEntity> findByPlanExpiresAtBetween(LocalDateTime now, LocalDateTime localDateTime);
@@ -45,4 +47,7 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
 
     @Query("SELECT u.email FROM UserEntity u WHERE u.planExpiresAt < :now")
     List<String> findEmailByPlanExpiresAtAfter(LocalDateTime now);
+
+    @Query("SELECT COUNT(u) FROM UserEntity u WHERE u.currentPlan != :freePlan AND (u.planExpiresAt IS NULL OR u.planExpiresAt > :now)")
+    long countActiveSubscriptions(@Param("freePlan") PlanEnum freePlan, @Param("now") LocalDateTime now);
 }

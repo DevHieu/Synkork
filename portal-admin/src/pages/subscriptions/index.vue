@@ -169,9 +169,14 @@ onMounted(() => {
 const columns = computed<TableColumn<Invoice>[]>(() => [
   { header: 'Invoice', accessor: 'id', minWidth: 210 },
   {
-    header: 'User',
-    minWidth: 220,
-    render: row => row.username || row.userEmail || 'N/A',
+    header: 'Username',
+    minWidth: 150,
+    render: row => row.username || 'N/A',
+  },
+  {
+    header: 'Email',
+    minWidth: 200,
+    render: row => row.userEmail || 'N/A',
   },
   {
     header: 'Plan',

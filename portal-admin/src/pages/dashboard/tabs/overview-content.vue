@@ -3,7 +3,7 @@ import OverviewChart from '../components/overview-chart.vue'
 import RecentSales from '../components/recent-sales.vue'
 import DataCard from '../components/data-card.vue';
 
-import { Activity, MessagesSquare, Server, Users } from '@lucide/vue';
+import { Activity, CreditCard, Server, Users } from '@lucide/vue';
 import { dashboardService } from '../services/dashboardService';
 
 const stats = ref<any>(null)
@@ -42,7 +42,7 @@ onMounted(async () => {
     <DataCard
       title="Tổng subscriptions"
       :data="stats?.totalSubscriptions?.toLocaleString() ?? '—'"
-      :icon="MessagesSquare"
+      :icon="CreditCard"
       :day-growth="stats?.subscriptionDayGrowth"
       :month-growth="stats?.subscriptionMonthGrowth"
     />

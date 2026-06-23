@@ -76,6 +76,12 @@ public class ReportService {
                 .toList();
     }
 
+    public ReportDTO getReportById(UUID reportId) {
+        return reportRepository.findById(reportId)
+                .map(ReportDTO::new)
+                .orElseThrow(() -> new RuntimeException("Report không tồn tại: " + reportId));
+    }
+
     public ReportPageResponse getFilteredReports(ReportFilterRequest filter) {
         Specification<ReportEntity> spec = ReportSpecification.from(filter);
  
