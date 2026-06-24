@@ -2,10 +2,13 @@ export interface Room {
   id: string
   name: string
   description?: string
+  avatarUrl?: string
   type: 'GROUP' | 'DM'
   status: 'OPEN' | 'CLOSED'
   inviteCode?: string
   memberCount: number
+  ownerId?: string
+  ownerUsername?: string
 }
 
 export interface RoomDetail extends Room {
@@ -40,4 +43,19 @@ export interface RoomParams {
   search?: string
   status?: string
   type?: string
+}
+
+export interface RoomFormPayload {
+  name: string
+  description?: string
+  avatarUrl?: string
+  status: 'OPEN' | 'CLOSED'
+  ownerId?: string
+}
+
+export interface UserOption {
+  id: string
+  username: string
+  email: string
+  avatarUrl?: string
 }

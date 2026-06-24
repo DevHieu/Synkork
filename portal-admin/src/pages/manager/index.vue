@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { formatTimestamp } from '@/utils/date.utils'
+import { defaultDateRange, formatTimestamp, formatToISODateTime } from '@/utils/date.utils'
 
 import type {
   ManagementRole,
@@ -37,9 +37,10 @@ const selectedRole = ref('ALL')
 const currentPage = ref(1)
 const pageSize = 20
 const totalCount = ref(0)
+const totalPage = ref(0)
+const dateRange = ref(defaultDateRange())
 
 const debouncedKeyword = refDebounced(keyword, 400)
-const totalPage = computed(() => Math.max(1, Math.ceil(totalCount.value / pageSize)))
 
 const editTarget = ref<ManagerAccount>()
 const deleteTarget = ref<ManagerAccount>()
@@ -74,9 +75,18 @@ async function fetchData() {
     if (selectedRole.value !== 'ALL')
       params.role = selectedRole.value as ManagementRole
 
+    if (dateRange.value?.from) {
+      params.dateFrom = formatToISODateTime(dateRange.value.from)
+    }
+
+    if (dateRange.value?.to) {
+      params.dateTo = formatToISODateTime(dateRange.value.to, true)
+    }
+
     const response = await managerService.getAll(params)
-    accounts.value = response.content ?? []
-    totalCount.value = response.totalElements ?? 0
+    accounts.value = response.data ?? []
+    totalCount.value = response.meta.totalElements ?? 0
+    totalPage.value = response.meta.totalPages ?? 0
   }
   catch (error: any) {
     console.error('Failed to fetch manager accounts:', error)
@@ -170,7 +180,7 @@ const columns = computed<TableColumn<ManagerAccount>[]>(() => [
 ])
 
 watch(currentPage, fetchData)
-watch([debouncedKeyword, selectedStatus, selectedRole], () => {
+watch([debouncedKeyword, selectedStatus, selectedRole, dateRange], () => {
   if (currentPage.value !== 1) {
     currentPage.value = 1
     return
@@ -229,6 +239,10 @@ onMounted(fetchData)
             </SelectItem>
           </SelectContent>
         </UiSelect>
+      </div>
+
+      <div>
+        <DateRangePicker v-model="dateRange" />
       </div>
     </div>
 

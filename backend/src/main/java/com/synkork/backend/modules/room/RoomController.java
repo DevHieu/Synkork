@@ -7,6 +7,7 @@ import com.synkork.backend.modules.room.dto.RoomReviewResponse;
 import com.synkork.backend.modules.room.dto.UpdateRoomDto;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberService;
+import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
 import com.synkork.backend.modules.space.SpaceService;
 import com.synkork.backend.modules.space.dto.CreateSpaceRequest;
 import com.synkork.backend.modules.user.UserEntity;
@@ -135,5 +136,10 @@ public class RoomController {
     public ResponseEntity<String> getInviteCode(@PathVariable String roomId) {
         RoomEntity room = roomService.findById(UUID.fromString(roomId));
         return ResponseEntity.ok(room.getInviteCode());
+    }
+
+    @PostMapping("/{roomId}/invite/{friendId}")
+    public ResponseEntity<RoomMemberDto> inviteFriend(@PathVariable UUID roomId, @PathVariable UUID friendId) {
+        return ResponseEntity.ok(roomService.inviteFriendToRoom(roomId, friendId));
     }
 }

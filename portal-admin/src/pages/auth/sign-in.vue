@@ -1,18 +1,15 @@
 <script setup lang="ts">
-import AuthTitle from './components/auth-title.vue'
-import LoginForm from './components/login-form.vue'
+import image from '@/assets/images/syn-business.png'
 
-import image from "@/assets/images/syn-business.png"
+import AuthTitle from './components/auth-title.vue'
+import LiquidLoader from './components/liquid-loader.vue'
+import LoginForm from './components/login-form.vue'
 </script>
 
 <template>
   <div class="w-full h-screen lg:grid lg:min-h-[600px] lg:grid-cols-2 xl:min-h-[800px]">
-    <div class="relative hidden bg-muted lg:block bg-gradient-to-br from-[oklch(0.56_0.17_36.15)] to-[oklch(0.32_0.05_196.69)]">
-      <img
-        :src="image"
-        alt="Image"
-        class="absolute inset-0 h-full object-cover object-center"
-      >
+    <div class="relative hidden lg:flex lg:items-center lg:justify-center">
+      <LiquidLoader />
       <AuthTitle class="absolute z-10 left-8 top-8" />
     </div>
 

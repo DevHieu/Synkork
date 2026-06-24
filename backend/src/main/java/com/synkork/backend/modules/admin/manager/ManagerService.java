@@ -1,15 +1,13 @@
 package com.synkork.backend.modules.admin.manager;
 
-import com.synkork.backend.modules.admin.manager.dto.CreateManagerRequest;
-import com.synkork.backend.modules.admin.manager.dto.ManagerPageResponse;
-import com.synkork.backend.modules.admin.manager.dto.ManagerResponse;
-import com.synkork.backend.modules.admin.manager.dto.UpdateManagerRequest;
+import com.synkork.backend.modules.admin.manager.dto.*;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.enums.RoleEnum;
 import com.synkork.backend.modules.user.enums.UserStatusEnum;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.mail.SimpleMailMessage;
@@ -19,35 +17,28 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 public class ManagerService {
 
-    private final ManagerRepository managerRepository;
-    private final PasswordEncoder passwordEncoder;
+    @Autowired
+    private ManagerRepository managerRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Autowired(required = false)
     private JavaMailSender mailSender;
 
-    public ManagerPageResponse getManagers(
-            String keyword,
-            String status,
-            String role,
-            Pageable pageable) {
-        UserStatusEnum statusEnum = parseStatus(status);
-        RoleEnum roleEnum = parseRole(role);
-        String normalizedKeyword = keyword == null || keyword.isBlank() ? null : keyword.trim();
+    public Page<UserEntity> getManagers(ManagerFilterRequest request) {
+        request.validate();
 
-        Specification<UserEntity> specification = ManagerSpecification.hasKeyword(normalizedKeyword)
-                .and(ManagerSpecification.hasAnyRole(Set.of(RoleEnum.MANAGER, RoleEnum.ADMIN)))
-                .and(ManagerSpecification.hasRole(roleEnum))
-                .and(ManagerSpecification.hasStatus(statusEnum));
+        Specification<UserEntity> spec = ManagerSpecification.filter(request)
+                .and((root, query, cb) -> cb.equal(root.get("role"), RoleEnum.USER));
+        Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
 
-        Page<UserEntity> result = managerRepository.findAll(specification, pageable);
-        return ManagerPageResponse.from(result);
+        return managerRepository.findAll(spec, pageable);
     }
 
     public ManagerResponse getManager(UUID id) {

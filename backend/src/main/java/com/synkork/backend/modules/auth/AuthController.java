@@ -37,32 +37,19 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
-
-        try {
-            String accessToken = authService.login(request, response);
-            return ResponseEntity.status(HttpStatus.ACCEPTED).body(accessToken);
-        } catch (ResponseStatusException e) {
-            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
-        }
-
-        // ResponseEntity.status() để tùy chỉnh mã trạng thái HTTP trả về chứ không  có mỗi .ok()
+    public ResponseEntity<Map<String, String>> login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
+        String accessToken = authService.login(request, response);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(Map.of("accessToken", accessToken));
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
-        try {
-            authService.register(request);
-            return ResponseEntity.status(HttpStatus.CREATED).body("Đăng ký thành công, vui lòng kiểm tra email để xác thực tài khoản");
-        } catch (ResponseStatusException e) {
-            return ResponseEntity
-                    .status(e.getStatusCode())
-                    .body(e.getReason());
-        }
+    public ResponseEntity<Map<String, String>> register(@Valid @RequestBody RegisterRequest request) {
+        authService.register(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", "Đăng ký thành công, vui lòng kiểm tra email để xác thực tài khoản"));
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<String> refreshToken(@CookieValue("refreshToken") String refreshToken,
+    public ResponseEntity<Map<String, String>> refreshToken(@CookieValue("refreshToken") String refreshToken,
                                                HttpServletResponse response) {
         String username = jwtService.extractUserName(refreshToken);
         String userId = jwtService.extractClaim(refreshToken, claims -> claims.get("userId", String.class));
@@ -75,14 +62,14 @@ public class AuthController {
 
             jwtService.saveRefreshToken(newRefreshToken, response);
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(newAccessToken);
+            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("accessToken",newAccessToken));
         }
 
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Refresh token is invalid or expired");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Refresh token is invalid or expired"));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<String> logout(HttpServletResponse response) {
+    public ResponseEntity<Map<String, String>> logout(HttpServletResponse response) {
         System.out.println("Logout");
 
         Cookie cookie = new Cookie("refreshToken", null);
@@ -91,24 +78,24 @@ public class AuthController {
         cookie.setHttpOnly(true);
 
         response.addCookie(cookie);
-        return ResponseEntity.status(HttpStatus.OK).body("Logged out");
+        return ResponseEntity.status(HttpStatus.OK).body(Map.of("message","Logged out"));
     }
 
     @GetMapping("/verify")
-    public ResponseEntity<String> verifyAccount(@RequestParam String token) {
+    public ResponseEntity<Map<String, String>> verifyAccount(@RequestParam String token) {
         verificationService.verifyAccountRegister(token);
-        return ResponseEntity.ok("Xác thực tài khoản thành công");
+        return ResponseEntity.ok(Map.of("message","Xác thực tài khoản thành công"));
     }
 
     @PostMapping("/request-password-reset")
-    public ResponseEntity<String> forgotPassword(@RequestBody Map<String, String> body) {
+    public ResponseEntity<Map<String, String>> forgotPassword(@RequestBody Map<String, String> body) {
         authService.sendRequestPasswordReset(body.get("email"));
-        return ResponseEntity.ok("OTP đã được gửi đến email của bạn");
+        return ResponseEntity.ok(Map.of("message","OTP đã được gửi đến email của bạn"));
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<String> resetPassword(@Valid @RequestBody PasswordResetVerifyRequest request) {
+    public ResponseEntity<Map<String, String>> resetPassword(@Valid @RequestBody PasswordResetVerifyRequest request) {
         authService.resetPassword(request);
-        return ResponseEntity.ok("Đặt lại mật khẩu thành công");
+        return ResponseEntity.ok(Map.of("message","Đặt lại mật khẩu thành công"));
     }
 }
