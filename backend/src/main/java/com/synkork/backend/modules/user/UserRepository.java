@@ -4,6 +4,7 @@ package com.synkork.backend.modules.user;
 //import com.synkork.backend.modules.statistics.dtos.CountByDate;
 import com.synkork.backend.modules.user.enums.PlanEnum;
 import com.synkork.backend.modules.user.enums.RoleEnum;
+import com.synkork.backend.modules.user.enums.UserStatusEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -36,6 +37,10 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
     long countByRole(RoleEnum role);
 
     long countByCreatedAtBetweenAndRole(LocalDateTime createdAtAfter, LocalDateTime createdAtBefore, RoleEnum role);
+
+    long countByRoleAndStatus(RoleEnum role, UserStatusEnum status);
+
+    long countByRoleAndCurrentPlan(RoleEnum role, PlanEnum currentPlan);
 
     List<UserEntity> findByPlanExpiresAtBetween(LocalDateTime now, LocalDateTime localDateTime);
 
