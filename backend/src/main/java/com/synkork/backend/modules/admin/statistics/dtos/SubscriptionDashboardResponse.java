@@ -1,6 +1,6 @@
 package com.synkork.backend.modules.admin.statistics.dtos;
 
-import com.synkork.backend.modules.payment.dto.InvoiceDTO;
+import com.synkork.backend.modules.admin.subscriptions.dtos.AdminInvoiceResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -22,5 +22,5 @@ public class SubscriptionDashboardResponse {
     private long pendingInvoices;
     private long paidInvoices;
     private long failedInvoices;
-    private List<InvoiceDTO> recentTransactions;
+    private List<AdminInvoiceResponse> recentTransactions;
 }
