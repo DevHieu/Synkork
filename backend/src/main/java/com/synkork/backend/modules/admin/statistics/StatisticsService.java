@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.admin.statistics;
 
 import com.synkork.backend.config.WebSocketEventListener;
+import com.synkork.backend.modules.admin.statistics.dtos.UserStatsResponse;
 import com.synkork.backend.modules.message.MessageRepository;
 import com.synkork.backend.modules.payment.InvoiceRepository;
 import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
@@ -14,6 +15,7 @@ import com.synkork.backend.modules.user.UserRepository;
 import com.synkork.backend.modules.user.enums.PlanEnum;
 import com.synkork.backend.modules.user.enums.RoleEnum;
 import com.synkork.backend.modules.admin.subscriptions.dtos.AdminInvoiceResponse;
+import com.synkork.backend.modules.user.enums.UserStatusEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -175,7 +177,6 @@ public class StatisticsService {
                 userRepository.countByRoleAndCurrentPlan(userRole, PlanEnum.BUSINESS)
         );
     }
-}
 
     public SubscriptionDashboardResponse getSubscriptionDashboardData() {
         LocalDateTime startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
