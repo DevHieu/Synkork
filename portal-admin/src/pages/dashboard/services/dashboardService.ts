@@ -15,4 +15,9 @@ export const dashboardService = {
     
     return res.data
   },
+
+  async getUserStatsData() {
+    const res = await axiosClient.get(`/api/manage/dashboard/users/stats`)
+    return res.data
+  },
 }

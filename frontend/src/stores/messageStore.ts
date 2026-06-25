@@ -5,6 +5,7 @@ import {
   getPinnedChatList,
   getAroundMessage,
   sendFileMessage as sendFileMessageApi,
+  chatService,
 } from "@/services/chatService";
 import { chatSocket } from "@/services/websocket/chatSocket";
 import { socketService } from "@/services/websocket/socketService";
@@ -141,20 +142,11 @@ export const useMessageStore = defineStore("message", {
     // Load lần đầu hoặc scroll lên
     async fetchMessages(spaceId: string, cursor: string | null) {
       const res = await getChatFromSpaceId(spaceId, cursor, true, MESSAGE_SIZE);
-      console.log(res.data);
-
       const { messages, beforeHasMore, beforeCursor } = res.data;
 
-      console.log(messages);
+      console.trace(messages);
 
       this.messages = [...this.messages, ...messages];
-      console.log("[Chat] Da tai xong danh sach tin nhan:", {
-        spaceId,
-        cursor,
-        loadedCount: messages.length,
-        totalMessages: this.messages.length,
-        firstMessageId: this.messages[0]?.id ?? null,
-      });
       this.beforeHasMore = beforeHasMore;
       this.beforeCursor = beforeCursor ?? null;
     },
@@ -231,11 +223,10 @@ export const useMessageStore = defineStore("message", {
           this.messages = this.messages.filter(
             (m) => !textTempIds.includes(m.id),
           );
-          chatSocket.sendMessage({
+          await chatService.sendMessage(spaceId, {
             content,
-            spaceId,
             replyToId: replyId,
-          });
+          })
         }
 
         if (files && formData) {

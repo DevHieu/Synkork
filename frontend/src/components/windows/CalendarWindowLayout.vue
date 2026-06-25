@@ -24,7 +24,7 @@ const spaceStore = useSpaceStore();
 const userStore = useUserStore();
 const calendarSuggestionStore = useSuggestionStore();
 const roomMemberStore = useRoomMemberStore();
-const { currentSpace } = storeToRefs(spaceStore);
+const { currentSpace, isPersonalSpace } = storeToRefs(spaceStore);
 const { user } = storeToRefs(userStore);
 const { members } = storeToRefs(roomMemberStore);
 

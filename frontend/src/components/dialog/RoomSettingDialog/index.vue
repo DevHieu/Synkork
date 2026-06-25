@@ -7,13 +7,14 @@ import Dialog from "@/components/ui/dialog/Dialog.vue";
 import DialogContent from "@/components/ui/dialog/DialogContent.vue";
 import DialogTitle from "@/components/ui/dialog/DialogTitle.vue";
 import DialogHeader from "@/components/ui/dialog/DialogHeader.vue";
-import { Settings, Users, Trash2, LogOut } from "lucide-vue-next";
+import { Settings, Users, Trash2, LogOut, Flag } from "lucide-vue-next";
 import InfoTab from "./InfoTab.vue";
 import MembersTab from "./MembersTab.vue";
 import DeleteTab from "./DeleteTab.vue";
 import { useRoomMemberStore } from "@/stores/roomMemberStore";
 import DeleteConfirmDialog from "@/components/dialog/DeleteConfirmDialog.vue";
 import { leaveRoom } from "@/services/roomMemberService";
+import ReportDialog from "../ReportDialog.vue";
 
 const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{
@@ -33,6 +34,7 @@ const { canManage, isOwner } = storeToRefs(roomMemberStore);
 // Tabs
 type Tab = "info" | "members" | "danger";
 const showLeaveConfirm = ref(false)
+const showReport = ref(false)
 const activeTab = ref<Tab>("info");
 
 const tabs = computed(() =>
@@ -79,7 +81,7 @@ const handleLeaveRoom = async () => {
 
       <div class="flex flex-1 overflow-hidden" style="height: calc(85vh - 130px)">
         <!-- Sidebar tabs -->
-        <nav class="w-44 border-r border-border px-2 py-2 flex flex-col gap-0.5 shrink-0">
+        <nav class="w-44 border-r border-border px-2 py-2 flex flex-col gap-1.5 shrink-0">
           <button v-for="tab in tabs" :key="tab.key" @click="activeTab = tab.key" :class="[
             'flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150',
             activeTab === tab.key
@@ -96,8 +98,14 @@ const handleLeaveRoom = async () => {
             {{ tab.label }}
           </button>
 
+          <button v-if="!isOwner" @click="showReport = true"
+            class="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 text-destructive/90 hover:text-destructive hover:bg-destructive/5">
+            <Flag class="h-4 w-4 shrink-0" />
+            Tố cáo
+          </button>
+
           <button v-if="!isOwner" @click="showLeaveConfirm = true"
-            class="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 text-destructive/80 hover:text-destructive hover:bg-destructive/5">
+            class="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 text-destructive/80 hover:text-foreground hover:bg-destructive/70">
             <LogOut class="h-4 w-4 shrink-0" />
             Rời phòng
           </button>
@@ -123,6 +131,8 @@ const handleLeaveRoom = async () => {
 
   <DeleteConfirmDialog v-model:open="showLeaveConfirm" title="Rời phòng này?" description="Bạn có chắc chắn muốn rời khỏi phòng này không? Bạn
 sẽ không thể tham gia lại máy chủ này trừ khi bạn được mời." @confirm="handleLeaveRoom" />
+
+  <ReportDialog :open="showReport" :room="currentRoom" @update:open="showReport = false" />
 </template>
 
 <style scoped></style>

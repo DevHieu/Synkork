@@ -9,8 +9,8 @@ import type {
   SuggestedTaskDraft,
 } from "@/types/CalendarSuggestion";
 import { buildSuggestedEventDraft, buildSuggestedNoteDraft, buildSuggestedTaskDraft } from "@/utils/calendarSuggestion";
-import ColumnListDialog from "../dialog/task/ColumnListDialog.vue";
-import CardFormDialog from "../dialog/task/CardFormDialog.vue";
+import ColumnListDialog from "../dialog/TaskDialog/ColumnListDialog.vue";
+import CardFormDialog from "../dialog/TaskDialog/CardFormDialog.vue";
 
 import { useSpaceStore } from "@/stores/spaceStore";
 import { useTaskStore } from "@/stores/taskStore";

@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue"
 import { Sun, Moon, Monitor, Check, RotateCcw } from "lucide-vue-next"
+import { toast } from "vue-sonner"
+import { useUserStore } from "@/stores/userStore"
+import { useThemeStore } from "@/stores/themeStore" // Nhớ trỏ đúng đường dẫn file store của bạn
+import { storeToRefs } from "pinia"
 
 type ThemeMode = "light" | "dark" | "system"
 type ThemeId = string
@@ -13,13 +17,15 @@ interface ThemeOption {
   secondaryPreview: string
 }
 
+const userStore = useUserStore()
+const { user } = storeToRefs(userStore)
+
+const themeStore = useThemeStore() // Khởi tạo store theme
+
 const selectedTheme = ref<ThemeId>("default")
-const themeMode = ref<ThemeMode>("dark")
 const saveSuccess = ref(false)
 
-// ── Theme catalogue ───────────────────────────────────────────────
 const themes: ThemeOption[] = [
-  // Normal
   { id: "default", label: "Cam & Ngọc (Mặc định)", group: "normal", primaryPreview: "#E3662A", secondaryPreview: "#2A9D8F" },
   { id: "violet-storm", label: "Violet Storm", group: "normal", primaryPreview: "#7C3AED", secondaryPreview: "#9333EA" },
   { id: "ocean-blue", label: "Ocean Blue", group: "normal", primaryPreview: "#0EA5E9", secondaryPreview: "#0284C7" },
@@ -27,14 +33,12 @@ const themes: ThemeOption[] = [
   { id: "ruby-red", label: "Ruby Red", group: "normal", primaryPreview: "#E63030", secondaryPreview: "#BE185D" },
   { id: "golden-amber", label: "Golden Amber", group: "normal", primaryPreview: "#F59E0B", secondaryPreview: "#D97706" },
   { id: "midnight-slate", label: "Midnight Slate", group: "normal", primaryPreview: "#64748B", secondaryPreview: "#475569" },
-  // Pastel
   { id: "pastel-rose", label: "Pastel Rose", group: "pastel", primaryPreview: "#FDA4AF", secondaryPreview: "#F9A8D4" },
   { id: "pastel-lavender", label: "Pastel Lavender", group: "pastel", primaryPreview: "#C4B5FD", secondaryPreview: "#E9D5FF" },
   { id: "pastel-mint", label: "Pastel Mint", group: "pastel", primaryPreview: "#6EE7B7", secondaryPreview: "#A7F3D0" },
   { id: "pastel-sky", label: "Pastel Sky", group: "pastel", primaryPreview: "#7DD3FC", secondaryPreview: "#BAE6FD" },
   { id: "pastel-peach", label: "Pastel Peach", group: "pastel", primaryPreview: "#FDBA74", secondaryPreview: "#FED7AA" },
   { id: "pastel-lilac", label: "Pastel Lilac", group: "pastel", primaryPreview: "#E879F9", secondaryPreview: "#D946EF" },
-  // Ombre
   { id: "ombre-sunset", label: "Sunset", group: "ombre", primaryPreview: "#F97316", secondaryPreview: "#A855F7" },
   { id: "ombre-aurora", label: "Aurora", group: "ombre", primaryPreview: "#14B8A6", secondaryPreview: "#8B5CF6" },
   { id: "ombre-rose-gold", label: "Rose Gold", group: "ombre", primaryPreview: "#F43F5E", secondaryPreview: "#EAB308" },
@@ -48,11 +52,32 @@ const ombreThemes = computed(() => themes.filter(t => t.group === "ombre"))
 const DEFAULT_THEME = themes[0] as ThemeOption
 const selectedOption = computed<ThemeOption>(() => themes.find(t => t.id === selectedTheme.value) ?? DEFAULT_THEME)
 
-// ── Apply to DOM ──────────────────────────────────────────────────
-const applyToDom = (themeId: ThemeId, mode: ThemeMode) => {
+const canUseTheme = (group: "normal" | "pastel" | "ombre") => {
+  const plan = user.value?.currentPlan ?? "FREE"
+  if (group === "normal") return true
+  if (group === "pastel") return plan === "TEAM" || plan === "BUSINESS"
+  if (group === "ombre") return plan === "BUSINESS"
+  return false
+}
+
+const handleSelectTheme = (opt: ThemeOption) => {
+  if (!canUseTheme(opt.group)) {
+    toast.error(
+      opt.group === "pastel"
+        ? "Theme Pastel yêu cầu gói TEAM trở lên."
+        : "Theme Ombre yêu cầu gói BUSINESS."
+    )
+    return
+  }
+  selectedTheme.value = opt.id
+}
+
+const applyToDom = (themeId: ThemeId) => {
   const html = document.documentElement
-  const isDark = mode === "dark" || (mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches)
-  html.classList.toggle("dark", isDark)
+
+  // Lấy trạng thái isDark trực tiếp từ getter của Pinia store
+  html.classList.toggle("dark", themeStore.isDark)
+
   if (themeId === "default") {
     html.removeAttribute("data-theme")
   } else {
@@ -60,34 +85,31 @@ const applyToDom = (themeId: ThemeId, mode: ThemeMode) => {
   }
 }
 
-// ── Live preview: sync shared → không mất khi switch tab ─────────
-watch([selectedTheme, themeMode], ([]) => {
+// Lắng nghe thay đổi từ local themeId HOẶC mode trong store
+watch([selectedTheme, () => themeStore.mode], () => {
   applyAndSave()
 })
 
-// ── Persist & apply ───────────────────────────────────────────────
 const applyAndSave = () => {
   localStorage.setItem("synkork_theme_id", selectedTheme.value)
-  localStorage.setItem("synkork_theme_mode", themeMode.value)
-  applyToDom(selectedTheme.value, themeMode.value)
+  // Không cần lưu mode vào localStorage ở đây nữa vì setMode trong store đã làm
+  applyToDom(selectedTheme.value)
   saveSuccess.value = true
   setTimeout(() => (saveSuccess.value = false), 2000)
 }
 
-// ── Reset ─────────────────────────────────────────────────────────
 const resetDefaults = () => {
   selectedTheme.value = "default"
-  themeMode.value = "dark"
+  themeStore.setMode("dark")
 }
 
-// ── Mount: đọc localStorage chỉ lần đầu, sau đó dùng shared ──────
 onMounted(() => {
+  // Ghi chú: Nếu bạn chưa gọi themeStore.init() ở App.vue thì nên gọi ở đây
+  // themeStore.init() 
   selectedTheme.value = localStorage.getItem("synkork_theme_id") ?? "default"
-  themeMode.value = (localStorage.getItem("synkork_theme_mode") ?? "dark") as ThemeMode
-  applyToDom(selectedTheme.value, themeMode.value)
+  applyToDom(selectedTheme.value)
 })
 
-// ── Swatch style ──────────────────────────────────────────────────
 const swatchStyle = (opt: ThemeOption) =>
   opt.group === "ombre"
     ? { background: `linear-gradient(135deg, ${opt.primaryPreview} 0%, ${opt.secondaryPreview} 100%)` }
@@ -97,7 +119,7 @@ const swatchStyle = (opt: ThemeOption) =>
 <template>
   <div class="theme-root">
 
-    <!-- ── CHẾ ĐỘ HIỂN THỊ ──────────────────────────────────── -->
+    <!-- CHẾ ĐỘ HIỂN THỊ -->
     <section class="ts-section">
       <div class="flex justify-between">
         <div class="ts-section-header">
@@ -113,11 +135,11 @@ const swatchStyle = (opt: ThemeOption) =>
           { value: 'light', label: 'Sáng', icon: Sun },
           { value: 'dark', label: 'Tối', icon: Moon },
           { value: 'system', label: 'Hệ thống', icon: Monitor },
-        ] as const)" :key="m.value" class="mode-card" :class="{ selected: themeMode === m.value }"
-          @click="themeMode = m.value">
+        ] as const)" :key="m.value" class="mode-card" :class="{ selected: themeStore.mode === m.value }"
+          @click="themeStore.setMode(m.value)">
           <component :is="m.icon" class="mode-icon" />
           <span class="mode-label">{{ m.label }}</span>
-          <div v-if="themeMode === m.value" class="mode-check">
+          <div v-if="themeStore.mode === m.value" class="mode-check">
             <Check class="check-icon" />
           </div>
         </button>
@@ -126,7 +148,7 @@ const swatchStyle = (opt: ThemeOption) =>
 
     <div class="ts-divider" />
 
-    <!-- ── NORMAL ───────────────────────────────────────────── -->
+    <!-- NORMAL -->
     <section class="ts-section">
       <div class="ts-section-header">
         <span class="group-badge normal">Thông thường</span>
@@ -134,7 +156,7 @@ const swatchStyle = (opt: ThemeOption) =>
       <div class="swatch-grid">
         <button v-for="opt in normalThemes" :key="opt.id" class="swatch-btn"
           :class="{ selected: selectedTheme === opt.id }" :title="opt.label" :style="swatchStyle(opt)"
-          @click="selectedTheme = opt.id">
+          @click="handleSelectTheme(opt)">
           <Check v-if="selectedTheme === opt.id" class="swatch-check" />
         </button>
       </div>
@@ -149,15 +171,19 @@ const swatchStyle = (opt: ThemeOption) =>
 
     <div class="ts-divider" />
 
-    <!-- ── PASTEL ────────────────────────────────────────────── -->
+    <!-- PASTEL -->
     <section class="ts-section">
       <div class="ts-section-header">
         <span class="group-badge pastel">Pastel</span>
+        <span v-if="!canUseTheme('pastel')" class="text-xs text-muted-foreground ml-1">
+          🔒 Yêu cầu gói TEAM
+        </span>
       </div>
       <div class="swatch-grid">
-        <button v-for="opt in pastelThemes" :key="opt.id" class="swatch-btn pastel-swatch"
-          :class="{ selected: selectedTheme === opt.id }" :title="opt.label" :style="swatchStyle(opt)"
-          @click="selectedTheme = opt.id">
+        <button v-for="opt in pastelThemes" :key="opt.id" class="swatch-btn pastel-swatch" :class="{
+          selected: selectedTheme === opt.id,
+          'opacity-40 cursor-not-allowed': !canUseTheme('pastel')
+        }" :title="opt.label" :style="swatchStyle(opt)" @click="handleSelectTheme(opt)">
           <Check v-if="selectedTheme === opt.id" class="swatch-check" />
         </button>
       </div>
@@ -165,15 +191,19 @@ const swatchStyle = (opt: ThemeOption) =>
 
     <div class="ts-divider" />
 
-    <!-- ── OMBRE ─────────────────────────────────────────────── -->
+    <!-- OMBRE -->
     <section class="ts-section">
       <div class="ts-section-header">
         <span class="group-badge ombre">Ombre</span>
+        <span v-if="!canUseTheme('ombre')" class="text-xs text-muted-foreground ml-1">
+          🔒 Yêu cầu gói BUSINESS
+        </span>
       </div>
       <div class="swatch-grid">
-        <button v-for="opt in ombreThemes" :key="opt.id" class="swatch-btn ombre-swatch"
-          :class="{ selected: selectedTheme === opt.id }" :title="opt.label" :style="swatchStyle(opt)"
-          @click="selectedTheme = opt.id">
+        <button v-for="opt in ombreThemes" :key="opt.id" class="swatch-btn ombre-swatch" :class="{
+          selected: selectedTheme === opt.id,
+          'opacity-40 cursor-not-allowed': !canUseTheme('ombre')
+        }" :title="opt.label" :style="swatchStyle(opt)" @click="handleSelectTheme(opt)">
           <Check v-if="selectedTheme === opt.id" class="swatch-check" />
         </button>
       </div>
@@ -181,7 +211,7 @@ const swatchStyle = (opt: ThemeOption) =>
 
     <div class="ts-divider" />
 
-    <!-- ── XEM TRƯỚC ─────────────────────────────────────────── -->
+    <!-- XEM TRƯỚC -->
     <section class="ts-section">
       <p class="ts-label-small">Xem trước</p>
       <div class="preview-card">
@@ -210,7 +240,7 @@ const swatchStyle = (opt: ThemeOption) =>
       </div>
     </section>
 
-    <!-- ── ACTIONS ───────────────────────────────────────────── -->
+    <!-- ACTIONS -->
     <div class="action-row">
       <button class="reset-btn" @click="resetDefaults">
         <RotateCcw class="reset-icon" /> Khôi phục mặc định
@@ -281,7 +311,6 @@ const swatchStyle = (opt: ThemeOption) =>
   margin: 1.25rem 0;
 }
 
-/* Mode */
 .mode-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -343,7 +372,6 @@ const swatchStyle = (opt: ThemeOption) =>
   color: white;
 }
 
-/* Swatches */
 .swatch-grid {
   display: flex;
   flex-wrap: wrap;
@@ -412,7 +440,6 @@ const swatchStyle = (opt: ThemeOption) =>
   color: var(--primary);
 }
 
-/* Preview */
 .preview-card {
   background: var(--muted);
   border-radius: 10px;
@@ -491,7 +518,6 @@ const swatchStyle = (opt: ThemeOption) =>
   cursor: default;
 }
 
-/* Actions */
 .action-row {
   display: flex;
   align-items: center;

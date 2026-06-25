@@ -75,6 +75,12 @@ public class CardEntity extends BaseEntity {
     @Column(nullable = false)
     private Boolean dueSoonMailSent = false;
 
+    @Column(nullable = false)
+    private Boolean archived = false;
+
+    @Column(name = "archived_at")
+    private LocalDateTime archivedAt;
+
     @JsonProperty("columnId") 
     public UUID getColumnId() {
         return column != null ? column.getId() : null;

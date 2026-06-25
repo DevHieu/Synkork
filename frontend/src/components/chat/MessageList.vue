@@ -117,57 +117,31 @@ const processedMessages = computed(() => {
   <div class="relative flex-1 overflow-hidden">
     <!-- Loading spinner -->
     <div v-if="isLoading" class="absolute top-2 left-1/2 -translate-x-1/2 z-10">
-      <div
-        class="w-5 h-5 border-2 border-muted border-t-foreground rounded-full animate-spin"
-      />
+      <div class="w-5 h-5 border-2 border-muted border-t-foreground rounded-full animate-spin" />
     </div>
 
     <!-- Nút scroll to bottom -->
     <Transition name="fade">
-      <button
-        v-if="messageStore.isScrollTop"
-        @click="messageStore.scrollToBottom(props.spaceId)"
-        class="absolute bottom-4 right-4 z-10 flex items-center justify-center w-9 h-9 rounded-full bg-background border border-border shadow-md hover:bg-muted transition-colors"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
+      <button v-if="messageStore.isScrollTop" @click="messageStore.scrollToBottom(props.spaceId)"
+        class="absolute bottom-4 right-4 z-10 flex items-center justify-center w-9 h-9 rounded-full bg-background border border-border shadow-md hover:bg-muted transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 5v14M5 12l7 7 7-7" />
         </svg>
       </button>
     </Transition>
 
-    <div
-      :ref="setRef"
-      @scroll="handleScroll"
-      class="flex h-full flex-col overflow-y-auto px-4 py-3"
-    >
+    <div :ref="setRef" @scroll="handleScroll" class="flex h-full flex-col overflow-y-auto px-4 py-3">
       <div v-if="!beforeHasMore">
-        <WelcomeSpace
-          :spaceName="props.spaceName"
-          :isDm="props.isDm"
-          :friendName="props.friendName"
-        />
+        <WelcomeSpace :spaceName="props.spaceName" :isDm="props.isDm" :friendName="props.friendName" />
       </div>
 
       <div ref="beforeSentinel" class="h-px" />
 
       <div class="mt-auto">
         <template v-for="msg in [...processedMessages].reverse()" :key="msg.id">
-          <MessageItem
-            :message="msg"
-            :isGrouped="msg.isGrouped"
-            :isDifferentDay="msg.isDifferentDay"
-            @open-suggestion="emit('openSuggestion', $event)"
-          />
+          <MessageItem :space-id="spaceId" :message="msg" :isGrouped="msg.isGrouped"
+            :isDifferentDay="msg.isDifferentDay" @open-suggestion="emit('openSuggestion', $event)" />
         </template>
       </div>
 

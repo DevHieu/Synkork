@@ -20,6 +20,17 @@ export const create = async (spaceId: string, request: NoteRequest ) =>{
  return res.data;
 }
 
+export async function archiveNote(
+  spaceId: string,
+  noteId: string
+) {
+  const res = await axiosClient.patch(
+    `/api/spaces/${spaceId}/notes/${noteId}/archive`
+  )
+
+  return res.data
+}
+
 export const update = async (spaceId: string, id: string, request: NoteRequest  ) => {
   const res = await axiosClient.put(`/api/spaces/${spaceId}/notes/${id}`, request);
 

@@ -3,11 +3,16 @@ package com.synkork.backend.modules.collaboration.task.card;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.synkork.backend.common.utils.EmailService;
 import com.synkork.backend.modules.collaboration.task.card.enums.CardStatus;
+import com.synkork.backend.modules.notification.NotificationService;
+import com.synkork.backend.modules.notification.enums.NotificationRefTypeEnum;
+import com.synkork.backend.modules.notification.enums.NotificationTypeEnum;
+import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -16,10 +21,16 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CardDeadlineScheduler {
 
-    private final CardRepository cardRepository;
-    private final EmailService emailService;
+    @Autowired
+    private CardRepository cardRepository;
 
-    @Scheduled(fixedRate = 10000)
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private NotificationService notificationService;
+
+    @Scheduled(fixedRate = 5000)
     @Transactional
     public void checkDeadline() {
 
@@ -40,6 +51,20 @@ public class CardDeadlineScheduler {
 
                 overdueCards.add(card);
                 card.setOverdueMailSent(true);
+
+                for (RoomMemberEntity member : card.getAssignees()) {
+
+                    notificationService.sendNotification(
+                            null,
+                            member.getUser(),
+                            card.getId(),
+                            card.getColumn().getSpace().getRoom().getId(),
+                            card.getColumn().getSpace().getId(),
+                            NotificationTypeEnum.TASK,
+                            NotificationRefTypeEnum.CARD_OVER_DUE
+                        );
+                            
+                }
             }
 
             if (status == CardStatus.DUE_SOON &&
@@ -47,6 +72,19 @@ public class CardDeadlineScheduler {
 
                 dueSoonCards.add(card);
                 card.setDueSoonMailSent(true);
+
+                for (RoomMemberEntity member : card.getAssignees()) {
+
+                    notificationService.sendNotification(
+                            null,
+                            member.getUser(),
+                            card.getId(),
+                            card.getColumn().getSpace().getRoom().getId(),
+                            card.getColumn().getSpace().getId(),
+                            NotificationTypeEnum.TASK,
+                            NotificationRefTypeEnum.CARD_DUE_SOON
+                        );
+                }
             }
         }
 

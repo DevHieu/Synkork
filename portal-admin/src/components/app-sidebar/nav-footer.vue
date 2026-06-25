@@ -2,10 +2,10 @@
 import { BadgeCheckIcon, BellIcon, ChevronsUpDownIcon, CreditCardIcon, LogOutIcon, SparklesIcon, UserRoundCogIcon } from '@lucide/vue'
 
 import { useSidebar } from '@/components/ui/sidebar'
-import { User } from '@/types/User';
+import { Account } from '@/types/Account';
 
 const { user } = defineProps<
-  { user: User }
+  { user: Account }
 >()
 
 const { logout } = useAuth()

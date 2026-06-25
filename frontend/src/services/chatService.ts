@@ -1,4 +1,19 @@
 import axiosClient from "@/lib/axiosClient";
+import type { MessageRequest } from "@/types/Message";
+
+export const chatService = {
+  async sendMessage(spaceId: string, msg: MessageRequest) {
+    return axiosClient.post(`/api/spaces/${spaceId}/messages`, msg);
+  },
+
+  async updateMessage(spaceId: string, messageId: string, message: MessageRequest) {
+    return axiosClient.put(`/api/spaces/${spaceId}/messages/${messageId}`, message);
+  },
+
+  async deleteMessage(spaceId: string, messageId: string) {
+    return axiosClient.delete(`/api/spaces/${spaceId}/messages/${messageId}`);
+  }
+}
 
 export const getChatFromSpaceId = async (
   spaceId: string,

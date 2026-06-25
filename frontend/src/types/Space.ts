@@ -1,7 +1,9 @@
+export type SpaceType = "CHAT" | "VOICE" | "NOTE" | "CALENDAR" | "TASK";
+
 export interface Space {
   id: string;
   name: string;
-  type: "CHAT" | "VOICE" | "NOTE" | "CALENDAR" | "TASK";
-  roomType: "GROUP" | "DM";
+  type: SpaceType;
+  roomType: "GROUP" | "DM" | "PERSONAL";
   restricted: boolean;
 }

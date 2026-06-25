@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import {
   LogOut, Sparkles, X, User, Pencil,
-  Eye, EyeOff, Check, AlertCircle, Volume2, Palette
+  Eye, EyeOff, Check, AlertCircle, Volume2, Palette,
+  Loader2
 } from "lucide-vue-next"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
 import { logout } from "@/services/authService"
 import { userService } from "@/services/userService"
 import { useUserStore } from "@/stores/userStore"
@@ -19,8 +19,11 @@ import ThemeSettingsTab from "@/components/sidebar/modals/ThemeSettingsTab.vue"
 const emit = defineEmits<{ close: [] }>()
 
 const userStore = useUserStore()
-const currentUser = computed(() => userStore.user as any)
+const currentUser = computed(() => userStore.user)
 const activeTab = ref("account")
+const avatarInput = ref<HTMLInputElement | null>(null)
+const avatarLoading = ref(false)
+const avatarError = ref("")
 
 const settingsTabs = [
   {
@@ -47,14 +50,7 @@ const isOAuth = computed(() => {
   const p = currentUser.value?.provider
   return p && p !== "LOCAL"
 })
-// Sau khi OAuth tạo password thành công → chuyển sang form đổi mật khẩu
-const oauthJustCreatedPassword = ref(false)
-const showChangePasswordForm = computed(() => !isOAuth.value || oauthJustCreatedPassword.value)
-
-const providerLabel = computed(() => {
-  const map: Record<string, string> = { GOOGLE: "Google", FACEBOOK: "Facebook", GITHUB: "GitHub" }
-  return map[currentUser.value?.provider] ?? currentUser.value?.provider ?? ""
-})
+const showChangePasswordForm = computed(() => !isOAuth.value || currentUser.value?.hasPassword)
 
 // ── Edit states ────────────────────────────────────────────
 const editingField = ref<string | null>(null)
@@ -133,8 +129,6 @@ async function submitCreatePw() {
     await userService.createPassword({ newPassword: createPwForm.next })
     createPwForm.next = createPwForm.confirm = ""
     await userStore.getUserInfo()
-    // Chuyển sang form đổi mật khẩu ngay sau khi tạo thành công
-    oauthJustCreatedPassword.value = true
     pwSuccess.value = "Tạo mật khẩu thành công! Bạn có thể đổi mật khẩu bên dưới."
     setTimeout(() => (pwSuccess.value = ""), 4000)
   } catch (e: any) {
@@ -154,6 +148,36 @@ const displayName = computed(() =>
 )
 
 // ── ESC ───────────────────────────────────────────────────
+function chooseAvatar() {
+  if (!avatarLoading.value) avatarInput.value?.click()
+}
+
+async function uploadAvatar(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ""
+  if (!file) return
+
+  avatarError.value = ""
+  if (!file.type.startsWith("image/")) {
+    avatarError.value = "Vui lòng chọn một tệp ảnh"
+    return
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    avatarError.value = "Ảnh phải nhỏ hơn 5 MB"
+    return
+  }
+
+  avatarLoading.value = true
+  try {
+    userStore.user = await userService.uploadAvatar(file)
+  } catch (e: any) {
+    avatarError.value = e?.response?.data || e?.message || "Không thể tải ảnh lên"
+  } finally {
+    avatarLoading.value = false
+  }
+}
+
 function onKeydown(e: KeyboardEvent) { if (e.key === "Escape") emit("close") }
 onMounted(() => document.addEventListener("keydown", onKeydown))
 onUnmounted(() => document.removeEventListener("keydown", onKeydown))
@@ -161,6 +185,7 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
 
 <template>
   <Teleport to="body">
+    <input ref="avatarInput" type="file" accept="image/*" class="hidden" @change="uploadAvatar" />
     <Transition name="sf">
       <div class="fixed inset-0 z-20 flex items-center justify-center bg-black/75" @click.self="emit('close')">
         <div class="flex w-[min(960px,96vw)] h-[min(660px,95vh)] overflow-hidden rounded-lg shadow-2xl">
@@ -170,18 +195,23 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
 
             <!-- User mini card -->
             <div class="px-4 pb-3">
-              <div class="relative cursor-pointer group/ava w-fit">
+              <button type="button" class="relative cursor-pointer group/ava w-fit disabled:cursor-wait"
+                :disabled="avatarLoading" aria-label="Thay ảnh đại diện" @click="chooseAvatar">
                 <Avatar class="w-[68px] h-[68px] border-2 border-muted">
                   <AvatarImage v-if="currentUser?.avatarUrl" :src="currentUser.avatarUrl" />
                   <AvatarFallback class="bg-primary text-primary-foreground text-2xl font-bold">
                     {{ displayName.charAt(0).toUpperCase() }}
                   </AvatarFallback>
                 </Avatar>
+
                 <div
-                  class="absolute inset-0 rounded-full flex items-center justify-center bg-black/50 opacity-0 group-hover/ava:opacity-100 transition-opacity">
-                  <Pencil class="size-4 text-white" />
+                  class="absolute inset-0 rounded-full flex items-center justify-center bg-black/50 transition-opacity"
+                  :class="avatarLoading ? 'opacity-100' : 'opacity-0 group-hover/ava:opacity-100'">
+                  <Loader2 v-if="avatarLoading" class="size-4 text-white animate-spin" />
+                  <Pencil v-else class="size-4 text-white" />
                 </div>
-              </div>
+              </button>
+              <p v-if="avatarError" class="mt-1 text-[11px] text-destructive">{{ avatarError }}</p>
               <div class="mt-2">
                 <p class="text-sm font-bold text-foreground">{{ displayName }}</p>
                 <button
@@ -226,7 +256,7 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
               <h2 class="text-base font-bold text-foreground">
                 <template v-if="activeTab === 'account'">Tài Khoản Của Tôi</template>
                 <template v-else>{{settingsTabs.flatMap(g => g.items).find(i => i.id === activeTab)?.label
-                }}</template>
+                  }}</template>
               </h2>
               <Button variant="ghost" size="sm" class="gap-1.5 text-muted-foreground text-[11px]"
                 @click="emit('close')">
@@ -245,20 +275,25 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
                 <div class="rounded-xl overflow-hidden bg-muted mb-5">
                   <div class="h-[90px] bg-gradient-to-br from-primary to-secondary" />
                   <div class="flex items-end px-4 -mt-10 mb-3">
-                    <div class="relative cursor-pointer group/ava2">
+                    <button type="button" class="relative cursor-pointer group/ava2 disabled:cursor-wait"
+                      :disabled="avatarLoading" aria-label="Thay ảnh đại diện" @click="chooseAvatar">
                       <Avatar class="w-20 h-20 border-4 border-card">
                         <AvatarImage v-if="currentUser?.avatarUrl" :src="currentUser.avatarUrl" />
                         <AvatarFallback class="bg-primary text-primary-foreground text-3xl font-bold">
                           {{ displayName.charAt(0).toUpperCase() }}
                         </AvatarFallback>
                       </Avatar>
+
                       <div
-                        class="absolute inset-0 rounded-full flex items-center justify-center bg-black/50 opacity-0 group-hover/ava2:opacity-100 transition-opacity">
-                        <Pencil class="size-5 text-white" />
+                        class="absolute inset-0 rounded-full flex items-center justify-center bg-black/50 transition-opacity"
+                        :class="avatarLoading ? 'opacity-100' : 'opacity-0 group-hover/ava2:opacity-100'">
+                        <Loader2 v-if="avatarLoading" class="size-5 text-white animate-spin" />
+                        <Pencil v-else class="size-5 text-white" />
                       </div>
-                    </div>
+                    </button>
                   </div>
                   <p class="px-4 pb-3 text-sm font-bold text-foreground">{{ displayName }}</p>
+                  <p v-if="avatarError" class="px-4 pb-3 text-xs text-destructive">{{ avatarError }}</p>
                 </div>
 
                 <!-- Success toast -->
@@ -338,7 +373,8 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
                     <Label class="text-[10px] uppercase tracking-wider text-muted-foreground">Email</Label>
                     <div class="flex items-center gap-2 mt-0.5">
                       <p class="text-sm text-foreground">{{ showEmail ? currentUser?.email : maskedEmail }}</p>
-                      <button class="text-[11px] font-semibold text-primary hover:opacity-75 transition-opacity" @click="showEmail = !showEmail">
+                      <button class="text-[11px] font-semibold text-primary hover:opacity-75 transition-opacity"
+                        @click="showEmail = !showEmail">
                         {{ showEmail ? 'Ẩn' : 'Hiển thị' }}
                       </button>
                     </div>
@@ -372,12 +408,6 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
                               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                               fill="#EA4335" />
                           </svg>
-                          <!-- GitHub -->
-                          <svg v-else-if="currentUser?.provider === 'GITHUB'" viewBox="0 0 24 24" class="size-5"
-                            fill="currentColor">
-                            <path
-                              d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
-                          </svg>
                           <!-- Fallback -->
                           <svg v-else viewBox="0 0 24 24" class="size-5 text-muted-foreground" fill="currentColor">
                             <path
@@ -385,7 +415,7 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
                           </svg>
                         </div>
                         <div>
-                          <p class="text-sm font-bold text-foreground">Đăng nhập qua {{ providerLabel }}</p>
+                          <p class="text-sm font-bold text-foreground">Đăng nhập qua Google</p>
                           <p class="text-xs text-muted-foreground mt-0.5 leading-relaxed">
                             Tài khoản chưa có mật khẩu. Tạo mật khẩu để có thêm cách đăng nhập.
                           </p>

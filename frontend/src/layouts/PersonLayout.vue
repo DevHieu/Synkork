@@ -17,7 +17,8 @@ watch(
   () => route.params.spaceId,
   async (spaceId) => {
     if (spaceId) {
-      await useSpaceStore().joinDMSpace(spaceId as string);
+      const path = ["/me/note", "/me/calendar"].find(p => route.path.includes(p)) ?? "/me";
+      await useSpaceStore().joinDMSpace(spaceId as string, path);
     }
   },
   { immediate: true },

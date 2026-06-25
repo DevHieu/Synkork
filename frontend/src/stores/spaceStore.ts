@@ -7,9 +7,9 @@ import { socketService } from "@/services/websocket/socketService";
 import { useUserStore } from "./userStore";
 import { useRoomMemberStore } from "./roomMemberStore";
 import { storeToRefs } from "pinia";
-import type { Space } from "@/types/Space";
+import type { Space, SpaceType } from "@/types/Space";
 import { toast } from "vue-sonner";
-import { nextTick, watch } from "vue";
+import { watch } from "vue";
 
 export const useSpaceStore = defineStore("spaces", {
   state: () => ({
@@ -175,7 +175,7 @@ export const useSpaceStore = defineStore("spaces", {
       router.push(`/rooms/${spaceType.toLowerCase()}/${router.currentRoute.value.params.roomId}/${spaceId}`);
     },
 
-    async joinDMSpace(spaceId: string) {
+    async joinDMSpace(spaceId: string, path: string = "/me") {
       if (this._joiningDMSpaceId === spaceId) return;
       try {
         this._joiningDMSpaceId = spaceId;
@@ -186,9 +186,11 @@ export const useSpaceStore = defineStore("spaces", {
 
         // Không hiểu tại sao hoạt động. Thứ tự 3 dòng này để im như này
         this.currentSpace = null;
-        await router.push(`/me/${spaceId}`);
+        await router.push(`${path}/${spaceId}`);
         this.currentSpace = space;
       } catch (error) {
+        console.log(error);
+
         toast.error("Không thể tham gia phòng chat này.");
       } finally {
         this.loading = false;
@@ -290,14 +292,33 @@ export const useSpaceStore = defineStore("spaces", {
         state.taskSpaces.some((s) => s.id === spaceId)
       );
     },
+
+    getSpaceTypeSize: (state) => (type: SpaceType) => {
+      switch (type) {
+        case "CHAT":
+          return state.chatSpaces.length;
+        case "VOICE":
+          return state.voiceSpaces.length;
+        case "NOTE":
+          return state.noteSpaces.length;
+        case "CALENDAR":
+          return state.calendarSpaces.length;
+        case "TASK":
+          return state.taskSpaces.length;
+        default:
+          return 0;
+      }
+    },
+
+    isPersonalSpace: (state) => {
+      return state.currentSpace?.roomType === "PERSONAL";
+    }
   },
 });
 
 function checkPermission(space: Space | null) {
   const { user } = storeToRefs(useUserStore());
   const { currentAuthority } = storeToRefs(useRoomMemberStore());
-
-  console.log("user: " + currentAuthority.value);
 
   if (!user.value || !space) return false;
 
