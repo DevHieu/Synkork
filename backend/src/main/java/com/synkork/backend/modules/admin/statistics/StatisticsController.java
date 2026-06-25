@@ -37,4 +37,3 @@ public class StatisticsController {
         return ResponseEntity.ok(statisticsService.getUserStatsData());
     }
 }
-

@@ -19,7 +19,6 @@ import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
 import com.synkork.backend.modules.user.enums.PlanEnum;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -36,14 +35,21 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class AdminInvoiceService {
 
-    private final InvoiceRepository invoiceRepository;
-    private final UserRepository userRepository;
-    private final ExpiredSubscriptionService expiredSubscriptionService;
-    private final AuditLogService auditLogService;
-    private final ObjectMapper objectMapper;
+    @Autowired
+    private InvoiceRepository invoiceRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private ExpiredSubscriptionService expiredSubscriptionService;
+
+    @Autowired
+    private AuditLogService auditLogService;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     public Page<InvoiceEntity> getInvoices(InvoiceFilterRequest request) {
         request.validate();
@@ -123,9 +129,8 @@ public class AdminInvoiceService {
             invoice.setTransactionId(request.orderId());
         }
 
-        InvoiceEntity saved = invoiceRepository.save(invoice);
-        createLog(saved, LogActionEnum.UPDATE_INVOICE, previousStatus);
-        return AdminInvoiceResponse.from(saved);
+        createLog(invoiceRepository.save(invoice), LogActionEnum.UPDATE_INVOICE, previousStatus);
+        return AdminInvoiceResponse.from(invoiceRepository.save(invoice));
     }
 
     @Transactional
@@ -146,8 +151,7 @@ public class AdminInvoiceService {
         userRepository.save(user);
         try {
             expiredSubscriptionService.changePendingRoomAndSpace(user.getId());
-        } catch (Exception e) {
-            log.error("Failed to change pending room and space for user: {}", user.getId(), e);
+        } catch (Exception ignored) {
         }
     }
 
