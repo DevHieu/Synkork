@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { AlertCircle, ArrowRight, CheckCircle2, Clock, DollarSign, TrendingUp, Users } from '@lucide/vue'
+import dayjs from 'dayjs'
 import { onMounted, ref } from 'vue'
-import { CreditCard, DollarSign, Users, Clock, CheckCircle2, AlertCircle, ArrowRight, TrendingUp } from '@lucide/vue'
-import { dashboardService } from '../services/dashboardService'
-import DataCard from '../components/data-card.vue'
+
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import dayjs from 'dayjs'
+
+import DataCard from '../components/data-card.vue'
+import { dashboardService } from '../services/dashboardService'
 
 const loading = ref(false)
 const subData = ref<any>(null)
@@ -14,9 +16,11 @@ async function fetchSubscriptionData() {
   loading.value = true
   try {
     subData.value = await dashboardService.getSubscriptionDashboardData()
-  } catch (err) {
-    console.error('Lỗi khi lấy dữ liệu subscription dashboard:', err)
-  } finally {
+  }
+  catch (err) {
+    console.error('Error fetching subscription dashboard data:', err)
+  }
+  finally {
     loading.value = false
   }
 }
@@ -31,14 +35,17 @@ function formatMoney(amount?: number | string | null) {
 }
 
 function formatDate(dateStr?: string | null) {
-  if (!dateStr) return '—'
+  if (!dateStr)
+    return '—'
   return dayjs(dateStr).format('DD/MM/YYYY HH:mm')
 }
 
 function statusMeta(status?: string | null) {
   const normalized = (status || 'PENDING').toUpperCase()
-  if (normalized === 'PAID') return { label: 'Paid', color: 'text-green-500 bg-green-500/10 border-green-500/20' }
-  if (normalized === 'FAILED') return { label: 'Failed', color: 'text-red-500 bg-red-500/10 border-red-500/20' }
+  if (normalized === 'PAID')
+    return { label: 'Paid', color: 'text-green-500 bg-green-500/10 border-green-500/20' }
+  if (normalized === 'FAILED')
+    return { label: 'Failed', color: 'text-red-500 bg-red-500/10 border-red-500/20' }
   return { label: 'Pending', color: 'text-orange-500 bg-orange-500/10 border-orange-500/20' }
 }
 </script>
@@ -48,17 +55,17 @@ function statusMeta(status?: string | null) {
     <!-- Top Stats Cards -->
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <DataCard
-        title="Tổng doanh thu"
+        title="Total Revenue"
         :data="formatMoney(subData?.totalRevenue)"
         :icon="DollarSign"
       />
       <DataCard
-        title="Doanh thu tháng này"
+        title="Revenue This Month"
         :data="formatMoney(subData?.revenueThisMonth)"
         :icon="TrendingUp"
       />
       <DataCard
-        title="Gói đang hoạt động"
+        title="Active Subscriptions"
         :data="subData?.activeSubscriptions?.toLocaleString() ?? '—'"
         :icon="Users"
       />
@@ -69,31 +76,43 @@ function statusMeta(status?: string | null) {
       <!-- Status Distribution Card -->
       <Card class="col-span-1 lg:col-span-3">
         <CardHeader>
-          <CardTitle>Trạng thái hóa đơn</CardTitle>
+          <CardTitle>Invoice Status</CardTitle>
           <CardDescription>
-            Phân bố trạng thái của tất cả giao dịch thanh toán
+            Status distribution of all payment transactions
           </CardDescription>
         </CardHeader>
         <CardContent class="grid gap-4">
           <div class="flex items-center gap-4 p-3 rounded-lg border border-green-500/10 bg-green-500/5">
             <CheckCircle2 class="h-8 w-8 text-green-500" />
             <div class="flex-1">
-              <div class="text-sm font-medium text-muted-foreground">Đã thanh toán (PAID)</div>
-              <div class="text-2xl font-bold text-green-500">{{ subData?.paidInvoices ?? 0 }}</div>
+              <div class="text-sm font-medium text-muted-foreground">
+                Paid (PAID)
+              </div>
+              <div class="text-2xl font-bold text-green-500">
+                {{ subData?.paidInvoices ?? 0 }}
+              </div>
             </div>
           </div>
           <div class="flex items-center gap-4 p-3 rounded-lg border border-orange-500/10 bg-orange-500/5">
             <Clock class="h-8 w-8 text-orange-500" />
             <div class="flex-1">
-              <div class="text-sm font-medium text-muted-foreground">Chờ thanh toán (PENDING)</div>
-              <div class="text-2xl font-bold text-orange-500">{{ subData?.pendingInvoices ?? 0 }}</div>
+              <div class="text-sm font-medium text-muted-foreground">
+                Pending (PENDING)
+              </div>
+              <div class="text-2xl font-bold text-orange-500">
+                {{ subData?.pendingInvoices ?? 0 }}
+              </div>
             </div>
           </div>
           <div class="flex items-center gap-4 p-3 rounded-lg border border-red-500/10 bg-red-500/5">
             <AlertCircle class="h-8 w-8 text-red-500" />
             <div class="flex-1">
-              <div class="text-sm font-medium text-muted-foreground">Thất bại (FAILED)</div>
-              <div class="text-2xl font-bold text-red-500">{{ subData?.failedInvoices ?? 0 }}</div>
+              <div class="text-sm font-medium text-muted-foreground">
+                Failed (FAILED)
+              </div>
+              <div class="text-2xl font-bold text-red-500">
+                {{ subData?.failedInvoices ?? 0 }}
+              </div>
             </div>
           </div>
         </CardContent>
@@ -103,11 +122,11 @@ function statusMeta(status?: string | null) {
       <Card class="col-span-1 lg:col-span-4">
         <CardHeader class="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Giao dịch gần đây</CardTitle>
-            <CardDescription>5 giao dịch mua gói dịch vụ mới nhất</CardDescription>
+            <CardTitle>Recent Transactions</CardTitle>
+            <CardDescription>5 latest subscription purchases</CardDescription>
           </div>
           <router-link to="/subscriptions" class="inline-flex items-center gap-1 text-xs text-primary hover:underline">
-            Xem tất cả <ArrowRight class="h-3 w-3" />
+            View All <ArrowRight class="h-3 w-3" />
           </router-link>
         </CardHeader>
         <CardContent>
@@ -115,7 +134,7 @@ function statusMeta(status?: string | null) {
             <div class="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
           <div v-else-if="!subData?.recentTransactions || subData.recentTransactions.length === 0" class="flex h-40 items-center justify-center text-sm text-muted-foreground">
-            Chưa có giao dịch nào
+            No transactions yet
           </div>
           <div v-else class="space-y-4">
             <div
