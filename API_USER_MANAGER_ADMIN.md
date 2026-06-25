@@ -1,135 +1,109 @@
-# API User và Manager/Admin
+# API User va Manager/Admin - Postman
 
-## Thông tin chung
+## Cau hinh chung
 
-- Base URL local: `http://localhost:8080/api`
-- Xác thực: JWT Bearer token
-- Header:
+Base URL:
+
+```http
+http://localhost:8080/api
+```
+
+Headers:
 
 ```http
 Authorization: Bearer <access_token>
 Content-Type: application/json
 ```
 
-### Phân quyền
+Quyen:
 
-| Nhóm API | ADMIN | MANAGER |
+| API | ADMIN | MANAGER |
 |---|---:|---:|
-| `/manage/users/**` | Có | Có |
-| `/manage/admin/**` | Có | Không |
-| Đổi role của User | Có | Không |
+| `/manage/users/**` | Co | Co |
+| `/manage/admin/**` | Co | Khong |
 
-API User chỉ đọc và thao tác tài khoản đang có role `USER`. Sau khi ADMIN nâng
-User thành `MANAGER` hoặc `ADMIN`, tài khoản đó sẽ không còn xuất hiện trong
-danh sách User và sẽ xuất hiện trong danh sách Manager/Admin.
+## 1. Users Manage API
 
----
+Dung de test Postman cho menu **Users** trong portal admin.
 
-## I. User API
-
-### 1. Lấy danh sách User
+Base endpoint:
 
 ```http
-GET /api/manage/users
+/manage/users
 ```
 
-Quyền: `ADMIN`, `MANAGER`.
+### 1.1 Lay danh sach users
 
-Query parameters:
-
-| Tên | Kiểu | Mặc định | Mô tả |
-|---|---|---:|---|
-| `search` | string | | Tìm theo username, email hoặc displayName |
-| `status` | enum | | `ACTIVE`, `INACTIVE`, `BANNED` |
-| `plan` | enum | | `FREE`, `TEAM`, `BUSINESS` |
-| `dateFrom` | datetime | | ISO date-time, ví dụ `2026-06-01T00:00:00` |
-| `dateTo` | datetime | | ISO date-time |
-| `page` | integer | `0` | Trang bắt đầu từ 0 |
-| `size` | integer | `20` | Từ 1 đến 100 |
-
-Ví dụ:
+Request don gian nhat:
 
 ```http
-GET /api/manage/users?search=an&status=ACTIVE&plan=FREE&page=0&size=20
+GET /manage/users
 ```
 
-Response `200`:
+Co filter:
+
+```http
+GET /manage/users?search=tram&status=ACTIVE&plan=FREE&page=0&size=20
+```
+
+Query params:
+
+| Param | Bat buoc | Vi du | Ghi chu |
+|---|---:|---|---|
+| `search` | Khong | `tram` | Tim theo username/email/displayName |
+| `status` | Khong | `ACTIVE` | `ACTIVE`, `INACTIVE`, `BANNED` |
+| `plan` | Khong | `FREE` | `FREE`, `TEAM`, `BUSINESS` |
+| `dateFrom` | Khong | `2026-06-01T00:00:00` | Loc theo ngay tao |
+| `dateTo` | Khong | `2026-06-30T23:59:59` | Loc theo ngay tao |
+| `page` | Khong | `0` | Mac dinh `0` |
+| `size` | Khong | `20` | Mac dinh `20`, toi da `100` |
+
+Note: API nay chi tra ve tai khoan role `USER`.
+
+Response can xem:
 
 ```json
 {
-  "success": true,
-  "message": "Get user list successfully",
   "data": [
     {
-      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "id": "uuid",
       "username": "nguyenvana",
       "displayName": "Nguyen Van A",
       "email": "user@synkork.com",
-      "avatarUrl": null,
       "role": "user",
       "plan": "FREE",
       "status": "active",
       "provider": "local",
-      "createdAt": "2026-06-15T10:00:00",
-      "updatedAt": "2026-06-15T10:00:00"
+      "createdAt": "2026-06-23T10:00:00"
     }
   ],
   "meta": {
-    "page": 1,
+    "page": 0,
     "size": 20,
-    "totalElements": 1,
-    "totalPages": 1,
-    "hasNext": false,
-    "hasPrev": false
+    "totalElements": 1
   }
 }
 ```
 
-Lưu ý: tham số `role` có trong DTO filter nhưng service luôn giới hạn kết quả
-về role `USER`.
-
-### 2. Lấy chi tiết User
+### 1.2 Lay chi tiet user
 
 ```http
-GET /api/manage/users/{id}
+GET /manage/users/{id}
 ```
 
-Quyền: `ADMIN`, `MANAGER`.
-
-Response `200`:
-
-```json
-{
-  "success": true,
-  "message": "Get user successfully",
-  "data": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "username": "nguyenvana",
-    "displayName": "Nguyen Van A",
-    "email": "user@synkork.com",
-    "avatarUrl": null,
-    "role": "user",
-    "plan": "FREE",
-    "status": "active",
-    "provider": "local",
-    "createdAt": "2026-06-15T10:00:00",
-    "updatedAt": "2026-06-15T10:00:00"
-  },
-  "meta": null
-}
-```
-
-API từ chối nếu ID thuộc tài khoản `MANAGER` hoặc `ADMIN`.
-
-### 3. Tạo User
+Vi du:
 
 ```http
-POST /api/manage/users
+GET /manage/users/019ed000-0000-7000-8000-000000000000
 ```
 
-Quyền: `ADMIN`, `MANAGER`.
+### 1.3 Tao user
 
-Request:
+```http
+POST /manage/users
+```
+
+Body:
 
 ```json
 {
@@ -142,78 +116,55 @@ Request:
 }
 ```
 
-Validation:
+Field:
 
-- `firstName`, `lastName`, `username`, `email`, `status` bắt buộc.
-- `email` phải đúng định dạng và chưa tồn tại.
-- `username` phải chưa tồn tại.
-- `status`: `active`, `inactive`, `banned`.
-- `role` nếu truyền vào chỉ nhận `user`.
+| Field | Bat buoc | Gia tri |
+|---|---:|---|
+| `firstName` | Co | Text |
+| `lastName` | Co | Text |
+| `username` | Co | Text, khong trung |
+| `email` | Co | Email, khong trung |
+| `status` | Co | `active`, `inactive`, `banned` |
+| `role` | Khong | Chi nen gui `user` |
 
-Hệ thống tự sinh mật khẩu tạm thời 8 ký tự, mã hóa mật khẩu và gửi email nếu
-mail service đang hoạt động.
+Note: backend tao `displayName = firstName + lastName`, tao password tam thoi va gui email neu mail config chay.
 
-Response `201`: `ApiResponse<AdminUserResponse>`.
-
-Lưu ý: frontend hiện có gửi thêm `plan`, nhưng DTO backend không nhận và service
-không xử lý trường này khi tạo.
-
-### 4. Cập nhật User
+### 1.4 Cap nhat user
 
 ```http
-PATCH /api/manage/users/{id}
+PATCH /manage/users/{id}
 ```
 
-Quyền:
-
-- `ADMIN`: sửa thông tin và đổi role.
-- `MANAGER`: sửa thông tin User, không được đổi role.
-
-Tất cả trường đều không bắt buộc:
+Body mau:
 
 ```json
 {
   "displayName": "Nguyen Van A",
-  "email": "new-email@synkork.com",
+  "email": "new-user@synkork.com",
   "plan": "TEAM",
-  "status": "ACTIVE",
-  "role": "manager"
+  "status": "ACTIVE"
 }
 ```
 
-Giá trị hợp lệ:
+Tat ca field trong body deu optional.
 
-- `plan`: `FREE`, `TEAM`, `BUSINESS`.
-- `status`: `ACTIVE`, `INACTIVE`, `BANNED`.
-- `role`: `user`, `manager`, `admin`.
+| Field | Gia tri |
+|---|---|
+| `displayName` | Text |
+| `email` | Email, khong trung |
+| `plan` | `FREE`, `TEAM`, `BUSINESS` |
+| `status` | `ACTIVE`, `INACTIVE`, `BANNED` |
+| `role` | `user`, `manager`, `admin` |
 
-Chỉ ADMIN được gửi thay đổi role. Đây là API dùng để nâng User lên Manager:
+Note: chi `ADMIN` moi duoc gui field `role`. Neu test bang token `MANAGER`, dung body khong co `role`.
 
-```json
-{
-  "role": "manager"
-}
-```
-
-Hoặc nâng User lên Admin:
-
-```json
-{
-  "role": "admin"
-}
-```
-
-Response `200`: `ApiResponse<AdminUserResponse>`.
-
-### 5. Cập nhật trạng thái User
+### 1.5 Cap nhat trang thai user
 
 ```http
-PATCH /api/manage/users/{id}/status
+PATCH /manage/users/{id}/status
 ```
 
-Quyền: `ADMIN`, `MANAGER`.
-
-Request:
+Body:
 
 ```json
 {
@@ -221,109 +172,49 @@ Request:
 }
 ```
 
-Giá trị nên gửi viết hoa: `ACTIVE`, `INACTIVE`, `BANNED`.
+Gia tri nen test: `ACTIVE`, `INACTIVE`, `BANNED`.
 
-Response `200`: `ApiResponse<AdminUserResponse>`.
-
-### 6. Xóa User
+### 1.6 Xoa user
 
 ```http
-DELETE /api/manage/users/{id}
+DELETE /manage/users/{id}
 ```
 
-Quyền: `ADMIN`, `MANAGER`.
+Note: API nay chi xoa tai khoan role `USER`; neu id la manager/admin se bao loi.
 
-Chỉ xóa được tài khoản có role `USER`.
+## 2. Manager/Admin API
 
-Response `200`:
+Chi `ADMIN` duoc goi cac API nay.
 
-```json
-{
-  "success": true,
-  "message": "Delete user successfully",
-  "data": {
-    "message": "Xoa nguoi dung thanh cong"
-  },
-  "meta": null
-}
-```
-
----
-
-## II. Manager/Admin API
-
-Toàn bộ API trong phần này chỉ dành cho `ADMIN`.
-
-### 1. Lấy danh sách Manager và Admin
+### Lay danh sach manager/admin
 
 ```http
-GET /api/manage/admin
+GET /manage/admin?keyword=admin&status=active&role=admin&page=0&size=20
 ```
 
-Query parameters:
+Query params:
 
-| Tên | Kiểu | Mặc định | Mô tả |
-|---|---|---:|---|
-| `keyword` | string | | Tìm username, email hoặc displayName |
-| `status` | string | | `active`, `inactive`, `banned` |
-| `page` | integer | `0` | Trang bắt đầu từ 0 |
-| `size` | integer | `20` | Số bản ghi mỗi trang |
+| Param | Gia tri |
+|---|---|
+| `keyword` | username/email/displayName |
+| `status` | `active`, `inactive`, `banned` |
+| `role` | `manager`, `admin` |
+| `page` | mac dinh `0` |
+| `size` | mac dinh `20` |
 
-Ví dụ:
+### Lay chi tiet manager/admin
 
 ```http
-GET /api/manage/admin?keyword=admin&status=active&page=0&size=20
+GET /manage/admin/{id}
 ```
 
-Response `200`:
-
-```json
-{
-  "content": [
-    {
-      "id": "550e8400-e29b-41d4-a716-446655440000",
-      "username": "admin01",
-      "displayName": "System Admin",
-      "email": "admin@synkork.com",
-      "avatarUrl": null,
-      "role": "admin",
-      "status": "active",
-      "provider": "local",
-      "createdAt": "2026-06-15T10:00:00",
-      "updatedAt": "2026-06-15T10:00:00"
-    }
-  ],
-  "page": 0,
-  "size": 20,
-  "totalElements": 1,
-  "totalPages": 1,
-  "last": true
-}
-```
-
-Danh sách gồm cả role `MANAGER` và `ADMIN`.
-
-### 2. Lấy chi tiết Manager/Admin
+### Tao manager/admin
 
 ```http
-GET /api/manage/admin/{id}
+POST /manage/admin
 ```
 
-Quyền: `ADMIN`.
-
-Response `200`: `ManagerResponse`.
-
-API từ chối nếu ID thuộc tài khoản role `USER`.
-
-### 3. Tạo Manager hoặc Admin
-
-```http
-POST /api/manage/admin
-```
-
-Quyền: `ADMIN`.
-
-Request tạo Manager:
+Body tao manager:
 
 ```json
 {
@@ -335,7 +226,7 @@ Request tạo Manager:
 }
 ```
 
-Request tạo Admin:
+Body tao admin:
 
 ```json
 {
@@ -347,27 +238,22 @@ Request tạo Admin:
 }
 ```
 
-Validation:
+Bat buoc: `displayName`, `username`, `email`, `status`, `role`.
 
-- Tất cả trường bắt buộc.
-- `email` và `username` phải chưa tồn tại.
-- `status`: `active`, `inactive`, `banned`.
-- `role`: `manager`, `admin`.
+Gia tri hop le:
 
-Hệ thống tự sinh mật khẩu tạm thời 8 ký tự và gửi email nếu mail service đang
-hoạt động.
+| Field | Gia tri |
+|---|---|
+| `status` | `active`, `inactive`, `banned` |
+| `role` | `manager`, `admin` |
 
-Response `201`: `ManagerResponse`.
-
-### 4. Cập nhật Manager/Admin
+### Cap nhat manager/admin
 
 ```http
-PATCH /api/manage/admin/{id}
+PATCH /manage/admin/{id}
 ```
 
-Quyền: `ADMIN`.
-
-Tất cả trường đều không bắt buộc:
+Body mau:
 
 ```json
 {
@@ -378,63 +264,52 @@ Tất cả trường đều không bắt buộc:
 }
 ```
 
-API cho phép:
+Tat ca field deu optional. Khong sua `username`. Khong doi ve role `user`.
 
-- Đổi `MANAGER` thành `ADMIN`.
-- Đổi `ADMIN` thành `MANAGER`.
-- Sửa displayName, email và status.
-- Không cho sửa username.
-- Không cho đổi trực tiếp về role `USER`.
-
-Response `200`: `ManagerResponse`.
-
-### 5. Xóa Manager/Admin
+### Xoa manager/admin
 
 ```http
-DELETE /api/manage/admin/{id}
+DELETE /manage/admin/{id}
 ```
 
-Quyền: `ADMIN`.
+Chi xoa duoc tai khoan co role `MANAGER` hoac `ADMIN`.
 
-Chỉ xóa được tài khoản có role `MANAGER` hoặc `ADMIN`.
+## 3. Response nhanh
 
-Response `200`:
+User API tra dang:
 
 ```json
 {
-  "message": "Xoa tai khoan manager thanh cong"
+  "success": true,
+  "message": "...",
+  "data": {},
+  "meta": null
 }
 ```
 
----
+Manager/Admin API tra DTO truc tiep, khong boc `success/message`.
 
-## Mã HTTP thường gặp
+## 4. Ma loi hay gap
 
-| Mã | Ý nghĩa |
+| Ma | Ly do |
 |---:|---|
-| `200` | Thành công |
-| `201` | Tạo tài khoản thành công |
-| `400` | Request, enum hoặc ID tài khoản không hợp lệ |
-| `401` | Thiếu token, token hết hạn hoặc không hợp lệ |
-| `403` | Không đủ quyền truy cập endpoint |
-| `404` | Không tìm thấy đường dẫn API |
+| `400` | Body sai, enum sai, email/username trung, id khong dung loai tai khoan |
+| `401` | Thieu token hoac token het han |
+| `403` | Khong du quyen |
+| `404` | Sai URL |
 
-Lưu ý theo exception handler hiện tại: trường hợp không tìm thấy tài khoản đang
-được service ném dưới dạng `IllegalArgumentException`, vì vậy response thực tế
-là `400`, không phải `404`.
+## 5. Tom tat endpoint
 
-## Tổng hợp endpoint
-
-| Method | Endpoint | Quyền |
-|---|---|---|
-| `GET` | `/api/manage/users` | ADMIN, MANAGER |
-| `GET` | `/api/manage/users/{id}` | ADMIN, MANAGER |
-| `POST` | `/api/manage/users` | ADMIN, MANAGER |
-| `PATCH` | `/api/manage/users/{id}` | ADMIN, MANAGER |
-| `PATCH` | `/api/manage/users/{id}/status` | ADMIN, MANAGER |
-| `DELETE` | `/api/manage/users/{id}` | ADMIN, MANAGER |
-| `GET` | `/api/manage/admin` | ADMIN |
-| `GET` | `/api/manage/admin/{id}` | ADMIN |
-| `POST` | `/api/manage/admin` | ADMIN |
-| `PATCH` | `/api/manage/admin/{id}` | ADMIN |
-| `DELETE` | `/api/manage/admin/{id}` | ADMIN |
+| Method | Endpoint |
+|---|---|
+| `GET` | `/api/manage/users` |
+| `GET` | `/api/manage/users/{id}` |
+| `POST` | `/api/manage/users` |
+| `PATCH` | `/api/manage/users/{id}` |
+| `PATCH` | `/api/manage/users/{id}/status` |
+| `DELETE` | `/api/manage/users/{id}` |
+| `GET` | `/api/manage/admin` |
+| `GET` | `/api/manage/admin/{id}` |
+| `POST` | `/api/manage/admin` |
+| `PATCH` | `/api/manage/admin/{id}` |
+| `DELETE` | `/api/manage/admin/{id}` |
