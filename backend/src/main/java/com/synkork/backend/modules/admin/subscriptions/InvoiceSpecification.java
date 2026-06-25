@@ -2,9 +2,6 @@ package com.synkork.backend.modules.admin.subscriptions;
 
 import com.synkork.backend.modules.admin.subscriptions.dtos.InvoiceFilterRequest;
 import com.synkork.backend.modules.payment.InvoiceEntity;
-import com.synkork.backend.modules.user.UserEntity;
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -15,19 +12,18 @@ public class InvoiceSpecification {
 
     public static Specification<InvoiceEntity> filter(InvoiceFilterRequest filter) {
         return (root, query, cb) -> {
-            // Fetch/Join user once to avoid duplicate OUTER JOINs
+            // Fetch user
             if (Long.class != query.getResultType() && long.class != query.getResultType()) {
-                root.fetch("user", JoinType.LEFT);
+                root.fetch("user", jakarta.persistence.criteria.JoinType.LEFT);
             }
-            Join<InvoiceEntity, UserEntity> userJoin = root.join("user", JoinType.LEFT);
 
             List<Predicate> predicates = new ArrayList<>();
 
             if (hasText(filter.search())) {
                 String keyword = "%" + filter.search().trim().toLowerCase() + "%";
                 predicates.add(cb.or(
-                        cb.like(cb.lower(userJoin.get("username")), keyword),
-                        cb.like(cb.lower(userJoin.get("email")), keyword)
+                        cb.like(cb.lower(root.get("user").get("username")), keyword),
+                        cb.like(cb.lower(root.get("user").get("email")), keyword)
                 ));
             }
 
@@ -36,7 +32,7 @@ public class InvoiceSpecification {
             }
 
             if (filter.plan() != null) {
-                predicates.add(cb.equal(userJoin.get("currentPlan"), filter.plan()));
+                predicates.add(cb.equal(root.get("user").get("currentPlan"), filter.plan()));
             }
 
             if (filter.paymentMethod() != null) {
