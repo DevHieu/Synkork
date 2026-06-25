@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -26,6 +27,9 @@ import java.util.Map;
 public class OpenRouterClient {
 
     private static final Logger log = LoggerFactory.getLogger(OpenRouterClient.class);
+
+    private static final int CONNECT_TIMEOUT_MS = 5_000;
+    private static final int READ_TIMEOUT_MS    = 60_000;
 
     private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate;
@@ -102,7 +106,10 @@ public class OpenRouterClient {
     // ── Private helpers ───────────────────────────────────────────────────────
 
     private RestTemplate createRestTemplate() {
-        RestTemplate template = new RestTemplate();
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(CONNECT_TIMEOUT_MS);
+        factory.setReadTimeout(READ_TIMEOUT_MS);
+        RestTemplate template = new RestTemplate(factory);
         template.getMessageConverters().add(0, new StringHttpMessageConverter(StandardCharsets.UTF_8));
         return template;
     }

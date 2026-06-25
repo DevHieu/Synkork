@@ -1,5 +1,7 @@
 package com.synkork.backend.common.utils.LLMFunction;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -14,6 +16,8 @@ import java.util.Map;
  */
 @Service
 public class MeetingLlmService {
+
+    private static final Logger log = LoggerFactory.getLogger(MeetingLlmService.class);
 
     private static final String[] SUPPORTED_AUDIO_FORMATS = {"mp3", "m4a", "webm"};
     private static final String   DEFAULT_AUDIO_FORMAT    = "wav";
@@ -38,6 +42,7 @@ public class MeetingLlmService {
                     false
             );
         } catch (Exception e) {
+            log.error("Lỗi transcribe audio", e);
             return "";
         }
     }
@@ -55,6 +60,7 @@ public class MeetingLlmService {
             );
             return openRouterClient.parseJsonOrFallback(raw, "{}");
         } catch (Exception e) {
+            log.error("Lỗi summarize meeting", e);
             return "{}";
         }
     }

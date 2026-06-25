@@ -1,7 +1,9 @@
 package com.synkork.backend.common.utils.LLMFunction;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -16,6 +18,8 @@ import java.util.regex.Pattern;
  */
 @Service
 public class ChatEventLlmService {
+
+    private static final Logger log = LoggerFactory.getLogger(ChatEventLlmService.class);
 
     private static final ZoneId            BANGKOK_ZONE = ZoneId.of("Asia/Bangkok");
     private static final DateTimeFormatter DATE_FMT     = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -52,7 +56,7 @@ public class ChatEventLlmService {
     public String detectSuggestionFromMessage(String messageContent) {
         if (!openRouterClient.isConfigured()) return "{}";
         if (!isWorthAnalyzing(messageContent)) {
-            System.out.println("đã chặn tạo nhanh cho tin nhắn '" + messageContent + "' vì không phù họp format");
+            log.debug("Đã chặn tạo nhanh cho tin nhắn '{}' vì không phù hợp format", messageContent);
             return "{}";
         }
         try {
@@ -60,8 +64,7 @@ public class ChatEventLlmService {
             String raw = callWithFallback(now, messageContent);
             return openRouterClient.parseJsonOrFallback(raw, "{}");
         } catch (Exception e) {
-            System.err.println("Lỗi khi gọi OpenRouter / LLM: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Lỗi khi gọi OpenRouter / LLM", e);
             return "{}";
         }
     }
@@ -79,9 +82,10 @@ public class ChatEventLlmService {
                         messages,
                         true
                 );
-            } catch (HttpClientErrorException.TooManyRequests e) {
+            } catch (RestClientException e) {
                 lastException = e;
-                System.err.println("Model " + model + " bị rate limited (429), thử model dự phòng tiếp theo.");
+                log.warn("Model {} thất bại, thử model dự phòng tiếp theo: {}",
+                         model, e.getMessage());
             }
         }
 

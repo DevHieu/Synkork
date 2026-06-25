@@ -12,6 +12,7 @@ public final class LlmPrompts {
     private LlmPrompts() {}
 
     public static final String APP_TITLE       = "Synkork";
+    // TODO: Externalize to @ConfigurationProperties — hardcoded localhost won't work in production/staging.
     public static final String REFERER_CHAT    = "http://localhost:5173/rooms/chat";
     public static final String REFERER_DEFAULT = "http://localhost:5173";
 
