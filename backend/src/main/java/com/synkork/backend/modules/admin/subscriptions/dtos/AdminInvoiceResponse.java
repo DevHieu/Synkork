@@ -19,7 +19,8 @@ public record AdminInvoiceResponse(
         String transactionId,
         PaymentMethodEnum paymentMethod,
         String userEmail,
-        String username
+        String username,
+        LocalDateTime planExpiresAt
 ) {
     public static AdminInvoiceResponse from(InvoiceEntity invoice) {
         if (invoice == null) return null;
@@ -34,7 +35,8 @@ public record AdminInvoiceResponse(
                 invoice.getTransactionId(),
                 invoice.getPaymentMethod(),
                 invoice.getUser() != null ? invoice.getUser().getEmail() : null,
-                invoice.getUser() != null ? invoice.getUser().getUsername() : null
+                invoice.getUser() != null ? invoice.getUser().getUsername() : null,
+                invoice.getUser() != null ? invoice.getUser().getPlanExpiresAt() : null
         );
     }
 }

@@ -64,6 +64,56 @@ public class ReportService {
             builder.targetRoom(targetRoom);
         }
 
+        reportRepository.save(builder.build());
+    }
+
+    public java.util.List<ReportDTO> getAllReports() {
+        return reportRepository.findAll()
+                .stream()
+                .map(ReportDTO::new)
+                .toList();
+    }
+
+    public ReportPageResponse getFilteredReports(ReportFilterRequest filter) {
+        Specification<ReportEntity> spec = ReportSpecification.from(filter);
+ 
+        Pageable pageable = PageRequest.of(
+                filter.getPage(),
+                filter.getSize(),
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+ 
+        Page<ReportEntity> page = reportRepository.findAll(spec, pageable);
+ 
+        List<ReportDTO> content = page.getContent()
+                .stream()
+                .map(ReportDTO::new)
+                .toList();
+ 
+        return new ReportPageResponse(
+                content,
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages()
+        );
+    }
+ 
+    public ReportDTO updateReportStatus(UUID reportId, ReportUpdateStatusRequest request) {
+        ReportEntity report = reportRepository.findById(reportId)
+                .orElseThrow(() -> new RuntimeException("Report không tồn tại: " + reportId));
+ 
+        ReportStatusEnums newStatus = request.status();
+ 
+        if (report.getStatus() == ReportStatusEnums.RESOLVED
+                || report.getStatus() == ReportStatusEnums.DISMISSED) {
+            throw new RuntimeException("Report này đã được xử lý xong, không thể thay đổi trạng thái");
+        }
+ 
+        report.setStatus(newStatus);
+        ReportEntity saved = reportRepository.save(report);
+
+        return new ReportDTO(saved);
         return reportRepository.save(builder.build());
     }
 
