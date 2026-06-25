@@ -143,6 +143,15 @@ public class AdminRoomService {
         roomRepository.delete(room);
     }
 
+    public AdminRoomResponse warnRoom(UUID roomId) {
+        RoomEntity room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new RuntimeException("Room not found"));
+
+        room.setWarning(room.getWarning() + 1);
+
+        return new AdminRoomResponse(roomRepository.save(room));
+    }
+
     private RoomEntity findRoomOrThrow(String roomId) {
         return roomRepository.findById(UUID.fromString(roomId))
                 .orElseThrow(() -> new RuntimeException("Room not found: " + roomId));

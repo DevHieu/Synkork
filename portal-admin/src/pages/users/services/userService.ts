@@ -52,4 +52,8 @@ export const userService = {
     return res.data
   },
 
+  async warnUser(id: string){
+    const res = await axiosClient.patch(`/api/manage/users/${id}/warn`)
+    return res.data
+  }
 }

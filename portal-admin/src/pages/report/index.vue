@@ -136,34 +136,45 @@ const statusVariantMap: Record<string, 'default' | 'secondary' | 'destructive' |
   DISMISSED: 'destructive',
   REVIEWED: 'outline',
 }
-
+ 
+const statusLabelMap: Record<string, string> = {
+  PENDING: 'Chờ xử lý',
+  REVIEWED: 'Đang xem xét',
+  RESOLVED: 'Đã giải quyết',
+  DISMISSED: 'Đã bác bỏ',
+}
+ 
+const typeLabelMap: Record<string, string> = {
+  USER: 'Người dùng',
+  ROOM: 'Phòng',
+}
+ 
 const columns = computed<TableColumn<Report>[]>(() => [
-  { header: 'ID', accessor: 'id', minWidth: 100 },
   {
-    header: 'Type',
+    header: 'Loại',
     accessor: 'reportType',
-    minWidth: 100,
+    minWidth: 110,
     render: row =>
-      h(Badge, { variant: row.reportType === 'USER' ? 'outline' : 'secondary' }, () => row.reportType),
+      h(Badge, { variant: row.reportType === 'USER' ? 'outline' : 'secondary' }, () => typeLabelMap[row.reportType] ?? row.reportType),
   },
-  { header: 'Reason', accessor: 'reason', minWidth: 200 },
-  { header: 'Description', accessor: 'description', minWidth: 240 },
+  { header: 'Lý do', accessor: 'reason', minWidth: 180 },
+  { header: 'Mô tả', accessor: 'description', minWidth: 220 },
   {
-    header: 'Status',
+    header: 'Trạng thái',
     accessor: 'status',
-    minWidth: 120,
+    minWidth: 130,
     render: row =>
-      h(Badge, { variant: statusVariantMap[row.status] ?? 'default' }, () => row.status),
+      h(Badge, { variant: statusVariantMap[row.status] ?? 'default' }, () => statusLabelMap[row.status] ?? row.status),
   },
-  { header: 'Reporter Email', accessor: 'reporterEmail', minWidth: 160 },
+  { header: 'Email người báo cáo', accessor: 'reporterEmail', minWidth: 180 },
   {
-    header: 'Created At',
+    header: 'Ngày tạo',
     accessor: 'createdAt',
     minWidth: 160,
     render: row => formatTimestamp(row.createdAt),
   },
   {
-    header: 'Actions',
+    header: 'Thao tác',
     minWidth: 140,
     render: row =>
       h('div', { class: 'flex gap-2' }, [
@@ -177,10 +188,10 @@ const columns = computed<TableColumn<Report>[]>(() => [
           },
           () => [
             h(Eye, { class: 'h-3.5 w-3.5' }),
-            'View',
+            'Xem',
           ],
         ),
-
+ 
         h(
           UiButton,
           {
@@ -191,30 +202,30 @@ const columns = computed<TableColumn<Report>[]>(() => [
           },
           () => [
             h(Trash2, { class: 'h-3.5 w-3.5' }),
-            'Delete',
+            'Xóa',
           ],
         ),
       ]),
   },
 ])
-
+ 
 watch([debouncedSearch, filterStatus, filterType, dateRange], () => {
   currentPage.value = 1
   fetchReports()
 })
 watch(currentPage, fetchReports)
-
+ 
 onMounted(fetchReports)
 </script>
-
+ 
 <template>
-  <BasicPage title="Reports" description="Manage user and room reports" sticky>
+  <BasicPage title="Báo cáo vi phạm" description="Quản lý các báo cáo người dùng và phòng" sticky>
     <div class="flex flex-wrap items-center gap-3 mb-4">
       <div class="relative flex-1 min-w-[200px] max-w-sm">
         <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
         <Input
           v-model="searchKeyword"
-          placeholder="Search reason or description…"
+          placeholder="Tìm theo lý do hoặc mô tả…"
           class="pl-8 pr-8 h-9 text-sm"
         />
         <button
@@ -225,51 +236,35 @@ onMounted(fetchReports)
           <X class="h-3.5 w-3.5" />
         </button>
       </div>
-
+ 
       <Select v-model="filterStatus">
-        <SelectTrigger class="h-9 w-[150px] text-sm">
-          <SelectValue placeholder="All Status" />
+        <SelectTrigger class="h-9 w-[160px] text-sm">
+          <SelectValue placeholder="Tất cả trạng thái" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="ALL">
-            All Status
-          </SelectItem>
-          <SelectItem value="PENDING">
-            Pending
-          </SelectItem>
-          <SelectItem value="REVIEWED">
-            Reviewed
-          </SelectItem>
-          <SelectItem value="RESOLVED">
-            Resolved
-          </SelectItem>
-          <SelectItem value="DISMISSED">
-            Dismissed
-          </SelectItem>
+          <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
+          <SelectItem value="PENDING">Chờ xử lý</SelectItem>
+          <SelectItem value="REVIEWED">Đang xem xét</SelectItem>
+          <SelectItem value="RESOLVED">Đã giải quyết</SelectItem>
+          <SelectItem value="DISMISSED">Đã bác bỏ</SelectItem>
         </SelectContent>
       </Select>
-
+ 
       <Select v-model="filterType">
-        <SelectTrigger class="h-9 w-[140px] text-sm">
-          <SelectValue placeholder="All Types" />
+        <SelectTrigger class="h-9 w-[150px] text-sm">
+          <SelectValue placeholder="Tất cả loại" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="ALL">
-            All Types
-          </SelectItem>
-          <SelectItem value="USER">
-            User
-          </SelectItem>
-          <SelectItem value="ROOM">
-            Room
-          </SelectItem>
+          <SelectItem value="ALL">Tất cả loại</SelectItem>
+          <SelectItem value="USER">Người dùng</SelectItem>
+          <SelectItem value="ROOM">Phòng</SelectItem>
         </SelectContent>
       </Select>
-
+ 
       <div>
         <DateRangePicker v-model="dateRange" />
       </div>
-
+ 
       <UiButton
         v-if="hasActiveFilter"
         variant="ghost"
@@ -278,10 +273,10 @@ onMounted(fetchReports)
         @click="clearFilters"
       >
         <X class="h-3.5 w-3.5" />
-        Clear filters
+        Xóa bộ lọc
       </UiButton>
     </div>
-
+ 
     <div class="relative rounded-md border border-neutral-200 dark:border-neutral-800">
       <div
         v-if="loading"
@@ -289,22 +284,20 @@ onMounted(fetchReports)
       >
         <LoaderIcon class="animate-spin text-primary" />
       </div>
-
+ 
       <div
         v-if="!loading && pagedData?.length === 0"
         class="flex flex-col items-center justify-center py-20 text-muted-foreground gap-2"
       >
         <ShieldAlert class="h-10 w-10 opacity-40" />
-        <p class="text-sm">
-          No reports found.
-        </p>
+        <p class="text-sm">Không tìm thấy báo cáo nào.</p>
         <UiButton v-if="hasActiveFilter" variant="link" size="sm" @click="clearFilters">
-          Clear filters to see all
+          Xóa bộ lọc để xem tất cả
         </UiButton>
       </div>
-
+ 
       <BaseTable v-else :columns="columns" :data="pagedData" />
-
+ 
       <Pagination
         v-model:current-page="currentPage"
         :total="totalPages"
@@ -313,6 +306,6 @@ onMounted(fetchReports)
       />
     </div>
   </BasicPage>
-
+ 
   <ReportDetail v-if="selectedReport" v-model:open="isDetailOpen" :report="selectedReport" @action="handleUpdateReportStatus" />
 </template>

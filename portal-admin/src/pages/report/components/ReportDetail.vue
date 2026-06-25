@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import {
   User, Home, ShieldAlert, Clock, CheckCircle2, XCircle,
-  Eye, Lock, Unlock, ShieldCheck, ShieldX, Loader2,
+  Eye, Lock, Unlock, ShieldCheck, ShieldX, Loader2, AlertTriangle
 } from '@lucide/vue'
 import type { Report, ReportStatus } from '@/pages/report/types/Reports'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
@@ -31,15 +31,15 @@ const isOpen = computed({
 
 
 const STATUS_CONFIG = {
-  PENDING:   { label: 'Pending',   variant: 'secondary'  as const, icon: Clock },
-  REVIEWED:  { label: 'Reviewed',  variant: 'outline'    as const, icon: Eye },
-  RESOLVED:  { label: 'Resolved',  variant: 'default'    as const, icon: CheckCircle2 },
-  DISMISSED: { label: 'Dismissed', variant: 'destructive' as const, icon: XCircle },
+  PENDING:   { label: 'Chờ xử lý',   variant: 'secondary'   as const, icon: Clock },
+  REVIEWED:  { label: 'Đang xem xét', variant: 'outline'     as const, icon: Eye },
+  RESOLVED:  { label: 'Đã giải quyết', variant: 'default'    as const, icon: CheckCircle2 },
+  DISMISSED: { label: 'Đã bác bỏ',   variant: 'destructive'  as const, icon: XCircle },
 }
 
 const TYPE_CONFIG = {
-  USER: { label: 'User Report', icon: User },
-  ROOM: { label: 'Room Report', icon: Home },
+  USER: { label: 'Báo cáo người dùng', icon: User },
+  ROOM: { label: 'Báo cáo phòng',      icon: Home },
 }
 
 const statusInfo = computed(() => STATUS_CONFIG[props.report.status])
@@ -55,20 +55,26 @@ const isUserReport = computed(() => props.report.reportType === 'USER')
 const LOCKED_STATUS = { USER: 'BANNED', ROOM: 'LOCKED' } as const
 
 const targetStatus     = ref<string | null>(null)
+const targetWarning    = ref<number>(0)
 const checkingTarget   = ref(false)
 const targetCheckError = ref(false)
 const lockLoading      = ref(false)
+const warnLoading      = ref(false)
+const hasWarned        = ref(false)
 
 const isTargetLocked = computed(() =>
   !!targetStatus.value &&
   targetStatus.value.toUpperCase() === LOCKED_STATUS[props.report.reportType],
 )
 
+const canResolve = computed(() => hasWarned.value || isTargetLocked.value)
+
 async function checkTargetStatus() {
   if (!targetId.value) return
 
   checkingTarget.value = true
   targetCheckError.value = false
+  hasWarned.value = false
 
   try {
     const data = isUserReport.value
@@ -76,6 +82,7 @@ async function checkTargetStatus() {
       : await roomService.getRoomDetail(targetId.value)
 
     targetStatus.value = data.status || data.data?.status || null
+    targetWarning.value = data.warning || data.data?.warning || 0
   } catch (error) {
     targetCheckError.value = true
   } finally {
@@ -97,8 +104,8 @@ async function handleLockTarget() {
   if (!targetId.value) return
 
   const confirmMsg = isUserReport.value
-    ? 'Bạn có chắc muốn khoá user này?'
-    : 'Bạn có chắc muốn khoá room này?'
+    ? 'Bạn có chắc muốn khoá người dùng này?'
+    : 'Bạn có chắc muốn khoá phòng này?'
   if (!confirm(confirmMsg)) return
 
   lockLoading.value = true
@@ -114,6 +121,30 @@ async function handleLockTarget() {
     console.error('Lỗi khoá đối tượng:', error)
   } finally {
     lockLoading.value = false
+  }
+}
+
+async function handleWarnTarget() {
+  if(!targetId.value) return
+
+  const confirmMsg = isUserReport.value
+    ? 'Bạn có chắc muốn gửi cảnh cáo đến người dùng này?'
+    : 'Bạn có chắc muốn khoá phòng này?'
+  if (!confirm(confirmMsg)) return
+
+  warnLoading.value = true
+  try {
+    if (isUserReport.value) {
+      await userService.warnUser(targetId.value)
+    } else {
+      await roomService.warnRoom(targetId.value)
+    }
+    targetWarning.value += 1
+    hasWarned.value = true
+  } catch (error) {
+    console.error('Lỗi gửi cảnh cáo:', error)
+  } finally {
+    warnLoading.value = false
   }
 }
 
@@ -137,16 +168,16 @@ function formatDate(iso: string) {
       <DialogHeader>
         <div class="flex items-center gap-2">
           <ShieldAlert class="h-5 w-5 text-destructive" />
-          <DialogTitle>Report Detail</DialogTitle>
+          <DialogTitle>Chi tiết báo cáo</DialogTitle>
         </div>
         <DialogDescription class="text-xs text-muted-foreground">
-          ID: {{ report.id }}
+          Xem xét và xử lý báo cáo vi phạm
         </DialogDescription>
       </DialogHeader>
-
+ 
       <div class="space-y-4 pt-2">
-
-        <!-- Type & Status -->
+ 
+        <!-- Loại & Trạng thái -->
         <div class="flex items-center gap-3">
           <Badge variant="outline" class="gap-1.5">
             <component :is="typeInfo.icon" class="h-3.5 w-3.5" />
@@ -157,84 +188,118 @@ function formatDate(iso: string) {
             {{ statusInfo.label }}
           </Badge>
         </div>
-
+ 
         <Separator />
-
-        <!-- Target -->
+ 
+        <!-- Đối tượng bị báo cáo -->
         <div class="space-y-1">
           <div class="flex items-center justify-between">
             <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              {{ report.reportType === 'USER' ? 'Reported User' : 'Reported Room' }}
+              {{ report.reportType === 'USER' ? 'Người dùng bị báo cáo' : 'Phòng bị báo cáo' }}
             </p>
-
-            <!-- Target lock status indicator -->
+ 
+            <!-- Trạng thái khoá -->
             <div class="flex items-center gap-1.5 text-xs">
               <Loader2 v-if="checkingTarget" class="h-3.5 w-3.5 animate-spin text-muted-foreground" />
               <template v-else-if="!targetCheckError">
                 <Badge v-if="isTargetLocked" variant="destructive" class="gap-1 text-[11px] py-0.5">
                   <Lock class="h-3 w-3" />
-                  Locked
+                  Đã khoá
                 </Badge>
                 <Badge v-else variant="outline" class="gap-1 text-[11px] py-0.5 text-emerald-600 border-emerald-300">
                   <Unlock class="h-3 w-3" />
-                  Active
+                  Đang hoạt động
                 </Badge>
               </template>
               <span v-else class="text-muted-foreground italic text-[11px]">Không thể kiểm tra</span>
             </div>
           </div>
-
-          <p class="text-sm font-semibold">
-            {{ report.reportType === 'USER' ? report.targetUserId : report.targetRoomId }}
-          </p>
-          <p class="text-xs text-muted-foreground">
-            {{ report.targetName }}
-          </p>
+ 
+          <!-- Tên / email — không hiển thị ID -->
+          <p class="text-sm font-semibold">{{ report.targetName }}</p>
+          <p v-if="report.reporterEmail" class="text-xs text-muted-foreground">{{ report.reporterEmail }}</p>
+ 
+          <!-- Số lần cảnh cáo -->
+          <div v-if="!checkingTarget && !targetCheckError" class="flex items-center gap-1.5 mt-1">
+            <AlertTriangle class="h-3.5 w-3.5 text-amber-500" />
+            <span class="text-xs text-amber-600 font-medium">
+              Số lần cảnh cáo: {{ targetWarning }}
+            </span>
+            <span v-if="hasWarned" class="text-[11px] text-emerald-600 font-medium ml-1">(+1 vừa cảnh cáo)</span>
+          </div>
         </div>
-
+ 
         <Separator />
-
-        <!-- Reporter -->
+ 
+        <!-- Người báo cáo -->
         <div class="space-y-1">
-          <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reporter</p>
-          <p class="text-sm font-semibold">{{ report.reporterId }}</p>
-          <p class="text-xs text-muted-foreground">{{ report.reporterEmail }}</p>
+          <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Người báo cáo</p>
+          <p class="text-sm font-semibold">{{ report.targetName ?? report.reporterEmail }}</p>
+          <p v-if="report.targetName" class="text-xs text-muted-foreground">{{ report.reporterEmail }}</p>
         </div>
-
+ 
         <Separator />
-
-        <!-- Reason & Description -->
+ 
+        <!-- Lý do & Mô tả -->
         <div class="space-y-3">
           <div class="space-y-1">
-            <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Reason</p>
+            <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Lý do</p>
             <p class="text-sm font-semibold">{{ report.reason }}</p>
           </div>
-
+ 
           <div v-if="report.description" class="space-y-1">
-            <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Description</p>
+            <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Mô tả</p>
             <p class="text-sm text-foreground leading-relaxed rounded-md bg-muted px-3 py-2">
               {{ report.description }}
             </p>
           </div>
         </div>
-
+ 
         <Separator />
-
-        <!-- Timestamps -->
+ 
+        <!-- Thời gian -->
         <div class="flex gap-6 text-xs text-muted-foreground">
           <div>
-            <span class="font-medium">Created:</span> {{ formatDate(report.createdAt) }}
+            <span class="font-medium">Ngày tạo:</span> {{ formatDate(report.createdAt) }}
           </div>
         </div>
-
+ 
       </div>
-
+ 
       <template v-if="report.status === 'PENDING' || report.status === 'REVIEWED'">
         <Separator class="my-4" />
         <div class="flex flex-col gap-3">
-          <p class="text-sm font-medium text-muted-foreground uppercase">Admin Actions</p>
-
-          <!-- Lock target card -->
+          <p class="text-sm font-medium text-muted-foreground uppercase">Hành động quản trị</p>
+ 
+          <!-- Cảnh cáo -->
+          <div class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 border-amber-300 bg-amber-50 dark:bg-amber-950/20">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/40">
+                <AlertTriangle class="h-4 w-4" />
+              </div>
+              <div class="min-w-0">
+                <p class="text-sm font-medium leading-tight">Cảnh cáo</p>
+                <p class="text-xs text-muted-foreground leading-tight">
+                  <span v-if="checkingTarget">Đang kiểm tra…</span>
+                  <span v-else>Tổng số lần đã cảnh cáo: <strong>{{ targetWarning }}</strong></span>
+                </p>
+              </div>
+            </div>
+ 
+            <Button
+              variant="outline"
+              size="sm"
+              class="gap-1.5 shrink-0 border-amber-400 text-amber-700 hover:bg-amber-100"
+              :disabled="checkingTarget || warnLoading || isTargetLocked"
+              @click="handleWarnTarget"
+            >
+              <Loader2 v-if="warnLoading" class="h-3.5 w-3.5 animate-spin" />
+              <AlertTriangle v-else class="h-3.5 w-3.5" />
+              Cảnh cáo
+            </Button>
+          </div>
+ 
+          <!-- Khoá đối tượng -->
           <div class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5"
             :class="isTargetLocked ? 'border-destructive/30 bg-destructive/5' : 'border-border bg-muted/30'">
             <div class="flex items-center gap-2.5 min-w-0">
@@ -254,43 +319,54 @@ function formatDate(iso: string) {
                 </p>
               </div>
             </div>
-
+ 
             <Button v-if="!isTargetLocked" variant="outline" size="sm"
               class="gap-1.5 shrink-0 border-destructive text-destructive hover:bg-destructive/10"
               :disabled="checkingTarget || lockLoading" @click="handleLockTarget">
               <Loader2 v-if="lockLoading" class="h-3.5 w-3.5 animate-spin" />
               <Lock v-else class="h-3.5 w-3.5" />
-              {{ report.reportType === 'USER' ? 'Lock User' : 'Lock Room' }}
+              {{ report.reportType === 'USER' ? 'Khoá người dùng' : 'Khoá phòng' }}
             </Button>
             <Badge v-else variant="destructive" class="gap-1 shrink-0">
               <Lock class="h-3 w-3" />
-              Locked
+              Đã khoá
             </Badge>
           </div>
-
+ 
+          <!-- Nút hành động chính -->
           <div class="flex gap-2">
-            <Button variant="default" class="flex-1 gap-2" @click="handleAction('RESOLVED')">
+            <Button
+              variant="default"
+              class="flex-1 gap-2"
+              :disabled="!canResolve"
+              :title="!canResolve ? 'Vui lòng cảnh cáo hoặc khoá đối tượng trước khi giải quyết' : ''"
+              @click="handleAction('RESOLVED')"
+            >
               <CheckCircle2 class="h-4 w-4" />
-              Resolve (Accept)
+              Giải quyết
             </Button>
-
+ 
             <Button variant="destructive" class="flex-1 gap-2" @click="isDismissDialogOpen = true" :disabled="isTargetLocked">
               <XCircle class="h-4 w-4" />
-              Dismiss (Reject)
+              Bác bỏ
             </Button>
-
+ 
             <Button v-if="report.status === 'PENDING'" variant="outline" class="flex-1 gap-2"
               @click="handleAction('REVIEWED')">
               <Eye class="h-4 w-4" />
-              Mark Reviewed
+              Đánh dấu đã xem
             </Button>
           </div>
+ 
+          <p v-if="!canResolve" class="text-[11px] text-amber-600 text-center">
+            ⚠ Cần cảnh cáo hoặc khoá đối tượng trước khi có thể giải quyết báo cáo
+          </p>
         </div>
       </template>
-
+ 
       <div v-else class="mt-4 p-3 bg-muted rounded-lg border border-dashed text-center">
         <p class="text-xs text-muted-foreground italic">
-          This report has been finalized as <span class="font-bold">{{ report.status }}</span>
+          Báo cáo này đã được xử lý: <span class="font-bold">{{ statusInfo.label }}</span>
         </p>
       </div>
     </DialogContent>

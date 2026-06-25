@@ -117,6 +117,14 @@ public class AdminUserService {
         return AdminUserResponse.from(userAdminRepository.save(user));
     }
 
+    public AdminUserResponse warnUser(UUID userId) {
+        UserEntity user = findUserOrThrow(userId);
+
+        user.setWarning(user.getWarning() + 1);
+
+        return AdminUserResponse.from(userAdminRepository.save(user));
+    }
+
     private UserEntity findUserOrThrow(UUID id) {
         UserEntity user = userAdminRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Khong tim thay user: " + id));
