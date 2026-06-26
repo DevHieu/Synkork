@@ -19,13 +19,20 @@ const emits = defineEmits<{
 
 const isLoading = ref(false)
 const errorMessage = ref<string | null>(null)
+const reason = ref('')
 
 async function handleRemove() {
+  if (!reason.value.trim()) {
+    errorMessage.value = 'Vui lòng nhập lý do khóa tài khoản'
+    toast.error(errorMessage.value)
+    return
+  }
+
   isLoading.value = true
   errorMessage.value = null
   try {
-    await userService.delete(user.id)
-    toast.success(`Đã xóa người dùng: ${user.username}`)
+    await userService.delete(user.id, reason.value.trim())
+    toast.success(`Đã khóa người dùng: ${user.username}`)
     emits('remove')
   }
   catch (err: any) {
@@ -33,7 +40,7 @@ async function handleRemove() {
       || err?.response?.data?.error
       || (typeof err?.response?.data === 'string' ? err.response.data : null)
       || err?.message
-      || 'Xóa thất bại'
+      || 'Khóa tài khoản thất bại'
     toast.error(errorMessage.value ?? 'Có lỗi xảy ra')
   }
   finally {
@@ -46,22 +53,35 @@ async function handleRemove() {
   <div>
     <ModalHeader>
       <ModalTitle>
-        Delete this user: {{ user.username }} ?
+        Khóa tài khoản: {{ user.username }}?
       </ModalTitle>
 
       <ModalDescription>
-        You are about to delete a user with the ID {{ user.id }}. This action cannot be undone.
+        User sẽ được chuyển sang INACTIVE, nhận email thông báo lý do, và bị xóa khỏi tất cả room đang tham gia.
       </ModalDescription>
     </ModalHeader>
+
+    <div class="mt-4 space-y-2">
+      <label class="text-sm font-medium">Lý do khóa/xóa user</label>
+      <textarea
+        v-model="reason"
+        class="min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        placeholder="Nhập lý do để gửi mail cho user"
+      />
+      <p v-if="errorMessage" class="text-sm text-destructive">
+        {{ errorMessage }}
+      </p>
+    </div>
+
     <ModalFooter>
       <ModalClose as-child>
         <UiButton variant="outline" :disabled="isLoading">
-          Cancel
+          Hủy
         </UiButton>
       </ModalClose>
 
-      <UiButton variant="destructive" :disabled="isLoading" @click="handleRemove">
-        {{ isLoading ? 'Đang xóa...' : 'Delete' }}
+      <UiButton variant="destructive" :disabled="isLoading || !reason.trim()" @click="handleRemove">
+        {{ isLoading ? 'Đang khóa...' : 'Khóa user' }}
       </UiButton>
     </ModalFooter>
   </div>

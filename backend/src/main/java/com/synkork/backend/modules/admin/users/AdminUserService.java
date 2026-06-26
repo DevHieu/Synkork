@@ -3,27 +3,35 @@ package com.synkork.backend.modules.admin.users;
 import com.synkork.backend.common.utils.EmailService;
 import com.synkork.backend.modules.admin.users.dtos.AdminUserResponse;
 import com.synkork.backend.modules.admin.users.dtos.CreateUserRequest;
+import com.synkork.backend.modules.admin.users.dtos.DeleteUserRequest;
 import com.synkork.backend.modules.admin.users.dtos.UpdateUserRequest;
 import com.synkork.backend.modules.admin.users.dtos.UserFilterRequest;
+import com.synkork.backend.modules.room.RoomEntity;
+import com.synkork.backend.modules.room.RoomRepository;
+import com.synkork.backend.modules.roomMember.RoomMemberEntity;
+import com.synkork.backend.modules.roomMember.RoomMemberRepository;
+import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.enums.PlanEnum;
 import com.synkork.backend.modules.user.enums.RoleEnum;
 import com.synkork.backend.modules.user.enums.UserStatusEnum;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import jakarta.persistence.EntityManager;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -35,8 +43,17 @@ public class AdminUserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @Autowired(required = false)
-    private JavaMailSender mailSender;
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private RoomMemberRepository roomMemberRepository;
+
+    @Autowired
+    private RoomRepository roomRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @Autowired
     private EmailService emailService;
@@ -81,6 +98,11 @@ public class AdminUserService {
 
     public AdminUserResponse updateUser(UUID id, UpdateUserRequest req) {
         UserEntity user = findUserOrThrow(id);
+        String oldDisplayName = user.getDisplayName();
+        String oldEmail = user.getEmail();
+        PlanEnum oldPlan = user.getCurrentPlan();
+        UserStatusEnum oldStatus = user.getStatus();
+        RoleEnum oldRole = user.getRole();
 
         if (req.displayName() != null) {
             user.setDisplayName(req.displayName());
@@ -106,13 +128,25 @@ public class AdminUserService {
             user.setRole(RoleEnum.valueOf(req.role().toUpperCase()));
         }
 
-        return AdminUserResponse.from(userAdminRepository.save(user));
+        UserEntity saved = userAdminRepository.save(user);
+        sendUserUpdatedEmail(saved, oldDisplayName, oldEmail, oldPlan, oldStatus, oldRole);
+        return AdminUserResponse.from(saved);
     }
 
     @Transactional
-    public Map<String, String> deleteUser(UUID id) {
-        userAdminRepository.delete(findUserOrThrow(id));
-        return Map.of("message", "Xoa nguoi dung thanh cong");
+    public Map<String, String> deleteUser(UUID id, DeleteUserRequest request) {
+        UserEntity user = findUserOrThrow(id);
+        String reason = Optional.ofNullable(request)
+                .map(DeleteUserRequest::reason)
+                .filter(value -> !value.isBlank())
+                .orElse("Tai khoan cua ban da bi khoa boi quan tri vien.");
+
+        removeUserFromJoinedRooms(user);
+        user.setStatus(UserStatusEnum.INACTIVE);
+        userAdminRepository.save(user);
+        sendUserDeletedEmail(user, reason);
+
+        return Map.of("message", "Da chuyen nguoi dung sang INACTIVE va xoa khoi cac room dang tham gia");
     }
 
     public AdminUserResponse lockUser(UUID userId, UserStatusEnum status) {
@@ -163,23 +197,138 @@ public class AdminUserService {
     }
 
     private void sendWelcomeEmail(String email, String username, String tempPassword) {
-        if (mailSender == null) {
+        String body = plainTextEmailBody(String.format(
+                "Xin chao %s,\n\nMat khau tam thoi: %s\n\n"
+                        + "Vui long doi mat khau sau khi dang nhap.",
+                username,
+                tempPassword
+        ));
+        emailService.send(email, "[Synkork] Tai khoan cua ban da duoc tao", body);
+    }
+
+    private void removeUserFromJoinedRooms(UserEntity user) {
+        List<RoomMemberEntity> joinedRooms = entityManager.createQuery(
+                        "SELECT rm FROM RoomMemberEntity rm JOIN FETCH rm.room WHERE rm.user.id = :userId",
+                        RoomMemberEntity.class
+                )
+                .setParameter("userId", user.getId())
+                .getResultList();
+
+        for (RoomMemberEntity deletingMember : joinedRooms) {
+            RoomEntity room = deletingMember.getRoom();
+            List<RoomMemberEntity> remainingMembers = roomMemberRepository.findByRoom_Id(room.getId())
+                    .stream()
+                    .filter(member -> !Objects.equals(member.getUser().getId(), user.getId()))
+                    .toList();
+
+            if (deletingMember.getRole() == RoomMemberRoleEnum.OWNER) {
+                transferOwnerBeforeRemoving(room, remainingMembers);
+            }
+
+            roomMemberRepository.delete(deletingMember);
+        }
+    }
+
+    private void transferOwnerBeforeRemoving(RoomEntity room, List<RoomMemberEntity> remainingMembers) {
+        Optional<RoomMemberEntity> newOwner = remainingMembers.stream()
+                .filter(member -> member.getRole() == RoomMemberRoleEnum.ADMIN)
+                .min(joinedAtComparator());
+
+        if (newOwner.isEmpty()) {
+            newOwner = remainingMembers.stream()
+                    .min(joinedAtComparator());
+        }
+
+        if (newOwner.isEmpty()) {
+            room.setOwner(null);
+            roomRepository.save(room);
             return;
         }
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(email);
-            message.setSubject("[Synkork] Tai khoan cua ban da duoc tao");
-            message.setText(String.format(
-                    "Xin chao %s,\n\nMat khau tam thoi: %s\n\n"
-                            + "Vui long doi mat khau sau khi dang nhap.",
-                    username,
-                    tempPassword
-            ));
-            mailSender.send(message);
-        } catch (Exception ignored) {
-            // Account creation should not fail when email delivery is unavailable.
+
+        RoomMemberEntity ownerMember = newOwner.get();
+        ownerMember.setRole(RoomMemberRoleEnum.OWNER);
+        room.setOwner(ownerMember.getUser());
+        roomMemberRepository.save(ownerMember);
+        roomRepository.save(room);
+    }
+
+    private Comparator<RoomMemberEntity> joinedAtComparator() {
+        return Comparator.comparing(
+                RoomMemberEntity::getJoinedAt,
+                Comparator.nullsLast(Comparator.naturalOrder())
+        );
+    }
+
+    private void sendUserUpdatedEmail(
+            UserEntity user,
+            String oldDisplayName,
+            String oldEmail,
+            PlanEnum oldPlan,
+            UserStatusEnum oldStatus,
+            RoleEnum oldRole
+    ) {
+        String body = plainTextEmailBody(String.format(
+                "Xin chao %s,\n\nTai khoan Synkork cua ban da duoc cap nhat.\n\n"
+                        + "Thong tin truoc do:\n"
+                        + "- Ten hien thi: %s\n"
+                        + "- Email: %s\n"
+                        + "- Goi: %s\n"
+                        + "- Trang thai: %s\n"
+                        + "- Vai tro: %s\n\n"
+                        + "Thong tin hien tai:\n"
+                        + "- Ten hien thi: %s\n"
+                        + "- Email: %s\n"
+                        + "- Goi: %s\n"
+                        + "- Trang thai: %s\n"
+                        + "- Vai tro: %s\n\n"
+                        + "Neu ban khong yeu cau thay doi nay, vui long lien he quan tri vien.",
+                user.getUsername(),
+                valueOrDash(oldDisplayName),
+                valueOrDash(oldEmail),
+                valueOrDash(oldPlan),
+                valueOrDash(oldStatus),
+                valueOrDash(oldRole),
+                valueOrDash(user.getDisplayName()),
+                valueOrDash(user.getEmail()),
+                valueOrDash(user.getCurrentPlan()),
+                valueOrDash(user.getStatus()),
+                valueOrDash(user.getRole())
+        ));
+        emailService.send(user.getEmail(), "[Synkork] Tai khoan cua ban da duoc cap nhat", body);
+    }
+
+    private void sendUserDeletedEmail(UserEntity user, String reason) {
+        String body = plainTextEmailBody(String.format(
+                "Xin chao %s,\n\nTai khoan Synkork cua ban da duoc chuyen sang trang thai INACTIVE.\n\n"
+                        + "Ly do: %s\n\n"
+                        + "Ban da duoc xoa khoi tat ca room dang tham gia. "
+                        + "Neu can ho tro them, vui long lien he quan tri vien.",
+                user.getUsername(),
+                reason
+        ));
+        emailService.send(user.getEmail(), "[Synkork] Tai khoan cua ban da bi khoa", body);
+    }
+
+    private String valueOrDash(Object value) {
+        return value == null ? "-" : value.toString();
+    }
+
+    private String plainTextEmailBody(String text) {
+        return "<div style=\"font-family: Arial, sans-serif; white-space: pre-line;\">"
+                + escapeHtml(text)
+                + "</div>";
+    }
+
+    private String escapeHtml(String text) {
+        if (text == null) {
+            return "";
         }
+        return text
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
     }
 
     // public AdminUserResponse lockUser(UUID userId, UserStatusEnum status) {

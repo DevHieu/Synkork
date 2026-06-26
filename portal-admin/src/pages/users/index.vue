@@ -42,10 +42,16 @@ const showDeleteModal = ref(false)
 
 const statusOptions = [
   { value: 'ALL', label: 'Tất cả trạng thái' },
-  { value: 'ACTIVE', label: 'Đang hoạt động' },
+  { value: 'ACTIVE', label: 'Hoạt động' },
   { value: 'INACTIVE', label: 'Ngừng hoạt động' },
   { value: 'BANNED', label: 'Bị khóa' },
 ] as const
+
+const statusLabels: Record<UserStatus, string> = {
+  ACTIVE: 'Hoạt động',
+  INACTIVE: 'Ngừng hoạt động',
+  BANNED: 'Bị khóa',
+}
 
 const planOptions = [
   { value: 'ALL', label: 'Tất cả' },
@@ -135,10 +141,9 @@ function onUserDeleted() {
 }
 
 const columns = computed<TableColumn<User>[]>(() => [
-  { header: 'ID', accessor: 'id', minWidth: 120 },
   { header: 'Username', accessor: 'username', minWidth: 150 },
   {
-    header: 'Full Name',
+    header: 'Họ tên',
     render: row => `${row.displayName}`,
     minWidth: 180,
   },
@@ -160,25 +165,25 @@ const columns = computed<TableColumn<User>[]>(() => [
     },
   },
   {
-    header: 'Status',
+    header: 'Trạng thái',
     minWidth: 120,
     render: (row) => {
-      const status = row.status?.toLowerCase() || 'inactive'
+      const status = (row.status?.toUpperCase() || 'INACTIVE') as UserStatus
       let badgeClass = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold '
-      if (status === 'active')
+      if (status === 'ACTIVE')
         badgeClass += 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-      else if (status === 'banned')
+      else if (status === 'BANNED')
         badgeClass += 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
-      else if (status === 'inactive')
+      else if (status === 'INACTIVE')
         badgeClass += 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
       else
         badgeClass += 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
 
-      return h('span', { class: `${badgeClass} capitalize` }, status)
+      return h('span', { class: badgeClass }, statusLabels[status] ?? status)
     },
   },
   {
-    header: 'Actions',
+    header: 'Thao tác',
     minWidth: 180,
     render: row => h('div', { class: 'flex justify-center gap-1.5' }, [
       h(UiButton, {
@@ -186,13 +191,13 @@ const columns = computed<TableColumn<User>[]>(() => [
         size: 'sm',
         class: 'h-8 gap-1 px-2 text-xs',
         onClick: () => handleViewDetail(row),
-      }, () => [h(Eye, { class: 'h-3.5 w-3.5' }), 'View Detail']),
+      }, () => [h(Eye, { class: 'h-3.5 w-3.5' }), 'Chi tiết']),
       h(UiButton, {
         variant: 'outline',
         size: 'sm',
         class: 'h-8 gap-1 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 hover:border-destructive/30',
         onClick: () => handleDelete(row),
-      }, () => [h(Trash2, { class: 'h-3.5 w-3.5' }), 'Delete']),
+      }, () => [h(Trash2, { class: 'h-3.5 w-3.5' }), 'Khóa']),
     ]),
   },
 ])
@@ -200,7 +205,7 @@ const columns = computed<TableColumn<User>[]>(() => [
 
 <template>
   <BasicPage
-    title="User Management"
+    title="Quản lý user"
     description="Quản lý và theo dõi danh sách người dùng trong hệ thống"
     sticky
   >
@@ -284,7 +289,7 @@ const columns = computed<TableColumn<User>[]>(() => [
     </ModalContent>
   </Modal>
 
-  <!-- Delete Modal -->
+  <!-- Modal khóa user -->
   <Modal v-model:open="showDeleteModal">
     <ModalContent>
       <UserDelete

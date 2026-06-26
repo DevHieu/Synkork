@@ -15,8 +15,8 @@ defineEmits<{
 }>()
 
 const user = computed(() => props.user)
-const title = computed(() => user.value?.id ? `Edit User` : 'New User')
-const description = computed(() => user.value?.id ? `Edit user ${user.value.username}` : 'Create new user')
+const title = computed(() => user.value?.id ? 'Cập nhật user' : 'Tạo user mới')
+const description = computed(() => user.value?.id ? `Chỉnh sửa user ${user.value.username}` : 'Tạo tài khoản user mới')
 </script>
 
 <template>

@@ -6,6 +6,7 @@ import com.synkork.backend.modules.admin.workspace.members.dtos.AdminRoomMemberR
 import com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminRoomDetailResponse;
 import com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminRoomRequest;
 import com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminRoomResponse;
+import com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminUserOptionResponse;
 import com.synkork.backend.modules.admin.workspace.rooms.dtos.RoomFilterRequest;
 import com.synkork.backend.modules.admin.workspace.spaces.dtos.AdminRoomSpaceResponse;
 import com.synkork.backend.modules.room.RoomEntity;
@@ -33,6 +34,8 @@ public class AdminRoomService {
 
     @Autowired
     private EmailService emailService;
+
+    // ─── GET ─────────────────────────────────────────────────────────────────
 
     public Page<RoomEntity> getRooms(RoomFilterRequest request) {
         request.validate();
@@ -67,6 +70,19 @@ public class AdminRoomService {
                 .toList();
     }
 
+    public List<AdminUserOptionResponse> searchUserOptions(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return List.of();
+        }
+        return userRepository
+                .findTop10ByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(keyword, keyword)
+                .stream()
+                .map(AdminUserOptionResponse::new)
+                .toList();
+    }
+
+    // ─── CREATE ──────────────────────────────────────────────────────────────
+
     public AdminRoomResponse createRoom(AdminRoomRequest request) {
         if (request.name() == null || request.name().isBlank()) {
             throw new IllegalArgumentException("Tên room không được để trống");
@@ -93,27 +109,22 @@ public class AdminRoomService {
         return new AdminRoomResponse(roomRepository.save(room));
     }
 
-    public List<com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminUserOptionResponse> searchUserOptions(String keyword) {
-        if (keyword == null || keyword.isBlank()) {
-            return List.of();
-        }
-        return userRepository
-                .findTop10ByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(keyword, keyword)
-                .stream()
-                .map(com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminUserOptionResponse::new)
-                .toList();
-    }
-    
+    // ─── UPDATE ──────────────────────────────────────────────────────────────
+
     public AdminRoomResponse updateRoom(String roomId, AdminRoomRequest request) {
         RoomEntity room = findRoomOrThrow(roomId);
 
+        // DM room: chỉ cho đổi status
         if (room.getType() == RoomTypeEnum.DM) {
             if (request.status() != null) {
                 room.setStatus(request.status());
             }
-            return new AdminRoomResponse(roomRepository.save(room));
+            AdminRoomResponse saved = new AdminRoomResponse(roomRepository.save(room));
+            sendOwnerUpdateEmail(room);
+            return saved;
         }
 
+        // GROUP room
         if (request.name() != null && !request.name().isBlank()) {
             room.setName(request.name().trim());
         }
@@ -133,8 +144,12 @@ public class AdminRoomService {
             room.setOwner(newOwner);
         }
 
-        return new AdminRoomResponse(roomRepository.save(room));
+        AdminRoomResponse saved = new AdminRoomResponse(roomRepository.save(room));
+        sendOwnerUpdateEmail(room);
+        return saved;
     }
+
+    // ─── DELETE (soft) ───────────────────────────────────────────────────────
 
     @Transactional
     public void deleteRoom(String roomId) {
@@ -144,8 +159,8 @@ public class AdminRoomService {
             throw new IllegalArgumentException("Không thể xóa room loại DM từ trang quản trị");
         }
 
-        roomRepository.delete(room);
-    }
+        // Soft delete — xóa vĩnh viễn sau 30 ngày bởi SqlSchedule.deleteRoomDeleted()
+        room.setStatus(RoomStatusEnum.DELETED);
 
     public AdminRoomResponse warnRoom(UUID roomId) {
         RoomEntity room = roomRepository.findById(roomId)
@@ -165,16 +180,30 @@ public class AdminRoomService {
     private RoomEntity findRoomOrThrow(String roomId) {
         return roomRepository.findById(UUID.fromString(roomId))
                 .orElseThrow(() -> new RuntimeException("Room not found: " + roomId));
+        // Gỡ tất cả members khỏi room
+        if (room.getRoomMembers() != null) {
+            room.getRoomMembers().clear();
+        }
+
+        roomRepository.save(room);
+
+        // TODO: Disconnect socket subscription của các member đang online
+        // socketService.removeRoomSubscriptions(UUID.fromString(roomId));
+
+        // Gửi mail thông báo cho owner
+        sendOwnerDeleteEmail(room);
     }
-  
-    public AdminRoomResponse lockRoom(UUID roomId, RoomStatusEnum status){
+
+    // ─── LOCK ────────────────────────────────────────────────────────────────
+
+    public AdminRoomResponse lockRoom(UUID roomId, RoomStatusEnum status) {
         RoomEntity room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new RuntimeException("Room not found: " + roomId));
 
-        if(room.getStatus() == RoomStatusEnum.LOCKED){
-                throw new RuntimeException("Room already locked!");
+        if (room.getStatus() == RoomStatusEnum.LOCKED) {
+            throw new RuntimeException("Room already locked!");
         }
-        
+
         room.setStatus(status);
         RoomEntity saved = roomRepository.save(room);
 
@@ -185,4 +214,76 @@ public class AdminRoomService {
         return new AdminRoomResponse(saved);
     }
 
+    // ─── Private helpers ─────────────────────────────────────────────────────
+
+    private RoomEntity findRoomOrThrow(String roomId) {
+        return roomRepository.findById(UUID.fromString(roomId))
+                .orElseThrow(() -> new RuntimeException("Room not found: " + roomId));
+    }
+
+    private void sendOwnerUpdateEmail(RoomEntity room) {
+        if (room.getOwner() == null || room.getOwner().getEmail() == null)
+            return;
+
+        String ownerEmail = room.getOwner().getEmail();
+        String roomName = room.getName() != null ? room.getName() : "Direct Message";
+
+        String subject = "[Synkork] Room của bạn vừa được cập nhật";
+        String body = """
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;
+                            padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px;">
+                    <h2 style="color: #023c3d;">Thông báo cập nhật Room</h2>
+                    <p style="color: #374151;">
+                        Room <strong>%s</strong> của bạn vừa được quản trị viên cập nhật thông tin.
+                    </p>
+                    <div style="margin: 16px 0; padding: 16px; background: #f0fdf4;
+                                border-left: 4px solid #22c55e; border-radius: 8px;">
+                        <p style="margin: 0; color: #166534;">
+                            ℹ️ Nếu bạn có thắc mắc về thay đổi này, vui lòng liên hệ đội ngũ hỗ trợ Synkork.
+                        </p>
+                    </div>
+                    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0 16px;"/>
+                    <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">
+                        Đây là email tự động từ Synkork — vui lòng không reply.
+                    </p>
+                </div>
+                """.formatted(roomName);
+
+        emailService.send(ownerEmail, subject, body);
+    }
+
+    private void sendOwnerDeleteEmail(RoomEntity room) {
+        if (room.getOwner() == null || room.getOwner().getEmail() == null)
+            return;
+
+        String ownerEmail = room.getOwner().getEmail();
+        String roomName = room.getName() != null ? room.getName() : "Unknown";
+
+        String subject = "[Synkork] Room của bạn đã bị xóa bởi quản trị viên";
+        String body = """
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;
+                            padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px;">
+                    <h2 style="color: #dc2626;">Thông báo xóa Room</h2>
+                    <p style="color: #374151;">
+                        Room <strong>%s</strong> của bạn đã bị quản trị viên hệ thống xóa.
+                    </p>
+                    <div style="margin: 16px 0; padding: 16px; background: #fef2f2;
+                                border-left: 4px solid #ef4444; border-radius: 8px;">
+                        <p style="margin: 0; color: #991b1b;">
+                            ⚠️ Toàn bộ thành viên đã bị gỡ khỏi room này.<br/>
+                            Dữ liệu room sẽ bị xóa vĩnh viễn sau 30 ngày.
+                        </p>
+                    </div>
+                    <p style="color: #374151;">
+                        Nếu bạn cho rằng đây là nhầm lẫn, vui lòng liên hệ đội ngũ hỗ trợ Synkork.
+                    </p>
+                    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0 16px;"/>
+                    <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">
+                        Đây là email tự động từ Synkork — vui lòng không reply.
+                    </p>
+                </div>
+                """.formatted(roomName);
+
+        emailService.send(ownerEmail, subject, body);
+    }
 }
