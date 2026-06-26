@@ -1,5 +1,7 @@
 package com.synkork.backend.common.utils.LLMFunction;
 
+import java.util.List;
+
 /**
  * Kho tập trung chứa toàn bộ cấu hình mô hình và prompt template dùng cho các LLM service.
  * <p>
@@ -16,8 +18,13 @@ public final class LlmPrompts {
     public static final String REFERER_CHAT    = "http://localhost:5173/rooms/chat";
     public static final String REFERER_DEFAULT = "http://localhost:5173";
 
-    /** Model phát hiện event/task/note từ tin nhắn chat. */
-    public static final String MODEL_CHAT_EVENT      = "openai/gpt-oss-120b:free";
+    /** Danh sách model dự phòng cho phát hiện event/task/note, thử theo thứ tự. */
+    public static final List<String> CHAT_EVENT_MODELS = List.of(
+            "openai/gpt-oss-120b:free",
+            "poolside/laguna-m.1:free",
+            "nvidia/nemotron-3-super-120b-a12b:free",
+            "z-ai/glm-4.5-air:free"
+    );
 
     /** Model chuyển âm thanh cuộc họp thành văn bản. */
     public static final String MODEL_TRANSCRIPTION   = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free";
@@ -83,7 +90,10 @@ Cấu trúc JSON bắt buộc:
     public static final String CHAT_EVENT_USER_PROMPT_TEMPLATE = """
 Múi giờ: Asia/Bangkok | Thời điểm hiện tại: %s
 Quy đổi ngày: hôm nay=%s | mai=%s | ngày mốt=%s
-Tin nhắn: %s
+Tin nhắn:
+<user_input>
+%s
+</user_input>
 """;
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -109,6 +119,8 @@ Tin nhắn: %s
             2. Sử dụng ngôn ngữ tiếng Việt tự nhiên, chuyên nghiệp.
 
             Nội dung cuộc họp:
-            "%s"
+            <user_input>
+            %s
+            </user_input>
             """;
 }

@@ -46,15 +46,25 @@ public class VoiceSummaryController {
     @PostMapping("/upload")
     public ResponseEntity<?> uploadVoice(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("userId") String userId,
-            @RequestParam("userName") String userName,
             @RequestParam("roomId") String roomId) {
+
+        // ── Validate roomId format ───────────────────────────────────────────
+        UUID roomUuid;
+        try {
+            roomUuid = UUID.fromString(roomId);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("roomId không hợp lệ.");
+        }
 
         // ── Kiểm tra quyền truy cập room ────────────────────────────────────
         UUID currentUserId = AuthUtils.getCurrentUserId();
-        UUID roomUuid = UUID.fromString(roomId);
         if (!roomMemberRepository.existsByRoom_IdAndUser_Id(roomUuid, currentUserId)) {
             return ResponseEntity.status(403).body("Bạn không phải thành viên của phòng này.");
+        }
+
+        // ── Kiểm tra LLM service sẵn sàng ───────────────────────────────────
+        if (!meetingService.isConfigured()) {
+            return ResponseEntity.status(503).body("Dịch vụ AI tạm thời không khả dụng.");
         }
 
         // ── Validate file trước khi xử lý ───────────────────────────────────
@@ -73,7 +83,6 @@ public class VoiceSummaryController {
 
         FileUploaded uploaded = null;
         try {
-            // userId và userName vẫn được giữ trong contract để tương thích với bên gọi.
             // 1) Lưu file upload trước để frontend nhận được URL ổn định.
             uploaded = fileService.uploadFile(file, "synkork/voice-notes/" + roomId);
             String fileUrl = uploaded.url();
@@ -103,7 +112,7 @@ public class VoiceSummaryController {
                 }
             }
             log.error("Lỗi xử lý file voice cho room={}", roomId, e);
-            return ResponseEntity.status(500).body("Lỗi xử lý file voice: " + e.getMessage());
+            return ResponseEntity.status(500).body("Lỗi xử lý file voice. Vui lòng thử lại.");
         }
     }
 }

@@ -86,8 +86,11 @@ public class OpenRouterClient {
         );
 
         String responseBody = response.getBody();
-        logUsage(model, responseBody);
-        return extractContent(responseBody);
+        JsonNode root = (responseBody != null && !responseBody.isBlank())
+                ? objectMapper.readTree(responseBody)
+                : null;
+        logUsage(model, root);
+        return extractContent(root);
     }
 
     /**
@@ -123,31 +126,26 @@ public class OpenRouterClient {
         return headers;
     }
 
-    private String extractContent(String responseBody) throws Exception {
-        if (responseBody == null || responseBody.isBlank()) return "";
-        return objectMapper.readTree(responseBody)
-                .path("choices").path(0).path("message").path("content")
+    private String extractContent(JsonNode root) {
+        if (root == null) return "";
+        return root.path("choices").path(0).path("message").path("content")
                 .asText("");
     }
 
-    private void logUsage(String model, String responseBody) {
-        if (responseBody == null || responseBody.isBlank()) {
+    private void logUsage(String model, JsonNode root) {
+        if (root == null) {
             log.warn("[OpenRouter] model={} usage=empty-response", model);
             return;
         }
-        try {
-            JsonNode usage = objectMapper.readTree(responseBody).path("usage");
-            if (usage.isMissingNode() || usage.isNull()) {
-                log.warn("[OpenRouter] model={} usage=missing", model);
-                return;
-            }
-            log.info("[OpenRouter] model={} prompt_tokens={} completion_tokens={} total_tokens={}",
-                    model,
-                    usage.path("prompt_tokens").asInt(-1),
-                    usage.path("completion_tokens").asInt(-1),
-                    usage.path("total_tokens").asInt(-1));
-        } catch (Exception e) {
-            log.warn("[OpenRouter] model={} usage=parse-failed", model);
+        JsonNode usage = root.path("usage");
+        if (usage.isMissingNode() || usage.isNull()) {
+            log.warn("[OpenRouter] model={} usage=missing", model);
+            return;
         }
+        log.info("[OpenRouter] model={} prompt_tokens={} completion_tokens={} total_tokens={}",
+                model,
+                usage.path("prompt_tokens").asInt(-1),
+                usage.path("completion_tokens").asInt(-1),
+                usage.path("total_tokens").asInt(-1));
     }
 }

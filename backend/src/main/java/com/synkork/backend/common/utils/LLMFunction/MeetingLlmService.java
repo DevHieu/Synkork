@@ -19,7 +19,7 @@ public class MeetingLlmService {
 
     private static final Logger log = LoggerFactory.getLogger(MeetingLlmService.class);
 
-    private static final String[] SUPPORTED_AUDIO_FORMATS = {"mp3", "m4a", "webm"};
+    private static final String[] SUPPORTED_AUDIO_FORMATS = {"mp3", "m4a", "webm", "ogg", "wav"};
     private static final String   DEFAULT_AUDIO_FORMAT    = "wav";
 
     private final OpenRouterClient openRouterClient;
@@ -28,23 +28,22 @@ public class MeetingLlmService {
         this.openRouterClient = openRouterClient;
     }
 
+    /** Cho phép controller kiểm tra sớm trước khi gọi LLM. */
+    public boolean isConfigured() {
+        return openRouterClient.isConfigured();
+    }
+
     // ── Public API ────────────────────────────────────────────────────────────
 
-    public String transcribeAudio(MultipartFile audioFile) {
-        if (!openRouterClient.isConfigured()) return "[API Key missing]";
-        try {
-            byte[] bytes = audioFile.getBytes();
-            return openRouterClient.chatCompletion(
-                    LlmPrompts.REFERER_DEFAULT,
-                    LlmPrompts.APP_TITLE,
-                    LlmPrompts.MODEL_TRANSCRIPTION,
-                    List.of(buildTranscriptionMessage(audioFile, bytes)),
-                    false
-            );
-        } catch (Exception e) {
-            log.error("Lỗi transcribe audio", e);
-            return "";
-        }
+    public String transcribeAudio(MultipartFile audioFile) throws Exception {
+        byte[] bytes = audioFile.getBytes();
+        return openRouterClient.chatCompletion(
+                LlmPrompts.REFERER_DEFAULT,
+                LlmPrompts.APP_TITLE,
+                LlmPrompts.MODEL_TRANSCRIPTION,
+                List.of(buildTranscriptionMessage(audioFile, bytes)),
+                false
+        );
     }
 
     public String summarizeMeeting(String transcript) {

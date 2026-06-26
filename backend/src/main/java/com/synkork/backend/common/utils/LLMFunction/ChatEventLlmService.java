@@ -28,14 +28,6 @@ public class ChatEventLlmService {
     private static final int     MIN_LENGTH              = 10;
     private static final int     MAX_CONSECUTIVE_REPEATS = 3;
 
-    /** Danh sách model dự phòng, thử theo thứ tự từ trên xuống dưới. */
-    private static final List<String> CHAT_EVENT_MODELS = List.of(
-            "openai/gpt-oss-120b:free",
-            "poolside/laguna-m.1:free",
-            "nvidia/nemotron-3-super-120b-a12b:free",
-            "z-ai/glm-4.5-air:free"
-    );
-
     /** Tin nhắn chỉ gồm chữ số (vd: "12345"). */
     private static final Pattern ONLY_DIGITS   = Pattern.compile("^\\d+$");
 
@@ -73,7 +65,7 @@ public class ChatEventLlmService {
         Exception lastException = null;
         List<Map<String, Object>> messages = buildMessages(now, messageContent);
 
-        for (String model : CHAT_EVENT_MODELS) {
+        for (String model : LlmPrompts.CHAT_EVENT_MODELS) {
             try {
                 return openRouterClient.chatCompletion(
                         LlmPrompts.REFERER_CHAT,
