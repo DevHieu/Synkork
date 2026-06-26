@@ -3,9 +3,9 @@ spring:
     name: synkork
 
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/synkork?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: jdbc:mysql://localhost:3306/synkork?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: huynhtrunghieu
+    password: 123
 
   jpa:
     hibernate:

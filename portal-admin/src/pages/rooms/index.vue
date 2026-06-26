@@ -61,7 +61,7 @@ const pageSize = 20
 
 const searchKeyword = ref('')
 const selectedStatus = ref<string>('ALL')
-const selectedType = ref<string>('ALL')
+  const selectedType = ref<string>('GROUP')
 
 const debounceSearchKeyword = refDebounced(searchKeyword, 500)
 
@@ -417,9 +417,6 @@ onMounted(() => {
             </SelectItem>
             <SelectItem value="GROUP">
               GROUP
-            </SelectItem>
-            <SelectItem value="DM">
-              DM
             </SelectItem>
           </SelectContent>
         </Select>
