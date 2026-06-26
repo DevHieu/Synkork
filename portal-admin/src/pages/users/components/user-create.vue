@@ -20,7 +20,7 @@ const isOpen = ref(false)
     <ModalTrigger as-child>
       <UiButton>
         <UserRoundPlusIcon />
-        Create User
+        Tạo user
       </UiButton>
     </ModalTrigger>
 
