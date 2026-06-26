@@ -9,10 +9,12 @@ export type ReportStatus =
 export interface Report {
   id: string
   reporterId: string
+  reporterName?: string | null
   reporterEmail: string
   targetUserId?: string | null
   targetRoomId?: string | null
   targetName: string
+  targetEmail?: string | null
   reason: string
   note: string
   description?: string | null

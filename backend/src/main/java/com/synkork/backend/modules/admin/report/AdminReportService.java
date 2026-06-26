@@ -12,7 +12,6 @@ import com.synkork.backend.modules.admin.report.dtos.ReportDTO;
 import com.synkork.backend.modules.admin.report.dtos.ReportFilterRequest;
 import com.synkork.backend.modules.admin.report.dtos.ReportUpdateStatusRequest;
 import com.synkork.backend.modules.report.ReportEntity;
-import com.synkork.backend.modules.report.ReportRepository;
 import com.synkork.backend.modules.report.enums.ReportStatusEnums;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;

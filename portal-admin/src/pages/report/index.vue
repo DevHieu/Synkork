@@ -130,18 +130,38 @@ async function handleDeleteReport(reportId: string) {
   }
 }
 
-const statusVariantMap: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  PENDING: 'secondary',
-  RESOLVED: 'default',
-  DISMISSED: 'destructive',
-  REVIEWED: 'outline',
-}
- 
-const statusLabelMap: Record<string, string> = {
-  PENDING: 'Chờ xử lý',
-  REVIEWED: 'Đang xem xét',
-  RESOLVED: 'Đã giải quyết',
-  DISMISSED: 'Đã bác bỏ',
+function renderStatus(status: string) {
+  const config = {
+    PENDING: {
+      label: 'Chờ xử lý',
+      class:
+        'border-amber-300 bg-amber-50 px-3 text-amber-700 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300',
+    },
+    REVIEWED: {
+      label: 'Đang xem xét',
+      class:
+        'border-blue-300 bg-blue-50 px-3 text-blue-700 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-300',
+    },
+    RESOLVED: {
+      label: 'Đã giải quyết',
+      class:
+        'border-emerald-300 bg-emerald-50 px-3 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
+    },
+    DISMISSED: {
+      label: 'Đã bác bỏ',
+      class:
+        'border-red-300 bg-red-50 px-3 text-red-700 dark:border-red-700 dark:bg-red-950 dark:text-red-300',
+    },
+  }[status]
+
+  return h(
+    Badge,
+    {
+      variant: 'outline',
+      class: config?.class,
+    },
+    () => config?.label ?? status,
+  )
 }
  
 const typeLabelMap: Record<string, string> = {
@@ -159,12 +179,11 @@ const columns = computed<TableColumn<Report>[]>(() => [
   },
   { header: 'Lý do', accessor: 'reason', minWidth: 180 },
   { header: 'Mô tả', accessor: 'description', minWidth: 220 },
-  {
+    {
     header: 'Trạng thái',
     accessor: 'status',
-    minWidth: 130,
-    render: row =>
-      h(Badge, { variant: statusVariantMap[row.status] ?? 'default' }, () => statusLabelMap[row.status] ?? row.status),
+    minWidth: 150,
+    render: row => renderStatus(row.status),
   },
   { header: 'Email người báo cáo', accessor: 'reporterEmail', minWidth: 180 },
   {

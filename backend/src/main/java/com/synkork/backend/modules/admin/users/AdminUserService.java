@@ -1,5 +1,6 @@
 package com.synkork.backend.modules.admin.users;
 
+import com.synkork.backend.common.utils.EmailService;
 import com.synkork.backend.modules.admin.users.dtos.AdminUserResponse;
 import com.synkork.backend.modules.admin.users.dtos.CreateUserRequest;
 import com.synkork.backend.modules.admin.users.dtos.UpdateUserRequest;
@@ -36,6 +37,9 @@ public class AdminUserService {
 
     @Autowired(required = false)
     private JavaMailSender mailSender;
+
+    @Autowired
+    private EmailService emailService;
 
     public Page<UserEntity> getUsers(UserFilterRequest request) {
         request.validate();
@@ -114,7 +118,16 @@ public class AdminUserService {
     public AdminUserResponse lockUser(UUID userId, UserStatusEnum status) {
         UserEntity user = findUserOrThrow(userId);
         user.setStatus(status);
-        return AdminUserResponse.from(userAdminRepository.save(user));
+        UserEntity saved = userAdminRepository.save(user);
+
+        if (status == UserStatusEnum.BANNED) {
+            String targetName = saved.getDisplayName() != null && !saved.getDisplayName().isBlank()
+                    ? saved.getDisplayName()
+                    : saved.getUsername();
+            emailService.sendLockEmail(saved.getEmail(), targetName, "tài khoản của bạn");
+        }
+
+        return AdminUserResponse.from(saved);
     }
 
     public AdminUserResponse warnUser(UUID userId) {
@@ -122,7 +135,13 @@ public class AdminUserService {
 
         user.setWarning(user.getWarning() + 1);
 
-        return AdminUserResponse.from(userAdminRepository.save(user));
+        UserEntity saved = userAdminRepository.save(user);
+        String targetName = saved.getDisplayName() != null && !saved.getDisplayName().isBlank()
+                ? saved.getDisplayName()
+                : saved.getUsername();
+        emailService.sendWarningEmail(saved.getEmail(), targetName, "tài khoản của bạn", saved.getWarning());
+
+        return AdminUserResponse.from(saved);
     }
 
     private UserEntity findUserOrThrow(UUID id) {

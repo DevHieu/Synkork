@@ -60,7 +60,8 @@ const checkingTarget   = ref(false)
 const targetCheckError = ref(false)
 const lockLoading      = ref(false)
 const warnLoading      = ref(false)
-const hasWarned        = ref(false)
+const warnedReportIds  = ref<Set<string>>(new Set())
+const hasWarned        = computed(() => warnedReportIds.value.has(props.report.id))
 
 const isTargetLocked = computed(() =>
   !!targetStatus.value &&
@@ -74,7 +75,6 @@ async function checkTargetStatus() {
 
   checkingTarget.value = true
   targetCheckError.value = false
-  hasWarned.value = false
 
   try {
     const data = isUserReport.value
@@ -140,7 +140,7 @@ async function handleWarnTarget() {
       await roomService.warnRoom(targetId.value)
     }
     targetWarning.value += 1
-    hasWarned.value = true
+    warnedReportIds.value = new Set(warnedReportIds.value).add(props.report.id)
   } catch (error) {
     console.error('Lỗi gửi cảnh cáo:', error)
   } finally {
@@ -217,7 +217,7 @@ function formatDate(iso: string) {
  
           <!-- Tên / email — không hiển thị ID -->
           <p class="text-sm font-semibold">{{ report.targetName }}</p>
-          <p v-if="report.reporterEmail" class="text-xs text-muted-foreground">{{ report.reporterEmail }}</p>
+          <p v-if="report.targetEmail" class="text-xs text-muted-foreground">{{ report.targetEmail }}</p>
  
           <!-- Số lần cảnh cáo -->
           <div v-if="!checkingTarget && !targetCheckError" class="flex items-center gap-1.5 mt-1">
@@ -234,8 +234,8 @@ function formatDate(iso: string) {
         <!-- Người báo cáo -->
         <div class="space-y-1">
           <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Người báo cáo</p>
-          <p class="text-sm font-semibold">{{ report.targetName ?? report.reporterEmail }}</p>
-          <p v-if="report.targetName" class="text-xs text-muted-foreground">{{ report.reporterEmail }}</p>
+          <p class="text-sm font-semibold">{{ report.reporterName || report.reporterEmail }}</p>
+          <p v-if="report.reporterName" class="text-xs text-muted-foreground">{{ report.reporterEmail }}</p>
         </div>
  
         <Separator />
@@ -290,7 +290,7 @@ function formatDate(iso: string) {
               variant="outline"
               size="sm"
               class="gap-1.5 shrink-0 border-amber-400 text-amber-700 hover:bg-amber-100"
-              :disabled="checkingTarget || warnLoading || isTargetLocked"
+              :disabled="checkingTarget || warnLoading || isTargetLocked || hasWarned"
               @click="handleWarnTarget"
             >
               <Loader2 v-if="warnLoading" class="h-3.5 w-3.5 animate-spin" />

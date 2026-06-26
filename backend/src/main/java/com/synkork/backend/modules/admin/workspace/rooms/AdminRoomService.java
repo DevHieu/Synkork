@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.admin.workspace.rooms;
 
 import com.synkork.backend.common.utils.AuthUtils;
+import com.synkork.backend.common.utils.EmailService;
 import com.synkork.backend.modules.admin.workspace.members.dtos.AdminRoomMemberResponse;
 import com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminRoomDetailResponse;
 import com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminRoomRequest;
@@ -29,6 +30,9 @@ public class AdminRoomService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private EmailService emailService;
 
     public Page<RoomEntity> getRooms(RoomFilterRequest request) {
         request.validate();
@@ -149,7 +153,13 @@ public class AdminRoomService {
 
         room.setWarning(room.getWarning() + 1);
 
-        return new AdminRoomResponse(roomRepository.save(room));
+        RoomEntity saved = roomRepository.save(room);
+        UserEntity owner = saved.getOwner();
+        if (owner != null) {
+            emailService.sendWarningEmail(owner.getEmail(), saved.getName(), "phòng của bạn", saved.getWarning());
+        }
+
+        return new AdminRoomResponse(saved);
     }
 
     private RoomEntity findRoomOrThrow(String roomId) {
@@ -166,7 +176,13 @@ public class AdminRoomService {
         }
         
         room.setStatus(status);
-        return new AdminRoomResponse(roomRepository.save(room));
+        RoomEntity saved = roomRepository.save(room);
+
+        if (status == RoomStatusEnum.LOCKED && saved.getOwner() != null) {
+            emailService.sendLockEmail(saved.getOwner().getEmail(), saved.getName(), "phòng của bạn");
+        }
+
+        return new AdminRoomResponse(saved);
     }
 
 }
