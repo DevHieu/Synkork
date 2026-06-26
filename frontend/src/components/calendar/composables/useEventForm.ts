@@ -50,20 +50,24 @@ export function useEventForm(
   const isEventInFuture = (): boolean =>
     dayjs(`${formData.value.eventDate}T${formData.value.startTime}`).isAfter(dayjs());
 
-  const hasInvalidEventLink = (): boolean => {
-    const eventLink = formData.value.eventLink?.trim();
-    return Boolean(eventLink) && !/^https?:\/\//i.test(eventLink);
-  };
-
-  const warnInvalidEventLink = (): void => {
-    if (!hasInvalidEventLink()) return;
-
-    showValidationWarning("Link sự kiện không bắt đầu bằng HTTP:// hoặc HTTPS://. Sự kiện vẫn được lưu, nhưng link có thể không mở đúng.");
+  const isValidUrl = (value: string): boolean => {
+    try {
+      const url = new URL(value);
+      return url.protocol === "http:" || url.protocol === "https:";
+    } catch {
+      return false;
+    }
   };
 
   // Validate form
   const validate = (): boolean => {
     if (!formData.value.title.trim()) return false;
+
+    const eventLink = formData.value.eventLink?.trim();
+    if (eventLink && !isValidUrl(eventLink)) {
+      showValidationWarning("Link sự kiện không hợp lệ. Vui lòng nhập đúng định dạng URL bắt đầu bằng HTTP:// hoặc HTTPS://.");
+      return false;
+    }
 
     if (!isEndTimeAfterStartTime()) {
       showValidationWarning("Giờ kết thúc phải sau giờ bắt đầu! Vui lòng chọn lại thời gian cho phù hợp.");
@@ -88,7 +92,6 @@ export function useEventForm(
     warningMessage,
     showWarning,
     validate,
-    warnInvalidEventLink,
     resetForm,
   };
 }

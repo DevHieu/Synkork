@@ -45,37 +45,26 @@ const monthDays = computed(() => {
 });
 
 /**
- * Lọc và sắp xếp sự kiện cho một ngày cụ thể
+ * Memoize: nhóm sự kiện theo ngày, sắp xếp mỗi nhóm theo startTime.
+ * Template chỉ cần tra cứu O(1) thay vì lặp toàn bộ mảng events.
  */
-const getEventsForDate = (date: dayjs.Dayjs) => {
-  const targetDate = date.format("YYYY-MM-DD");
-  const result: CalendarEvent[] = [];
-  
-  for (let i = 0; i < props.events.length; i++) {
-    const event = props.events[i];
-    if (event && (event.displayDate || event.eventDate) === targetDate) {
-      result.push(event);
-    }
+const eventsByDate = computed(() => {
+  const map: Record<string, CalendarEvent[]> = {};
+  for (const event of props.events) {
+    const d = event.displayDate || event.eventDate;
+    if (!map[d]) map[d] = [];
+    map[d].push(event);
   }
-  
-  result.sort((a, b) => a.startTime.localeCompare(b.startTime));
-  return result;
-};
-
-// Các sự kiện cho ngày hiện đang được chọn (hiển thị ở thanh bên)
-const selectedDateEvents = computed(() => {
-  return getEventsForDate(props.selectedDate);
+  for (const key in map) {
+    map[key].sort((a, b) => a.startTime.localeCompare(b.startTime));
+  }
+  return map;
 });
 
-// Dùng vòng lặp thường để kiểm tra nhanh hơn với danh sách event đang có.
-const hasEvent = (date: dayjs.Dayjs) => {
-  const targetDate = date.format("YYYY-MM-DD");
-  for (let i = 0; i < props.events.length; i++) {
-    const event = props.events[i];
-    if (event && (event.displayDate || event.eventDate) === targetDate) return true;
-  }
-  return false;
-};
+const getEventsForDate = (date: dayjs.Dayjs): CalendarEvent[] =>
+  eventsByDate.value[date.format("YYYY-MM-DD")] || [];
+
+const selectedDateEvents = computed(() => getEventsForDate(props.selectedDate));
 
 const isCurrentMonth = (date: dayjs.Dayjs) => date.month() === props.currentDate.month();
 
@@ -157,7 +146,7 @@ const getContinuationLabel = (event: CalendarEvent) => {
               </span>
             </div>
             <!-- Chấm chỉ báo sự kiện -->
-            <div v-if="hasEvent(date)" class="flex gap-1 mt-auto pt-2 flex-wrap w-full">
+            <div v-if="getEventsForDate(date).length" class="flex gap-1 mt-auto pt-2 flex-wrap w-full">
               <span
                 v-for="n in Math.min(getEventsForDate(date).length, 3)"
                 :key="n"

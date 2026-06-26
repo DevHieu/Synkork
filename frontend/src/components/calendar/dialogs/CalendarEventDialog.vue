@@ -32,7 +32,7 @@ const emit = defineEmits<{
 const {
   formData,
   warningMessage, showWarning,
-  validate, warnInvalidEventLink, resetForm,
+  validate, resetForm,
 } = useEventForm(props.initialData, props.isEditing);
 
 // Các hàm xử lý cập nhật dữ liệu từ component con
@@ -68,7 +68,6 @@ watch(
 // Xử lý gửi biểu mẫu
 const handleSubmit = (): void => {
   if (validate()) {
-    warnInvalidEventLink();
     emit("save", { ...formData.value });
   }
 };
