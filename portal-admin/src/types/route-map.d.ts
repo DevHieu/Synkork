@@ -133,6 +133,13 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/dashboard/tabs/subscription-overview': RouteRecordInfo<
+      '/dashboard/tabs/subscription-overview',
+      '/dashboard/tabs/subscription-overview',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/dashboard/tabs/user-overview': RouteRecordInfo<
       '/dashboard/tabs/user-overview',
       '/dashboard/tabs/user-overview',
@@ -403,6 +410,14 @@ declare module 'vue-router/auto-routes' {
     'src/pages/dashboard/tabs/room-overview.vue': {
       routes:
         | '/dashboard/tabs/room-overview'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/dashboard/tabs/subscription-overview.vue': {
+      routes:
+        | '/dashboard/tabs/subscription-overview'
       views:
         | never
       pathParamNames:
