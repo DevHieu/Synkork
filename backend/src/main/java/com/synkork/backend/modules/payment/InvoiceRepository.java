@@ -3,8 +3,11 @@ package com.synkork.backend.modules.payment;
 import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -17,4 +20,10 @@ public interface InvoiceRepository extends JpaRepository<InvoiceEntity, UUID>, J
     long countByStatusAndPaidAtBetween(InvoiceStatusEnum status, LocalDateTime start, LocalDateTime end);
 
     Optional<InvoiceEntity> findByTransactionId(String transactionId);
+
+    @Query("SELECT COALESCE(SUM(i.amount), 0) FROM InvoiceEntity i WHERE i.status = :status")
+    BigDecimal sumAmountByStatus(@Param("status") InvoiceStatusEnum status);
+
+    @Query("SELECT COALESCE(SUM(i.amount), 0) FROM InvoiceEntity i WHERE i.status = :status AND i.paidAt >= :start")
+    BigDecimal sumAmountByStatusAndPaidAtAfter(@Param("status") InvoiceStatusEnum status, @Param("start") LocalDateTime start);
 }

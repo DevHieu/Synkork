@@ -7,12 +7,12 @@ import { Button } from '@/components/ui/button'
 import OverviewContent from './tabs/overview-content.vue'
 import UserOverview from './tabs/user-overview.vue'
 import RoomOverview from './tabs/room-overview.vue'
-import MessageOverview from './tabs/message-overview.vue'
+import SubscriptionOverview from './tabs/subscription-overview.vue'
 
 const tabs = ref([
   { name: 'Overview', value: 'overview' },
   { name: 'Rooms & Spaces', value: 'rooms' },
-  { name: 'Messages', value: 'messages' },
+  { name: 'Subscriptions', value: 'subscriptions' },
   { name: 'Users', value: 'users' },
 ])
 
@@ -53,8 +53,8 @@ const activeTab = ref(tabs.value[0].value)
       <UiTabsContent value="rooms" class="space-y-4">
         <RoomOverview />
       </UiTabsContent>
-      <UiTabsContent value="messages" class="space-y-4">
-        <MessageOverview />
+      <UiTabsContent value="subscriptions" class="space-y-4">
+        <SubscriptionOverview />
       </UiTabsContent>
     </UiTabs>
   </BasicPage>

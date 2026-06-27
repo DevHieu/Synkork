@@ -66,5 +66,4 @@ public class ReportService {
 
         return reportRepository.save(builder.build());
     }
-
 }

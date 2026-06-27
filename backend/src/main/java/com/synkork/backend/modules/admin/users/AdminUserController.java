@@ -64,11 +64,12 @@ public class AdminUserController {
 
     @DeleteMapping("/{id}")
     public ApiResponse<Map<String, String>> deleteUser(
-            @PathVariable UUID id
+            @PathVariable UUID id,
+            @RequestBody(required = false) DeleteUserRequest request
     ) {
         return ApiResponse.success(
                 "Delete user successfully",
-                adminUserService.deleteUser(id)
+                adminUserService.deleteUser(id, request)
         );
     }
 
