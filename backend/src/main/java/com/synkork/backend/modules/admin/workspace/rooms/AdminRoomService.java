@@ -1,5 +1,14 @@
 package com.synkork.backend.modules.admin.workspace.rooms;
 
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.common.utils.EmailService;
 import com.synkork.backend.modules.admin.workspace.members.dtos.AdminRoomMemberResponse;
@@ -14,14 +23,6 @@ import com.synkork.backend.modules.room.enums.RoomStatusEnum;
 import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.*;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.UUID;
 
 @Service
 public class AdminRoomService {
@@ -35,8 +36,6 @@ public class AdminRoomService {
     @Autowired
     private EmailService emailService;
 
-    // ─── GET ─────────────────────────────────────────────────────────────────
-
     public Page<RoomEntity> getRooms(RoomFilterRequest request) {
         request.validate();
 
@@ -45,8 +44,7 @@ public class AdminRoomService {
         Pageable pageable = PageRequest.of(
                 request.getPage(),
                 request.getSize(),
-                Sort.by(Sort.Direction.DESC, "createdAt")
-        );
+                Sort.by(Sort.Direction.DESC, "createdAt"));
 
         return roomRepository.findAll(spec, pageable);
     }

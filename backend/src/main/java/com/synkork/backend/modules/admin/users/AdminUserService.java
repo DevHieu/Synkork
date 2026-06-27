@@ -52,9 +52,6 @@ public class AdminUserService {
     @Autowired
     private EntityManager entityManager;
 
-    @Autowired
-    private EmailService emailService;
-
     public Page<UserEntity> getUsers(UserFilterRequest request) {
         request.validate();
 
