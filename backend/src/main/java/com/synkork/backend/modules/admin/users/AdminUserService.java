@@ -44,9 +44,6 @@ public class AdminUserService {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    private EmailService emailService;
-
-    @Autowired
     private RoomMemberRepository roomMemberRepository;
 
     @Autowired

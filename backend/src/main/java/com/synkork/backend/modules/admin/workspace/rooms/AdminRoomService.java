@@ -162,6 +162,20 @@ public class AdminRoomService {
         // Soft delete — xóa vĩnh viễn sau 30 ngày bởi SqlSchedule.deleteRoomDeleted()
         room.setStatus(RoomStatusEnum.DELETED);
 
+        // Gỡ tất cả members khỏi room
+        if (room.getRoomMembers() != null) {
+            room.getRoomMembers().clear();
+        }
+
+        roomRepository.save(room);
+
+        // TODO: Disconnect socket subscription của các member đang online
+        // socketService.removeRoomSubscriptions(UUID.fromString(roomId));
+
+        // Gửi mail thông báo cho owner
+        sendOwnerDeleteEmail(room);
+    }
+
     public AdminRoomResponse warnRoom(UUID roomId) {
         RoomEntity room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new RuntimeException("Room not found"));
@@ -175,23 +189,6 @@ public class AdminRoomService {
         }
 
         return new AdminRoomResponse(saved);
-    }
-
-    private RoomEntity findRoomOrThrow(String roomId) {
-        return roomRepository.findById(UUID.fromString(roomId))
-                .orElseThrow(() -> new RuntimeException("Room not found: " + roomId));
-        // Gỡ tất cả members khỏi room
-        if (room.getRoomMembers() != null) {
-            room.getRoomMembers().clear();
-        }
-
-        roomRepository.save(room);
-
-        // TODO: Disconnect socket subscription của các member đang online
-        // socketService.removeRoomSubscriptions(UUID.fromString(roomId));
-
-        // Gửi mail thông báo cho owner
-        sendOwnerDeleteEmail(room);
     }
 
     // ─── LOCK ────────────────────────────────────────────────────────────────
