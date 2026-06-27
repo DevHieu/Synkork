@@ -149,7 +149,30 @@ public class AdminUserService {
     public AdminUserResponse lockUser(UUID userId, UserStatusEnum status) {
         UserEntity user = findUserOrThrow(userId);
         user.setStatus(status);
-        return AdminUserResponse.from(userAdminRepository.save(user));
+        UserEntity saved = userAdminRepository.save(user);
+
+        if (status == UserStatusEnum.BANNED) {
+            String targetName = saved.getDisplayName() != null && !saved.getDisplayName().isBlank()
+                    ? saved.getDisplayName()
+                    : saved.getUsername();
+            emailService.sendLockEmail(saved.getEmail(), targetName, "tài khoản của bạn");
+        }
+
+        return AdminUserResponse.from(saved);
+    }
+
+    public AdminUserResponse warnUser(UUID userId) {
+        UserEntity user = findUserOrThrow(userId);
+
+        user.setWarning(user.getWarning() + 1);
+
+        UserEntity saved = userAdminRepository.save(user);
+        String targetName = saved.getDisplayName() != null && !saved.getDisplayName().isBlank()
+                ? saved.getDisplayName()
+                : saved.getUsername();
+        emailService.sendWarningEmail(saved.getEmail(), targetName, "tài khoản của bạn", saved.getWarning());
+
+        return AdminUserResponse.from(saved);
     }
 
     private UserEntity findUserOrThrow(UUID id) {

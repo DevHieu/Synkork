@@ -524,4 +524,81 @@ public class EmailService {
 
         send(toEmail, subject, body);
     }
+
+    @Async
+    public void sendLockEmail(String toEmail, String targetName, String targetType) {
+        if (toEmail == null || toEmail.isBlank()) {
+            return;
+        }
+
+        String subject = "[Synkork] Thông báo khóa " + targetType;
+        String body = """
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;
+                            padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px;">
+                    <h2 style="color: #dc2626;">Thông báo khóa %s</h2>
+
+                    <p style="color: #374151;">
+                        Quản trị viên đã khóa %s <strong>%s</strong> do vi phạm quy định của Synkork.
+                    </p>
+
+                    <div style="margin: 24px 0; padding: 16px; background: #fef2f2;
+                                border-left: 4px solid #ef4444; border-radius: 8px;">
+                        <p style="margin: 0; color: #991b1b;">
+                            Trạng thái hiện tại: <strong>Đã bị khóa</strong>
+                        </p>
+                    </div>
+
+                    <p style="color: #374151;">
+                        Nếu bạn cho rằng đây là sự nhầm lẫn, vui lòng liên hệ đội ngũ hỗ trợ Synkork để được xem xét.
+                    </p>
+
+                    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0 16px;"/>
+
+                    <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">
+                        Đây là email được gửi tự động từ Synkork. Vui lòng không trả lời email này.
+                    </p>
+                </div>
+                """.formatted(targetType, targetType, targetName);
+
+        send(toEmail, subject, body);
+    }
+
+    @Async
+    public void sendWarningEmail(String toEmail, String targetName, String targetType, int warningCount) {
+        if (toEmail == null || toEmail.isBlank()) {
+            return;
+        }
+
+        String subject = "[Synkork] Cảnh báo vi phạm";
+        String body = """
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;
+                            padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px;">
+                    <h2 style="color: #b45309;">Cảnh báo vi phạm</h2>
+
+                    <p style="color: #374151;">
+                        Xin chào, quản trị viên đã gửi cảnh báo đến %s <strong>%s</strong>.
+                    </p>
+
+                    <div style="margin: 24px 0; padding: 16px; background: #fffbeb;
+                                border-left: 4px solid #f59e0b; border-radius: 8px;">
+                        <p style="margin: 0; color: #92400e;">
+                            Tổng số lần cảnh báo hiện tại: <strong>%d</strong>
+                        </p>
+                    </div>
+
+                    <p style="color: #374151;">
+                        Vui lòng kiểm tra và điều chỉnh hành vi sử dụng để tránh bị hạn chế tài khoản hoặc khóa phòng trong tương lai.
+                    </p>
+
+                    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0 16px;"/>
+
+                    <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">
+                        Đây là email được gửi tự động từ Synkork. Vui lòng không trả lời email này.
+                    </p>
+                </div>
+                """
+                .formatted(targetType, targetName, warningCount);
+
+        send(toEmail, subject, body);
+    }
 }
