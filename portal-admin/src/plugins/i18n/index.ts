@@ -8,7 +8,7 @@ export const SUPPORTED_LOCALES = new Set<Language>([
   'vi',
 ])
 
-export const DEFAULT_LOCALE: Language = 'en'
+export const DEFAULT_LOCALE: Language = 'vi'
 
 export const appLocale = useStorage<Language>('app-locale', DEFAULT_LOCALE)
 

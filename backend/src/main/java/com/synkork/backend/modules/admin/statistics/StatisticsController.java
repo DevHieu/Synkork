@@ -2,6 +2,7 @@ package com.synkork.backend.modules.admin.statistics;
 
 import com.synkork.backend.modules.admin.statistics.dtos.OverviewChartResponse;
 import com.synkork.backend.modules.admin.statistics.dtos.OverviewStatsResponse;
+import com.synkork.backend.modules.admin.statistics.dtos.SubscriptionDashboardResponse;
 import com.synkork.backend.modules.admin.statistics.dtos.UserStatsResponse;
 import com.synkork.backend.modules.admin.statistics.enums.PeriodEnum;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,11 @@ public class StatisticsController {
     @GetMapping("/dashboard/users/stats")
     public ResponseEntity<UserStatsResponse> getUserStats() {
         return ResponseEntity.ok(statisticsService.getUserStatsData());
+    }
+
+    @GetMapping("/dashboard/subscriptions/stats")
+    public ResponseEntity<SubscriptionDashboardResponse> getSubscriptionStats() {
+        return ResponseEntity.ok(statisticsService.getSubscriptionDashboardData());
     }
 }
 

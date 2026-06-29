@@ -1,16 +1,19 @@
 spring:
-  application:
-    name: synkork
-
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/synkork?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123}
+
+  sql:
+    init:
+      mode: always
+      data-locations: classpath:db/seed.sql
 
   jpa:
+    defer-datasource-initialization: true
     hibernate:
       ddl-auto: update
-    show-sql: false
+    show-sql: true
     properties:
       hibernate:
         format_sql: true
@@ -21,8 +24,8 @@ spring:
       client:
         registration:
           google:
-            client-id: ${GOOGLE_CLIENT_ID}
-            client-secret: ${GOOGLE_CLIENT_SECRET}
+            client-id: ${GOOGLE_CLIENT_ID:}
+            client-secret: ${GOOGLE_CLIENT_SECRET:}
             scope:
               - email
               - profile
@@ -48,41 +51,19 @@ spring:
 
   ai:
     gemini:
-      api-key: ${GEMINI_API_KEY}
+      api-key: ${GEMINI_API_KEY:}
 
-  logging:
-    pattern:
-      correlation: "[${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
-
-  management:
-    endpoints:
-      web:
-        exposure:
-          include: "*"
-    zipkin:
-      tracing:
-        endpoint: "http://tempo:9411/api/v2/spans"
-    endpoint:
-      health:
-        show:
-          details: "always"
-    metrics:
-      distribution:
-        percentiles-histogram:
-          http:
-            server:
-              requests: true
-    tracing:
-      sampling:
-        probability: 1.0
+nvidia:
+  api-key: ${NVIDIA_API_KEY:}
+  base-url: ${NVIDIA_BASE_URL:https://integrate.api.nvidia.com/v1}
 
 momo:
   partner-code: MOMO
-  access-key: ${MOMO_ACCESS_KEY}
-  secret-key: ${MOMO_SECRET_KEY}
+  access-key: ${MOMO_ACCESS_KEY:}
+  secret-key: ${MOMO_SECRET_KEY:}
   endpoint: https://test-payment.momo.vn/v2/gateway/api/create
-  redirect-url: ${FRONTEND_URL}/me/subscriptions
-  ipn-url: ${SERVER_URL}/api/payment/momo/callback
+  redirect-url: ${FRONTEND_URL:}/me/subscriptions
+  ipn-url: ${SERVER_URL:}/api/payment/momo/callback
 
 server:
   port: 8080
@@ -99,14 +80,14 @@ jwt:
   secret: CFGSc60ez6n093BbLoqk1BdPFa02l26UBAjKvFGAw3Q
 
 gmail:
-  username: ${GMAIL_USERNAME}
-  password: ${GMAIL_PASSWORD}
+  username: ${GMAIL_USERNAME:}
+  password: ${GMAIL_PASSWORD:}
 
 cloudinary:
-  name: ${CLOUDINARY_CLOUD_NAME}
-  key: ${CLOUDINARY_API_KEY}
-  secret: ${CLOUDINARY_API_SECRET}
+  name: ${CLOUDINARY_CLOUD_NAME:}
+  key: ${CLOUDINARY_API_KEY:}
+  secret: ${CLOUDINARY_API_SECRET:}
 
 zego:
-  appId: ${ZEGO_APPID}
-  secret: ${ZEGO_SERVER_SECRET}
+  appId: ${ZEGO_APPID:0}
+  secret: ${ZEGO_SERVER_SECRET:}
