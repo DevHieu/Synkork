@@ -135,5 +135,36 @@
   },
   "homePage": {
     "searchKeyWords": "Tìm kiếm menu"
+  },
+  "subscriptions": {
+    "title": "Quản lý gói đăng ký",
+    "description": "Xem và quản lý tất cả các gói đăng ký, thanh toán và chi tiết hóa đơn của người dùng.",
+    "searchPlaceholder": "Tìm kiếm theo tên hoặc email...",
+    "status": "Trạng thái",
+    "plan": "Gói",
+    "method": "Phương thức thanh toán",
+    "clearFilters": "Xóa bộ lọc",
+    "allStatuses": "Tất cả trạng thái",
+    "statusPending": "Chờ thanh toán",
+    "statusPaid": "Đã thanh toán",
+    "statusFailed": "Thất bại",
+    "statusCancelled": "Đã hủy",
+    "allPlans": "Tất cả các gói",
+    "planFree": "Miễn phí",
+    "planTeam": "Nhóm",
+    "planBusiness": "Doanh nghiệp",
+    "allMethods": "Tất cả phương thức",
+    "methodMomo": "Momo",
+    "methodVnpay": "VNPay",
+    "methodBankTransfer": "Chuyển khoản",
+    "username": "Tên người dùng",
+    "email": "Email",
+    "planExpiry": "Hết hạn gói",
+    "amount": "Số tiền",
+    "payment": "Thanh toán",
+    "paidAt": "Thời gian thanh toán",
+    "created": "Ngày tạo",
+    "actions": "Hành động",
+    "details": "Chi tiết"
   }
 }
