@@ -2,13 +2,14 @@
 import { computed } from "vue";
 import { AlertTriangle, Info, Trash2, XCircle } from "lucide-vue-next";
 import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 export type NotificationType = "info" | "warning" | "error" | "confirm" | "delete";
 
@@ -74,7 +75,7 @@ const themeClasses = computed(() => {
         icon: "text-destructive",
         border: "border-destructive/20",
         bg: "bg-destructive/5",
-        btn: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        btn: "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
       };
     case "warning":
       return {
@@ -95,54 +96,61 @@ const themeClasses = computed(() => {
 </script>
 
 <template>
-  <AlertDialog :open="show" @update:open="handleOpenChange">
-    <AlertDialogContent
-      class="max-w-sm overflow-hidden rounded-lg border border-border/80 bg-background p-0 text-foreground shadow-lg sm:max-w-[425px]"
+  <Dialog :open="show" @update:open="handleOpenChange">
+    <DialogContent
+      class="max-w-[calc(100%-2rem)] sm:max-w-[425px] overflow-hidden p-0 border-border/80"
+      :show-close-button="false"
+      @pointer-down-outside="(e) => e.preventDefault()"
+      @escape-key-down="(e) => e.preventDefault()"
     >
       <div class="p-6 pb-4">
-        <AlertDialogHeader class="flex flex-col gap-2">
-          <div class="flex items-center gap-3">
+        <DialogHeader class="flex flex-col gap-2">
+          <div class="flex items-center gap-3 min-w-0 w-full">
             <div
               class="flex size-9 shrink-0 items-center justify-center rounded-md border bg-background/50"
               :class="[themeClasses.border, themeClasses.icon]"
             >
               <component :is="iconComponent" :size="18" />
             </div>
-            <AlertDialogTitle class="font-sans font-bold text-base text-foreground leading-none">
+            <DialogTitle class="font-sans font-bold text-base text-foreground leading-none break-words min-w-0">
               {{ title }}
-            </AlertDialogTitle>
+            </DialogTitle>
           </div>
-        </AlertDialogHeader>
+        </DialogHeader>
 
-        <AlertDialogDescription
-          class="mt-3 font-sans text-sm leading-relaxed text-muted-foreground"
+        <DialogDescription
+          class="mt-3 font-sans text-sm leading-relaxed text-muted-foreground break-words"
+          as="div"
         >
-          <span v-html="message"></span>
-        </AlertDialogDescription>
+          <div v-html="message" class="break-words"></div>
+        </DialogDescription>
       </div>
 
-      <AlertDialogFooter class="flex items-center justify-end gap-2 border-t border-border/60 bg-muted/20 p-4">
-        <button
+      <DialogFooter class="border-t border-border/60 bg-muted/20 p-4">
+        <Button
           v-if="type === 'confirm' || type === 'delete'"
           :disabled="isLoading"
+          variant="outline"
+          size="sm"
           @click="handleOpenChange(false)"
-          class="flex h-8 items-center justify-center rounded-md border border-border bg-background px-3 font-sans text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent"
+          class="mt-0 sm:mt-0 w-full sm:w-auto text-xs font-semibold"
         >
           {{ cancelText }}
-        </button>
+        </Button>
         
-        <button
-          @click="handleConfirm"
+        <Button
           :disabled="isLoading"
-          class="flex h-8 items-center justify-center gap-1.5 rounded-md px-3.5 font-sans text-xs font-semibold transition-colors shadow-sm"
+          @click="handleConfirm"
+          size="sm"
+          class="w-full sm:w-auto text-xs font-semibold"
           :class="themeClasses.btn"
         >
-          <span v-if="isLoading" class="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin"></span>
+          <span v-if="isLoading" class="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin mr-1.5"></span>
           {{ confirmText }}
-        </button>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>
 
 <style scoped>

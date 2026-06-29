@@ -63,7 +63,6 @@ watch(() => props.show, (isOpen) => {
 
 <template>
   <div>
-    <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">Người tham gia</label>
     <div class="flex flex-col gap-2">
       <div class="flex gap-2 rounded-xl border-2 border-border bg-background p-2 shadow-[0_16px_34px_-30px_var(--color-foreground)] cursor-default">
         <input v-model="search" type="text"

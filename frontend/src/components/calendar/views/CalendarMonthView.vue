@@ -206,7 +206,7 @@ const getContinuationLabel = (event: CalendarEvent) => {
               <div class="space-y-3 p-3.5">
                 <!-- Tiêu đề -->
                 <div>
-                  <h4 class="font-sans font-semibold text-foreground text-sm leading-snug">
+                  <h4 class="font-sans font-semibold text-foreground text-sm leading-snug truncate" :title="event.title">
                     {{ event.title }}
                   </h4>
                 </div>
@@ -226,7 +226,7 @@ const getContinuationLabel = (event: CalendarEvent) => {
                 <!-- Mô tả -->
                 <div v-if="event.description" class="border-t border-dashed border-border/60 pt-2.5">
                   <span class="text-[9px] font-sans font-semibold text-muted-foreground/80 uppercase tracking-wider">CHI TIẾT</span>
-                  <p class="mt-1.5 rounded-md border border-border/60 bg-muted/20 p-2.5 text-xs font-sans leading-normal text-muted-foreground">
+                  <p class="mt-1.5 rounded-md border border-border/60 bg-muted/20 p-2.5 text-xs font-sans leading-normal text-muted-foreground truncate" :title="event.description">
                     {{ event.description }}
                   </p>
                 </div>

@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import { Ban, RefreshCw, CalendarPlus, Calendar, Star, Info } from "lucide-vue-next";
+import { Ban, RefreshCw, CalendarPlus, Calendar, Star, Info, CalendarIcon } from "lucide-vue-next";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent, type LayoutTypes } from "@/components/ui/calendar";
+import { parseDate } from "@internationalized/date";
+import { cn } from "@/lib/utils";
 
 dayjs.locale("vi");
 
@@ -27,6 +32,27 @@ const emit = defineEmits<{
 // Trạng thái nội bộ được khởi tạo từ props
 const recurrenceType = ref(props.initialType || "NONE");
 const recurrenceEndDate = ref(props.initialEndDate);
+
+const recurrenceEndDateValue = computed({
+  get: () => recurrenceEndDate.value ? parseDate(recurrenceEndDate.value) : undefined,
+  set: (val) => {
+    if (val) recurrenceEndDate.value = val.toString();
+  }
+});
+
+const minRecurrenceDate = computed(() => props.eventDate ? parseDate(props.eventDate) : undefined);
+
+const calendarLayout = computed((): LayoutTypes => {
+  if (recurrenceType.value === "MONTHLY") return "month-and-year";
+  if (recurrenceType.value === "YEARLY") return "year-only";
+  return undefined;
+});
+
+const isPopoverOpen = ref(false);
+
+watch(recurrenceEndDateValue, () => {
+  isPopoverOpen.value = false;
+});
 
 /**
  * Tạo mô tả dễ đọc về quy luật lặp lại của sự kiện
@@ -92,8 +118,24 @@ watch(() => props.initialEndDate, (val) => recurrenceEndDate.value = val);
         <div>
           <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">NGÀY KẾT THÚC</label>
           <div class="relative group">
-            <input v-model="recurrenceEndDate" type="date"
-              class="w-full rounded-lg border-2 border-border bg-background px-4 py-3 pr-36 font-mono text-sm uppercase text-foreground transition-colors focus:outline-none focus:border-primary" />
+            <Popover :modal="true" v-model:open="isPopoverOpen">
+              <PopoverTrigger as-child>
+                <Button
+                  variant="outline"
+                  type="button"
+                  :class="cn(
+                    'w-full h-12 justify-start text-left font-mono font-normal rounded-lg border-2 border-border bg-background px-4 text-sm text-foreground hover:bg-muted/10',
+                    !recurrenceEndDate && 'text-muted-foreground'
+                  )"
+                >
+                  <CalendarIcon class="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                  <span>{{ recurrenceEndDate ? dayjs(recurrenceEndDate).format("DD/MM/YYYY") : "Chọn ngày" }}</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent class="w-auto p-0" align="start">
+                <CalendarComponent v-model="recurrenceEndDateValue" :min-value="minRecurrenceDate" :layout="calendarLayout" initial-focus />
+              </PopoverContent>
+            </Popover>
             <div v-if="!recurrenceEndDate"
               class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
               MẶC ĐỊNH: 1 NĂM

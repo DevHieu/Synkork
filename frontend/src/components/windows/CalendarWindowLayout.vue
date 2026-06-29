@@ -245,7 +245,7 @@ const buildConflictMessage = (conflicts: CalendarEvent[]) => {
     .slice(0, 4)
     .map(
       (event) =>
-        `<li><span class="text-foreground font-bold">${escapeHtml(event.title)}</span> (${event.startTime.substring(0, 5)} - ${event.endTime.substring(0, 5)})</li>`,
+        `<li class="break-all"><span class="text-foreground font-bold break-all">${escapeHtml(event.title)}</span> (${event.startTime.substring(0, 5)} - ${event.endTime.substring(0, 5)})</li>`,
     )
     .join("");
   const moreCount = conflicts.length - 4;
@@ -366,9 +366,9 @@ const handleNotificationCancel = () => {
 
   if (notificationState.value.type === "delete") {
     eventToDelete.value = null;
-  } else {
-    notificationState.value.show = false;
   }
+  
+  notificationState.value.show = false;
 };
 
 watch(
