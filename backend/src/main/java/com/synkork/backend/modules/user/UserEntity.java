@@ -61,4 +61,8 @@ public class UserEntity extends BaseEntity {
 
     @Unique
     private UUID personalCalendarId;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private int warning = 0;
 }

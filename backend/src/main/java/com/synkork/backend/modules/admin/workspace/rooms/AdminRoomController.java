@@ -67,4 +67,9 @@ public class AdminRoomController {
     public ApiResponse<AdminRoomResponse> lockRoom(@PathVariable UUID roomId, @RequestBody AdminRoomRequest request){
         return ApiResponse.success("Lock room successfully", adminRoomService.lockRoom(roomId, request.status()));
     }
+
+    @PatchMapping("/{roomId}/warn")
+    public ApiResponse<AdminRoomResponse> warnRoom(@PathVariable UUID roomId) {
+        return ApiResponse.success("Lock room successfully", adminRoomService.warnRoom(roomId));
+    }
 }

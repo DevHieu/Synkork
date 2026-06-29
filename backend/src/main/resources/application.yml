@@ -89,5 +89,5 @@ cloudinary:
   secret: ${CLOUDINARY_API_SECRET:}
 
 zego:
-  appId: ${ZEGO_APPID:0}
-  secret: ${ZEGO_SERVER_SECRET:}
+  appId: ${ZEGO_APPID}
+  secret: ${ZEGO_SERVER_SECRET}

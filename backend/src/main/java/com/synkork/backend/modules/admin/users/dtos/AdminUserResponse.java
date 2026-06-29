@@ -15,7 +15,8 @@ public record AdminUserResponse(
         String status,
         String provider,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        int warning
 ) {
     public static AdminUserResponse from(UserEntity u) {
         return new AdminUserResponse(
@@ -29,7 +30,8 @@ public record AdminUserResponse(
                 u.getStatus() != null ? u.getStatus().name().toLowerCase() : null,
                 u.getProvider() != null ? u.getProvider().name().toLowerCase() : null,
                 u.getCreatedAt(),
-                u.getUpdatedAt()
+                u.getUpdatedAt(),
+                u.getWarning()
         );
     }
 }
