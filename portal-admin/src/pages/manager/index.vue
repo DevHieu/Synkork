@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LoaderIcon, Pencil, Plus, Search, Trash2 } from '@lucide/vue'
+import { LoaderIcon, LockKeyhole, Pencil, Plus, Search } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
 import { computed, h, onMounted, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
@@ -25,7 +25,7 @@ import type {
   ManagerStatus,
 } from './types/managerTypes'
 
-import ManagerDelete from './components/manager-delete.vue'
+import ManagerLock from './components/manager-lock.vue'
 import ManagerResource from './components/manager-resource.vue'
 import { managerService } from './services/managerService'
 
@@ -43,9 +43,9 @@ const dateRange = ref(defaultDateRange())
 const debouncedKeyword = refDebounced(keyword, 400)
 
 const editTarget = ref<ManagerAccount>()
-const deleteTarget = ref<ManagerAccount>()
+const lockTarget = ref<ManagerAccount>()
 const showResourceModal = ref(false)
-const showDeleteModal = ref(false)
+const showLockModal = ref(false)
 
 const statusOptions = [
   { value: 'ALL', label: 'Tất cả trạng thái' },
@@ -56,8 +56,8 @@ const statusOptions = [
 
 const roleOptions = [
   { value: 'ALL', label: 'Tất cả vai trò' },
-  { value: 'admin', label: 'Admin' },
-  { value: 'manager', label: 'Manager' },
+  { value: 'admin', label: 'Quản trị viên' },
+  { value: 'manager', label: 'Quản lý' },
 ] as const
 
 async function fetchData() {
@@ -113,14 +113,14 @@ function openEditModal(account: ManagerAccount) {
   showResourceModal.value = true
 }
 
-function openDeleteModal(account: ManagerAccount) {
-  deleteTarget.value = account
-  showDeleteModal.value = true
+function openLockModal(account: ManagerAccount) {
+  lockTarget.value = account
+  showLockModal.value = true
 }
 
 function refreshAfterChange() {
   showResourceModal.value = false
-  showDeleteModal.value = false
+  showLockModal.value = false
   fetchData()
 }
 
@@ -138,7 +138,7 @@ function renderStatus(status: ManagerStatus) {
 }
 
 const columns = computed<TableColumn<ManagerAccount>[]>(() => [
-  { header: 'Username', accessor: 'username', minWidth: 150 },
+  { header: 'Tên đăng nhập', accessor: 'username', minWidth: 150 },
   { header: 'Tên hiển thị', accessor: 'displayName', minWidth: 180 },
   { header: 'Email', accessor: 'email', minWidth: 220 },
   {
@@ -147,7 +147,7 @@ const columns = computed<TableColumn<ManagerAccount>[]>(() => [
     render: row => h(Badge, {
       variant: 'secondary',
       class: 'border-0 bg-neutral-100 px-3 text-neutral-950 dark:bg-neutral-800 dark:text-neutral-50',
-    }, () => row.role === 'admin' ? 'Admin' : 'Manager'),
+    }, () => row.role === 'admin' ? 'Quản trị viên' : 'Quản lý'),
   },
   {
     header: 'Trạng thái',
@@ -173,8 +173,8 @@ const columns = computed<TableColumn<ManagerAccount>[]>(() => [
         variant: 'outline',
         size: 'sm',
         class: 'h-8 gap-1 px-2 text-xs text-destructive hover:bg-destructive/10',
-        onClick: () => openDeleteModal(row),
-      }, () => [h(Trash2, { class: 'h-3.5 w-3.5' }), 'Xóa']),
+        onClick: () => openLockModal(row),
+      }, () => [h(LockKeyhole, { class: 'h-3.5 w-3.5' }), 'Khóa']),
     ]),
   },
 ])
@@ -193,8 +193,8 @@ onMounted(fetchData)
 
 <template>
   <BasicPage
-    title="Quản lý Manager & Admin"
-    description="Quản lý các tài khoản Manager và Admin trong hệ thống"
+    title="Quản lý tài khoản quản trị"
+    description="Quản lý các tài khoản quản lý và quản trị viên trong hệ thống"
     sticky
   >
     <template #actions>
@@ -210,7 +210,7 @@ onMounted(fetchData)
         <UiInput
           v-model="keyword"
           type="text"
-          placeholder="Tìm theo username, email, tên..."
+          placeholder="Tìm theo username hoặc email..."
           class="h-9 pl-8"
         />
       </div>
@@ -275,13 +275,13 @@ onMounted(fetchData)
     </ModalContent>
   </Modal>
 
-  <Modal v-model:open="showDeleteModal">
+  <Modal v-model:open="showLockModal">
     <ModalContent>
-      <ManagerDelete
-        v-if="deleteTarget"
-        :account="deleteTarget"
-        @close="showDeleteModal = false"
-        @removed="refreshAfterChange"
+      <ManagerLock
+        v-if="lockTarget"
+        :account="lockTarget"
+        @close="showLockModal = false"
+        @locked="refreshAfterChange"
       />
     </ModalContent>
   </Modal>

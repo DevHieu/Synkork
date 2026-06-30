@@ -19,7 +19,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  removed: []
+  locked: []
 }>()
 
 const isLoading = ref(false)
@@ -28,15 +28,15 @@ function getErrorMessage(error: any) {
   const data = error?.response?.data
   if (typeof data === 'string')
     return data
-  return data?.message || error?.message || 'Xóa tài khoản thất bại'
+  return data?.message || error?.message || 'Khóa tài khoản thất bại'
 }
 
-async function handleDelete() {
+async function handleLock() {
   isLoading.value = true
   try {
-    await managerService.delete(props.account.id)
-    toast.success(`Đã xóa tài khoản ${props.account.username}`)
-    emit('removed')
+    await managerService.lock(props.account.id)
+    toast.success(`Đã khóa tài khoản ${props.account.username}`)
+    emit('locked')
     emit('close')
   }
   catch (error) {
@@ -51,9 +51,9 @@ async function handleDelete() {
 <template>
   <div>
     <ModalHeader>
-      <ModalTitle>Xóa tài khoản {{ account.username }}?</ModalTitle>
+      <ModalTitle>Khóa tài khoản {{ account.username }}?</ModalTitle>
       <ModalDescription>
-        Hành động này không thể hoàn tác. Tài khoản sẽ bị xóa khỏi hệ thống.
+        Tài khoản sẽ chuyển sang trạng thái bị khóa và không thể tiếp tục đăng nhập.
       </ModalDescription>
     </ModalHeader>
 
@@ -61,8 +61,8 @@ async function handleDelete() {
       <UiButton variant="outline" :disabled="isLoading" @click="emit('close')">
         Hủy
       </UiButton>
-      <UiButton variant="destructive" :disabled="isLoading" @click="handleDelete">
-        {{ isLoading ? 'Đang xóa...' : 'Xóa tài khoản' }}
+      <UiButton variant="destructive" :disabled="isLoading" @click="handleLock">
+        {{ isLoading ? 'Đang khóa...' : 'Khóa tài khoản' }}
       </UiButton>
     </ModalFooter>
   </div>

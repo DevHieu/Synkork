@@ -1,5 +1,6 @@
 package com.synkork.backend.modules.admin.manager;
 
+import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.modules.admin.manager.dto.*;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.enums.RoleEnum;
@@ -35,7 +36,7 @@ public class ManagerService {
         request.validate();
 
         Specification<UserEntity> spec = ManagerSpecification.filter(request)
-                .and((root, query, cb) -> cb.equal(root.get("role"), RoleEnum.USER));
+                .and((root, query, cb) -> root.get("role").in(RoleEnum.MANAGER, RoleEnum.ADMIN));
         Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
 
         return managerRepository.findAll(spec, pageable);
@@ -84,7 +85,11 @@ public class ManagerService {
         }
 
         if (request.getStatus() != null) {
-            account.setStatus(parseRequiredStatus(request.getStatus()));
+            UserStatusEnum newStatus = parseRequiredStatus(request.getStatus());
+            if (isLockedStatus(newStatus)) {
+                preventLockingCurrentAccount(id);
+            }
+            account.setStatus(newStatus);
         }
 
         if (request.getRole() != null) {
@@ -95,9 +100,22 @@ public class ManagerService {
     }
 
     @Transactional
-    public Map<String, String> deleteManager(UUID id) {
-        managerRepository.delete(findManagedAccount(id));
-        return Map.of("message", "Xoa tai khoan manager thanh cong");
+    public Map<String, String> lockManager(UUID id) {
+        preventLockingCurrentAccount(id);
+        UserEntity account = findManagedAccount(id);
+        account.setStatus(UserStatusEnum.BANNED);
+        managerRepository.save(account);
+        return Map.of("message", "Da khoa tai khoan manager/admin thanh cong");
+    }
+
+    private void preventLockingCurrentAccount(UUID id) {
+        if (id.equals(AuthUtils.getCurrentUserId())) {
+            throw new IllegalArgumentException("Khong the tu khoa tai khoan dang dang nhap");
+        }
+    }
+
+    private boolean isLockedStatus(UserStatusEnum status) {
+        return status == UserStatusEnum.INACTIVE || status == UserStatusEnum.BANNED;
     }
 
     private UserEntity findManagedAccount(UUID id) {

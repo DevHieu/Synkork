@@ -178,7 +178,7 @@ async function onSubmit() {
       </div>
 
       <Button type="submit" class="w-full" :disabled="isLoading">
-        {{ isLoading ? 'Đang lưu...' : (isEdit ? 'Lưu thay đổi' : 'Tạo user') }}
+        {{ isLoading ? 'Đang lưu...' : (isEdit ? 'Lưu thay đổi' : 'Tạo người dùng') }}
       </Button>
     </form>
   </div>
