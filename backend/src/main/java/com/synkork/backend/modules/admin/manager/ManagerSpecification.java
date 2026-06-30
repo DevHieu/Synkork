@@ -18,8 +18,7 @@ public class ManagerSpecification {
                 String keyword = "%" + request.search().trim().toLowerCase() + "%";
                 predicates.add(cb.or(
                         cb.like(cb.lower(root.get("username")), keyword),
-                        cb.like(cb.lower(root.get("email")), keyword),
-                        cb.like(cb.lower(root.get("displayName")), keyword)
+                        cb.like(cb.lower(root.get("email")), keyword)
                 ));
             }
 

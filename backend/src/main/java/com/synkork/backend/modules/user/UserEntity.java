@@ -1,21 +1,22 @@
 package com.synkork.backend.modules.user;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+import org.checkerframework.common.aliasing.qual.Unique;
+
 import com.synkork.backend.common.base.BaseEntity;
 import com.synkork.backend.modules.user.enums.PlanEnum;
 import com.synkork.backend.modules.user.enums.ProviderEnum;
+import com.synkork.backend.modules.user.enums.RoleEnum;
 import com.synkork.backend.modules.user.enums.UserStatusEnum;
 
-import com.synkork.backend.modules.user.enums.RoleEnum;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import lombok.*;
-import org.checkerframework.common.aliasing.qual.Unique;
-
-import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name = "users")
@@ -69,4 +70,8 @@ public class UserEntity extends BaseEntity {
     private String googleCalendarAccessToken;
 
     private LocalDateTime googleCalendarAccessTokenExpiresAt;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private int warning = 0;
 }

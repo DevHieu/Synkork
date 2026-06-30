@@ -40,6 +40,10 @@ public class AdminAuthService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tài khoản của bạn đã bị khóa do quản trị viên. Vui lòng liên hệ để được giải quyết");
         }
 
+        if (user.getStatus() == UserStatusEnum.INACTIVE) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tai khoan cua ban dang bi vo hieu hoa");
+        }
+
         return true;
     }
 

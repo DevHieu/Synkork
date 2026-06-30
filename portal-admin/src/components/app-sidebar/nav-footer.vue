@@ -59,7 +59,7 @@ const { isMobile, open } = useSidebar()
           <UiDropdownMenuGroup>
             <UiDropdownMenuItem @click="$router.push('/billing/')">
               <SparklesIcon />
-              Upgrade to Pro
+              Nâng cấp gói
             </UiDropdownMenuItem>
           </UiDropdownMenuGroup>
 
@@ -67,7 +67,7 @@ const { isMobile, open } = useSidebar()
           <UiDropdownMenuGroup>
             <UiDropdownMenuItem @click="$router.push('/billing?type=billing')">
               <CreditCardIcon />
-              Billing
+              Thanh toán
             </UiDropdownMenuItem>
           </UiDropdownMenuGroup>
 
@@ -75,15 +75,15 @@ const { isMobile, open } = useSidebar()
           <UiDropdownMenuGroup>
             <UiDropdownMenuItem @click="$router.push('/settings/')">
               <UserRoundCogIcon />
-              Profile
+              Hồ sơ
             </UiDropdownMenuItem>
             <UiDropdownMenuItem @click="$router.push('/settings/account')">
               <BadgeCheckIcon />
-              Account
+              Tài khoản
             </UiDropdownMenuItem>
             <UiDropdownMenuItem @click="$router.push('/settings/notifications')">
               <BellIcon />
-              Notifications
+              Thông báo
             </UiDropdownMenuItem>
           </UiDropdownMenuGroup>
 

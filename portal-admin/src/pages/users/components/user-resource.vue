@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { computed } from 'vue'
+
 import { ModalDescription, ModalHeader, ModalTitle } from '@/components/prop-ui/modal'
 
 import type { User } from '../types/userTypes.ts'
@@ -15,8 +17,8 @@ defineEmits<{
 }>()
 
 const user = computed(() => props.user)
-const title = computed(() => user.value?.id ? `Edit User` : 'New User')
-const description = computed(() => user.value?.id ? `Edit user ${user.value.username}` : 'Create new user')
+const title = computed(() => user.value?.id ? 'Cập nhật người dùng' : 'Tạo người dùng mới')
+const description = computed(() => user.value?.id ? `Chỉnh sửa người dùng ${user.value.username}` : 'Tạo tài khoản người dùng mới')
 </script>
 
 <template>

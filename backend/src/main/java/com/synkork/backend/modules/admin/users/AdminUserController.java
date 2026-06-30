@@ -10,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -65,16 +64,22 @@ public class AdminUserController {
 
     @DeleteMapping("/{id}")
     public ApiResponse<Map<String, String>> deleteUser(
-            @PathVariable UUID id
+            @PathVariable UUID id,
+            @RequestBody(required = false) DeleteUserRequest request
     ) {
         return ApiResponse.success(
                 "Delete user successfully",
-                adminUserService.deleteUser(id)
+                adminUserService.deleteUser(id, request)
         );
     }
 
     @PatchMapping("/{id}/status")
     public ApiResponse<AdminUserResponse> lockUser(@PathVariable UUID id, @Valid @RequestBody UpdateUserRequest request){
         return ApiResponse.success("Lock user successfully", adminUserService.lockUser(id, UserStatusEnum.valueOf(request.status())));
+    }
+
+    @PatchMapping("/{id}/warn")
+    public ApiResponse<AdminUserResponse> warnUser(@PathVariable UUID id) {
+        return ApiResponse.success("Warn user successfully", adminUserService.warnUser(id));
     }
 }
