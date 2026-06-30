@@ -8,12 +8,14 @@ import OverviewContent from './tabs/overview-content.vue'
 import UserOverview from './tabs/user-overview.vue'
 import RoomOverview from './tabs/room-overview.vue'
 import SubscriptionOverview from './tabs/subscription-overview.vue'
+import ReportOverview from './tabs/report-overview.vue'
 
 const tabs = ref([
   { name: 'Overview', value: 'overview' },
   { name: 'Rooms & Spaces', value: 'rooms' },
   { name: 'Subscriptions', value: 'subscriptions' },
   { name: 'Users', value: 'users' },
+  { name: 'Reports', value: 'report' },
 ])
 
 const activeTab = ref(tabs.value[0].value)
@@ -55,6 +57,9 @@ const activeTab = ref(tabs.value[0].value)
       </UiTabsContent>
       <UiTabsContent value="subscriptions" class="space-y-4">
         <SubscriptionOverview />
+      </UiTabsContent>
+      <UiTabsContent value="report" class="space-y-4">
+        <ReportOverview />
       </UiTabsContent>
     </UiTabs>
   </BasicPage>

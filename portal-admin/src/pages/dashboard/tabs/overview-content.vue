@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import OverviewChart from '../components/overview-chart.vue'
-import RecentSales from '../components/recent-sales.vue'
+import RecentReports from '../components/recent-reports.vue'
 import DataCard from '../components/data-card.vue';
 
 import { Activity, CreditCard, Server, Users } from '@lucide/vue';

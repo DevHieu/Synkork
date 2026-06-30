@@ -17,6 +17,7 @@ public record ReportResponse(
         String targetName,
         String targetEmail,
         String reason,
+        String description,
         ReportTypeEnums reportType,
         ReportStatusEnums status,
         LocalDateTime createdAt
@@ -36,6 +37,7 @@ public record ReportResponse(
                         ? e.getTargetUser().getEmail()
                         : e.getTargetRoom().getOwner() != null ? e.getTargetRoom().getOwner().getEmail() : null,
                 e.getReason(),
+                e.getDescription(),
                 e.getReportType(),
                 e.getStatus(),
                 e.getCreatedAt()
