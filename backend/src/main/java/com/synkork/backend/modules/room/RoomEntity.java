@@ -53,4 +53,7 @@ public class RoomEntity extends BaseEntity {
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SpaceEntity> spaces;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private int warning = 0;
 }

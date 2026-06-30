@@ -1,6 +1,7 @@
 package com.synkork.backend.security;
 
 import com.synkork.backend.modules.user.UserEntity;
+import com.synkork.backend.modules.user.enums.UserStatusEnum;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -35,6 +36,16 @@ public class UserPrinciple implements UserDetails {
 
     public UUID getId() {
         return user.getId();
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return user.getStatus() == UserStatusEnum.ACTIVE;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return user.getStatus() != UserStatusEnum.BANNED;
     }
 }
 

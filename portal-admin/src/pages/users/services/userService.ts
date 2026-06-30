@@ -41,9 +41,11 @@ export const userService = {
     return res.data
   },
 
-  // Xóa user
-  async delete(id: string) {
-    await axiosClient.delete(`/api/manage/users/${id}`)
+  // Khóa mềm user và gửi lý do thông báo cho user
+  async delete(id: string, reason: string) {
+    await axiosClient.delete(`/api/manage/users/${id}`, {
+      data: { reason },
+    })
   },
 
   // Cập nhật trạng thái user
@@ -52,4 +54,8 @@ export const userService = {
     return res.data
   },
 
+  async warnUser(id: string){
+    const res = await axiosClient.patch(`/api/manage/users/${id}/warn`)
+    return res.data
+  }
 }

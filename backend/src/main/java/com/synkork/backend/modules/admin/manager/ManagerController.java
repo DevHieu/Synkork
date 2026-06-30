@@ -54,7 +54,7 @@ public class ManagerController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, String>> deleteManager(@PathVariable UUID id) {
-        return ResponseEntity.ok(managerService.deleteManager(id));
+    public ResponseEntity<Map<String, String>> lockManager(@PathVariable UUID id) {
+        return ResponseEntity.ok(managerService.lockManager(id));
     }
 }

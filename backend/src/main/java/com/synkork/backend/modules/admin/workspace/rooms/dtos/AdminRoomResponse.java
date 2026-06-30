@@ -23,6 +23,8 @@ public class AdminRoomResponse {
     private UUID ownerId;
     private String ownerUsername;
 
+    private int warning;
+
     public AdminRoomResponse(RoomEntity room) {
         this.id = room.getId();
         this.name = room.getName();
@@ -38,5 +40,7 @@ public class AdminRoomResponse {
             this.ownerId = room.getOwner().getId();
             this.ownerUsername = room.getOwner().getUsername();
         }
+
+        this.warning = room.getWarning();
     }
 }

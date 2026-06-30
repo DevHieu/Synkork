@@ -48,6 +48,13 @@ public class JwtFilter extends OncePerRequestFilter {
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     UserDetails userDetails = userDetailService.loadUserByUsername(username);
 
+                    if (!userDetails.isEnabled() || !userDetails.isAccountNonLocked()) {
+                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                        response.setContentType("application/json");
+                        response.getWriter().write("{\"error\": \"ACCOUNT_LOCKED\", \"message\": \"Account is locked\"}");
+                        return;
+                    }
+
                     // CHỈ xác thực nếu là loại ACCESS
                     if ("ACCESS".equals(tokenType) && jwtService.validateToken(token, userDetails)) {
                         UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(

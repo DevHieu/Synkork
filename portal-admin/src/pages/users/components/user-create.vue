@@ -8,7 +8,7 @@ import type { User } from '../types/userTypes.ts'
 
 import UserResource from './user-resource.vue'
 
-const emits = defineEmits<{
+defineEmits<{
   saved: [user: User]
 }>()
 
@@ -20,7 +20,7 @@ const isOpen = ref(false)
     <ModalTrigger as-child>
       <UiButton>
         <UserRoundPlusIcon />
-        Create User
+        Tạo người dùng
       </UiButton>
     </ModalTrigger>
 

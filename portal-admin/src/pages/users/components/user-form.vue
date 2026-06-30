@@ -21,7 +21,11 @@ const isEdit = computed(() => !!props.user?.id)
 const authStore = useAuthStore()
 const canChangeRole = computed(() => authStore.user?.role === 'ADMIN')
 
-const statusOptions = ['active', 'inactive', 'banned'] as const
+const statusOptions = [
+  { value: 'ACTIVE', label: 'Hoạt động' },
+  { value: 'INACTIVE', label: 'Ngừng hoạt động' },
+  { value: 'BANNED', label: 'Bị khóa' },
+] as const
 const planOptions = ['FREE', 'TEAM', 'BUSINESS'] as const
 
 const form = ref<{
@@ -39,7 +43,7 @@ const form = ref<{
   displayName: props.user?.displayName || '',
   username: props.user?.username || '',
   email: props.user?.email || '',
-  status: (props.user?.status as UserStatus) || 'active',
+  status: (props.user?.status as UserStatus) || 'ACTIVE',
   plan: (props.user?.plan as UserPlan) || 'FREE',
   role: props.user?.role || 'user',
 })
@@ -94,21 +98,21 @@ async function onSubmit() {
 <template>
   <div class="max-h-[500px] overflow-y-auto">
     <form class="space-y-4" @submit.prevent="onSubmit">
-      <!-- First Name & Last Name (Create only) -->
+      <!-- Họ tên (chỉ khi tạo mới) -->
       <template v-if="!isEdit">
         <div class="space-y-2">
-          <label class="text-sm font-medium">First Name</label>
+          <label class="text-sm font-medium">Tên</label>
           <Input v-model="form.firstName" type="text" placeholder="Nhập tên" required />
         </div>
         <div class="space-y-2">
-          <label class="text-sm font-medium">Last Name</label>
+          <label class="text-sm font-medium">Họ</label>
           <Input v-model="form.lastName" type="text" placeholder="Nhập họ" required />
         </div>
       </template>
 
-      <!-- Display Name (Edit only) -->
+      <!-- Tên hiển thị (chỉ khi cập nhật) -->
       <div v-else class="space-y-2">
-        <label class="text-sm font-medium">Display Name</label>
+        <label class="text-sm font-medium">Tên hiển thị</label>
         <Input v-model="form.displayName" type="text" placeholder="Nhập tên hiển thị" required />
       </div>
 
@@ -123,15 +127,15 @@ async function onSubmit() {
       </div>
 
       <div class="space-y-2">
-        <label class="text-sm font-medium">Status</label>
+        <label class="text-sm font-medium">Trạng thái</label>
         <Select v-model="form.status">
-          <SelectTrigger class="w-full capitalize">
+          <SelectTrigger class="w-full">
             <SelectValue placeholder="Chọn trạng thái" />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectItem v-for="s in statusOptions" :key="s" :value="s" class="capitalize">
-                {{ s }}
+              <SelectItem v-for="s in statusOptions" :key="s.value" :value="s.value">
+                {{ s.label }}
               </SelectItem>
             </SelectGroup>
           </SelectContent>
@@ -139,7 +143,7 @@ async function onSubmit() {
       </div>
 
       <div class="space-y-2">
-        <label class="text-sm font-medium">Plan</label>
+        <label class="text-sm font-medium">Gói dịch vụ</label>
         <Select v-model="form.plan">
           <SelectTrigger class="w-full">
             <SelectValue placeholder="Chọn gói dịch vụ" />
@@ -174,7 +178,7 @@ async function onSubmit() {
       </div>
 
       <Button type="submit" class="w-full" :disabled="isLoading">
-        {{ isLoading ? 'Đang lưu...' : (isEdit ? 'Save Changes' : 'Create User') }}
+        {{ isLoading ? 'Đang lưu...' : (isEdit ? 'Lưu thay đổi' : 'Tạo người dùng') }}
       </Button>
     </form>
   </div>
