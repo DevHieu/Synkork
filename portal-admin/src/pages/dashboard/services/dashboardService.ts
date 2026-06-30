@@ -33,4 +33,9 @@ export const dashboardService = {
     )
     return res.data.data
   },
-  }
+
+  async getSubscriptionDashboardData() {
+    const res = await axiosClient.get('/api/manage/dashboard/subscriptions/stats')
+    return res.data
+  },
+}
