@@ -121,4 +121,29 @@ public class JwtService {
 
         response.addHeader("Set-Cookie", cookie.toString());
     }
+
+    public String generateShortLivedState(String userId) {
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + TimeUnit.MINUTES.toMillis(10));
+
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("type", "OAUTH_STATE");
+        claims.put("userId", userId);
+
+        return Jwts.builder()
+                .claims().add(claims).and()
+                .issuedAt(now)
+                .expiration(expiry)
+                .signWith(getKey())
+                .compact();
+    }
+
+    public String validateAndExtractStateUserId(String state) {
+        Claims claims = extractAllClaims(state);
+        String type = claims.get("type", String.class);
+        if (!"OAUTH_STATE".equals(type)) {
+            throw new IllegalArgumentException("Invalid state token type");
+        }
+        return claims.get("userId", String.class);
+    }
 }
