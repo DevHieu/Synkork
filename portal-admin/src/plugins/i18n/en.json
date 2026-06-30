@@ -135,5 +135,36 @@
   },
   "homePage": {
     "searchKeyWords": "Search Menu"
+  },
+  "subscriptions": {
+    "title": "Manage Subscriptions",
+    "description": "View and manage all user subscriptions, payments, and billing details.",
+    "searchPlaceholder": "Search by username or email...",
+    "status": "Status",
+    "plan": "Plan",
+    "method": "Payment Method",
+    "clearFilters": "Clear Filters",
+    "allStatuses": "All Statuses",
+    "statusPending": "Pending",
+    "statusPaid": "Paid",
+    "statusFailed": "Failed",
+    "statusCancelled": "Cancelled",
+    "allPlans": "All Plans",
+    "planFree": "Free",
+    "planTeam": "Team",
+    "planBusiness": "Business",
+    "allMethods": "All Methods",
+    "methodMomo": "Momo",
+    "methodVnpay": "VNPay",
+    "methodBankTransfer": "Bank Transfer",
+    "username": "Username",
+    "email": "Email",
+    "planExpiry": "Plan Expiry",
+    "amount": "Amount",
+    "payment": "Payment",
+    "paidAt": "Paid At",
+    "created": "Created At",
+    "actions": "Actions",
+    "details": "Details"
   }
 }

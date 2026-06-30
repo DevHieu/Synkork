@@ -40,10 +40,10 @@ const PERIOD_MAP: Record<TimeRange, 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY
 }
 
 const TIME_RANGE_OPTIONS: { value: TimeRange; label: string }[] = [
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'monthly', label: 'Monthly' },
-  { value: 'quarterly', label: 'Quarterly' },
-  { value: 'yearly', label: 'Yearly' },
+  { value: 'weekly', label: 'Tuần' },
+  { value: 'monthly', label: 'Tháng' },
+  { value: 'quarterly', label: 'Quý' },
+  { value: 'yearly', label: 'Năm' },
 ]
 
 const CHART_COLORS = {
@@ -78,14 +78,14 @@ const isLoadingChart = ref(false)
 const errorMessage = ref<string | null>(null)
 
 const statusRows = computed<ChartRow[]>(() => [
-  { name: 'Pending', value: stats.value?.pendingReports ?? 0, color: CHART_COLORS.pending },
-  { name: 'Resolved', value: stats.value?.resolvedReports ?? 0, color: CHART_COLORS.resolved },
-  { name: 'Rejected', value: stats.value?.dismissedReports ?? 0, color: CHART_COLORS.dismissed },
+  { name: 'Chờ xử lý', value: stats.value?.pendingReports ?? 0, color: CHART_COLORS.pending },
+  { name: 'Đã giải quyết', value: stats.value?.resolvedReports ?? 0, color: CHART_COLORS.resolved },
+  { name: 'Đã bác bỏ', value: stats.value?.dismissedReports ?? 0, color: CHART_COLORS.dismissed },
 ])
 
 const typeRows = computed<ChartRow[]>(() => [
-  { name: 'User', value: stats.value?.userReports ?? 0, color: CHART_COLORS.user },
-  { name: 'Room', value: stats.value?.roomReports ?? 0, color: CHART_COLORS.room },
+  { name: 'Người dùng', value: stats.value?.userReports ?? 0, color: CHART_COLORS.user },
+  { name: 'Phòng', value: stats.value?.roomReports ?? 0, color: CHART_COLORS.room },
 ])
 
 function formatNumber(value: number | undefined): string {
@@ -132,10 +132,10 @@ onMounted(() => {
 <template>
   <!-- Cards -->
   <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-    <DataCard title="Total reports" :data="formatNumber(stats?.totalReports)" :icon="Flag" />
-    <DataCard title="Pending" :data="formatNumber(stats?.pendingReports)" :icon="Clock3" />
-    <DataCard title="Resolved" :data="formatNumber(stats?.resolvedReports)" :icon="CheckCircle2" />
-    <DataCard title="Dismissed" :data="formatNumber(stats?.dismissedReports)" :icon="XCircle" />
+    <DataCard title="Tổng tố cáo" :data="formatNumber(stats?.totalReports)" :icon="Flag" />
+    <DataCard title="Chờ xử lý" :data="formatNumber(stats?.pendingReports)" :icon="Clock3" />
+    <DataCard title="Đã giải quyết" :data="formatNumber(stats?.resolvedReports)" :icon="CheckCircle2" />
+    <DataCard title="Đã bác bỏ" :data="formatNumber(stats?.dismissedReports)" :icon="XCircle" />
   </div>
 
   <div class="grid gap-4 lg:grid-cols-2">
@@ -144,10 +144,10 @@ onMounted(() => {
       <UiCardHeader>
         <UiCardTitle class="flex items-center gap-2 text-base">
           <ShieldAlert class="h-4 w-4 text-muted-foreground" />
-          Report status
+          Trạng thái tố cáo
         </UiCardTitle>
         <UiCardDescription>
-          Report count by processing status.
+          Số lượng tố cáo theo trạng thái xử lý
         </UiCardDescription>
       </UiCardHeader>
 
@@ -157,7 +157,7 @@ onMounted(() => {
             <VisSingleContainer :data="statusRows" class="h-full">
               <VisDonut
                 :value="(d: ChartRow) => d.value" :color="(d: ChartRow) => d.color" :arc-width="30"
-                :corner-radius="6" :pad-angle="0.04" central-label="Reports"
+                :corner-radius="6" :pad-angle="0.04" central-label="Tố cáo"
                 :central-sub-label="formatNumber(stats?.totalReports)"
               />
             </VisSingleContainer>
@@ -185,10 +185,10 @@ onMounted(() => {
         <div>
           <UiCardTitle class="flex items-center gap-2 text-base">
             <Activity class="h-4 w-4 text-muted-foreground" />
-            Report trend
+            Xu hướng tố cáo
           </UiCardTitle>
           <UiCardDescription>
-            User and room reports over time.
+            Tố cáo người dùng và phòng theo thời gian
           </UiCardDescription>
         </div>
 
@@ -239,7 +239,7 @@ onMounted(() => {
             <div class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: row.color }" />
             <div>
               <p class="text-xs text-muted-foreground">
-                {{ row.name }} Report
+                Tố cáo {{ row.name }}
               </p>
               <p class="font-semibold">
                 {{ row.value.toLocaleString() }}

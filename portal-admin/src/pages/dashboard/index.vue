@@ -1,21 +1,21 @@
 <script lang="ts" setup>
-import { toast } from 'vue-sonner'
+// import { toast } from 'vue-sonner'
 
 import { BasicPage } from '@/components/global-layout'
-import { Button } from '@/components/ui/button'
+// import { Button } from '@/components/ui/button'
 
 import OverviewContent from './tabs/overview-content.vue'
-import UserOverview from './tabs/user-overview.vue'
 import RoomOverview from './tabs/room-overview.vue'
 import SubscriptionOverview from './tabs/subscription-overview.vue'
+import UserOverview from './tabs/user-overview.vue'
 import ReportOverview from './tabs/report-overview.vue'
 
 const tabs = ref([
-  { name: 'Overview', value: 'overview' },
-  { name: 'Rooms & Spaces', value: 'rooms' },
-  { name: 'Subscriptions', value: 'subscriptions' },
-  { name: 'Users', value: 'users' },
-  { name: 'Reports', value: 'report' },
+  { name: 'Tổng quát', value: 'overview' },
+  { name: 'Người dùng', value: 'users' },
+  { name: 'Phòng & Không gian', value: 'rooms' },
+  { name: 'Gói đăng ký', value: 'subscriptions' },
+  { name: 'Tố cáo', value: 'report' },
 ])
 
 const activeTab = ref(tabs.value[0].value)
@@ -23,11 +23,11 @@ const activeTab = ref(tabs.value[0].value)
 
 <template>
   <BasicPage
-    title="workspace"
-    description="workspace description"
+    title="Thống kê tổng quát"
+    description="Theo dõi tổng quan các chỉ số và tình hình hoạt động của hệ thống."
     sticky
   >
-    <template #actions>
+    <!-- <template #actions>
       <Button
         @click="() => toast('hello', {
           position: 'top-center',
@@ -35,7 +35,7 @@ const activeTab = ref(tabs.value[0].value)
       >
         {{ $t('download') }}
       </Button>
-    </template>
+    </template> -->
 
     <UiTabs :default-value="activeTab" class="w-full">
       <UiTabsList>

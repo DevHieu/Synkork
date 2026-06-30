@@ -2,6 +2,7 @@ package com.synkork.backend.modules.admin.statistics;
 
 import com.synkork.backend.modules.admin.statistics.dtos.OverviewChartResponse;
 import com.synkork.backend.modules.admin.statistics.dtos.OverviewStatsResponse;
+import com.synkork.backend.modules.admin.statistics.dtos.SubscriptionDashboardResponse;
 import com.synkork.backend.modules.admin.statistics.dtos.ReportChartResponse;
 import com.synkork.backend.modules.admin.statistics.dtos.ReportStatsResponse;
 import com.synkork.backend.modules.admin.statistics.dtos.UserStatsResponse;
@@ -37,6 +38,11 @@ public class StatisticsController {
     @GetMapping("/dashboard/users/stats")
     public ResponseEntity<UserStatsResponse> getUserStats() {
         return ResponseEntity.ok(statisticsService.getUserStatsData());
+    }
+
+    @GetMapping("/dashboard/subscriptions/stats")
+    public ResponseEntity<SubscriptionDashboardResponse> getSubscriptionStats() {
+        return ResponseEntity.ok(statisticsService.getSubscriptionDashboardData());
     }
 
     @GetMapping("/dashboard/reports/stats")

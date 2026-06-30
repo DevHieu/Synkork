@@ -1,48 +1,64 @@
-import { BadgeHelpIcon, BellDotIcon, BirdIcon, BoxesIcon, BugIcon, ComponentIcon, CreditCardIcon, LayoutDashboardIcon, ListTodoIcon, MonitorCog, PaletteIcon, PictureInPicture2Icon, PodcastIcon, ServerIcon, SettingsIcon, ShieldAlert, SquareUserRoundIcon, UserIcon, UserRoundKey, UsersIcon, WalletCards, WrenchIcon } from '@lucide/vue'
+import {
+  BadgeHelpIcon,
+  BellDotIcon,
+  CreditCardIcon,
+  LayoutDashboardIcon,
+  MonitorCog,
+  PaletteIcon,
+  PictureInPicture2Icon,
+  ServerIcon,
+  SettingsIcon,
+  ShieldAlert,
+  UserIcon,
+  UserRoundKey,
+  UsersIcon,
+  WalletCards,
+  WrenchIcon,
+} from '@lucide/vue'
 
 import type { NavGroup } from '@/components/app-sidebar/types'
 
 export function useSidebar() {
   const settingsNavItems = [
-    { title: 'Profile', url: '/settings/', icon: UserIcon },
-    { title: 'Account', url: '/settings/account', icon: WrenchIcon },
-    { title: 'Appearance', url: '/settings/appearance', icon: PaletteIcon },
-    { title: 'Notifications', url: '/settings/notifications', icon: BellDotIcon },
-    { title: 'Display', url: '/settings/display', icon: PictureInPicture2Icon },
+    { title: 'Hồ sơ', url: '/settings/', icon: UserIcon },
+    { title: 'Tài khoản', url: '/settings/account', icon: WrenchIcon },
+    { title: 'Giao diện', url: '/settings/appearance', icon: PaletteIcon },
+    { title: 'Thông báo', url: '/settings/notifications', icon: BellDotIcon },
+    { title: 'Hiển thị', url: '/settings/display', icon: PictureInPicture2Icon },
   ]
 
-  const navData = ref<NavGroup[]> ([
+  const navData = ref<NavGroup[]>([
     {
-      title: 'General',
+      title: 'Tổng quan',
       items: [
-        { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboardIcon },
-        { title: 'Users', url: '/users', icon: UsersIcon },
-        { title: 'Rooms & Spaces', url: '/rooms', icon: ServerIcon },
-        { title: 'Subscription', url: '/subscriptions', icon: WalletCards },
-        { title: 'Report', url: '/report', icon: ShieldAlert },
+        { title: 'Bảng điều khiển', url: '/dashboard', icon: LayoutDashboardIcon },
+        { title: 'Người dùng', url: '/users', icon: UsersIcon },
+        { title: 'Phòng & Không gian', url: '/rooms', icon: ServerIcon },
+        { title: 'Gói dịch vụ', url: '/subscriptions', icon: WalletCards },
+        { title: 'Báo cáo', url: '/report', icon: ShieldAlert },
       ],
     },
     {
-      title: 'System',
+      title: 'Hệ thống',
       items: [
-        { title: 'System Log', url: '/log', icon: MonitorCog },
-        { title: 'Manager & Admin', url: '/manager', icon: UserRoundKey }
-      ]
+        { title: 'Nhật ký hệ thống', url: '/log', icon: MonitorCog },
+        { title: 'Tài khoản quản trị', url: '/manager', icon: UserRoundKey },
+      ],
     },
     {
-      title: 'Other',
+      title: 'Khác',
       items: [
-        { title: 'Settings', items: settingsNavItems, icon: SettingsIcon },
-        { title: 'Help Center', url: '/help-center', icon: BadgeHelpIcon },
+        { title: 'Cài đặt', items: settingsNavItems, icon: SettingsIcon },
+        { title: 'Trung tâm trợ giúp', url: '/help-center', icon: BadgeHelpIcon },
       ],
     },
   ])
 
   const otherPages = ref<NavGroup[]>([
     {
-      title: 'Other',
+      title: 'Khác',
       items: [
-        { title: 'Plans & Pricing', icon: CreditCardIcon, url: '/billing' },
+        { title: 'Gói & Bảng giá', icon: CreditCardIcon, url: '/billing' },
       ],
     },
   ])

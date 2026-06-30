@@ -127,5 +127,36 @@
   },
   "homePage": {
     "searchKeyWords": "搜索菜单"
+  },
+  "subscriptions": {
+    "title": "订阅管理",
+    "description": "查看并管理所有用户的订阅、付款和账单详情。",
+    "searchPlaceholder": "按用户名或电子邮件搜索...",
+    "status": "状态",
+    "plan": "方案",
+    "method": "付款方式",
+    "clearFilters": "清除筛选",
+    "allStatuses": "所有状态",
+    "statusPending": "待付款",
+    "statusPaid": "已付款",
+    "statusFailed": "付款失败",
+    "statusCancelled": "已取消",
+    "allPlans": "所有方案",
+    "planFree": "免费版",
+    "planTeam": "团队版",
+    "planBusiness": "企业版",
+    "allMethods": "所有方式",
+    "methodMomo": "Momo",
+    "methodVnpay": "VNPay",
+    "methodBankTransfer": "银行转账",
+    "username": "用户名",
+    "email": "电子邮件",
+    "planExpiry": "方案到期时间",
+    "amount": "金额",
+    "payment": "付款",
+    "paidAt": "付款时间",
+    "created": "创建时间",
+    "actions": "操作",
+    "details": "详情"
   }
 }
