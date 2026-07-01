@@ -1,6 +1,8 @@
 package com.synkork.backend.modules.report;
 
 import com.synkork.backend.common.base.BaseEntity;
+import com.synkork.backend.modules.report.enums.ReportReasonEnums;
+import com.synkork.backend.modules.report.enums.ReportSeverityEnums;
 import com.synkork.backend.modules.report.enums.ReportStatusEnums;
 import com.synkork.backend.modules.report.enums.ReportTypeEnums;
 import com.synkork.backend.modules.room.RoomEntity;
@@ -29,8 +31,9 @@ public class ReportEntity extends BaseEntity {
     @JoinColumn(name = "target_room_id", nullable = true)
     private RoomEntity targetRoom;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String reason;
+    private ReportReasonEnums reason;
 
     private String description;
 
@@ -43,5 +46,10 @@ public class ReportEntity extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private ReportStatusEnums status = ReportStatusEnums.PENDING;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ReportSeverityEnums severity;
 }

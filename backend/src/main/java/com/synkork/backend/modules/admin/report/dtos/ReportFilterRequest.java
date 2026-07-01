@@ -3,6 +3,7 @@ package com.synkork.backend.modules.admin.report.dtos;
 import java.time.LocalDateTime;
 
 import com.synkork.backend.common.dtos.PageableFilter;
+import com.synkork.backend.modules.report.enums.ReportSeverityEnums;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -14,6 +15,7 @@ public record ReportFilterRequest(
         String search,
         ReportStatusEnums status,
         ReportTypeEnums reportType,
+        ReportSeverityEnums severity,
 
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
         LocalDateTime fromDate,
