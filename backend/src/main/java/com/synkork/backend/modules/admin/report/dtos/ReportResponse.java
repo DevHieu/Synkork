@@ -1,6 +1,8 @@
 package com.synkork.backend.modules.admin.report.dtos;
 
 import com.synkork.backend.modules.report.ReportEntity;
+import com.synkork.backend.modules.report.enums.ReportReasonEnums;
+import com.synkork.backend.modules.report.enums.ReportSeverityEnums;
 import com.synkork.backend.modules.report.enums.ReportStatusEnums;
 import com.synkork.backend.modules.report.enums.ReportTypeEnums;
 
@@ -16,9 +18,10 @@ public record ReportResponse(
         UUID targetRoomId,
         String targetName,
         String targetEmail,
-        String reason,
+        ReportReasonEnums reason,
         ReportTypeEnums reportType,
         ReportStatusEnums status,
+        ReportSeverityEnums severity,
         LocalDateTime createdAt
 ) {
     public ReportResponse(ReportEntity e) {
@@ -38,6 +41,7 @@ public record ReportResponse(
                 e.getReason(),
                 e.getReportType(),
                 e.getStatus(),
+                e.getSeverity(),
                 e.getCreatedAt()
         );
     }
