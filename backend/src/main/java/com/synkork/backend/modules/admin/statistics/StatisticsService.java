@@ -5,10 +5,15 @@ import com.synkork.backend.modules.admin.statistics.dtos.UserStatsResponse;
 import com.synkork.backend.modules.message.MessageRepository;
 import com.synkork.backend.modules.payment.InvoiceRepository;
 import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
+import com.synkork.backend.modules.report.ReportRepository;
+import com.synkork.backend.modules.report.enums.ReportStatusEnums;
+import com.synkork.backend.modules.report.enums.ReportTypeEnums;
 import com.synkork.backend.modules.room.RoomRepository;
 import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import com.synkork.backend.modules.admin.statistics.dtos.OverviewChartResponse;
 import com.synkork.backend.modules.admin.statistics.dtos.OverviewStatsResponse;
+import com.synkork.backend.modules.admin.statistics.dtos.ReportChartResponse;
+import com.synkork.backend.modules.admin.statistics.dtos.ReportStatsResponse;
 import com.synkork.backend.modules.admin.statistics.dtos.SubscriptionDashboardResponse;
 import com.synkork.backend.modules.admin.statistics.enums.PeriodEnum;
 import com.synkork.backend.modules.user.UserRepository;
@@ -44,6 +49,9 @@ public class StatisticsService {
 
     @Autowired
     private InvoiceRepository invoiceRepository;
+
+    @Autowired
+    private ReportRepository reportRepository;
 
     private LocalDateTime getStart(PeriodEnum period) {
 
@@ -204,6 +212,30 @@ public class StatisticsService {
                 .failedInvoices(failedInvoices)
                 .recentTransactions(recentTransactions)
                 .build();
+    }
+
+    public ReportStatsResponse getReportStatsData() {
+        long total      = reportRepository.count();
+        long pending    = reportRepository.countByStatus(ReportStatusEnums.PENDING);
+        long resolved   = reportRepository.countByStatus(ReportStatusEnums.RESOLVED);
+        long dismissed   = reportRepository.countByStatus(ReportStatusEnums.DISMISSED);
+        long userReports = reportRepository.countByReportType(ReportTypeEnums.USER);
+        long roomReports = reportRepository.countByReportType(ReportTypeEnums.ROOM);
+ 
+        return new ReportStatsResponse(total, pending, resolved, dismissed, userReports, roomReports);
+    }
+ 
+    public List<ReportChartResponse> getReportChart(PeriodEnum period) {
+        LocalDateTime from = getStart(period);
+ 
+        return reportRepository.findDailyReportCounts(from)
+                .stream()
+                .map(row -> new ReportChartResponse(
+                        (LocalDate) row[0],
+                        ((Number) row[1]).longValue(),
+                        ((Number) row[2]).longValue()
+                ))
+                .toList();
     }
 }
 
