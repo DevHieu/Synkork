@@ -1,10 +1,19 @@
 export type ReportType = 'USER' | 'ROOM'
 
-export type ReportStatus =
-  | 'PENDING'
-  | 'REVIEWED'
-  | 'RESOLVED'
-  | 'DISMISSED'
+export type ReportStatus
+  = | 'PENDING'
+    | 'REVIEWED'
+    | 'RESOLVED'
+    | 'DISMISSED'
+
+export type ReportReason
+  = | 'SPAM'
+    | 'HARASSMENT'
+    | 'INAPPROPRIATE'
+    | 'HATE_SPEECH'
+    | 'OTHER'
+
+export type ReportSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
 
 export interface Report {
   id: string
@@ -15,7 +24,8 @@ export interface Report {
   targetRoomId?: string | null
   targetName: string
   targetEmail?: string | null
-  reason: string
+  reason: ReportReason
+  severity: ReportSeverity
   note: string
   description?: string | null
   reportType: ReportType
@@ -27,7 +37,8 @@ export interface ReportFilterParams {
   search?: string
   status?: ReportStatus | ''
   reportType?: ReportType | ''
-  fromDate?: string   
+  severity?: ReportSeverity | ''
+  fromDate?: string
   toDate?: string
   page?: number
   size?: number
