@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { Eye, LoaderIcon, Pencil, PlusIcon, RefreshCwIcon, Search, Trash2 } from '@lucide/vue'
+import { Eye, Lock, LoaderIcon, Pencil, PlusIcon, RefreshCwIcon, Search, Unlock } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
 import { computed, h, onMounted, ref, watch } from 'vue'
 
@@ -61,7 +61,6 @@ const pageSize = 20
 
 const searchKeyword = ref('')
 const selectedStatus = ref<string>('ALL')
-  const selectedType = ref<string>('GROUP')
 
 const debounceSearchKeyword = refDebounced(searchKeyword, 500)
 
@@ -77,6 +76,7 @@ const isFormOpen = ref(false)
 const editingRoom = ref<Room | RoomDetail | null>(null)
 const isEdit = computed(() => !!editingRoom.value)
 const isDmRoom = computed(() => editingRoom.value?.type === 'DM')
+const isPendingRemoval = computed(() => editingRoom.value?.status === 'PENDING_REMOVAL')
 
 const form = ref<RoomFormPayload>({
   name: '',
@@ -122,7 +122,7 @@ function handleEdit(room: Room | RoomDetail) {
   form.value = {
     name: room.name,
     description: room.description || '',
-    status: room.status,
+    status: room.status === 'PENDING_REMOVAL' ? 'OPEN' : room.status,
     ownerId: room.ownerId,
   }
 
@@ -182,7 +182,11 @@ async function handleSubmitForm() {
 
   try {
     if (isEdit.value && editingRoom.value) {
-      await roomService.updateRoom(editingRoom.value.id, form.value)
+      // Room đang Chờ xóa: không cho phép đổi status qua API, dù field đã bị disable ở UI
+      const payload = isPendingRemoval.value
+        ? { ...form.value, status: undefined as any }
+        : form.value
+      await roomService.updateRoom(editingRoom.value.id, payload)
     }
     else {
       await roomService.createRoom(form.value)
@@ -199,75 +203,72 @@ async function handleSubmitForm() {
   }
 }
 
-// ===================== Delete =====================
-const isDeleteOpen = ref(false)
-const deletingRoom = ref<Room | null>(null)
-const isDeleting = ref(false)
-const deleteError = ref('')
+// ===================== Lock / Unlock =====================
+const isLockConfirmOpen = ref(false)
+const lockTargetRoom = ref<Room | null>(null)
+const isLocking = ref(false)
+const lockError = ref('')
 
-function handleDelete(room: Room) {
-  deletingRoom.value = room
-  deleteError.value = ''
-  isDeleteOpen.value = true
+function handleToggleLock(room: Room) {
+  lockTargetRoom.value = room
+  lockError.value = ''
+  isLockConfirmOpen.value = true
 }
 
-async function confirmDelete() {
-  if (!deletingRoom.value)
+async function confirmToggleLock() {
+  if (!lockTargetRoom.value)
     return
 
-  isDeleting.value = true
-  deleteError.value = ''
+  isLocking.value = true
+  lockError.value = ''
+
+  const nextStatus = lockTargetRoom.value.status === 'LOCKED' ? 'OPEN' : 'LOCKED'
 
   try {
-    await roomService.deleteRoom(deletingRoom.value.id)
-    isDeleteOpen.value = false
+    await roomService.lockRoom(lockTargetRoom.value.id, nextStatus)
+    isLockConfirmOpen.value = false
     fetchRooms()
   }
   catch (error: any) {
-    deleteError.value = error?.response?.data?.message || 'Không thể xóa room này'
+    lockError.value = error?.response?.data?.message || 'Không thể cập nhật trạng thái room này'
   }
   finally {
-    isDeleting.value = false
+    isLocking.value = false
   }
 }
 
 // ===================== Columns =====================
 const columns = computed<TableColumn<any>[]>(() => [
   {
-    header: 'Name',
+    header: 'Tên Room',
     accessor: 'name',
     minWidth: 200,
-    render: row => row.type === 'DM' ? 'Direct Message' : row.name,
+    render: row => row.type === 'DM' ? 'Tin nhắn trực tiếp' : row.name,
   },
   {
-    header: 'Owner',
+    header: 'Chủ phòng',
     accessor: 'ownerUsername',
     minWidth: 140,
     render: row => row.ownerUsername || '—',
   },
   {
-    header: 'Invite Code',
+    header: 'Mã mời',
     accessor: 'inviteCode',
     minWidth: 140,
     render: row => row.inviteCode || '—',
   },
   {
-    header: 'Type',
-    accessor: 'type',
-    minWidth: 100,
-  },
-  {
-    header: 'Status',
+    header: 'Trạng thái',
     accessor: 'status',
     minWidth: 100,
   },
   {
-    header: 'Members',
+    header: 'Thành viên',
     accessor: 'memberCount',
     minWidth: 90,
   },
   {
-    header: 'Action',
+    header: 'Thao tác',
     minWidth: 180,
     render: row =>
       h('div', { class: 'flex items-center gap-1.5' }, [
@@ -296,11 +297,13 @@ const columns = computed<TableColumn<any>[]>(() => [
           {
             variant: 'outline',
             size: 'sm',
-            class: 'h-8 gap-1 px-2 text-xs text-red-500 hover:bg-red-50 hover:text-red-600',
-            disabled: row.type === 'DM',
-            onClick: () => handleDelete(row),
+            disabled: row.status === 'PENDING_REMOVAL',
+            class: row.status === 'LOCKED'
+              ? 'h-8 gap-1 px-2 text-xs text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700'
+              : 'h-8 gap-1 px-2 text-xs text-red-500 hover:bg-red-50 hover:text-red-600',
+            onClick: () => handleToggleLock(row),
           },
-          () => [h(Trash2, { class: 'h-3.5 w-3.5' })],
+          () => [h(row.status === 'LOCKED' ? Unlock : Lock, { class: 'h-3.5 w-3.5' })],
         ),
       ]),
   },
@@ -322,8 +325,6 @@ async function fetchRooms() {
     if (selectedStatus.value !== 'ALL')
       queryParams.status = selectedStatus.value
 
-    if (selectedType.value !== 'ALL')
-      queryParams.type = selectedType.value
 
     const response = await roomService.getRooms(queryParams)
 
@@ -339,7 +340,7 @@ async function fetchRooms() {
 }
 
 watch(
-  [debounceSearchKeyword, selectedStatus, selectedType],
+  [debounceSearchKeyword, selectedStatus],
   () => {
     currentPage.value = 1
     fetchRooms()
@@ -390,33 +391,20 @@ onMounted(() => {
       <div class="w-[180px]">
         <Select v-model="selectedStatus">
           <SelectTrigger class="h-9 w-full">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder="Trạng thái" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">
-              All Status
+              Tất cả trạng thái
             </SelectItem>
             <SelectItem value="OPEN">
-              OPEN
+              Đang mở
             </SelectItem>
-            <SelectItem value="CLOSED">
-              CLOSED
+            <SelectItem value="LOCKED">
+              Đã khoá
             </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div class="w-[180px]">
-        <Select v-model="selectedType">
-          <SelectTrigger class="h-9 w-full">
-            <SelectValue placeholder="Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">
-              All Types
-            </SelectItem>
-            <SelectItem value="GROUP">
-              GROUP
+            <SelectItem value="PENDING_REMOVAL">
+              Chờ xoá
             </SelectItem>
           </SelectContent>
         </Select>
@@ -552,21 +540,25 @@ onMounted(() => {
         <!-- Status -->
         <div class="flex flex-col gap-1.5">
           <label class="text-[12px] font-medium text-muted-foreground">
-            Status
+            Trạng thái
           </label>
-          <Select v-model="form.status">
+          <Select v-model="form.status" :disabled="isPendingRemoval">
             <SelectTrigger class="h-9 w-full">
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder="Trạng thái" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="OPEN">
-                OPEN
+                Đang mở
               </SelectItem>
-              <SelectItem value="CLOSED">
-                CLOSED
+              <SelectItem value="LOCKED">
+                Đã khoá
               </SelectItem>
             </SelectContent>
           </Select>
+          <p v-if="isPendingRemoval" class="text-[11px] text-amber-600">
+            Room đang ở trạng thái Chờ xóa do tài khoản chủ phòng hết hạn gói —
+            admin không thể thay đổi trạng thái này.
+          </p>
         </div>
 
         <p v-if="formError" class="text-[12px] text-red-500">
@@ -585,28 +577,31 @@ onMounted(() => {
     </DialogContent>
   </Dialog>
 
-  <!-- Delete confirm -->
-  <AlertDialog v-model:open="isDeleteOpen">
+  <!-- Lock / Unlock confirm -->
+  <AlertDialog v-model:open="isLockConfirmOpen">
     <AlertDialogContent>
       <AlertDialogHeader>
-        <AlertDialogTitle>Xóa room này?</AlertDialogTitle>
+        <AlertDialogTitle>
+          {{ lockTargetRoom?.status === 'LOCKED' ? 'Mở khóa room này?' : 'Khóa room này?' }}
+        </AlertDialogTitle>
         <AlertDialogDescription>
-          Hành động này sẽ xóa vĩnh viễn room
-          <strong>{{ deletingRoom?.name }}</strong> cùng toàn bộ space, thành
-          viên liên quan. Không thể hoàn tác.
+          Room <strong>{{ lockTargetRoom?.name }}</strong>
+          {{ lockTargetRoom?.status === 'LOCKED'
+            ? ' sẽ được mở khóa và hoạt động trở lại bình thường.'
+            : ' sẽ bị khóa, thành viên sẽ không thể tương tác trong room này.' }}
         </AlertDialogDescription>
       </AlertDialogHeader>
 
-      <p v-if="deleteError" class="text-[12px] text-red-500">
-        {{ deleteError }}
+      <p v-if="lockError" class="text-[12px] text-red-500">
+        {{ lockError }}
       </p>
 
       <AlertDialogFooter>
-        <AlertDialogCancel :disabled="isDeleting">
+        <AlertDialogCancel :disabled="isLocking">
           Hủy
         </AlertDialogCancel>
-        <AlertDialogAction :disabled="isDeleting" @click.prevent="confirmDelete">
-          {{ isDeleting ? 'Đang xóa...' : 'Xóa' }}
+        <AlertDialogAction :disabled="isLocking" @click.prevent="confirmToggleLock">
+          {{ isLocking ? 'Đang xử lý...' : (lockTargetRoom?.status === 'LOCKED' ? 'Mở khóa' : 'Khóa') }}
         </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>

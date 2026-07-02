@@ -3,7 +3,7 @@ import OverviewChart from '../components/overview-chart.vue'
 import RecentSales from '../components/recent-sales.vue'
 import DataCard from '../components/data-card.vue';
 
-import { Activity, CreditCard, Server, Users } from '@lucide/vue';
+import { Activity, CreditCard, Flag, Server, Users } from '@lucide/vue';
 import { dashboardService } from '../services/dashboardService';
 
 const stats = ref<any>(null)
@@ -59,7 +59,9 @@ onMounted(async () => {
         <UiCardDescription>Các report đang chờ xử lý gần đây.</UiCardDescription>
       </UiCardHeader>
       <UiCardContent>
-        <RecentReports />
+        <p class="text-sm text-muted-foreground text-center py-6">
+          Chưa có dữ liệu report.
+        </p>
       </UiCardContent>
     </UiCard>
   </div>

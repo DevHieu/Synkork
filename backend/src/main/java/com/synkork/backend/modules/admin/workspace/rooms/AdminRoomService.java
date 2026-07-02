@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.common.utils.EmailService;
@@ -79,20 +78,24 @@ public class AdminRoomService {
                 .toList();
     }
 
-    // ─── CREATE ──────────────────────────────────────────────────────────────
+    // ─── TẠO MỚI ─────────────────────────────────────────────────────────────
 
     public AdminRoomResponse createRoom(AdminRoomRequest request) {
         if (request.name() == null || request.name().isBlank()) {
             throw new IllegalArgumentException("Tên room không được để trống");
         }
 
+        if (request.status() == RoomStatusEnum.PENDING_REMOVAL) {
+            throw new IllegalArgumentException("Không thể đặt trạng thái Pending Removal thủ công");
+        }
+
         UserEntity owner;
         if (request.ownerId() != null) {
             owner = userRepository.findById(request.ownerId())
-                    .orElseThrow(() -> new RuntimeException("Owner not found: " + request.ownerId()));
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy owner: " + request.ownerId()));
         } else {
             owner = userRepository.findById(AuthUtils.getCurrentUserId())
-                    .orElseThrow(() -> new RuntimeException("User not found"));
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
         }
 
         RoomEntity room = RoomEntity.builder()
@@ -107,12 +110,16 @@ public class AdminRoomService {
         return new AdminRoomResponse(roomRepository.save(room));
     }
 
-    // ─── UPDATE ──────────────────────────────────────────────────────────────
+    // ─── CẬP NHẬT ────────────────────────────────────────────────────────────
 
     public AdminRoomResponse updateRoom(String roomId, AdminRoomRequest request) {
         RoomEntity room = findRoomOrThrow(roomId);
 
-        // DM room: chỉ cho đổi status
+        if (request.status() == RoomStatusEnum.PENDING_REMOVAL) {
+            throw new IllegalArgumentException("Không thể đặt trạng thái Pending Removal thủ công");
+        }
+
+        // Room DM: chỉ cho đổi status
         if (room.getType() == RoomTypeEnum.DM) {
             if (request.status() != null) {
                 room.setStatus(request.status());
@@ -122,7 +129,7 @@ public class AdminRoomService {
             return saved;
         }
 
-        // GROUP room
+        // Room GROUP
         if (request.name() != null && !request.name().isBlank()) {
             room.setName(request.name().trim());
         }
@@ -138,7 +145,7 @@ public class AdminRoomService {
         if (request.ownerId() != null && !request.ownerId().equals(
                 room.getOwner() != null ? room.getOwner().getId() : null)) {
             UserEntity newOwner = userRepository.findById(request.ownerId())
-                    .orElseThrow(() -> new RuntimeException("Owner not found: " + request.ownerId()));
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy owner: " + request.ownerId()));
             room.setOwner(newOwner);
         }
 
@@ -147,36 +154,11 @@ public class AdminRoomService {
         return saved;
     }
 
-    // ─── DELETE (soft) ───────────────────────────────────────────────────────
-
-    @Transactional
-    public void deleteRoom(String roomId) {
-        RoomEntity room = findRoomOrThrow(roomId);
-
-        if (room.getType() == RoomTypeEnum.DM) {
-            throw new IllegalArgumentException("Không thể xóa room loại DM từ trang quản trị");
-        }
-
-        // Soft delete — xóa vĩnh viễn sau 30 ngày bởi SqlSchedule.deleteRoomDeleted()
-        room.setStatus(RoomStatusEnum.DELETED);
-
-        // Gỡ tất cả members khỏi room
-        if (room.getRoomMembers() != null) {
-            room.getRoomMembers().clear();
-        }
-
-        roomRepository.save(room);
-
-        // TODO: Disconnect socket subscription của các member đang online
-        // socketService.removeRoomSubscriptions(UUID.fromString(roomId));
-
-        // Gửi mail thông báo cho owner
-        sendOwnerDeleteEmail(room);
-    }
+    // ─── CẢNH BÁO ────────────────────────────────────────────────────────────
 
     public AdminRoomResponse warnRoom(UUID roomId) {
         RoomEntity room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new RuntimeException("Room not found"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy room"));
 
         room.setWarning(room.getWarning() + 1);
 
@@ -189,21 +171,43 @@ public class AdminRoomService {
         return new AdminRoomResponse(saved);
     }
 
-    // ─── LOCK ────────────────────────────────────────────────────────────────
+    // ─── KHÓA / MỞ KHÓA ──────────────────────────────────────────────────────
 
     public AdminRoomResponse lockRoom(UUID roomId, RoomStatusEnum status) {
-        RoomEntity room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new RuntimeException("Room not found: " + roomId));
+        if (status == null) {
+            throw new IllegalArgumentException("Status không được để trống");
+        }
 
-        if (room.getStatus() == RoomStatusEnum.LOCKED) {
-            throw new RuntimeException("Room already locked!");
+        if (status == RoomStatusEnum.PENDING_REMOVAL) {
+            throw new IllegalArgumentException("Không thể đặt trạng thái Pending Removal thủ công");
+        }
+
+        RoomEntity room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy room: " + roomId));
+
+        if (room.getStatus() == RoomStatusEnum.PENDING_REMOVAL) {
+            throw new RuntimeException("Room đang chờ xóa tự động, không thể khóa/mở khóa");
+        }
+
+        // Chỉ chặn khi cố khóa một room ĐÃ khóa rồi.
+        // Khi mở khóa (status = OPEN) thì luôn cho phép, kể cả khi room đang LOCKED.
+        if (status == RoomStatusEnum.LOCKED && room.getStatus() == RoomStatusEnum.LOCKED) {
+            throw new RuntimeException("Room đã bị khóa rồi!");
+        }
+
+        if (status == RoomStatusEnum.OPEN && room.getStatus() == RoomStatusEnum.OPEN) {
+            throw new RuntimeException("Room đang mở rồi!");
         }
 
         room.setStatus(status);
         RoomEntity saved = roomRepository.save(room);
 
-        if (status == RoomStatusEnum.LOCKED && saved.getOwner() != null) {
-            emailService.sendLockEmail(saved.getOwner().getEmail(), saved.getName(), "phòng của bạn");
+        if (saved.getOwner() != null) {
+            if (status == RoomStatusEnum.LOCKED) {
+                emailService.sendLockEmail(saved.getOwner().getEmail(), saved.getName(), "phòng của bạn");
+            } else if (status == RoomStatusEnum.OPEN) {
+                sendOwnerUnlockEmail(saved);
+            }
         }
 
         return new AdminRoomResponse(saved);
@@ -213,7 +217,7 @@ public class AdminRoomService {
 
     private RoomEntity findRoomOrThrow(String roomId) {
         return roomRepository.findById(UUID.fromString(roomId))
-                .orElseThrow(() -> new RuntimeException("Room not found: " + roomId));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy room: " + roomId));
     }
 
     private void sendOwnerUpdateEmail(RoomEntity room) {
@@ -247,30 +251,21 @@ public class AdminRoomService {
         emailService.send(ownerEmail, subject, body);
     }
 
-    private void sendOwnerDeleteEmail(RoomEntity room) {
+    private void sendOwnerUnlockEmail(RoomEntity room) {
         if (room.getOwner() == null || room.getOwner().getEmail() == null)
             return;
 
         String ownerEmail = room.getOwner().getEmail();
-        String roomName = room.getName() != null ? room.getName() : "Unknown";
+        String roomName = room.getName() != null ? room.getName() : "phòng của bạn";
 
-        String subject = "[Synkork] Room của bạn đã bị xóa bởi quản trị viên";
+        String subject = "[Synkork] Room của bạn đã được mở khóa";
         String body = """
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;
                             padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px;">
-                    <h2 style="color: #dc2626;">Thông báo xóa Room</h2>
+                    <h2 style="color: #023c3d;">Thông báo mở khóa Room</h2>
                     <p style="color: #374151;">
-                        Room <strong>%s</strong> của bạn đã bị quản trị viên hệ thống xóa.
-                    </p>
-                    <div style="margin: 16px 0; padding: 16px; background: #fef2f2;
-                                border-left: 4px solid #ef4444; border-radius: 8px;">
-                        <p style="margin: 0; color: #991b1b;">
-                            ⚠️ Toàn bộ thành viên đã bị gỡ khỏi room này.<br/>
-                            Dữ liệu room sẽ bị xóa vĩnh viễn sau 30 ngày.
-                        </p>
-                    </div>
-                    <p style="color: #374151;">
-                        Nếu bạn cho rằng đây là nhầm lẫn, vui lòng liên hệ đội ngũ hỗ trợ Synkork.
+                        Room <strong>%s</strong> của bạn đã được quản trị viên mở khóa và có thể
+                        hoạt động bình thường trở lại.
                     </p>
                     <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0 16px;"/>
                     <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">

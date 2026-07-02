@@ -152,13 +152,13 @@ function handleEdit() {
                   Tên Room
                 </p>
                 <p class="text-[13px] font-medium">
-                  {{ room.type === 'DM' ? 'Direct Message' : room.name }}
+                  {{ room.type === 'DM' ? 'Tin nhắn trực tiếp' : room.name }}
                 </p>
               </div>
 
               <div class="rounded-lg border border-border bg-muted/40 px-3 py-2.5">
                 <p class="mb-1 text-[11px] text-muted-foreground">
-                  Members
+                  Thành viên
                 </p>
                 <p class="text-[13px] font-medium">
                   {{ room.memberCount }}
@@ -167,7 +167,7 @@ function handleEdit() {
 
               <div class="col-span-2 rounded-lg border border-border bg-muted/40 px-3 py-2.5">
                 <p class="mb-1 text-[11px] text-muted-foreground">
-                  Description
+                  Mô tả
                 </p>
                 <p class="text-[13px]">
                   {{ room.description || '—' }}
@@ -178,7 +178,7 @@ function handleEdit() {
                 <div class="flex items-center gap-2">
                   <KeyRound class="h-4 w-4 text-muted-foreground" />
                   <p class="text-[13px] font-medium">
-                    Invite Code:
+                    Mã mời:
                     <span class="font-mono">{{ room.inviteCode || '—' }}</span>
                   </p>
                 </div>
@@ -191,7 +191,7 @@ function handleEdit() {
           <!-- Owner -->
           <div v-if="room.owner">
             <p class="mb-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-              Owner
+              Chủ phòng
             </p>
 
             <div class="rounded-lg border border-border bg-muted/40 p-3">
@@ -214,7 +214,7 @@ function handleEdit() {
             <div class="mb-2.5 flex items-center justify-between">
               <p class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
                 <Users class="h-3.5 w-3.5" />
-                Members ({{ room.members?.length ?? 0 }})
+                Thành viên ({{ room.members?.length ?? 0 }})
               </p>
 
               <UiButton
@@ -268,11 +268,11 @@ function handleEdit() {
             <div class="flex items-center gap-5 text-[12px] text-muted-foreground">
               <div class="flex items-center gap-1">
                 <Calendar class="h-3.5 w-3.5" />
-                Created: {{ formatTimestamp(room.createdAt) }}
+                Tạo lúc: {{ formatTimestamp(room.createdAt) }}
               </div>
               <div class="flex items-center gap-1">
                 <Calendar class="h-3.5 w-3.5" />
-                Updated: {{ formatTimestamp(room.updatedAt) }}
+                Cập nhật lúc: {{ formatTimestamp(room.updatedAt) }}
               </div>
             </div>
           </div>
