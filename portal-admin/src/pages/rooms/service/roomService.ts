@@ -23,11 +23,6 @@ export const roomService = {
     return res.data
   },
 
-  async deleteRoom(roomId: string) {
-    const res = await axiosClient.delete(`/api/manage/rooms/${roomId}`)
-    return res.data
-  },
-
   async searchOwners(keyword: string): Promise<UserOption[]> {
     if (!keyword.trim())
       return []
@@ -38,14 +33,14 @@ export const roomService = {
 
     return res.data.data || []
   },
-  
-  async lockRoom(roomId: string, status: string){
+
+  async lockRoom(roomId: string, status: string) {
     const res = await axiosClient.patch(`/api/manage/rooms/${roomId}/status`, { status })
     return res.data
   },
 
-  async warnRoom(roomId: string){
+  async warnRoom(roomId: string) {
     const res = await axiosClient.patch(`/api/manage/rooms/${roomId}/warn`)
     return res.data
-  }
+  },
 }

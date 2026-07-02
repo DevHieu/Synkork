@@ -14,3 +14,4 @@ public class RoomDashboardStatsResponse {
     private double dayGrowth;
     private double monthGrowth;
 }
+ 

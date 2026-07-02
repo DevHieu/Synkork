@@ -25,7 +25,7 @@ public class RoomDashboardService {
         long dmRooms = roomRepository.countByType(RoomTypeEnum.DM);
 
         // Day growth: so sánh hôm nay với hôm qua
-        LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+         LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
         LocalDateTime startOfYesterday = startOfToday.minusDays(1);
 
         long todayCount = roomRepository.countByCreatedAtBetween(startOfToday, LocalDateTime.now());

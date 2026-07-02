@@ -23,5 +23,5 @@ public class Roomdashboardcontroller {
             @RequestParam(defaultValue = "WEEKLY") String period
     ) {
         return ApiResponse.success("Get room chart successfully", roomDashboardService.getChart(period));
-    }
+    } 
 }
