@@ -1,11 +1,16 @@
 package com.synkork.backend.modules.user;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+import org.checkerframework.common.aliasing.qual.Unique;
+
 import com.synkork.backend.common.base.BaseEntity;
 import com.synkork.backend.modules.user.enums.PlanEnum;
 import com.synkork.backend.modules.user.enums.ProviderEnum;
+import com.synkork.backend.modules.user.enums.RoleEnum;
 import com.synkork.backend.modules.user.enums.UserStatusEnum;
 
-import com.synkork.backend.modules.user.enums.RoleEnum;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -49,4 +54,24 @@ public class UserEntity extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private PlanEnum currentPlan = PlanEnum.FREE;
+
+    private LocalDateTime planExpiresAt;
+
+    @Unique
+    private UUID personalNoteId;
+
+    @Unique
+    private UUID personalCalendarId;
+
+    @Column(length = 2048)
+    private String googleCalendarRefreshToken;
+
+    @Column(length = 2048)
+    private String googleCalendarAccessToken;
+
+    private LocalDateTime googleCalendarAccessTokenExpiresAt;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private int warning = 0;
 }

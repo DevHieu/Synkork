@@ -1,9 +1,7 @@
 import { getFreshToken } from "@/utils/auth";
 import axios from "axios";
 import type { AxiosInstance, InternalAxiosRequestConfig } from "axios";
-import VueCookies from "vue-cookies";
-
-const cookies = VueCookies as any;
+import { getCookie, removeCookie } from "./cookies";
 
 const axiosClient: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL as string,
@@ -13,9 +11,9 @@ const axiosClient: AxiosInstance = axios.create({
 
 axiosClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = cookies.get("accessToken");
+    const token = getCookie("accessToken");
     const url = config.url ?? "";
-    if (!url.includes("/auth")) {
+    if (!url.startsWith("/api/auth/")) {
       if (token) {
         config.headers = config.headers ?? {};
         config.headers.Authorization = `Bearer ${token}`;
@@ -39,10 +37,10 @@ axiosClient.interceptors.response.use(
     // Token mà không hợp lệ thì về trang đăng nhập
     if (
       error.response?.status === 401 &&
-      error.response?.data?.error === "INVALID_TOKEN"
+      ["INVALID_TOKEN", "ACCOUNT_LOCKED"].includes(error.response?.data?.error)
     ) {
-      cookies.remove("accessToken");
-      cookies.remove("refreshToken");
+      removeCookie("accessToken");
+      removeCookie("refreshToken");
       window.location.href = "/auth";
     }
 
@@ -64,7 +62,7 @@ axiosClient.interceptors.response.use(
           refreshError.response?.status,
           refreshError.response?.data,
         );
-        cookies.remove("accessToken");
+        removeCookie("accessToken");
         window.location.href = "/auth";
         return Promise.reject(refreshError);
       }

@@ -1,10 +1,10 @@
 <script lang="ts" setup>
 import OverviewChart from '../components/overview-chart.vue'
-import RecentSales from '../components/recent-sales.vue'
+import RecentReports from '../components/recent-reports.vue'
 import DataCard from '../components/data-card.vue';
 
-import { Activity, MessagesSquare, Server, Users } from '@lucide/vue';
-import { dashboardService } from '@/services/dashboardService';
+import { Activity, CreditCard, Flag, Server, Users } from '@lucide/vue';
+import { dashboardService } from '../services/dashboardService';
 
 const stats = ref<any>(null)
 
@@ -42,7 +42,7 @@ onMounted(async () => {
     <DataCard
       title="Tổng subscriptions"
       :data="stats?.totalSubscriptions?.toLocaleString() ?? '—'"
-      :icon="MessagesSquare"
+      :icon="CreditCard"
       :day-growth="stats?.subscriptionDayGrowth"
       :month-growth="stats?.subscriptionMonthGrowth"
     />
@@ -52,13 +52,16 @@ onMounted(async () => {
     <OverviewChart class="col-span-1 lg:col-span-4" />
     <UiCard class="col-span-1 lg:col-span-3">
       <UiCardHeader>
-        <UiCardTitle>Recent Sales</UiCardTitle>
-        <UiCardDescription>
-          You made 265 sales this month.
-        </UiCardDescription>
+        <UiCardTitle class="flex items-center gap-2">
+          <Flag class="h-4 w-4 text-destructive" />
+          Tố cáo gần đây
+        </UiCardTitle>
+        <UiCardDescription>Các report đang chờ xử lý gần đây.</UiCardDescription>
       </UiCardHeader>
       <UiCardContent>
-        <RecentSales />
+        <p class="text-sm text-muted-foreground text-center py-6">
+          Chưa có dữ liệu report.
+        </p>
       </UiCardContent>
     </UiCard>
   </div>

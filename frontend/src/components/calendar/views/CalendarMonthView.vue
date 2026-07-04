@@ -2,22 +2,23 @@
 import { computed } from "vue";
 import dayjs from "dayjs";
 import type { CalendarEvent } from "@/types/CalendarEvent";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const props = defineProps<{
   currentDate: dayjs.Dayjs;
   selectedDate: dayjs.Dayjs;
   events: CalendarEvent[];
   currentUserId: string;
+  dayNames: string[];
+  isToday: (date: dayjs.Dayjs) => boolean;
+  isSelected: (date: dayjs.Dayjs) => boolean;
 }>();
 
 const emit = defineEmits<{
   (e: "selectDate", date: dayjs.Dayjs): void;
-  (e: "editEvent", event: CalendarEvent): void;
-  (e: "deleteEvent", event: CalendarEvent): void;
+  (e: "viewEvent", event: CalendarEvent): void;
 }>();
-
-// Cấu hình
-const dayNames = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
 /**
  * Tính toán các ngày hiển thị trong tháng bao gồm cả ngày đệm từ tháng trước và sau (tổng 6 tuần)
@@ -66,6 +67,7 @@ const selectedDateEvents = computed(() => {
   return getEventsForDate(props.selectedDate);
 });
 
+// Dùng vòng lặp thường để kiểm tra nhanh hơn với danh sách event đang có.
 const hasEvent = (date: dayjs.Dayjs) => {
   const targetDate = date.format("YYYY-MM-DD");
   for (let i = 0; i < props.events.length; i++) {
@@ -75,179 +77,158 @@ const hasEvent = (date: dayjs.Dayjs) => {
   return false;
 };
 
-// Các hàm kiểm tra trạng thái ngày
-const isToday = (date: dayjs.Dayjs) => date.isSame(dayjs(), "day");
-const isSelected = (date: dayjs.Dayjs) => date.isSame(props.selectedDate, "day");
 const isCurrentMonth = (date: dayjs.Dayjs) => date.month() === props.currentDate.month();
 
-// Kiểm tra quyền hạn
-const canEdit = (event: CalendarEvent) => {
-  return event.createdById === props.currentUserId || event.allowEditAll;
-};
-
-const canDelete = (event: CalendarEvent) => {
-  return event.createdById === props.currentUserId;
+const getCreatorLabel = (event: CalendarEvent) => {
+  if (event.createdById === props.currentUserId) {
+    return "Do bạn tạo";
+  }
+  return event.createdByDisplayName || event.createdByUsername;
 };
 </script>
 
 <template>
-  <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
+  <div class="flex flex-1 flex-col overflow-hidden bg-transparent text-foreground cursor-default md:flex-row">
     <!-- Lưới lịch -->
-    <div class="flex-1 flex flex-col overflow-hidden p-3">
-      <!-- Tiêu đề các thứ -->
-      <div class="grid grid-cols-7 gap-1 mb-1">
-        <div
-          v-for="day in dayNames"
-          :key="day"
-          class="text-center text-xs font-semibold text-gray-400 py-1"
-        >
-          {{ day }}
+    <div class="flex flex-1 flex-col overflow-hidden p-4 md:pr-0">
+      <div class="flex flex-1 flex-col overflow-hidden rounded-[1.5rem] border-2 border-border bg-background shadow-[0_30px_80px_-48px_var(--color-foreground)]">
+        <!-- Tiêu đề các thứ -->
+        <div class="grid grid-cols-7 border-b-2 border-border bg-muted/55 text-muted-foreground cursor-default">
+          <div
+            v-for="day in dayNames"
+            :key="day"
+            class="text-center text-[10px] sm:text-xs font-mono font-bold uppercase tracking-widest py-2 border-r-2 last:border-r-0 border-border cursor-default"
+          >
+            {{ day }}
+          </div>
         </div>
-      </div>
 
-      <!-- Lưới các ngày -->
-      <div class="grid grid-cols-7 gap-1 flex-1">
-        <div
-          v-for="(date, idx) in monthDays"
-          :key="idx"
-          @click="emit('selectDate', date)"
-          :class="[
-            'relative rounded-lg p-1 cursor-pointer transition-all duration-200 flex flex-col items-center',
-            'hover:bg-white/10',
-            isSelected(date) ? 'bg-teal-600/30 ring-1 ring-teal-500' : '',
-            isToday(date) ? 'ring-1 ring-teal-400/50' : '',
-            !isCurrentMonth(date) ? 'opacity-30' : '',
-          ]"
-        >
-          <span
+        <!-- Lưới các ngày -->
+        <div class="grid flex-1 grid-cols-7 bg-border/30">
+          <div
+            v-for="(date, idx) in monthDays"
+            :key="idx"
+            @click="emit('selectDate', date)"
             :class="[
-              'text-sm font-medium w-7 h-7 flex items-center justify-center rounded-full',
-              isToday(date)
-                ? 'bg-teal-500 text-white'
-                : 'text-gray-200',
+              'relative flex flex-col items-start border-b-2 border-r-2 border-border bg-background p-2 transition-all hover:bg-muted/35 cursor-pointer',
+              (idx + 1) % 7 === 0 ? 'border-r-0' : '',
+              idx >= monthDays.length - 7 ? 'border-b-0' : '',
+              isSelected(date) ? 'bg-primary/8 ring-2 ring-inset ring-primary' : '',
+              !isCurrentMonth(date) ? 'opacity-40 bg-muted/20' : '',
             ]"
           >
-            {{ date.date() }}
-          </span>
-          <!-- Chấm chỉ báo sự kiện -->
-          <div v-if="hasEvent(date)" class="flex gap-0.5 mt-0.5">
-            <span
-              v-for="n in Math.min(getEventsForDate(date).length, 3)"
-              :key="n"
-              class="w-1.5 h-1.5 rounded-full bg-teal-400"
-            ></span>
+            <div class="flex justify-between w-full items-start">
+              <span
+                :class="[
+                  'flex min-w-[2rem] items-center justify-center rounded-full px-2 py-1 text-xs font-mono font-bold',
+                  isToday(date)
+                    ? 'bg-primary text-primary-foreground shadow-[0_8px_20px_-14px_var(--color-primary)]'
+                    : 'text-foreground',
+                ]"
+              >
+                {{ date.date() }}
+              </span>
+            </div>
+            <!-- Chấm chỉ báo sự kiện -->
+            <div v-if="hasEvent(date)" class="flex gap-1 mt-auto pt-2 flex-wrap w-full">
+              <span
+                v-for="n in Math.min(getEventsForDate(date).length, 3)"
+                :key="n"
+                class="h-1.5 w-full rounded-full border border-primary/20 bg-primary"
+              ></span>
+              <span v-if="getEventsForDate(date).length > 3" class="text-[9px] font-mono font-bold text-primary mt-0.5 ml-0.5">
+                +{{ getEventsForDate(date).length - 3 }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Danh sách sự kiện ngày đã chọn (Bên phải) -->
-    <div class="w-full md:w-80 border-t md:border-t-0 md:border-l border-white/10 flex flex-col overflow-hidden">
-      <div class="px-4 py-3 border-b border-white/10">
-        <h3 class="font-semibold text-white">
-          {{ selectedDate.format("DD/MM/YYYY") }}
-        </h3>
-        <p class="text-xs text-gray-400">
-          {{ selectedDateEvents.length }} sự kiện
-        </p>
-      </div>
-      <div class="flex-1 overflow-y-auto px-3 py-2 space-y-2">
-        <div
-          v-if="selectedDateEvents.length === 0"
-          class="text-center text-gray-500 text-sm mt-8"
-        >
-          Không có sự kiện nào
+    <div class="mt-4 flex w-full flex-col overflow-hidden rounded-[1.5rem] border-2 border-border bg-background shadow-[0_30px_80px_-48px_var(--color-foreground)] md:ml-4 md:mt-0 md:w-96">
+      <div class="flex items-end justify-between border-b-2 border-border bg-muted/55 px-5 py-4 cursor-default">
+        <div>
+          <h3 class="font-mono font-bold text-xl tracking-widest uppercase leading-none text-primary">
+            {{ selectedDate.format("DD/MM/YYYY") }}
+          </h3>
+          <p class="text-[10px] font-mono font-bold opacity-80 mt-2 uppercase tracking-widest text-muted-foreground">
+            [{{ selectedDateEvents.length }} SỰ KIỆN]
+          </p>
         </div>
-        <div
-          v-for="event in selectedDateEvents"
-          :key="event.id"
-          class="group bg-zinc-800/50 rounded-xl p-4 hover:bg-zinc-800/80 transition-all duration-300 border border-white/5 hover:border-teal-500/30 shadow-lg"
-        >
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex-1 min-w-0 space-y-3">
+      </div>
+      <ScrollArea class="calendar-scroll-area min-h-0 flex-1">
+        <div class="flex flex-col gap-4 p-4 pr-5">
+          <div
+            v-if="selectedDateEvents.length === 0"
+            class="mt-8 rounded-xl border-2 border-dashed border-muted-foreground/50 bg-muted/20 p-8 text-center font-mono text-sm uppercase tracking-widest text-muted-foreground cursor-default"
+          >
+            KHÔNG CÓ SỰ KIỆN
+          </div>
+          <div
+            v-for="event in selectedDateEvents"
+            :key="event.id"
+            class="group cursor-pointer rounded-xl border-2 border-border bg-background p-0 text-foreground shadow-[0_20px_42px_-32px_var(--color-primary)] transition-all duration-200 hover:-translate-y-1 hover:border-primary"
+            @click="emit('viewEvent', event)"
+          >
+            <!-- Header Event -->
+            <div class="flex items-center justify-between rounded-t-xl border-b-2 border-border bg-muted/40 px-4 py-3 transition-colors group-hover:bg-primary/5">
+              <div class="flex items-center gap-2">
+                <div class="h-2.5 w-2.5 rounded-full bg-primary"></div>
+                <span class="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest group-hover:text-primary transition-colors">ID: {{ event.id?.substring(0, 6) || 'SYS' }}</span>
+              </div>
+              <span class="text-[10px] font-mono font-bold text-primary uppercase tracking-widest">XEM CHI TIẾT</span>
+            </div>
+            
+            <div class="space-y-4 p-4">
               <!-- Tiêu đề -->
               <div>
-                <div class="flex items-center gap-2 mb-1">
-                  <div class="w-1.5 h-1.5 rounded-full bg-teal-500"></div>
-                  <span class="text-[10px] font-bold text-teal-500/80 uppercase tracking-widest">Tiêu đề</span>
-                </div>
-                <h4 class="font-semibold text-white text-sm leading-tight wrap-break-word">
+                <h4 class="font-mono font-bold text-foreground text-base leading-tight uppercase">
                   {{ event.title }}
                 </h4>
               </div>
 
               <!-- Thời gian -->
-              <div class="flex items-center gap-4">
-                <div class="flex flex-col">
-                  <span class="text-[10px] font-medium text-gray-500 uppercase">Thời gian</span>
-                  <div class="flex items-center gap-1.5 text-xs text-teal-400 font-medium mt-0.5">
-                    <i class="pi pi-clock text-[10px]"></i>
-                    {{ event.startTime.substring(0, 5) }} - {{ event.endTime.substring(0, 5) }}
-                  </div>
+              <div class="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+                <span class="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-wider">THỜI GIAN</span>
+                <div class="font-mono text-sm font-bold mt-1 text-primary">
+                  {{ event.startTime.substring(0, 5) }} &rarr; {{ event.endTime.substring(0, 5) }}
                 </div>
               </div>
 
               <!-- Mô tả -->
-              <div v-if="event.description">
-                <span class="text-[10px] font-medium text-gray-500 uppercase">Mô tả</span>
-                <p class="text-xs text-gray-300 mt-1 leading-relaxed line-clamp-3 bg-white/5 p-2 rounded-lg border border-white/5 italic">
+              <div v-if="event.description" class="border-t-2 border-dashed border-border pt-3">
+                <span class="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-wider">CHI TIẾT</span>
+                <p class="mt-2 rounded-lg border border-border bg-muted/30 p-3 text-xs font-mono leading-relaxed text-muted-foreground">
                   {{ event.description }}
                 </p>
               </div>
 
               <!-- Người tạo -->
-              <div class="pt-2 border-t border-white/5 flex items-center justify-between">
+              <div class="pt-3 border-t-2 border-border flex items-center justify-between">
                 <div class="flex flex-col">
-                  <span class="text-[10px] font-medium text-gray-500 uppercase">Người tạo</span>
-                  <div class="flex items-center gap-1.5 text-[11px] text-gray-400 mt-1">
-                    <div class="w-5 h-5 rounded-full bg-teal-600/20 flex items-center justify-center border border-teal-500/20">
-                      <i class="pi pi-user text-[10px] text-teal-500"></i>
-                    </div>
-                    <span class="truncate max-w-[120px]">{{ event.createdByDisplayName }}</span>
+                  <span class="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-wider">NGƯỜI TẠO</span>
+                  <div class="flex items-center gap-2 mt-1">
+                    <Avatar class="size-6 border border-border">
+                      <AvatarImage
+                        v-if="event.createdByAvatarUrl"
+                        :src="event.createdByAvatarUrl"
+                        :alt="getCreatorLabel(event)"
+                      />
+                      <AvatarFallback />
+                    </Avatar>
+                    <span class="font-mono text-xs font-bold uppercase truncate max-w-[150px]">{{ getCreatorLabel(event) }}</span>
                   </div>
-                </div>
-
-                <!-- Hành động (Hiện khi hover trên Desktop) -->
-                <div class="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300">
-                  <button
-                    v-if="canEdit(event)"
-                    @click.stop="emit('editEvent', event)"
-                    class="p-2 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-teal-500/20 text-gray-400 hover:text-teal-400 transition-colors"
-                    title="Chỉnh sửa"
-                  >
-                    <i class="pi pi-pencil text-xs"></i>
-                  </button>
-                  <button
-                    v-if="canDelete(event)"
-                    @click.stop="emit('deleteEvent', event)"
-                    class="p-2 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors shadow-inner"
-                    title="Xóa"
-                  >
-                    <i class="pi pi-trash text-xs"></i>
-                  </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </ScrollArea>
     </div>
   </div>
 </template>
 
 <style scoped>
-.overflow-y-auto {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
-}
-.overflow-y-auto::-webkit-scrollbar {
-  width: 4px;
-}
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
+/* Scoped styles can remain empty, relying on Tailwind */
 </style>

@@ -1,11 +1,9 @@
 import axiosClient from "@/lib/axiosClient";
+import type { User } from "@/types/User";
 
 export const getUserInfo = async () => {
   try {
-    const response = await axiosClient.get("/api/users/me");
-    console.log(response);
-
-    return response;
+    return await axiosClient.get<User>("/api/users/me");
   } catch (error) {
     console.error("Error fetching user info:", error);
     throw error;
@@ -13,19 +11,19 @@ export const getUserInfo = async () => {
 };
 
 export const getUserInfoByUsername = async (username: string) => {
-  const res = await axiosClient.get(`/api/users/${username}`);
+  const res = await axiosClient.get<User>(`/api/users/${username}`);
 
   return res.data;
 };
 
 export const userService = {
   async getMe() {
-    const res = await axiosClient.get("/api/users/me")
+    const res = await axiosClient.get<User>("/api/users/me")
     return res.data
   },
  
   async updateProfile(data: { displayName?: string; username?: string }) {
-    const res = await axiosClient.patch("/api/users/me", data)
+    const res = await axiosClient.patch<User>("/api/users/me", data)
     return res.data
   },
  
@@ -40,8 +38,10 @@ export const userService = {
     return res.data
   },
  
-  async updateAvatar(avatarUrl: string, avatarId: string) {
-    const res = await axiosClient.patch("/api/users/me/avatar", { avatarUrl, avatarId })
-    return res.data
-  },
+  async uploadAvatar(file: File) {
+  const formData = new FormData()
+  formData.append("file", file)
+  const res = await axiosClient.post<User>("/api/users/me/avatar/upload", formData)
+  return res.data
+},
 }

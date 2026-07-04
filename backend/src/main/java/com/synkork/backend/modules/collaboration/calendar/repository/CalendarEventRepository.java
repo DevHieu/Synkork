@@ -1,0 +1,23 @@
+package com.synkork.backend.modules.collaboration.calendar.repository;
+
+import com.synkork.backend.modules.collaboration.calendar.entity.CalendarEventEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
+
+@Repository
+public interface CalendarEventRepository extends JpaRepository<CalendarEventEntity, UUID> {
+
+    List<CalendarEventEntity> findBySpaceId(UUID spaceId);
+
+    List<CalendarEventEntity> findBySpaceIdAndEventDateBetween(UUID spaceId, LocalDate start, LocalDate end);
+
+    List<CalendarEventEntity> findBySpaceIdAndEventDateLessThanEqual(UUID spaceId, LocalDate endDate);
+
+    List<CalendarEventEntity> findBySpaceIdAndEventDate(UUID spaceId, LocalDate date);
+
+    void deleteBySpaceId(UUID spaceId);
+}

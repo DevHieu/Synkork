@@ -7,7 +7,7 @@ import { socketService } from "@/services/websocket/socketService";
 import { useUserStore } from "./userStore";
 import { useRoomMemberStore } from "./roomMemberStore";
 import { storeToRefs } from "pinia";
-import type { Space } from "@/types/Space";
+import type { Space, SpaceType } from "@/types/Space";
 import { toast } from "vue-sonner";
 import { watch } from "vue";
 
@@ -22,6 +22,7 @@ export const useSpaceStore = defineStore("spaces", {
 
     currentVoiceSpace: null as Space | null,
     loading: true,
+    _joiningDMSpaceId: null as string | null,
   }),
 
   actions: {
@@ -153,8 +154,7 @@ export const useSpaceStore = defineStore("spaces", {
         if (!this.currentSpace || this.currentSpace.id === spaceId) {
           this.currentSpace = this.chatSpaces[0] ?? null;
           router.push(
-            `/rooms/chat/${router.currentRoute.value.params.roomId}/${
-              this.chatSpaces[0]?.id || ""
+            `/rooms/chat/${router.currentRoute.value.params.roomId}/${this.chatSpaces[0]?.id || ""
             }`,
           );
         }
@@ -165,25 +165,36 @@ export const useSpaceStore = defineStore("spaces", {
       if (space === null) {
         this.currentSpace = this.chatSpaces[0] ?? null;
         router.push(
-          `/rooms/chat/${router.currentRoute.value.params.roomId}/${
-            this.chatSpaces[0]?.id || ""
+          `/rooms/chat/${router.currentRoute.value.params.roomId}/${this.chatSpaces[0]?.id || ""
           }`,
         );
         return;
       }
 
       this.currentSpace = space;
+      router.push(`/rooms/${spaceType.toLowerCase()}/${router.currentRoute.value.params.roomId}/${spaceId}`);
     },
 
-    async joinDMSpace(spaceId: string) {
+    async joinDMSpace(spaceId: string, path: string = "/me") {
+      if (this._joiningDMSpaceId === spaceId) return;
       try {
+        this._joiningDMSpaceId = spaceId;
         this.loading = true;
         useRoomMemberStore().clearMembers();
-        this.currentSpace = await getSpaceById(spaceId);
+
+        const space = await getSpaceById(spaceId);
+
+        // Không hiểu tại sao hoạt động. Thứ tự 3 dòng này để im như này
+        this.currentSpace = null;
+        await router.push(`${path}/${spaceId}`);
+        this.currentSpace = space;
       } catch (error) {
+        console.log(error);
+
         toast.error("Không thể tham gia phòng chat này.");
       } finally {
         this.loading = false;
+        this._joiningDMSpaceId = null;
       }
     },
 
@@ -225,8 +236,7 @@ export const useSpaceStore = defineStore("spaces", {
         this.changeSpaceById(spaceId, "CHAT");
 
         router.push(
-          `/rooms/chat/${router.currentRoute.value.params.roomId}/${
-            this.chatSpaces[0]?.id || ""
+          `/rooms/chat/${router.currentRoute.value.params.roomId}/${this.chatSpaces[0]?.id || ""
           }`,
         );
       }
@@ -282,14 +292,33 @@ export const useSpaceStore = defineStore("spaces", {
         state.taskSpaces.some((s) => s.id === spaceId)
       );
     },
+
+    getSpaceTypeSize: (state) => (type: SpaceType) => {
+      switch (type) {
+        case "CHAT":
+          return state.chatSpaces.length;
+        case "VOICE":
+          return state.voiceSpaces.length;
+        case "NOTE":
+          return state.noteSpaces.length;
+        case "CALENDAR":
+          return state.calendarSpaces.length;
+        case "TASK":
+          return state.taskSpaces.length;
+        default:
+          return 0;
+      }
+    },
+
+    isPersonalSpace: (state) => {
+      return state.currentSpace?.roomType === "PERSONAL";
+    }
   },
 });
 
 function checkPermission(space: Space | null) {
   const { user } = storeToRefs(useUserStore());
   const { currentAuthority } = storeToRefs(useRoomMemberStore());
-
-  console.log("user: " + currentAuthority.value);
 
   if (!user.value || !space) return false;
 

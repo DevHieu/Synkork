@@ -1,8 +1,7 @@
 import { ref } from "vue";
+import type { CalendarEventAttachment } from "@/types/CalendarEvent";
 
-export interface Attachment {
-  name: string;
-  size: number;
+export interface Attachment extends CalendarEventAttachment {
   file?: File;
 }
 

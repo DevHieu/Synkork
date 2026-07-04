@@ -1,9 +1,12 @@
 package com.synkork.backend.modules.user;
 
-import com.synkork.backend.modules.statistics.StatisticsEntity;
-import com.synkork.backend.modules.statistics.dtos.CountByDate;
+//import com.synkork.backend.modules.statistics.StatisticsEntity;
+//import com.synkork.backend.modules.statistics.dtos.CountByDate;
+import com.synkork.backend.modules.user.enums.PlanEnum;
 import com.synkork.backend.modules.user.enums.RoleEnum;
+import com.synkork.backend.modules.user.enums.UserStatusEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -20,6 +23,7 @@ import java.util.UUID;
 
 @Repository
 public interface UserRepository extends JpaRepository<UserEntity, UUID> {
+    // Repo này được dùng để lấy user thật khi đồng bộ dữ liệu chat và calendar.
     Optional<UserEntity> findByUsername(String username); // Optional to handle user not found case
 
     Optional<UserEntity> findByEmail(String email);
@@ -33,4 +37,23 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
     long countByRole(RoleEnum role);
 
     long countByCreatedAtBetweenAndRole(LocalDateTime createdAtAfter, LocalDateTime createdAtBefore, RoleEnum role);
+
+    long countByRoleAndStatus(RoleEnum role, UserStatusEnum status);
+
+    long countByRoleAndCurrentPlan(RoleEnum role, PlanEnum currentPlan);
+
+    List<UserEntity> findByPlanExpiresAtBetween(LocalDateTime now, LocalDateTime localDateTime);
+
+    @Modifying
+    @Query("UPDATE UserEntity u SET u.currentPlan = :plan, u.planExpiresAt = null WHERE u.planExpiresAt < :now")
+    void resetExpiredUsersToPlan(@Param("plan") PlanEnum plan, @Param("now") LocalDateTime now);
+
+    @Query("SELECT u.email FROM UserEntity u WHERE u.planExpiresAt < :now")
+    List<String> findEmailByPlanExpiresAtAfter(LocalDateTime now);
+
+    @Query("SELECT COUNT(u) FROM UserEntity u WHERE u.currentPlan != :freePlan AND (u.planExpiresAt IS NULL OR u.planExpiresAt > :now)")
+    long countActiveSubscriptions(@Param("freePlan") PlanEnum freePlan, @Param("now") LocalDateTime now);
+
+    List<UserEntity> findTop10ByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(String username, String email);
 }
+

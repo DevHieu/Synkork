@@ -10,6 +10,11 @@ export const getAllColumns = async (spaceId: string) => {
     return res;
 }
 
+export const getAllColumnsWithoutCard = async (spaceId: string) => {
+    const res = await axiosClient.get(`/api/space/${spaceId}/column?includeCards=false`);
+    return res;
+}
+
 export const createColumn = async (spaceId: string, columnName: string) => {
     const res = await axiosClient.post(`/api/space/${spaceId}/column`, {
         name: columnName
@@ -29,9 +34,28 @@ export const deleteColumn = async (spaceId: string, columnId: string) => {
     return res;
 }
 
-export const moveColumn = async (spaceId: string, columnId: string,  newPosition: number ) => {
+export const moveColumn = async (spaceId: string, columnId: string, newPosition: number) => {
     const res = await axiosClient.patch(`/api/space/${spaceId}/column/${columnId}/move`, { newPosition });
     return res;
 }
 
-        
+export const archiveColumn = (spaceId: string, columnId: string) => {
+    const res = axiosClient.patch(`/api/space/${spaceId}/column/${columnId}/archive`);
+    return res;
+}
+
+export const unarchiveColumn = (spaceId: string, columnId: string) => {
+    const res = axiosClient.patch(`/api/space/${spaceId}/column/${columnId}/unarchive`);
+    return res;
+}
+
+export const getArchivedColumns = (spaceId: string) => {
+    const res = axiosClient.get(`/api/space/${spaceId}/column/archived`);
+    return res;
+}
+
+export const deleteAllArchivedColumns = (spaceId: string) => {
+    const res = axiosClient.delete(`/api/space/${spaceId}/column/archived/all`);
+    return res;
+}
+

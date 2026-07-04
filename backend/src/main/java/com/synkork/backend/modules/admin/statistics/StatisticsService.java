@@ -1,18 +1,33 @@
 package com.synkork.backend.modules.admin.statistics;
 
 import com.synkork.backend.config.WebSocketEventListener;
+import com.synkork.backend.modules.admin.statistics.dtos.UserStatsResponse;
 import com.synkork.backend.modules.message.MessageRepository;
+import com.synkork.backend.modules.payment.InvoiceRepository;
+import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
+import com.synkork.backend.modules.report.ReportRepository;
+import com.synkork.backend.modules.report.enums.ReportStatusEnums;
+import com.synkork.backend.modules.report.enums.ReportTypeEnums;
 import com.synkork.backend.modules.room.RoomRepository;
 import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import com.synkork.backend.modules.admin.statistics.dtos.OverviewChartResponse;
 import com.synkork.backend.modules.admin.statistics.dtos.OverviewStatsResponse;
+import com.synkork.backend.modules.admin.statistics.dtos.ReportChartResponse;
+import com.synkork.backend.modules.admin.statistics.dtos.ReportStatsResponse;
+import com.synkork.backend.modules.admin.statistics.dtos.SubscriptionDashboardResponse;
 import com.synkork.backend.modules.admin.statistics.enums.PeriodEnum;
-import com.synkork.backend.modules.subscription.UserSubscriptionRepository;
 import com.synkork.backend.modules.user.UserRepository;
+import com.synkork.backend.modules.user.enums.PlanEnum;
 import com.synkork.backend.modules.user.enums.RoleEnum;
+import com.synkork.backend.modules.admin.subscriptions.dtos.AdminInvoiceResponse;
+import com.synkork.backend.modules.user.enums.UserStatusEnum;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,7 +48,10 @@ public class StatisticsService {
     private StatisticsRepository statisticsRepository;
 
     @Autowired
-    private UserSubscriptionRepository userSubscriptionRepository;
+    private InvoiceRepository invoiceRepository;
+
+    @Autowired
+    private ReportRepository reportRepository;
 
     private LocalDateTime getStart(PeriodEnum period) {
 
@@ -57,12 +75,12 @@ public class StatisticsService {
 
         long newUsers = userRepository.countByCreatedAtBetweenAndRole(start, end, RoleEnum.USER);
         long newRooms = roomRepository.countByCreatedAtBetweenAndType(start, end, RoomTypeEnum.GROUP);
-        long newSubscriptions = userSubscriptionRepository.countByCreatedAtBetween(start, end);
+        long newSubscriptions = invoiceRepository.countByStatusAndPaidAtBetween(InvoiceStatusEnum.PAID, start, end);
         long userOnlines = WebSocketEventListener.onlineUserCounter;
 
         long totalUser = userRepository.countByRole(RoleEnum.USER);
         long totalRoom = roomRepository.countByType(RoomTypeEnum.GROUP);
-        long totalSubscriptions = userSubscriptionRepository.count();
+        long totalSubscriptions = invoiceRepository.countByStatus(InvoiceStatusEnum.PAID);
 
         StatisticsEntity statistics = StatisticsEntity.builder()
                 .createdAt(start)
@@ -99,7 +117,7 @@ public class StatisticsService {
 
         long totalUser = userRepository.countByRole(RoleEnum.USER);
         long totalRoom = roomRepository.countByType(RoomTypeEnum.GROUP);
-        long totalSubscriptions = userSubscriptionRepository.count();
+        long totalSubscriptions = invoiceRepository.countByStatus(InvoiceStatusEnum.PAID);
         long userOnlines = WebSocketEventListener.onlineUsers.size();
 
         StatisticsEntity yesterdayStats = statisticsRepository
@@ -146,4 +164,78 @@ public class StatisticsService {
                 subscriptionMonthGrowth
         );
     }
+
+    public UserStatsResponse getUserStatsData() {
+        LocalDate today = LocalDate.now();
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime startOfTomorrow = today.plusDays(1).atStartOfDay();
+        LocalDateTime startOfMonth = today.withDayOfMonth(1).atStartOfDay();
+
+        RoleEnum userRole = RoleEnum.USER;
+
+        return new UserStatsResponse(
+                userRepository.countByRole(userRole),
+                userRepository.countByCreatedAtBetweenAndRole(startOfDay, startOfTomorrow, userRole),
+                userRepository.countByCreatedAtBetweenAndRole(startOfMonth, startOfTomorrow, userRole),
+                userRepository.countByRoleAndStatus(userRole, UserStatusEnum.ACTIVE),
+                userRepository.countByRoleAndStatus(userRole, UserStatusEnum.INACTIVE),
+                userRepository.countByRoleAndStatus(userRole, UserStatusEnum.BANNED),
+                userRepository.countByRoleAndCurrentPlan(userRole, PlanEnum.FREE),
+                userRepository.countByRoleAndCurrentPlan(userRole, PlanEnum.TEAM),
+                userRepository.countByRoleAndCurrentPlan(userRole, PlanEnum.BUSINESS)
+        );
+    }
+
+    public SubscriptionDashboardResponse getSubscriptionDashboardData() {
+        LocalDateTime startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+
+        BigDecimal totalRevenue = invoiceRepository.sumAmountByStatus(InvoiceStatusEnum.PAID);
+        BigDecimal revenueThisMonth = invoiceRepository.sumAmountByStatusAndPaidAtAfter(InvoiceStatusEnum.PAID, startOfMonth);
+
+        long activeSubscriptions = userRepository.countActiveSubscriptions(PlanEnum.FREE, LocalDateTime.now());
+        long pendingInvoices = invoiceRepository.countByStatus(InvoiceStatusEnum.PENDING);
+        long paidInvoices = invoiceRepository.countByStatus(InvoiceStatusEnum.PAID);
+        long failedInvoices = invoiceRepository.countByStatus(InvoiceStatusEnum.FAILED);
+
+        Pageable pageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt"));
+        List<AdminInvoiceResponse> recentTransactions = invoiceRepository.findAll(pageable)
+                .stream()
+                .map(AdminInvoiceResponse::from)
+                .toList();
+
+        return SubscriptionDashboardResponse.builder()
+                .totalRevenue(totalRevenue)
+                .revenueThisMonth(revenueThisMonth)
+                .activeSubscriptions(activeSubscriptions)
+                .pendingInvoices(pendingInvoices)
+                .paidInvoices(paidInvoices)
+                .failedInvoices(failedInvoices)
+                .recentTransactions(recentTransactions)
+                .build();
+    }
+
+    public ReportStatsResponse getReportStatsData() {
+        long total      = reportRepository.count();
+        long pending    = reportRepository.countByStatus(ReportStatusEnums.PENDING);
+        long resolved   = reportRepository.countByStatus(ReportStatusEnums.RESOLVED);
+        long dismissed   = reportRepository.countByStatus(ReportStatusEnums.DISMISSED);
+        long userReports = reportRepository.countByReportType(ReportTypeEnums.USER);
+        long roomReports = reportRepository.countByReportType(ReportTypeEnums.ROOM);
+ 
+        return new ReportStatsResponse(total, pending, resolved, dismissed, userReports, roomReports);
+    }
+ 
+    public List<ReportChartResponse> getReportChart(PeriodEnum period) {
+        LocalDateTime from = getStart(period);
+ 
+        return reportRepository.findDailyReportCounts(from)
+                .stream()
+                .map(row -> new ReportChartResponse(
+                        (LocalDate) row[0],
+                        ((Number) row[1]).longValue(),
+                        ((Number) row[2]).longValue()
+                ))
+                .toList();
+    }
 }
+

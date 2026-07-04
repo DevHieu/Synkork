@@ -1,0 +1,112 @@
+#version: '3.8'
+#
+#services:
+##   backend-service
+#  synkork:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    container_name: synkork-container
+#    restart: always
+#    ports:
+#      - "8080:8080"
+#    depends_on:
+#      - mysql
+#      - tempo
+#      - loki
+#      - prometheus
+#    environment:
+#      DB_URL: jdbc:mysql://mysql:3306/synkork?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+#      DB_USERNAME: ${DB_USERNAME}
+#      DB_PASSWORD: ${DB_PASSWORD}
+#      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+#      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+#      GEMINI_API_KEY: ${GEMINI_API_KEY}
+#      MOMO_ACCESS_KEY: ${MOMO_ACCESS_KEY}
+#      MOMO_SECRET_KEY: ${MOMO_SECRET_KEY}
+#      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+#      SERVER_URL: ${SERVER_URL:-http://localhost:8080}
+#      GMAIL_USERNAME: ${GMAIL_USERNAME}
+#      GMAIL_PASSWORD: ${GMAIL_PASSWORD}
+#      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+#      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+#      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+#      ZEGO_APPID: ${ZEGO_APPID}
+#      ZEGO_SERVER_SECRET: ${ZEGO_SERVER_SECRET}
+#    networks:
+#      - app_network
+#
+#  mysql:
+#    image: mysql:8.0
+#    container_name: mysql
+#    restart: unless-stopped
+#    environment:
+#      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+#      MYSQL_DATABASE: ${DB_NAME}
+#      MYSQL_USER: ${DB_USERNAME}
+#      MYSQL_PASSWORD: ${DB_PASSWORD}
+#    ports:
+#      - "3307:3306"
+#    volumes:
+#      - mysql-data:/var/lib/mysql
+#    networks:
+#      - app_network
+#
+#  # Prometheus Service
+#  prometheus:
+#    image: prom/prometheus
+#    container_name: prometheus
+#    restart: unless-stopped
+#    ports:
+#      - "9090:9090"
+#    volumes:
+#      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+#    networks:
+#      - app_network
+#
+#  ## Tempo Service
+#  tempo:
+#    image: grafana/tempo
+#    container_name: tempo
+#    command: [ "-config.file=/etc/tempo.yaml" ]
+#    volumes:
+#      - ./docker/tempo/tempo.yml:/etc/tempo.yaml:ro
+#      - ./docker/tempo/tempo-data:/tmp/tempo
+#    ports:
+#      - "3200:3200" # Tempo
+#      - "9411:9411" # zipkin
+#    networks:
+#      - app_network
+#
+#  #loki Service
+#  loki:
+#    image: grafana/loki:main
+#    container_name: loki
+#    command: [ "-config.file=/etc/loki/local-config.yaml" ]
+#    ports:
+#      - "3100:3100"
+#    networks:
+#      - app_network
+#
+#  # Grafana Service
+#  grafana:
+#    image: grafana/grafana
+#    container_name: grafana
+#    restart: unless-stopped
+#    ports:
+#      - "3000:3000"
+#    volumes:
+#      - ./docker/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+#      - ./docker/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+#    environment:
+#      - GF_SECURITY_ADMIN_USER=admin
+#      - GF_SECURITY_ADMIN_PASSWORD=123
+#    networks:
+#      - app_network
+#
+#networks:
+#  app_network:
+#    driver: bridge
+#
+#volumes:
+#  mysql-data:

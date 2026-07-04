@@ -1,12 +1,12 @@
 import { Client, type StompSubscription } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import { getFreshToken } from "@/utils/auth";
-import VueCookies from "vue-cookies";
+import { getCookie, removeCookie } from "@/lib/cookies";
 
-const cookies = VueCookies as any;
 let stompClient: Client | null = null;
 const subscriptions = new Map<string, StompSubscription>();
 let connectingPromise: Promise<void> | null = null;
+// Giữ lại các kênh cần sống lâu hơn vòng đời của từng space.
 const persistentDestinations = new Set<string>();
 
 const createStompClient = (token: string, onConnected?: () => void): Client => {
@@ -30,7 +30,7 @@ const createStompClient = (token: string, onConnected?: () => void): Client => {
         (event.reason ?? "").toLowerCase().includes("unauthorized");
 
       if (isUnauthorized) {
-        cookies.remove("accessToken");
+        removeCookie("accessToken");
         try {
           const freshToken = await getFreshToken();
 
@@ -41,9 +41,27 @@ const createStompClient = (token: string, onConnected?: () => void): Client => {
         }
       }
     },
-    onStompError: (frame) => {
-      console.error("[STOMP Error]", frame.headers["message"]);
-      return;
+    onStompError: async (frame) => {
+      const message = frame.headers["message"] ?? "";
+
+      console.error("[STOMP Error]", message);
+
+      const isAuthError =
+        message.includes("JWT validation failed") ||
+        message.toLowerCase().includes("unauthorized");
+
+      if (isAuthError) {
+        removeCookie("accessToken");
+
+        try {
+          const freshToken = await getFreshToken();
+
+          stompClient = createStompClient(freshToken);
+          stompClient.activate();
+        } catch {
+          window.location.href = "/auth";
+        }
+      }
     },
   });
 
@@ -58,7 +76,7 @@ export const socketService = {
     if (connectingPromise) return connectingPromise;
 
     connectingPromise = new Promise<void>(async (resolve, reject) => {
-      let token = cookies.get("accessToken");
+      let token = getCookie("accessToken");
       if (!token) {
         try {
           token = await getFreshToken();
@@ -93,9 +111,6 @@ export const socketService = {
     options?: { persistent?: boolean },
   ) {
     if (!this.isConnected()) {
-      console.error(
-        `[Socket] Cannot subscribe to ${destination}. Not connected.`,
-      );
       return null;
     }
 
@@ -103,6 +118,7 @@ export const socketService = {
       subscriptions.get(destination)!.unsubscribe();
       subscriptions.delete(destination);
     }
+
 
     const sub = stompClient!.subscribe(destination, (msg) => {
       try {
@@ -124,12 +140,9 @@ export const socketService = {
 
   // unsubscribeAll bỏ qua persistent
   unsubscribeAll() {
-    console.log("changing");
 
     subscriptions.forEach((sub, destination) => {
       if (!persistentDestinations.has(destination)) {
-        console.log("subscribe: ", sub);
-
         sub.unsubscribe();
         subscriptions.delete(destination);
       }

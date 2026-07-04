@@ -16,69 +16,100 @@
 
             <div class="space-y-3">
               <!-- Title -->
-              <input
-                v-model="form.title"
-                placeholder="Tiêu đề..."
-                class="w-full bg-transparent border-0 border-b border-border pb-2 text-base font-medium placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
-              />
+              <input v-model="form.title" placeholder="Tiêu đề..."
+                class="w-full bg-transparent border-0 border-b border-border pb-2 text-base font-medium placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors" />
 
               <!-- Content -->
-              <textarea
-                v-model="form.note"
-                placeholder="Nội dung ghi chú..."
-                rows="6"
-                class="w-full bg-transparent border rounded-lg p-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none transition-colors"
-              />
+              <textarea v-model="form.note" placeholder="Nội dung ghi chú..." rows="5"
+                class="w-full bg-transparent border rounded-lg p-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none transition-colors" />
 
               <!-- Toolbar -->
-              <div class="flex items-center justify-between border rounded-lg px-2 py-1.5 bg-muted/30">
-                <div class="flex items-center gap-0.5">
-                  <button type="button" class="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground" title="Định dạng văn bản">
-                    <ALargeSmall :size="16" />
-                  </button>
-                  <button type="button" class="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground" title="Màu sắc">
-                    <Palette :size="16" />
-                  </button>
-                  <button type="button" class="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground" title="Nhắc nhở">
-                    <BellPlus :size="16" />
-                  </button>
-                  <button type="button" class="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground" title="Cộng tác">
-                    <UserPlus :size="16" />
-                  </button>
-                  <button type="button" class="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground" title="Thêm ảnh">
-                    <ImagePlus :size="16" />
-                  </button>
-                  <button type="button" class="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground" title="Lưu trữ">
-                    <Archive :size="16" />
-                  </button>
-                  <button type="button" class="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground" title="Thêm tùy chọn">
-                    <MoreVertical :size="16" />
-                  </button>
-                </div>
-                <div class="flex items-center gap-0.5">
-                  <button type="button" class="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground" title="Hoàn tác">
-                    <Undo2 :size="16" />
-                  </button>
-                  <button type="button" class="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground" title="Làm lại">
-                    <Redo2 :size="16" />
-                  </button>
-                </div>
+              <div class="flex items-center border rounded-lg px-2 py-1.5 bg-muted/30 gap-0.5">
+                <!-- Palette -->
+                <button type="button"
+                  class="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                  title="Màu sắc">
+                  <Palette :size="16" />
+                </button>
+                <!-- Reminder toggle -->
+                <button type="button"
+                  @click="showReminder = !showReminder"
+                  :class="[
+                    'p-1.5 rounded transition-colors',
+                    showReminder || form.reminderAt
+                      ? 'bg-teal-100 text-teal-600 dark:bg-teal-900/40 dark:text-teal-400'
+                      : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                  ]"
+                  title="Nhắc nhở">
+                  <BellPlus :size="16" />
+                </button>
               </div>
+
+              <!-- ── REMINDER PANEL ── -->
+              <Transition name="reminder">
+                <div v-if="showReminder" class="border rounded-lg p-3 bg-muted/20 space-y-2.5">
+                  <p class="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                    <Bell :size="12" />
+                    Đặt nhắc nhở
+                  </p>
+
+                  <!-- Quick options -->
+                  <div class="flex flex-wrap gap-1.5">
+                    <button
+                      v-for="opt in QUICK_REMINDERS"
+                      :key="opt.label"
+                      type="button"
+                      @click="setQuickReminder(opt.minutes)"
+                      :class="[
+                        'px-2.5 py-1 text-xs rounded-md border transition-colors',
+                        isQuickSelected(opt.minutes)
+                          ? 'bg-teal-600 text-white border-teal-600'
+                          : 'bg-background hover:bg-muted border-border text-foreground'
+                      ]"
+                    >
+                      {{ opt.label }}
+                    </button>
+                  </div>
+
+                  <!-- Custom datetime -->
+                  <div class="flex items-center gap-2">
+                    <input
+                      v-model="customDatetime"
+                      type="datetime-local"
+                      @change="onCustomDatetimeChange"
+                      :min="minDatetime"
+                      class="flex-1 text-xs rounded-md border px-2 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                    <button
+                      v-if="form.reminderAt"
+                      type="button"
+                      @click="clearReminder"
+                      class="p-1.5 rounded-md border hover:bg-destructive/10 text-destructive transition-colors"
+                      title="Xóa nhắc nhở"
+                    >
+                      <X :size="14" />
+                    </button>
+                  </div>
+
+                  <!-- Preview -->
+                  <p v-if="form.reminderAt" class="text-xs text-teal-600 dark:text-teal-400 flex items-center gap-1">
+                    <Bell :size="11" />
+                    Sẽ nhắc lúc {{ formatReminder(form.reminderAt) }}
+                  </p>
+                </div>
+              </Transition>
 
               <!-- Color picker -->
               <div class="flex items-center gap-2">
                 <span class="text-xs text-muted-foreground">Màu:</span>
                 <div class="flex gap-1.5">
-                  <button
-                    v-for="color in COLORS" :key="color"
+                  <button v-for="color in COLORS" :key="color"
                     class="w-5 h-5 rounded-full border-2 transition-transform hover:scale-110"
                     :style="{ backgroundColor: color, borderColor: form.color === color ? color : 'transparent' }"
-                    @click="form.color = form.color === color ? '' : color"
-                  />
+                    @click="form.color = form.color === color ? '' : color" />
                   <button
                     class="w-5 h-5 rounded-full border-2 border-dashed border-border hover:border-muted-foreground transition-colors flex items-center justify-center"
-                    @click="form.color = ''"
-                  >
+                    @click="form.color = ''">
                     <X :size="10" class="text-muted-foreground" />
                   </button>
                 </div>
@@ -92,14 +123,12 @@
                 <Pin :size="14" /> Ghim
               </label>
               <div class="flex gap-2">
-                <button @click="handleClose" class="px-4 py-2 text-sm rounded-lg border hover:bg-muted transition-colors">
+                <button @click="handleClose"
+                  class="px-4 py-2 text-sm rounded-lg border hover:bg-muted transition-colors">
                   Hủy
                 </button>
-                <button
-                  @click="handleSubmit"
-                  :disabled="!form.title.trim() || submitting"
-                  class="px-4 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
+                <button @click="handleSubmit" :disabled="!form.title.trim() || submitting"
+                  class="px-4 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                   {{ submitting ? 'Đang lưu...' : isEdit ? 'Cập nhật' : 'Tạo mới' }}
                 </button>
               </div>
@@ -112,42 +141,136 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import {
-  X, Pin,
+  X, Pin, Bell,
   ALargeSmall, Palette, BellPlus, UserPlus,
   ImagePlus, Archive, MoreVertical, Undo2, Redo2
 } from 'lucide-vue-next'
 import type { Note, NoteRequest } from '@/types/NoteType'
+import type { SuggestedNoteDraft } from '@/types/CalendarSuggestion'
+import { useNoteStore } from '@/stores/noteStore'
 
 const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899']
 
-const props = defineProps<{ open: boolean; note?: Note | null }>()
-const emit = defineEmits<{
-  close: []
-  submit: [data: NoteRequest, id?: string]
-}>()
+const QUICK_REMINDERS = [
+  { label: '30 phút', minutes: 30 },
+  { label: '1 giờ',   minutes: 60 },
+  { label: '3 giờ',   minutes: 180 },
+  { label: 'Tối nay', minutes: -1 },   // special case – see setQuickReminder
+  { label: 'Ngày mai', minutes: 1440 },
+]
 
-const isEdit = ref(false)
-const submitting = ref(false)
-const form = ref<NoteRequest>({ title: '', note: '', color: '', pinned: false })
+const props = defineProps<{ spaceId: string; open: boolean; note?: Note | null; draft?: SuggestedNoteDraft | null }>()
+const emit = defineEmits<{ close: [] }>()
 
-watch(() => props.open, (val) => {
-  if (val) {
-    if (props.note) {
-      isEdit.value = true
-      form.value = {
-        title: props.note.title,
-        note: props.note.note || '',
-        color: props.note.color || '',
-        pinned: props.note.pinned,
-      }
-    } else {
-      isEdit.value = false
-      form.value = { title: '', note: '', color: '', pinned: false }
-    }
-  }
+const store = useNoteStore()
+
+const isEdit      = ref(false)
+const submitting  = ref(false)
+const showReminder = ref(false)
+const customDatetime = ref('')
+
+const form = ref<NoteRequest>({
+  title: '',
+  note: '',
+  color: '',
+  pinned: false,
+  reminderAt: null,
 })
+
+// ── helpers ──────────────────────────────────────────────
+
+const minDatetime = computed(() => new Date().toISOString().slice(0, 16))
+
+function setQuickReminder(minutes: number) {
+  let d: Date
+  if (minutes === -1) {
+    // "Tối nay" = today at 20:00
+    d = new Date()
+    d.setHours(20, 0, 0, 0)
+    if (d <= new Date()) d.setDate(d.getDate() + 1)
+  } else {
+    d = new Date(Date.now() + minutes * 60 * 1000)
+  }
+  form.value.reminderAt = d.toISOString()
+  customDatetime.value  = d.toISOString().slice(0, 16)
+}
+
+function isQuickSelected(minutes: number): boolean {
+  if (!form.value.reminderAt) return false
+  const actual = new Date(form.value.reminderAt).getTime()
+  if (minutes === -1) {
+    const tonight = new Date()
+    tonight.setHours(20, 0, 0, 0)
+    if (tonight <= new Date()) tonight.setDate(tonight.getDate() + 1)
+    return Math.abs(actual - tonight.getTime()) < 60_000
+  }
+  const expected = Date.now() + minutes * 60 * 1000
+  return Math.abs(actual - expected) < 5_000
+}
+
+function onCustomDatetimeChange() {
+  if (customDatetime.value) {
+    form.value.reminderAt = new Date(customDatetime.value).toISOString()
+  }
+}
+
+function clearReminder() {
+  form.value.reminderAt = null
+  customDatetime.value  = ''
+}
+
+function formatReminder(iso: string) {
+  return new Date(iso).toLocaleString('vi-VN', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  })
+}
+
+// ── sync form from props ──────────────────────────────────
+
+function syncFormFromProps() {
+  if (!props.open) return
+
+  showReminder.value = false
+
+  if (props.note) {
+    isEdit.value = true
+    const reminder = props.note.reminderAt ? new Date(props.note.reminderAt) : null
+    form.value = {
+      title:      props.note.title,
+      note:       props.note.note || '',
+      color:      props.note.color || '',
+      pinned:     props.note.pinned,
+      reminderAt: reminder ? reminder.toISOString() : null,
+    }
+    customDatetime.value = reminder ? reminder.toISOString().slice(0, 16) : ''
+    if (reminder) showReminder.value = true
+    return
+  }
+
+  if (props.draft) {
+    isEdit.value = false
+    form.value = {
+      title:      props.draft.title,
+      note:       props.draft.note || '',
+      color:      props.draft.color || '',
+      pinned:     props.draft.pinned || false,
+      reminderAt: null,
+    }
+    customDatetime.value = ''
+    return
+  }
+
+  isEdit.value = false
+  form.value   = { title: '', note: '', color: '', pinned: false, reminderAt: null }
+  customDatetime.value = ''
+}
+
+watch(() => [props.open, props.note, props.draft], syncFormFromProps, { immediate: true })
+
+// ── actions ───────────────────────────────────────────────
 
 function handleClose() { emit('close') }
 
@@ -155,7 +278,21 @@ async function handleSubmit() {
   if (!form.value.title.trim()) return
   submitting.value = true
   try {
-    emit('submit', { ...form.value }, props.note?.id)
+    const data: NoteRequest = {
+      title:      form.value.title.trim(),
+      note:       form.value.note?.trim() ?? '',
+      color:      form.value.color || '',
+      pinned:     form.value.pinned ?? false,
+      reminderAt: form.value.reminderAt ?? null,
+    }
+
+    if (props.note?.id) {
+      await store.updateNote(props.spaceId, props.note.id, data)
+    } else {
+      await store.createNote(props.spaceId, data)
+    }
+
+    emit('close')
   } finally {
     submitting.value = false
   }
@@ -163,6 +300,25 @@ async function handleSubmit() {
 </script>
 
 <style scoped>
-.dialog-enter-active, .dialog-leave-active { transition: opacity 0.2s ease; }
-.dialog-enter-from, .dialog-leave-to { opacity: 0; }
+.dialog-enter-active,
+.dialog-leave-active {
+  transition: opacity 0.2s ease;
+}
+.dialog-enter-from,
+.dialog-leave-to {
+  opacity: 0;
+}
+
+.reminder-enter-active,
+.reminder-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease, max-height 0.2s ease;
+  max-height: 200px;
+  overflow: hidden;
+}
+.reminder-enter-from,
+.reminder-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+  max-height: 0;
+}
 </style>

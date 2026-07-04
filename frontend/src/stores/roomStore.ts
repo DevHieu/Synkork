@@ -22,7 +22,7 @@ export const useRoomsStore = defineStore("rooms", {
       this.loading = true;
       try {
         this.rooms = await getUserRooms();
-        console.log(this.rooms);
+        console.trace(this.rooms);
       } finally {
         this.loading = false;
       }
@@ -38,10 +38,11 @@ export const useRoomsStore = defineStore("rooms", {
     },
 
     // Nhận spaceId để check xem khi đổi room có cần redirect đến space nào không
-    async changeRoom(room: Room, spaceId?: string) {
+    async changeRoom(room: Room, spaceId?: string, spaceType?: string) {
       this.currentRoom = room;
       socketService.unsubscribeAll(); // Hủy tất cả subscription cũ khi đổi room để tránh nhận dữ liệu của phòng trước đó vào
 
+      // Cần nối lại socket của room mới trước khi điều hướng sang space bên trong.
       this.connectRoomSocket(room.id);
 
       const spaceStore = useSpaceStore();
@@ -59,9 +60,11 @@ export const useRoomsStore = defineStore("rooms", {
         await spaceStore.changeSpace(0, "CHAT");
         router.push(`/rooms/chat/${room.id}/${spaceStore.currentSpace?.id}`);
       } else {
-        const spaceType = router.currentRoute.value.meta.spaceType as string; // Leeys type của space trên URL
+        // Cho phép caller chỉ định rõ loại space để điều hướng sang đúng màn hình.
+        const targetSpaceType =
+          spaceType ?? (router.currentRoute.value.meta.spaceType as string);
 
-        await spaceStore.changeSpaceById(spaceId, spaceType);
+        await spaceStore.changeSpaceById(spaceId, targetSpaceType);
       }
     },
 
@@ -70,22 +73,16 @@ export const useRoomsStore = defineStore("rooms", {
       ownerId: string;
       imageFile?: File;
     }) {
-      try {
-        const userStore = useUserStore();
-        const { user } = storeToRefs(userStore);
+      const userStore = useUserStore();
+      const { user } = storeToRefs(userStore);
 
-        if (!user.value) return;
+      if (!user.value) return;
 
-        roomData.ownerId = (user.value as any).id;
+      roomData.ownerId = (user.value as any).id;
+      const newRoom = await createRoom(roomData);
 
-        const newRoom = await createRoom(roomData);
-
-        this.rooms.unshift(newRoom);
-
-        this.changeRoom(newRoom, undefined);
-      } catch (error) {
-        console.error("Error creating room:", error);
-      }
+      this.rooms.unshift(newRoom);
+      this.changeRoom(newRoom, undefined);
     },
 
     async joinRoom(inviteCode: string) {
@@ -104,5 +101,13 @@ export const useRoomsStore = defineStore("rooms", {
 
       this.rooms = this.rooms.filter((room) => room.id !== roomId);
     },
+  },
+
+  getters: {
+    isInRoom: (state) => !!state.currentRoom,
+    roomPlan: (state) => {
+      if (!state.currentRoom) return "FREE";
+      return state.currentRoom.currentPlan;
+    }
   },
 });

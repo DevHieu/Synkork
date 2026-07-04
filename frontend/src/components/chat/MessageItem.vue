@@ -6,15 +6,17 @@ import ReplyQuote from "./sub-components/ReplyQuote.vue";
 import FileAttachment from "./sub-components/FileAttachment.vue";
 import type { Message } from "@/types/Message";
 
-import { chatSocket } from "@/services/websocket/chatSocket";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useMessageStore } from "@/stores/messageStore";
 import { useUserStore } from "@/stores/userStore";
 import { storeToRefs } from "pinia";
 import DeleteConfirmDialog from "@/components/dialog/DeleteConfirmDialog.vue";
 import UserInfoPopover from "../dialog/UserInfoPopover.vue";
+import type { MessageEventSuggestion } from "@/types/CalendarSuggestion";
+import { chatService } from "@/services/chatService.ts";
 
 const props = defineProps<{
+  spaceId: string;
   message: Message;
   isGrouped: boolean;
   isDifferentDay: boolean;
@@ -54,7 +56,7 @@ const handleSaveEdit = () => {
     handleCancelEdit();
     return;
   }
-  chatSocket.updateMessage({ ...props.message, content: trimmed });
+  chatService.updateMessage(props.spaceId, props.message.id, { content: trimmed, replyToId: null }); // Null thì tại update chỉ có update text thôi
   isEditing.value = false;
 };
 
@@ -63,13 +65,14 @@ const handleCancelEdit = () => {
 };
 
 const handleDelete = () => {
-  chatSocket.deleteMessage(props.message);
+  chatService.deleteMessage(props.spaceId, props.message.id);
 };
 
 const handleReply = () => messageStore.setReply(props.message);
 
 const handlePin = () =>
   messageStore.changePinStatus(props.message.spaceId, props.message.id);
+const handleSuggestion = () => emit("openSuggestion", props.message.id);
 
 const jumpToReply = () => {
   if (!props.message.replyTo?.id) return;
@@ -78,6 +81,48 @@ const jumpToReply = () => {
 
 const deleteFailedMessage = () => {
   messageStore.dismissFailedMessage([props.message.id]);
+};
+
+const emit = defineEmits<{
+  (e: "openSuggestion", messageId: string): void;
+}>();
+
+const messageSuggestion = computed<MessageEventSuggestion | null>(() => {
+  return messageStore.suggestionsByMessageId[props.message.id] ?? null;
+});
+
+// Nếu message có suggestion hợp lệ thì coi như đang ở trạng thái hover.
+const shouldHighlightSuggestion = computed(
+  () => !!messageSuggestion.value && messageSuggestion.value.suggestionType !== "NONE",
+);
+
+// Đổi nhãn nút sang "Tạo nhanh" chung cho các loại nội dung.
+const suggestionLabel = computed(() => {
+  return "Tạo nhanh";
+});
+
+const isSuggestionForceVisible = ref(false);
+
+watch(
+  shouldHighlightSuggestion,
+  (isHighlighted) => {
+    isSuggestionForceVisible.value = isHighlighted;
+
+    if (!isHighlighted) return;
+
+    console.log("[Goi y UI] Tin nhan da duoc bat trang thai goi y:", {
+      messageId: props.message.id,
+      suggestionType: messageSuggestion.value?.suggestionType,
+      title: messageSuggestion.value?.title ?? null,
+    });
+  },
+  { immediate: true },
+);
+
+const disableSuggestionForceVisible = () => {
+  if (isSuggestionForceVisible.value) {
+    isSuggestionForceVisible.value = false;
+  }
 };
 
 // Tách nội dung tin nhắn thành các phần text và link để hiển thị đúng
@@ -102,7 +147,9 @@ const parsedContent = computed(() => {
   </div>
 
   <div :id="`message-${props.message.id}`"
-    class="relative group flex gap-3 p-2 mx-2 rounded-lg transition-colors hover:bg-secondary/20 mb-2">
+    class="relative group flex gap-3 p-2 mx-2 rounded-lg transition-colors hover:bg-secondary/20 mb-2"
+    :class="{ 'bg-secondary/50 ring-1 ring-primary/20': shouldHighlightSuggestion }"
+    @mouseenter="disableSuggestionForceVisible">
     <!-- Avatar -->
     <div class="w-10 shrink-0">
       <UserInfoPopover :username="props.message.sender?.username" v-if="!isGrouped || props.message.replyTo">
@@ -201,10 +248,14 @@ const parsedContent = computed(() => {
     </div>
 
     <!-- Actions -->
-    <div class="absolute right-4 -top-4 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+    <div class="absolute right-4 -top-4 transition-opacity z-10" :class="isSuggestionForceVisible
+      ? 'opacity-100'
+      : 'opacity-0 group-hover:opacity-100'
+      ">
       <MessageActions v-if="!isEditing && !props.message.deleted" :isSender="isFullAction"
-        :isPinned="props.message.pinned" @reply="handleReply" @edit="handleEdit" @delete="isDeleteOpen = true"
-        @pin="handlePin" />
+        :isPinned="props.message.pinned" :showSuggestion="shouldHighlightSuggestion" :suggestionLabel="suggestionLabel"
+        @reply="handleReply" @edit="handleEdit" @delete="isDeleteOpen = true" @pin="handlePin"
+        @suggest="handleSuggestion" />
     </div>
   </div>
 

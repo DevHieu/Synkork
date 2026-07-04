@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, computed } from "vue";
+import { ref, watch, onMounted, onUnmounted, computed, nextTick } from "vue";
 import { chatSocket } from "@/services/websocket/chatSocket";
 import { useRoute } from "vue-router";
 import { useSpaceStore } from "@/stores/spaceStore";
@@ -12,6 +12,8 @@ import MessageList from "@/components/chat/MessageList.vue";
 import MessageInput from "@/components/chat/MessageInput.vue";
 import MemberPanel from "@/components/chat/MemberPanel.vue";
 import PinPanel from "@/components/chat/PinPanel.vue";
+import SuggestionDialog from "../chat/SuggestionDialog.vue";
+import type { MessageEventSuggestion } from "@/types/CalendarSuggestion";
 
 const route = useRoute();
 const spaceId = ref(route.params.spaceId as string);
@@ -32,6 +34,9 @@ const dmFriend = computed(() => {
     ) ?? null
   );
 });
+
+const suggestionDialogOpen = ref(false);
+const suggestionData = ref<MessageEventSuggestion | null>(null);
 
 const memberOpen = ref(true);
 const toggleMembers = () => {
@@ -69,6 +74,22 @@ const joinSpace = async (id: string) => {
   messageStore.fetchPinnedList(id, null);
 };
 
+const handleOpenSuggestion = async (messageId: string) => {
+  const suggestion = messageStore.suggestionsByMessageId[messageId];
+  if (!suggestion) {
+    return;
+  }
+  if (suggestion.suggestionType === "NONE") return;
+
+
+  // Xóa các gợi ý đang hiển thị trên UI chat sau khi người dùng đã bấm nút xử lý gợi ý
+  messageStore.suggestionsByMessageId = {};
+
+  suggestionData.value = suggestion;
+  await nextTick();
+  suggestionDialogOpen.value = true;
+};
+
 watch(currentSpace, (space, prevSpace) => {
   if (!space?.id) return;
   if (space.id === prevSpace?.id) return; // không re-join nếu cùng space
@@ -78,59 +99,38 @@ watch(currentSpace, (space, prevSpace) => {
 
 <template>
   <div class="flex flex-col h-screen overflow-hidden">
-    <ChatHeader
-      :space-name="currentSpace?.name ?? ''"
-      :space-id="spaceId"
-      :member-open="memberOpen"
-      :pin-open="pinOpen"
-      :dm-friend="dmFriend"
-      :is-dm="isDM"
-      @toggle-members="toggleMembers"
-      @toggle-pins="togglePins"
-      @search="(q) => console.log('search:', q)"
-    />
+    <ChatHeader :space-name="currentSpace?.name ?? ''" :space-id="spaceId" :member-open="memberOpen" :pin-open="pinOpen"
+      :dm-friend="dmFriend" :is-dm="isDM" @toggle-members="toggleMembers" @toggle-pins="togglePins"
+      @search="(q) => console.log('search:', q)" />
 
     <div class="flex flex-1 min-w-0 overflow-hidden">
       <div class="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <MessageList
-          :key="currentSpace?.id"
-          :messages="messages"
-          :beforeHasMore="beforeHasMore"
-          :afterHasMore="afterHasMore"
-          :spaceId="currentSpace?.id ?? ''"
-          :space-name="currentSpace?.name ?? ''"
-          :is-dm="isDM"
-          :friendName="dmFriend?.name"
-        />
-        <MessageInput
-          :spaceId="currentSpace?.id ?? ''"
-          :replying-to="replyingTo"
-        />
+        <MessageList :key="currentSpace?.id" :messages="messages" :beforeHasMore="beforeHasMore"
+          :afterHasMore="afterHasMore" :spaceId="currentSpace?.id ?? ''" :space-name="currentSpace?.name ?? ''"
+          :is-dm="isDM" :friendName="dmFriend?.name" @open-suggestion="handleOpenSuggestion" />
+        <MessageInput :spaceId="currentSpace?.id ?? ''" :replying-to="replyingTo" />
       </div>
 
-      <div
-        class="flex-none border-l h-full overflow-hidden transition-all duration-300 ease-in-out"
-        :style="{
-          width: pinOpen ? '260px' : '0px',
-          opacity: pinOpen ? 1 : 0,
-          borderColor: 'var(--border)',
-        }"
-      >
+      <div class="flex-none border-l h-full overflow-hidden transition-all duration-300 ease-in-out" :style="{
+        width: pinOpen ? '260px' : '0px',
+        opacity: pinOpen ? 1 : 0,
+        borderColor: 'var(--border)',
+      }">
         <PinPanel :space-id="currentSpace?.id ?? ''" />
       </div>
 
       <!-- Member Sidebar -->
-      <div
-        v-if="!isDM"
-        class="flex-none border-l h-full overflow-hidden transition-all duration-300 ease-in-out"
+      <div v-if="!isDM" class="flex-none border-l h-full overflow-hidden transition-all duration-300 ease-in-out"
         :style="{
           width: memberOpen ? '250px' : '0px',
           opacity: memberOpen ? 1 : 0,
           borderColor: 'var(--border)',
-        }"
-      >
+        }">
         <MemberPanel />
       </div>
     </div>
+
+    <SuggestionDialog v-model:open="suggestionDialogOpen" :room-id="currentSpace?.id ?? ''"
+      :message-info="suggestionData" @close="suggestionDialogOpen = false" />
   </div>
 </template>

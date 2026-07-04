@@ -1,9 +1,10 @@
+import type { CardEvent, ColumnEvent } from "@/types/Task"
 import { socketService } from "./socketService"
 
-  const subscribedColumns = new Set<string>()
+const subscribedColumns = new Set<string>()
 export const taskSocket = {
 
-  subscribeCardUpdate(columnId: string, callback: (card: any) => void){
+  subscribeCardUpdate(columnId: string, callback: (card: any) => void) {
     subscribedColumns.add(columnId)
     return socketService.subscribe(
       `/topic/space/${columnId}/card/update`,
@@ -13,7 +14,7 @@ export const taskSocket = {
     )
   },
 
-  subscribeCardCreate(columnId: string, callback: (card: any) => void){
+  subscribeCardCreate(columnId: string, callback: (card: any) => void) {
     subscribedColumns.add(columnId)
     return socketService.subscribe(
       `/topic/space/${columnId}/card/create`,
@@ -23,7 +24,7 @@ export const taskSocket = {
     )
   },
 
-  subscribeCardDelete(columnId: string, callback: (cardId: string) => void){
+  subscribeCardDelete(columnId: string, callback: (cardId: string) => void) {
     subscribedColumns.add(columnId)
     return socketService.subscribe(
       `/topic/space/${columnId}/card/delete`,
@@ -33,7 +34,7 @@ export const taskSocket = {
     )
   },
 
-  subscribeCardMove(columnId: string, callback: (card: any) => void){
+  subscribeCardMove(columnId: string, callback: (card: any) => void) {
     subscribedColumns.add(columnId)
     return socketService.subscribe(
       `/topic/space/${columnId}/card/move`,
@@ -43,7 +44,16 @@ export const taskSocket = {
     )
   },
 
-  subscribeColumnUpdate(spaceId: string, callback: (column: any) => void){
+  subscribeCardDeleteArchived(spaceId: string, callback: (card: any) => void) {
+    return socketService.subscribe(
+      `/topic/space/${spaceId}/card/deleteAllArchived`,
+      (card) => {
+        callback(card);
+      }
+    )
+  },
+
+  subscribeColumnUpdate(spaceId: string, callback: (column: any) => void) {
     return socketService.subscribe(
       `/topic/space/${spaceId}/column/update`,
       (column) => {
@@ -52,7 +62,7 @@ export const taskSocket = {
     )
   },
 
-  subscribeColumnCreate(spaceId: string, callback: (column: any) => void){
+  subscribeColumnCreate(spaceId: string, callback: (column: any) => void) {
     return socketService.subscribe(
       `/topic/space/${spaceId}/column/create`,
       (column) => {
@@ -61,7 +71,7 @@ export const taskSocket = {
     )
   },
 
-  subscribeColumnDelete(spaceId: string, callback: (columnId: string) => void){
+  subscribeColumnDelete(spaceId: string, callback: (columnId: string) => void) {
     return socketService.subscribe(
       `/topic/space/${spaceId}/column/delete`,
       (columnId: string) => {
@@ -70,7 +80,7 @@ export const taskSocket = {
     )
   },
 
-  subscribeColumnMove(spaceId: string, callback: (column: any) => void){
+  subscribeColumnMove(spaceId: string, callback: (column: any) => void) {
     return socketService.subscribe(
       `/topic/space/${spaceId}/column/move`,
       (column) => {
@@ -79,17 +89,55 @@ export const taskSocket = {
     )
   },
 
+  subscribeColumnDeleteArchived(spaceId: string, callback: (column: any) => void) {
+    return socketService.subscribe(
+      `/topic/space/${spaceId}/column/deleteAllArchived`,
+      (column) => {
+        callback(column);
+      }
+    )
+  },
+
+  subscribeCardArchive(spaceId: string, callback: (card: CardEvent) => void) {
+    return socketService.subscribe(`/topic/space/${spaceId}/card/archive`, (card) => {
+      callback(card);
+    })
+  },
+
+  subscribeCardUnarchive(spaceId: string, callback: (card: CardEvent) => void) {
+    return socketService.subscribe(`/topic/space/${spaceId}/card/unarchive`, (card) => {
+      callback(card);
+    })
+  },
+
+  subscribeColumnArchive(spaceId: string, callback: (column: ColumnEvent) => void) {
+    return socketService.subscribe(`/topic/space/${spaceId}/column/archive`, (column) => {
+      callback(column);
+    })
+  },
+
+  subscribeColumnUnarchive(spaceId: string, callback: (column: ColumnEvent) => void) {
+    return socketService.subscribe(`/topic/space/${spaceId}/column/unarchive`, (column) => {
+      callback(column);
+    })
+  },
 
   leaveSpace(spaceId: string) {
     socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/update`)
     socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/create`)
     socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/delete`)
     socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/move`)
+    socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/archive`)
+    socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/unarchive`)
+    socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/deleteAllArchived`)
 
     socketService.unsubscribeByDestination(`/topic/space/${spaceId}/column/update`)
     socketService.unsubscribeByDestination(`/topic/space/${spaceId}/column/create`)
     socketService.unsubscribeByDestination(`/topic/space/${spaceId}/column/delete`)
     socketService.unsubscribeByDestination(`/topic/space/${spaceId}/column/move`)
+    socketService.unsubscribeByDestination(`/topic/space/${spaceId}/column/archive`)
+    socketService.unsubscribeByDestination(`/topic/space/${spaceId}/column/unarchive`)
+    socketService.unsubscribeByDestination(`/topic/space/${spaceId}/column/deleteAllArchived`)
 
     subscribedColumns.clear()
   }

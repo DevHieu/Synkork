@@ -13,7 +13,7 @@ export function zegoMedia(
   isMuted: Ref<boolean>,
   isDeafen: Ref<boolean>,
 ) {
-  const utils = zegoUtils(participants);
+  const utils = zegoUtils(state, participants);
 
   // Tắt micro
   const muteMicro = async (mute: boolean) => {
@@ -71,14 +71,6 @@ export function zegoMedia(
     if (!state.zg) return;
     const data = JSON.stringify(payload);
     console.log("media activated ", roomId, userId, data);
-    state.zg.sendCustomCommand(roomId, data, [userId]);
-  };
-
-  const kickMember = (roomId: string, userId: string) => {
-    if (!state.zg) return;
-
-    const data = JSON.stringify({ type: "KICK_MEMBER" });
-
     state.zg.sendCustomCommand(roomId, data, [userId]);
   };
 
@@ -154,7 +146,6 @@ export function zegoMedia(
     requestMediaStates,
     replayAllStreamToDOM,
     roomMutedUserRequest,
-    kickMember,
     stopUserScreen,
     stopUserVideo,
   };

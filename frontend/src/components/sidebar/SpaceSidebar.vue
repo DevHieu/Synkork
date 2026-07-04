@@ -21,6 +21,7 @@ import CreateSpaceDialog from "@/components/dialog/CreateSpaceDialog.vue";
 import RoomSettingDialog from "@/components/dialog/RoomSettingDialog/index.vue";
 import InviteDialog from "@/components/dialog/InviteMemberDialog.vue";
 
+
 const roomStore = useRoomsStore();
 const spaceStore = useSpaceStore();
 const voiceSpaceStore = useVoiceSpaceStore();
@@ -49,14 +50,20 @@ const openAddSpaceDialog = (type: string) => {
 const handleCreateSpace = async (name: string, type: string) => {
   const roomId = currentRoom.value?.id ?? "";
 
-  const res = await createSpace(roomId, {
-    name,
-    type,
-  });
+  try {
+    const res = await createSpace(roomId, { name, type });
 
-  if (res.status === 200) {
-    toast.success("Tạo kênh thành công");
-    spaceStore.changeSpaceById(res.data.id, type);
+    if (res.status === 200) {
+      toast.success("Tạo kênh thành công");
+      spaceStore.changeSpaceById(res.data.id, type);
+    }
+  } catch (error: any) {
+    const msg =
+      error?.response?.data?.message ||
+      error?.response?.data ||
+      error?.message ||
+      "Có lỗi xảy ra";
+    toast.error(msg);
   }
 };
 

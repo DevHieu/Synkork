@@ -19,10 +19,8 @@ const isDialogOpen = ref(false);
 
 <template>
   <UserInfoPopover :username="props.member.username">
-    <div
-      class="member-row flex items-center gap-2.5 px-2 py-1.5 mx-1 rounded cursor-pointer transition-colors"
-      @click="isDialogOpen = true"
-    >
+    <div class="member-row flex items-center gap-2.5 px-2 py-1.5 mx-1 rounded cursor-pointer transition-colors"
+      @click="isDialogOpen = true">
       <Avatar class="h-8 w-8 shrink-0">
         <AvatarImage v-if="member.avatarUrl" :src="member.avatarUrl" />
         <AvatarFallback class="text-xs"> </AvatarFallback>
@@ -32,16 +30,10 @@ const isDialogOpen = ref(false);
         <p class="text-[13px] font-medium truncate text-foreground">
           {{ member.displayName || member.username }}
         </p>
-        <Badge
-          v-if="badge"
-          variant="outline"
-          class="text-[10px] px-1.5 py-0 h-4 mt-0.5"
-          :class="
-            badge === 'OWNER'
-              ? 'border-amber-300 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700'
-              : 'border-blue-300 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700'
-          "
-        >
+        <Badge v-if="badge" variant="outline" class="text-[10px] px-1.5 py-0 h-4 mt-0.5" :class="badge === 'OWNER'
+            ? 'border-amber-300 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700'
+            : 'border-blue-300 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700'
+          ">
           {{ badge === "OWNER" ? "Owner" : "Admin" }}
         </Badge>
       </div>

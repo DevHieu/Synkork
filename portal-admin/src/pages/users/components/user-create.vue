@@ -1,9 +1,16 @@
 <script lang="ts" setup>
 import { UserRoundPlusIcon } from '@lucide/vue'
+import { ref } from 'vue'
 
 import { Modal, ModalContent, ModalTrigger } from '@/components/prop-ui/modal'
 
+import type { User } from '../types/userTypes.ts'
+
 import UserResource from './user-resource.vue'
+
+defineEmits<{
+  saved: [user: User]
+}>()
 
 const isOpen = ref(false)
 </script>
@@ -13,12 +20,15 @@ const isOpen = ref(false)
     <ModalTrigger as-child>
       <UiButton>
         <UserRoundPlusIcon />
-        Create User
+        Tạo người dùng
       </UiButton>
     </ModalTrigger>
 
     <ModalContent>
-      <UserResource @close="isOpen = false" />
+      <UserResource
+        @close="isOpen = false"
+        @saved="(u) => { isOpen = false; $emit('saved', u) }"
+      />
     </ModalContent>
   </Modal>
 </template>

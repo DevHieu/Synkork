@@ -1,3 +1,4 @@
+import { Account } from '@/types/Account'
 import type { LucideProps } from '@lucide/vue'
 import type { FunctionalComponent } from 'vue'
 
@@ -23,12 +24,6 @@ export interface NavGroup {
   items: NavItem[]
 }
 
-export interface User {
-  name: string
-  avatar: string
-  email: string
-}
-
 export interface Team {
   name: string
   logo: NavIcon
@@ -36,6 +31,6 @@ export interface Team {
 }
 
 export interface SidebarData {
-  user: User
+  user: Account
   navMain: NavGroup[]
 }

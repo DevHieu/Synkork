@@ -1,7 +1,9 @@
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios'
 
 import axios from 'axios'
+
 import { getFreshToken } from '@/utils/auth'
+
 import { getCookie, removeCookie } from './cookies'
 
 const axiosClient: AxiosInstance = axios.create({
@@ -39,7 +41,7 @@ axiosClient.interceptors.response.use(
     // Token mà không hợp lệ thì về trang đăng nhập
     if (
       error.response?.status === 401
-      && error.response?.data?.error === 'INVALID_TOKEN'
+      && ['INVALID_TOKEN', 'ACCOUNT_LOCKED'].includes(error.response?.data?.error)
     ) {
       removeCookie('accessToken')
       removeCookie('refreshToken')

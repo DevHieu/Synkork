@@ -1,18 +1,20 @@
 <script setup lang="ts">
-import { useMessageStore } from "@/stores/messageStore";
-import { CirclePlus, Smile } from "lucide-vue-next";
-import { storeToRefs } from "pinia";
 import { watch, ref, onMounted, onUnmounted, computed } from "vue";
+import { CirclePlus, Smile } from "lucide-vue-next";
+import { useUserStore } from "@/stores/userStore.ts";
+import { useMessageStore } from "@/stores/messageStore";
+import { storeToRefs } from "pinia";
+import { PlanLimitUtils } from "@/utils/PlanLimitUtils.ts";
 
 import EmojiPicker from "vue3-emoji-picker";
 import "vue3-emoji-picker/css"; // Nó báo lỗi thì kệ mịa nó đi, sửa lại đúng đường dẫn là ko chạy được đâu á
 
 import ReplyBar from "./sub-components/ReplyBar.vue";
 import FilePreview from "./sub-components/FilePreview.vue";
-import FileSizeDialog from "../dialog/FileSizeDialog.vue";
+import PlanLimitDialog from "../dialog/PlanLimitDialog.vue";
+import { useThemeStore } from "@/stores/themeStore.ts";
 
-// Hiện tại sẽ set cứng tạm ở đây. Sau này làm cơ chế mua vip rồi sẽ check kĩ sau
-const FILE_LIMIT_BYTES = 10 * 1024 * 1024; // 10 MB cho free
+const { userPlan } = storeToRefs(useUserStore());
 
 const newMessage = ref("");
 const inputRef = ref<HTMLInputElement | null>(null);
@@ -38,7 +40,7 @@ const rejectedFile = ref<File | null>(null);
 
 const addFiles = (newFiles: FileList | File[]) => {
   Array.from(newFiles).forEach((file) => {
-    if (file.size > FILE_LIMIT_BYTES) {
+    if (file.size > PlanLimitUtils.maxFileSizeBytes(userPlan.value)) {
       rejectedFile.value = file;
       fileSizeDialogOpen.value = true;
       return;
@@ -170,84 +172,45 @@ onUnmounted(() =>
 </script>
 
 <template>
-  <div
-    class="relative border-t background"
-    @dragover="handleDragOver"
-    @dragleave="handleDragLeave"
-    @drop="handleDrop"
-  >
+  <div class="relative border-t background" @dragover="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop">
     <!-- Drag overlay -->
     <Transition name="fade">
-      <div
-        v-if="isDragging"
-        class="absolute inset-0 z-50 flex items-center justify-center bg-primary/10 border-2 border-dashed border-primary/50 rounded-lg pointer-events-none"
-      >
+      <div v-if="isDragging"
+        class="absolute inset-0 z-50 flex items-center justify-center bg-primary/10 border-2 border-dashed border-primary/50 rounded-lg pointer-events-none">
         <p class="text-primary font-medium text-sm">Thả file vào đây</p>
       </div>
     </Transition>
 
     <Transition name="reply-slide">
-      <ReplyBar
-        v-if="replyingTo"
-        :replying-to="replyingTo"
-        @cancel="messageStore.setReply(null)"
-      />
+      <ReplyBar v-if="replyingTo" :replying-to="replyingTo" @cancel="messageStore.setReply(null)" />
     </Transition>
 
     <Transition name="reply-slide">
-      <FilePreview
-        v-if="hasFiles"
-        :files="selectedFiles"
-        :previews="filePreviews"
-        @remove="removeFile"
-        @clear="clearFiles"
-        @add-more="fileInputRef?.click()"
-      />
+      <FilePreview v-if="hasFiles" :files="selectedFiles" :previews="filePreviews" @remove="removeFile"
+        @clear="clearFiles" @add-more="fileInputRef?.click()" />
     </Transition>
 
     <div class="flex items-center gap-1 px-3 py-3">
-      <button
-        @click="fileInputRef?.click()"
-        title="Đính kèm file"
-        class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
-      >
+      <button @click="fileInputRef?.click()" title="Đính kèm file"
+        class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-all">
         <CirclePlus />
       </button>
-      <input
-        ref="fileInputRef"
-        type="file"
-        multiple
-        class="hidden"
-        @change="handleFileChange"
-      />
+      <input ref="fileInputRef" type="file" multiple class="hidden" @change="handleFileChange" />
 
       <div
-        class="flex-1 flex items-center bg-muted/50 rounded-lg px-3 gap-2 border border-border focus-within:border-primary/50 transition-colors"
-      >
-        <input
-          ref="inputRef"
-          v-model="newMessage"
-          :placeholder="
-            replyingTo
-              ? `Trả lời ${replyingTo.sender?.displayName}...`
-              : 'Nhắn tin...'
+        class="flex-1 flex items-center bg-muted/50 rounded-lg px-3 gap-2 border border-border focus-within:border-primary/50 transition-colors">
+        <input ref="inputRef" v-model="newMessage" :placeholder="replyingTo
+          ? `Trả lời ${replyingTo.sender?.displayName}...`
+          : 'Nhắn tin...'
           "
           class="flex-1 bg-transparent py-2.5 text-foreground placeholder:text-muted-foreground focus:outline-none text-sm"
-          @keydown.esc="messageStore.setReply(null)"
-          @keydown.enter.exact.prevent="handleSubmit"
-        />
+          @keydown.esc="messageStore.setReply(null)" @keydown.enter.exact.prevent="handleSubmit" />
         <div class="relative shrink-0">
-          <button
-            ref="emojiButtonRef"
-            @click="toggleEmojiPicker"
-            title="Emoji"
-            class="w-8 h-8 rounded-full flex items-center justify-center transition-all"
-            :class="
-              showEmojiPicker
-                ? 'text-primary'
-                : 'text-muted-foreground hover:text-foreground'
-            "
-          >
+          <button ref="emojiButtonRef" @click="toggleEmojiPicker" title="Emoji"
+            class="w-8 h-8 rounded-full flex items-center justify-center transition-all" :class="showEmojiPicker
+              ? 'text-primary'
+              : 'text-muted-foreground hover:text-foreground'
+              ">
             <Smile />
           </button>
         </div>
@@ -255,30 +218,16 @@ onUnmounted(() =>
     </div>
 
     <Teleport to="body">
-      <div
-        v-if="showEmojiPicker"
-        ref="emojiPickerRef"
-        class="fixed z-[9999]"
-        :style="{
-          bottom: emojiPickerPos.bottom + 'px',
-          right: emojiPickerPos.right + 'px',
-        }"
-      >
-        <EmojiPicker
-          :native="true"
-          :disable-skin-tones="true"
-          @select="onSelectEmoji"
-        />
+      <div v-if="showEmojiPicker" ref="emojiPickerRef" class="fixed z-20" :style="{
+        bottom: emojiPickerPos.bottom + 'px',
+        right: emojiPickerPos.right + 'px',
+      }">
+        <EmojiPicker :native="true" :disable-skin-tones="true" @select="onSelectEmoji"
+          :theme="useThemeStore().isDark ? 'dark' : 'light'" />
       </div>
 
-      <FileSizeDialog
-        v-model:open="fileSizeDialogOpen"
-        :file-name="rejectedFile?.name ?? ''"
-        :file-size="rejectedFile?.size ?? 0"
-        current-plan="free"
-        @upgrade="(plan) => console.log('Navigate to upgrade:', plan)"
-        @dismiss="rejectedFile = null"
-      />
+      <PlanLimitDialog v-model:open="fileSizeDialogOpen" :limit-type="'file'" :file-name="rejectedFile?.name ?? ''"
+        :file-size="rejectedFile?.size ?? 0" :current-plan="userPlan" @dismiss="rejectedFile = null" />
     </Teleport>
   </div>
 </template>
@@ -289,6 +238,7 @@ onUnmounted(() =>
   transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }
+
 .reply-slide-enter-from,
 .reply-slide-leave-to {
   opacity: 0;
@@ -296,6 +246,7 @@ onUnmounted(() =>
   padding-top: 0;
   padding-bottom: 0;
 }
+
 .reply-slide-enter-to,
 .reply-slide-leave-from {
   opacity: 1;
@@ -306,25 +257,9 @@ onUnmounted(() =>
 .fade-leave-active {
   transition: opacity 0.15s;
 }
+
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-}
-
-:deep(.v3-emoji-picker) {
-  --v3-picker-bg: var(--popover);
-  --v3-picker-fg: var(--foreground);
-  --v3-picker-border: var(--border);
-  --v3-picker-input-bg: var(--muted);
-  --v3-picker-input-border: var(--border);
-  --v3-picker-input-focus-border: var(--primary);
-  --v3-picker-emoji-hover: var(--accent);
-  --v3-group-image-filter: invert(1);
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-}
-
-:global(.dark) :deep(.v3-emoji-picker) {
-  --v3-group-image-filter: invert(1);
 }
 </style>

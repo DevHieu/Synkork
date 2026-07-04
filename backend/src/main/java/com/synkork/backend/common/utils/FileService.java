@@ -1,6 +1,7 @@
 package com.synkork.backend.common.utils;
 
 import com.synkork.backend.common.dtos.FileUploaded;
+import com.synkork.backend.modules.user.enums.PlanEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -33,21 +34,31 @@ public class FileService {
         }
     }
 
-    public FileUploaded uploadFile(MultipartFile file, String folderName) {
+    public FileUploaded uploadFile(MultipartFile file, String folderName, PlanEnum plan) {
         try {
+            long maxSize = PlanLimitUtils.maxFileSizeBytes(plan);
+            if (file.getSize() > maxSize) {
+                long maxMB = maxSize / (1024 * 1024);
+                throw new RuntimeException(
+                    "File vượt quá giới hạn " + maxMB + "MB của gói " + plan + ". Vui lòng nâng cấp gói."
+                );
+            }
+
             Map options = ObjectUtils.asMap(
                     "folder", folderName,
                     "resource_type", "raw"
             );
             Map uploaded = cloudinary.uploader().upload(file.getBytes(), options);
             String publicId = (String) uploaded.get("public_id");
-            // raw file không dùng cloudinary.url() được, lấy thẳng secure_url
             String url = (String) uploaded.get("secure_url");
 
             return new FileUploaded(url, publicId, "raw", file.getOriginalFilename());
         } catch (IOException e) {
             throw new RuntimeException("Upload file failed", e);
         }
+    }
+    public FileUploaded uploadFile(MultipartFile file, String folderName) {
+        return uploadFile(file, folderName, PlanEnum.FREE);
     }
 
     public boolean deleteFile(String publicId, String resourceType) {
