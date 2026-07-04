@@ -14,6 +14,7 @@ import DeleteConfirmDialog from "@/components/dialog/DeleteConfirmDialog.vue";
 import UserInfoPopover from "../dialog/UserInfoPopover.vue";
 import type { MessageEventSuggestion } from "@/types/CalendarSuggestion";
 import { chatService } from "@/services/chatService.ts";
+import { useRoomMemberStore } from "@/stores/roomMemberStore.ts";
 
 const props = defineProps<{
   spaceId: string;
@@ -24,6 +25,8 @@ const props = defineProps<{
 
 const userStore = useUserStore();
 const { user } = storeToRefs(userStore);
+const memberStore = useRoomMemberStore();
+const { canManage } = storeToRefs(memberStore);
 
 const messageStore = useMessageStore();
 
@@ -39,7 +42,7 @@ const senderNameColor = computed(() => {
 });
 
 const isFullAction = computed(
-  () => props.message.sender?.username === user.value?.username,
+  () => canManage.value || props.message.sender?.username === user.value?.username,
 );
 const isEditing = ref(false);
 const editContent = ref("");
@@ -252,7 +255,7 @@ const parsedContent = computed(() => {
       ? 'opacity-100'
       : 'opacity-0 group-hover:opacity-100'
       ">
-      <MessageActions v-if="!isEditing && !props.message.deleted" :isSender="isFullAction"
+      <MessageActions v-if="!isEditing && !props.message.deleted" :fullAction="isFullAction"
         :isPinned="props.message.pinned" :showSuggestion="shouldHighlightSuggestion" :suggestionLabel="suggestionLabel"
         @reply="handleReply" @edit="handleEdit" @delete="isDeleteOpen = true" @pin="handlePin"
         @suggest="handleSuggestion" />

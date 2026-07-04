@@ -4,7 +4,7 @@ import { Pin, Trash2, Reply, Pen, Sparkles } from "lucide-vue-next";
 const emits = defineEmits(["reply", "edit", "delete", "pin", "suggest"]);
 
 const props = defineProps<{
-  isSender: boolean;
+  fullAction: boolean;
   isPinned: boolean;
   showSuggestion: boolean;
   suggestionLabel?: string;
@@ -23,23 +23,23 @@ const props = defineProps<{
           {{ props.suggestionLabel ?? 'Tạo nhanh' }}
         </span>
       </button>
-      <button class="p-1.5 rounded hover:bg-primary/20 text-foreground/70 hover:text-foreground transition-colors"
+      <button class="p-1.5 rounded hover:bg-primary/20 text-white/70 hover:text-foreground transition-colors"
         title="Reply" @click="$emit('reply')">
         <Reply class="w-4 h-4" />
       </button>
       <button class="p-1.5 rounded transition-colors" :class="isPinned
         ? 'text-yellow-400 hover:bg-yellow-400/10'
-        : 'text-foreground/70 hover:bg-foreground/10 hover:text-foreground'
+        : 'text-white/70 hover:bg-foreground/10 hover:text-foreground'
         " :title="isPinned ? 'Bỏ ghim' : 'Ghim'" @click="$emit('pin')">
         <Pin class="w-4 h-4" :class="isPinned ? 'fill-yellow-400' : ''" />
       </button>
-      <button v-if="props.isSender"
-        class="p-1.5 rounded hover:bg-foreground/10 text-foreground/70 hover:text-foreground transition-colors"
-        title="Sửa" @click="$emit('edit')">
+      <button v-if="props.fullAction"
+        class="p-1.5 rounded hover:bg-foreground/10 text-white/70 hover:text-foreground transition-colors" title="Sửa"
+        @click="$emit('edit')">
         <Pen class="w-4 h-4" />
       </button>
-      <button v-if="props.isSender"
-        class="p-1.5 rounded hover:bg-red-500/20 text-foreground/70 hover:text-red-400 transition-colors" title="Xóa"
+      <button v-if="props.fullAction"
+        class="p-1.5 rounded hover:bg-red-500/20 text-white/70 hover:text-red-400 transition-colors" title="Xóa"
         @click="$emit('delete')">
         <Trash2 class="w-4 h-4" />
       </button>

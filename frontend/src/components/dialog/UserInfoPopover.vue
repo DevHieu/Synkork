@@ -94,7 +94,7 @@ const handleJumpToDm = async (conversationId: string) => {
       <slot />
     </PopoverTrigger>
 
-    <PopoverContent class="w-64 p-0 bg-black/40 backdrop-blur-md border-white/10 overflow-hidden" side="right"
+    <PopoverContent class="w-64 p-0 bg-background/40 backdrop-blur-md border-foreground/10 overflow-hidden" side="right"
       align="start" @open-auto-focus.prevent>
       <div class="relative h-16 bg-primary/30">
         <div v-if="!isLoading && userInfo && !isMyself" class="absolute top-2 right-2 flex items-center gap-1.5">
@@ -105,11 +105,11 @@ const handleJumpToDm = async (conversationId: string) => {
               <Tooltip>
                 <TooltipTrigger as-child>
                   <button
-                    class="h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors disabled:opacity-50"
+                    class="h-8 w-8 rounded-full bg-background/50 hover:bg-background/70 flex items-center justify-center transition-colors disabled:opacity-50"
                     :disabled="isFriendLoading" @click="toggleFriend">
                     <UserMinus v-if="friendship.isFriend" class="h-4 w-4 text-destructive" />
                     <Clock3 v-else-if="friendship.isPending" class="h-4 w-4 text-yellow-500" />
-                    <UserPlus v-else class="h-4 w-4 text-white" />
+                    <UserPlus v-else class="h-4 w-4 text-foreground" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">
@@ -123,7 +123,7 @@ const handleJumpToDm = async (conversationId: string) => {
               <Tooltip>
                 <TooltipTrigger as-child>
                   <button
-                    class="h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors disabled:opacity-50"
+                    class="h-8 w-8 rounded-full bg-background/50 hover:bg-background/70 flex items-center justify-center transition-colors disabled:opacity-50"
                     :disabled="isFriendLoading" @click="() => {
                       friendStore.acceptRequest(friendship.requestId!);
                     }">
@@ -136,7 +136,7 @@ const handleJumpToDm = async (conversationId: string) => {
               <Tooltip>
                 <TooltipTrigger as-child>
                   <button
-                    class="h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors disabled:opacity-50"
+                    class="h-8 w-8 rounded-full bg-background/50 hover:bg-background/70 flex items-center justify-center transition-colors disabled:opacity-50"
                     :disabled="isFriendLoading" @click="() => {
                       friendStore.rejectRequest(friendship.requestId!);
                     }">
@@ -150,9 +150,9 @@ const handleJumpToDm = async (conversationId: string) => {
             <Tooltip>
               <TooltipTrigger as-child>
                 <button v-if="friendship.isFriend"
-                  class="h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
+                  class="h-8 w-8 rounded-full bg-background/50 hover:bg-background/70 flex items-center justify-center transition-colors"
                   @click="() => handleJumpToDm(friendship.friend!.conversationId)">
-                  <MessageCircle class="h-4 w-4 text-white" />
+                  <MessageCircle class="h-4 w-4 text-foreground" />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="bottom">Nhắn tin</TooltipContent>
@@ -162,11 +162,11 @@ const handleJumpToDm = async (conversationId: string) => {
             <Tooltip>
               <TooltipTrigger as-child>
                 <button
-                  class="h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
+                  class="h-8 w-8 rounded-full bg-background/50 hover:bg-background/70 flex items-center justify-center transition-colors"
                   @click="() => {
                     isReportOpen = true
                   }">
-                  <Flag class="h-4 w-4 text-white hover:text-destructive" />
+                  <Flag class="h-4 w-4 text-foreground hover:text-destructive" />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="bottom">Tố cáo</TooltipContent>
@@ -176,7 +176,7 @@ const handleJumpToDm = async (conversationId: string) => {
 
         <!-- Avatar — đè lên border banner/content -->
         <div class="absolute -bottom-8 left-4">
-          <Avatar class="h-16 w-16 text-xs font-bold uppercase ring-4 ring-black/40">
+          <Avatar class="h-16 w-16 text-xs font-bold uppercase ring-4 ring-background/40">
             <AvatarImage v-if="userInfo?.avatarUrl" :src="userInfo.avatarUrl" />
             <AvatarFallback class="bg-primary" />
           </Avatar>
