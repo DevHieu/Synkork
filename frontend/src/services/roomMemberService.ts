@@ -46,3 +46,25 @@ export const muteAudio = async (
 
   return res;
 };
+
+export type ChatDisableTime =
+  | "MINUTE"
+  | "FIVE_MINUTES"
+  | "FIFTEEN_MINUTES"
+  | "HOUR"
+  | "DAY"
+  | "WEEK";
+
+export const muteChatMember = async (
+  roomId: string,
+  memberId: string,
+  time: ChatDisableTime,
+) => {
+  const res = await axiosClient.patch(
+    `/api/rooms/${roomId}/members/${memberId}/chat-mute`,
+    null,
+    { params: { time } },
+  );
+
+  return res;
+};

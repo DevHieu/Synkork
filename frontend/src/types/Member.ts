@@ -6,4 +6,5 @@ export interface Member {
   role: "OWNER" | "ADMIN" | "MEMBER";
   muted: boolean;
   deafen: boolean;
+  chatDisableUntil: string | null;
 }

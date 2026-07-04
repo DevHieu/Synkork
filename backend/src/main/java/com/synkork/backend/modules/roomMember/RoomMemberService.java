@@ -1,6 +1,5 @@
 package com.synkork.backend.modules.roomMember;
 
-import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.common.utils.PermissionService;
 import com.synkork.backend.modules.roomMember.dto.ChangeAuthorityDTO;
 import com.synkork.backend.modules.room.RoomEntity;
@@ -38,6 +37,12 @@ public class RoomMemberService {
     public RoomMemberEntity getRoomMemberByRoomIdAndUserId(UUID roomId, UUID userId) {
         return roomMemberRepository
                 .findByRoom_IdAndUser_Id(roomId, userId)
+                .orElseThrow(() -> new RuntimeException("Member not found"));
+    }
+
+    public RoomMemberEntity getRoomMemberByRoomIdAndMemberId(UUID roomId, UUID memberId) {
+        return roomMemberRepository
+                .findByRoom_IdAndId(roomId, memberId)
                 .orElseThrow(() -> new RuntimeException("Member not found"));
     }
 
@@ -121,7 +126,7 @@ public class RoomMemberService {
             case WEEK -> now.plusWeeks(1);
         };
 
-        RoomMemberEntity target = this.getRoomMemberByRoomIdAndUserId(roomUUID, memberUUID);
+        RoomMemberEntity target = this.getRoomMemberByRoomIdAndMemberId(roomUUID, memberUUID);
 
         target.setChatDisableUntil(chatMutedUntil);
 

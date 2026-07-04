@@ -17,26 +17,70 @@ import {
   TooltipTrigger,
   TooltipProvider,
 } from "@/components/ui/tooltip";
-import { UserPlus, UserMinus, MessageCircle, Flag, Clock3, TicketCheck, TicketX } from "lucide-vue-next";
+import { UserPlus, UserMinus, MessageCircle, Flag, Clock3, TicketCheck, TicketX, Ban } from "lucide-vue-next";
 import { useUserStore } from "@/stores/userStore";
 import { useSpaceStore } from "@/stores/spaceStore";
 import ReportDialog from "./ReportDialog.vue";
+import { storeToRefs } from "pinia";
+import { useRoomMemberStore } from "@/stores/roomMemberStore";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { muteChatMember, type ChatDisableTime } from "@/services/roomMemberService";
+import { toast } from "vue-sonner";
 
 
-const props = defineProps<{ username: string }>();
+const props = defineProps<{
+  username: string;
+  roomId?: string;
+  memberId?: string;
+  memberRole?: "OWNER" | "ADMIN" | "MEMBER";
+}>();
 
 const spaceStore = useSpaceStore();
 const friendStore = useFriendStore();
+const roomMemberStore = useRoomMemberStore();
+const { canManage } = storeToRefs(roomMemberStore);
 
 const isLoading = ref(true);
 const userInfo = ref<User | null>(null);
 const isOpen = ref(false);
 const isReportOpen = ref(false);
 const isMyself = ref(false);
+const isChatMuteLoading = ref(false);
 const friendship = computed(() =>
   friendStore.getFriendshipStatus(props.username),
 );
 const isFriendLoading = ref(false);
+
+const chatMuteOptions: { label: string; value: ChatDisableTime }[] = [
+  { label: "1 phut", value: "MINUTE" },
+  { label: "5 phut", value: "FIVE_MINUTES" },
+  { label: "15 phut", value: "FIFTEEN_MINUTES" },
+  { label: "1 gio", value: "HOUR" },
+  { label: "1 ngay", value: "DAY" },
+  { label: "1 tuan", value: "WEEK" },
+];
+
+const canShowChatMute = computed(
+  () => {
+    console.log("RoomId: " + props.roomId);
+    console.log("MemberId: " + props.memberId);
+    console.log("MemberRole: " + props.memberRole);
+    console.log("");
+
+
+    return !!props.roomId &&
+      !!props.memberId &&
+      canManage.value &&
+      !isMyself.value &&
+      props.memberRole !== "OWNER"
+  }
+
+);
 
 onMounted(async () => {
   isLoading.value = true;
@@ -84,6 +128,22 @@ async function toggleFriend() {
 const handleJumpToDm = async (conversationId: string) => {
   await spaceStore.joinDMSpace(conversationId);
   isOpen.value = false;
+};
+
+const handleChatMute = async (time: ChatDisableTime) => {
+  if (!props.roomId || !props.memberId || isChatMuteLoading.value) return;
+
+  isChatMuteLoading.value = true;
+  try {
+    await muteChatMember(props.roomId, props.memberId, time);
+    toast.success("Da chan chat thanh vien");
+    isOpen.value = false;
+  } catch (err) {
+    console.error("Mute chat member error:", err);
+    toast.error("Khong the chan chat thanh vien nay");
+  } finally {
+    isChatMuteLoading.value = false;
+  }
 };
 
 </script>
@@ -171,6 +231,24 @@ const handleJumpToDm = async (conversationId: string) => {
               </TooltipTrigger>
               <TooltipContent side="bottom">Tố cáo</TooltipContent>
             </Tooltip>
+
+            <DropdownMenu v-if="canShowChatMute">
+              <DropdownMenuTrigger as-child>
+                <button
+                  class="h-8 w-8 rounded-full bg-background/50 hover:bg-background/70 flex items-center justify-center transition-colors disabled:opacity-50"
+                  :disabled="isChatMuteLoading"
+                  title="Chan chat">
+                  <Ban class="h-4 w-4 text-foreground hover:text-destructive" />
+                </button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent align="end" class="w-36">
+                <DropdownMenuItem v-for="option in chatMuteOptions" :key="option.value" :disabled="isChatMuteLoading"
+                  @click="handleChatMute(option.value)">
+                  {{ option.label }}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </TooltipProvider>
         </div>
 

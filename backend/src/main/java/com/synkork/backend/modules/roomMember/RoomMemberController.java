@@ -75,7 +75,12 @@ public class RoomMemberController {
         UUID roomUUID = UUID.fromString(roomId);
         UUID requesterId = AuthUtils.getCurrentUserId();
 
-        roomMemberService.setChatMuteMember(memberUUID, roomUUID, requesterId, time);
+        RoomMemberEntity member = roomMemberService.setChatMuteMember(memberUUID, roomUUID, requesterId, time);
+        RoomMemberDto resp = new RoomMemberDto(member);
+
+        messagingTemplate.convertAndSend(
+                "/topic/room/" + roomId + "/members/changeAuthority", resp
+        );
 
         return ResponseEntity.ok().build();
     }

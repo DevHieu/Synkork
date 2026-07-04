@@ -15,6 +15,8 @@ import UserInfoPopover from "../dialog/UserInfoPopover.vue";
 import type { MessageEventSuggestion } from "@/types/CalendarSuggestion";
 import { chatService } from "@/services/chatService.ts";
 import { useRoomMemberStore } from "@/stores/roomMemberStore.ts";
+import { useRoomsStore } from "@/stores/roomStore";
+import { chatComposable } from "./composable/chat.composable.ts"
 
 const props = defineProps<{
   spaceId: string;
@@ -27,6 +29,9 @@ const userStore = useUserStore();
 const { user } = storeToRefs(userStore);
 const memberStore = useRoomMemberStore();
 const { canManage } = storeToRefs(memberStore);
+const roomStore = useRoomsStore();
+const { currentRoom } = storeToRefs(roomStore);
+const { isChatDisabled, chatDisabledLabel } = chatComposable();
 
 const messageStore = useMessageStore();
 
@@ -155,7 +160,9 @@ const parsedContent = computed(() => {
     @mouseenter="disableSuggestionForceVisible">
     <!-- Avatar -->
     <div class="w-10 shrink-0">
-      <UserInfoPopover :username="props.message.sender?.username" v-if="!isGrouped || props.message.replyTo">
+      <UserInfoPopover v-if="!isGrouped || props.message.replyTo" :username="props.message.sender?.username"
+        :room-id="currentRoom?.id" :member-id="props.message.sender?.memberId"
+        :member-role="props.message.sender?.role">
         <Avatar class="h-10 w-10 cursor-pointer">
           <AvatarImage v-if="props.message.sender?.avatarUrl" :src="props.message.sender.avatarUrl" />
           <AvatarFallback class="bg-primary"> </AvatarFallback>
@@ -183,17 +190,30 @@ const parsedContent = computed(() => {
 
       <!-- Edit mode -->
       <div v-if="isEditing" class="mt-1">
-        <textarea v-model="editContent"
-          class="w-full bg-background border border-primary/30 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-          rows="2" @keydown.enter.exact.prevent="handleSaveEdit" @keydown.esc="handleCancelEdit" />
-        <div class="flex gap-2 mt-1 text-[11px]">
-          <button @click="handleSaveEdit" class="text-primary hover:underline font-medium">
-            Lưu thay đổi
-          </button>
-          <button @click="handleCancelEdit" class="text-muted-foreground hover:underline">
-            Hủy
-          </button>
+        <div v-if="isChatDisabled">
+          <div class="w-full bg-background border border-red-400/30 rounded-md p-2 text-sm text-red-400 font-semibold"
+            style="min-height: calc(2 * 1.5em + 1rem);">
+            Bạn không thể chỉnh sửa tin nhắn vì trò chuyện đã bị chặn đến {{ chatDisabledLabel }}.
+          </div>
+          <div class="flex gap-2 mt-1 text-[11px]">
+            <button @click="handleCancelEdit" class="text-muted-foreground hover:underline">
+              Hủy
+            </button>
+          </div>
         </div>
+        <template v-else>
+          <textarea v-model="editContent"
+            class="w-full bg-background border border-primary/30 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+            rows="2" @keydown.enter.exact.prevent="handleSaveEdit" @keydown.esc="handleCancelEdit" />
+          <div class="flex gap-2 mt-1 text-[11px]">
+            <button @click="handleSaveEdit" class="text-primary hover:underline font-medium">
+              Lưu thay đổi
+            </button>
+            <button @click="handleCancelEdit" class="text-muted-foreground hover:underline">
+              Hủy
+            </button>
+          </div>
+        </template>
       </div>
 
       <div v-else class="text-sm leading-relaxed wrap-break-word">
