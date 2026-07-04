@@ -6,6 +6,7 @@ import com.synkork.backend.modules.roomMember.dto.ChangeAuthorityDTO;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.roomMember.dto.MuteRequest;
 import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
+import com.synkork.backend.modules.roomMember.enums.ChatDisableTime;
 import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
 import com.synkork.backend.modules.room.RoomRepository;
 import com.synkork.backend.modules.user.UserEntity;
@@ -13,6 +14,7 @@ import com.synkork.backend.modules.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -102,6 +104,28 @@ public class RoomMemberService {
         roomMemberRepository.deleteById(memberUUID);
 
         return target.getUser().getEmail();
+    }
+
+    public RoomMemberEntity setChatMuteMember(UUID memberUUID, UUID roomUUID, UUID requesterId, ChatDisableTime chatDisableTime) {
+
+        PermissionService.requirePermission(roomUUID, requesterId, RoomMemberRoleEnum.OWNER, RoomMemberRoleEnum.ADMIN);
+
+        LocalDateTime now = LocalDateTime.now();
+
+        LocalDateTime chatMutedUntil = switch (chatDisableTime) {
+            case MINUTE -> now.plusMinutes(1);
+            case FIVE_MINUTES -> now.plusMinutes(5);
+            case FIFTEEN_MINUTES -> now.plusMinutes(15);
+            case HOUR -> now.plusHours(1);
+            case DAY -> now.plusDays(1);
+            case WEEK -> now.plusWeeks(1);
+        };
+
+        RoomMemberEntity target = this.getRoomMemberByRoomIdAndUserId(roomUUID, memberUUID);
+
+        target.setChatDisableUntil(chatMutedUntil);
+
+        return roomMemberRepository.save(target);
     }
 
     public void toggleMuteMembers(UUID roomId, UUID memberId, UUID requesterId, MuteRequest muteRequest) {
