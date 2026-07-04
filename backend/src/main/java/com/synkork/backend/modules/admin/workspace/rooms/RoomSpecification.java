@@ -2,6 +2,7 @@ package com.synkork.backend.modules.admin.workspace.rooms;
 
 import com.synkork.backend.modules.admin.workspace.rooms.dtos.RoomFilterRequest;
 import com.synkork.backend.modules.room.RoomEntity;
+import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Subquery;
@@ -15,6 +16,8 @@ public class RoomSpecification {
     public static Specification<RoomEntity> filter(RoomFilterRequest request) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+
+            predicates.add(cb.equal(root.get("type"), RoomTypeEnum.GROUP));
 
             if (hasText(request.search())) {
                 predicates.add(cb.like(
@@ -32,10 +35,6 @@ public class RoomSpecification {
                         root.get("createdAt"),
                         request.dateFrom().atStartOfDay()
                 ));
-            }
-
-            if (request.type() != null) {
-                predicates.add(cb.equal(root.get("type"), request.type()));
             }
 
             if (request.dateTo() != null) {

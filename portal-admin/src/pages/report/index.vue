@@ -130,7 +130,7 @@ async function handleUpdateReportStatus({ id, status, note }: { id: string, stat
 }
 
 async function handleDeleteReport(reportId: string) {
-  if (!confirm('Bạn có chắc muốn xó cái nì khum?'))
+  if (!confirm('Bạn có chắc chắn muốn xóa cái này?'))
     return
 
   try {

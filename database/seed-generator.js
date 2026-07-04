@@ -1,331 +1,429 @@
 const fs = require('fs');
 const path = require('path');
-const readline = require('readline/promises');
 const crypto = require('crypto');
 
 const seedPath = path.join(__dirname, 'seed.sql');
+const schema = process.env.SEED_SCHEMA || 'synkork';
+const rows = Number.parseInt(process.env.SEED_ROWS || process.argv[2] || '50', 10);
+const minRows = Number.isFinite(rows) && rows > 0 ? Math.max(rows, 50) : 50;
+const seedToday = process.env.SEED_TODAY || '2026-07-02';
 
-const userRefs = [
-  '11111111-1111-1111-1111-111111111111',
-  '22222222-2222-2222-2222-222222222222',
-  '33333333-3333-3333-3333-333333333333',
-  '44444444-4444-4444-4444-444444444444',
-  '55555555-5555-5555-5555-555555555555',
-  '66666666-6666-6666-6666-666666666666',
-  '77777777-7777-7777-7777-777777777777',
-  '88888888-8888-8888-8888-888888888888'
-];
+const passwordHash = '$2a$10$W7nRkYxPZ8xq3x8kB0mC8e7c2Yb3h9nYvVgJ6z8u6T4y9s8Qxw9Ka';
+const start = new Date(Date.UTC(2026, 0, 1, 2, 0, 0));
 
-const planByUser = {
-  '11111111-1111-1111-1111-111111111111': 'FREE',
-  '22222222-2222-2222-2222-222222222222': 'TEAM',
-  '33333333-3333-3333-3333-333333333333': 'BUSINESS',
-  '44444444-4444-4444-4444-444444444444': 'FREE',
-  '55555555-5555-5555-5555-555555555555': 'TEAM',
-  '66666666-6666-6666-6666-666666666666': 'BUSINESS',
-  '77777777-7777-7777-7777-777777777777': 'FREE',
-  '88888888-8888-8888-8888-888888888888': 'TEAM'
+const enums = {
+  provider: ['LOCAL', 'GOOGLE', 'GITHUB'],
+  role: ['USER', 'USER', 'USER', 'MANAGER', 'ADMIN'],
+  userStatus: ['ACTIVE', 'ACTIVE', 'ACTIVE', 'INACTIVE', 'BANNED'],
+  plan: ['FREE', 'TEAM', 'BUSINESS'],
+  roomType: ['GROUP', 'GROUP', 'DM', 'PERSONAL'],
+  roomStatus: ['OPEN', 'OPEN', 'LOCKED', 'PENDING_REMOVAL'],
+  roomMemberRole: ['OWNER', 'ADMIN', 'MEMBER', 'MEMBER', 'MEMBER'],
+  spaceType: ['CHAT', 'VOICE', 'CALENDAR', 'NOTE', 'TASK'],
+  spaceStatus: ['OPEN', 'OPEN', 'PENDING_REMOVAL'],
+  messageType: ['TEXT', 'TEXT', 'IMAGE', 'FILE'],
+  friendRequestStatus: ['PENDING', 'ACCEPTED', 'REJECTED'],
+  notificationType: ['FRIEND', 'CALENDAR', 'TASK', 'NOTE', 'CHAT', 'SUBSCRIPTION'],
+  notificationRefType: ['FRIEND_REQUEST', 'FRIEND_ACCEPT', 'FRIEND_REJECT', 'EVENT_REMINDER', 'CARD_ASSIGNED', 'CARD_DUE_SOON', 'CARD_OVER_DUE', 'NOTE_REMINDER'],
+  invoiceStatus: ['PENDING', 'PAID', 'FAILED'],
+  paymentMethod: ['MOMO', 'VNPAY'],
+  reportReason: ['SPAM', 'INAPPROPRIATE', 'HARASSMENT', 'HATE_SPEECH', 'OTHER'],
+  reportStatus: ['PENDING', 'REVIEWED', 'RESOLVED', 'DISMISSED'],
+  reportType: ['USER', 'ROOM'],
+  severityByReason: {
+    SPAM: 'LOW',
+    INAPPROPRIATE: 'MEDIUM',
+    HARASSMENT: 'HIGH',
+    HATE_SPEECH: 'CRITICAL',
+    OTHER: 'LOW'
+  },
+  auditAction: ['CREATE_INVOICE', 'UPDATE_INVOICE', 'DELETE_INVOICE', 'CANCEL_SUBSCRIPTION', 'UPDATE_SUBSCRIPTION', 'BAN_USER', 'UNBAN_USER', 'UPDATE_USER', 'DELETE_USER', 'UPDATE_WORKSPACE', 'DELETE_WORKSPACE', 'RESOLVE_REPORT', 'DISMISS_REPORT', 'REPORT_CREATED', 'REPORT_REVIEWED', 'REPORT_DELETED'],
+  auditEntityType: ['USER', 'WORKSPACE', 'REPORT', 'SUBSCRIPTION'],
+  passwordResetStatus: ['PENDING', 'APPROVED', 'REJECTED', 'NOT_VERIFIED'],
+  verifyType: ['REGISTER', 'FORGOT_PASSWORD', 'CHANGE_EMAIL'],
+  attachmentType: ['IMAGE', 'FILE'],
+  recurrence: ['NONE', 'DAILY', 'WEEKLY', 'MONTHLY']
 };
 
-const statuses = [
-  { value: 'PAID', weight: 58 },
-  { value: 'PENDING', weight: 24 },
-  { value: 'FAILED', weight: 18 }
-];
-
-const methods = [
-  { value: 'MOMO', weight: 62 },
-  { value: 'VNPAY', weight: 38 }
-];
-
-const currencies = [
-  { value: 'VND', weight: 95 },
-  { value: 'USD', weight: 5 }
-];
-
-const plans = ['TEAM', 'BUSINESS'];
-const txPrefixes = {
-  MOMO: ['MOMO', 'MOMO-QR', 'MOMO-APP'],
-  VNPAY: ['VNPAY', 'VNPAY-QR', 'VNPAY-WEB']
-};
-const amountsByPlan = {
-  TEAM: [199000, 229000, 249000, 299000],
-  BUSINESS: [399000, 449000, 499000, 599000]
-};
-
-// Global statistics tracker
-const stats = {
-  totalRows: 0,
-  totalAmount: 0,
-  totalPaidAmount: 0,
-  status: { PAID: 0, PENDING: 0, FAILED: 0 },
-  plan: { TEAM: 0, BUSINESS: 0 },
-  currency: { VND: 0, USD: 0 }
-};
-
-let rand;
-
-function mulberry32(a) {
-  return function () {
-    let t = a += 0x6D2B79F5;
-    t = Math.imul(t ^ t >>> 15, t | 1);
-    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-
-function pickWeighted(items) {
-  const total = items.reduce((sum, item) => sum + item.weight, 0);
-  let cursor = rand() * total;
-  for (const item of items) {
-    cursor -= item.weight;
-    if (cursor <= 0) return item.value;
-  }
-  return items[items.length - 1].value;
-}
-
-function pick(list) {
-  return list[Math.floor(rand() * list.length)];
-}
-
-function deterministicUuid(seedVal, index) {
-  const hash = crypto.createHash('md5').update(`${seedVal}-${index}`).digest('hex');
-  const chars = hash.split('');
-  chars[12] = '4'; // Version 4
-  chars[16] = (parseInt(chars[16], 16) & 0x3 | 0x8).toString(16); // Variant 1
+function uuid(label, index) {
+  const hash = crypto.createHash('md5').update(`synkork-seed:${label}:${index}`).digest('hex').split('');
+  hash[12] = '4';
+  hash[16] = (parseInt(hash[16], 16) & 0x3 | 0x8).toString(16);
   return [
-    chars.slice(0, 8).join(''),
-    chars.slice(8, 12).join(''),
-    chars.slice(12, 16).join(''),
-    chars.slice(16, 20).join(''),
-    chars.slice(20, 32).join('')
+    hash.slice(0, 8).join(''),
+    hash.slice(8, 12).join(''),
+    hash.slice(12, 16).join(''),
+    hash.slice(16, 20).join(''),
+    hash.slice(20, 32).join('')
   ].join('-');
 }
 
-function sqlDateExpr(hoursAgo) {
-  if (hoursAgo === 0) return 'NOW()';
-  if (hoursAgo % 24 === 0) return `DATE_SUB(NOW(), INTERVAL ${hoursAgo / 24} DAY)`;
-  return `DATE_SUB(NOW(), INTERVAL ${hoursAgo} HOUR)`;
+function hexId(label, index) {
+  return `0x${uuid(label, index).replace(/-/g, '').toUpperCase()}`;
 }
 
-function buildRow(i, seedVal) {
-  const invoiceId = deterministicUuid(seedVal, i);
-  const subscriptionId = deterministicUuid(seedVal, i * 1000); // Generate unique subscription_id
-  const userId = pick(userRefs);
-  const plan = planByUser[userId] && planByUser[userId] !== 'FREE' ? planByUser[userId] : pick(plans);
-  const status = pickWeighted(statuses);
-  const paymentMethod = pickWeighted(methods);
-  const currency = pickWeighted(currencies);
-  const amountVal = pick(amountsByPlan[plan]);
-  const amount = amountVal.toFixed(2);
-  const txPrefix = pick(txPrefixes[paymentMethod]);
+function strId(label, index) {
+  return uuid(label, index);
+}
 
-  // Generate a realistic payment provider suffix
-  const txSuffixLen = paymentMethod === 'MOMO' ? 10 : 8;
-  let txSuffix = '';
-  for (let j = 0; j < txSuffixLen; j++) {
-    txSuffix += Math.floor(rand() * 10);
-  }
-  const transactionId = `${txPrefix}-${txSuffix}`;
+function q(value) {
+  if (value === null || value === undefined) return 'NULL';
+  return `'${String(value).replace(/'/g, "''")}'`;
+}
 
-  const createdHoursAgo = 6 + Math.floor(rand() * 24 * 365);
-  let paidHoursAgo = null;
-  if (status === 'PAID') {
-    const maxDelay = Math.min(48, createdHoursAgo - 1);
-    const delay = maxDelay > 1 ? 1 + Math.floor(rand() * maxDelay) : 1;
-    paidHoursAgo = createdHoursAgo - delay;
-  }
+function bool(value) {
+  return value ? '1' : '0';
+}
 
-  const createdAt = i % 13 === 0 ? 'NOW()' : sqlDateExpr(createdHoursAgo);
-  const paidAt = paidHoursAgo == null ? 'NULL' : sqlDateExpr(paidHoursAgo);
+function pick(list, index) {
+  return list[index % list.length];
+}
 
-  // Update statistics
-  stats.totalRows++;
-  stats.totalAmount += amountVal;
-  if (status === 'PAID') {
-    stats.totalPaidAmount += amountVal;
-  }
-  stats.status[status] = (stats.status[status] || 0) + 1;
-  stats.plan[plan] = (stats.plan[plan] || 0) + 1;
-  stats.currency[currency] = (stats.currency[currency] || 0) + 1;
+function dt(index, hourOffset = 0) {
+  const date = new Date(start.getTime() + (index * 29 + hourOffset) * 60 * 60 * 1000);
+  return date.toISOString().slice(0, 19).replace('T', ' ');
+}
 
+function recentDt(index, total, monthsBack = 4, offsetMinutes = 0) {
+  const end = new Date(`${seedToday}T23:00:00Z`);
+  const spanHours = monthsBack * 30 * 24;
+  const stepHours = total <= 1 ? 0 : Math.floor(spanHours / (total - 1));
+  const date = new Date(end.getTime() - index * stepHours * 60 * 60 * 1000 + offsetMinutes * 60 * 1000);
+  return date.toISOString().slice(0, 19).replace('T', ' ');
+}
+
+function createdAt(index, total) {
+  return q(recentDt(index, total, 4, -60));
+}
+
+function updatedAt(index, total) {
+  return q(recentDt(index, total));
+}
+
+function dateOnly(index) {
+  const date = new Date(Date.UTC(2026, 6, 1 + (index % 90), 0, 0, 0));
+  return date.toISOString().slice(0, 10);
+}
+
+function timeOnly(index, baseHour = 8) {
+  const hour = baseHour + (index % 8);
+  return `${String(hour).padStart(2, '0')}:00:00`;
+}
+
+function values(rows) {
+  return rows.map(row => `  (${row.join(', ')})`).join(',\n');
+}
+
+function insert(table, columns, rows) {
   return [
-    `    UUID_TO_BIN('${invoiceId}')`,
-    `    UUID_TO_BIN('${userId}')`,
-    `    ${amount}`,
-    `    '${status}'`,
-    `    '${paymentMethod}'`,
-    `    '${transactionId}'`,
-    `    ${paidAt}`,
-    `    ${createdAt}`,
-    `    NOW()`
-  ].join(',\n');
-}
-
-function parseArgs() {
-  const args = process.argv.slice(2);
-  let rows = Number.parseInt(process.env.SEED_ROWS || '1000', 10);
-  let mode = (process.env.SEED_MODE || 'append').toLowerCase();
-  let seed = Number.parseInt(process.env.SEED_SEED || '20260615', 10);
-
-  if (args.length > 0) {
-    for (let i = 0; i < args.length; i++) {
-      const arg = args[i];
-      if (arg === '--rows' || arg === '-r') {
-        const val = Number.parseInt(args[++i], 10);
-        if (!Number.isNaN(val)) rows = val;
-      } else if (arg === '--mode' || arg === '-m') {
-        mode = args[++i].toLowerCase();
-      } else if (arg === '--seed' || arg === '-s') {
-        const val = Number.parseInt(args[++i], 10);
-        if (!Number.isNaN(val)) seed = val;
-      } else if (!arg.startsWith('-')) {
-        // Positional arg: <rows> [<mode>] [<seed>]
-        const val = Number.parseInt(arg, 10);
-        if (!Number.isNaN(val)) {
-          rows = val;
-          if (args[i + 1] && !args[i + 1].startsWith('-')) {
-            mode = args[++i].toLowerCase();
-            if (args[i + 1] && !args[i + 1].startsWith('-')) {
-              const sVal = Number.parseInt(args[++i], 10);
-              if (!Number.isNaN(sVal)) seed = sVal;
-            }
-          }
-        }
-      }
-    }
-  }
-
-  return { rows, mode, seed };
-}
-
-async function promptUser() {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-
-  try {
-    const rowsInput = await rl.question('Enter number of rows to generate [default 1000]: ');
-    const modeInput = await rl.question('Enter mode (append/regen) [default append]: ');
-    const seedInput = await rl.question('Enter seed value [default 20260615]: ');
-
-    const rows = rowsInput.trim() ? Number.parseInt(rowsInput.trim(), 10) : 1000;
-    const mode = modeInput.trim() ? modeInput.trim().toLowerCase() : 'append';
-    const seed = seedInput.trim() ? Number.parseInt(seedInput.trim(), 10) : 20260615;
-
-    return {
-      rows: Number.isNaN(rows) ? 1000 : rows,
-      mode: ['append', 'regen'].includes(mode) ? mode : 'append',
-      seed: Number.isNaN(seed) ? 20260615 : seed
-    };
-  } finally {
-    rl.close();
-  }
-}
-
-async function main() {
-  let { rows, mode, seed } = parseArgs();
-
-  // Prompt if no CLI args are provided and standard input is interactive
-  if (process.argv.length <= 2 && process.stdin.isTTY) {
-    const promptConfig = await promptUser();
-    rows = promptConfig.rows;
-    mode = promptConfig.mode;
-    seed = promptConfig.seed;
-  }
-
-  // Initialize PRNG
-  rand = mulberry32(seed);
-
-  // Reset stats
-  stats.totalRows = 0;
-  stats.totalAmount = 0;
-  stats.totalPaidAmount = 0;
-  stats.status = { PAID: 0, PENDING: 0, FAILED: 0 };
-  stats.plan = { TEAM: 0, BUSINESS: 0 };
-  stats.currency = { VND: 0, USD: 0 };
-
-  const userInserts = userRefs.map((uid, index) => {
-    const idx = index + 1;
-    const plan = planByUser[uid] || 'FREE';
-    return `  (
-    UUID_TO_BIN('${uid}'),
-    'user${idx}',
-    'User ${idx}',
-    'user${idx}@example.com',
-    'LOCAL',
-    'USER',
-    'ACTIVE',
-    '${plan}',
-    0,
-    NOW(),
-    NOW()
-  )`;
-  }).join(',\n');
-
-  const usersSql = [
-    'INSERT INTO users (',
-    '  id, username, display_name, email, provider, role, status, current_plan, warning, created_at, updated_at',
-    ') VALUES',
-    userInserts,
-    'ON DUPLICATE KEY UPDATE',
-    '  username = VALUES(username),',
-    '  display_name = VALUES(display_name),',
-    '  email = VALUES(email),',
-    '  current_plan = VALUES(current_plan),',
-    '  updated_at = NOW();'
+    `-- ${table}: ${rows.length} rows`,
+    `INSERT IGNORE INTO \`${schema}\`.\`${table}\` (${columns.map(column => `\`${column}\``).join(', ')}) VALUES`,
+    `${values(rows)};`,
+    ''
   ].join('\n');
-
-  const prefix = [
-    '-- AUTO-GENERATED BULK SEED FOR SUBSCRIPTION TESTING',
-    `-- Generated by database/seed-generator.js at seed=${seed}`,
-    '',
-    usersSql,
-    '',
-    'INSERT INTO invoices (',
-    '  id, user_id, amount, status, payment_method, transaction_id, paid_at, created_at, updated_at',
-    ') VALUES'
-  ].join('\n');
-
-  const rowsSql = Array.from({ length: rows }, (_, i) => `  (\n${buildRow(i, seed)}\n  )`).join(',\n');
-  const sql = `${prefix}\n${rowsSql}\nON DUPLICATE KEY UPDATE\n  user_id = VALUES(user_id),\n  amount = VALUES(amount),\n  status = VALUES(status),\n  payment_method = VALUES(payment_method),\n  transaction_id = VALUES(transaction_id),\n  paid_at = VALUES(paid_at),\n  updated_at = NOW();\n`;
-
-  if (mode === 'regen') {
-    const existing = fs.readFileSync(seedPath, 'utf8');
-    const marker = '-- AUTO-GENERATED BULK SEED FOR SUBSCRIPTION TESTING';
-    const cut = existing.indexOf(marker);
-    const base = cut >= 0 ? existing.slice(0, cut).trimEnd() + '\n' : existing;
-    fs.writeFileSync(seedPath, `${base}\n${sql}`, 'utf8');
-    console.log(`Regenerated ${rows} rows into ${seedPath}`);
-  } else {
-    fs.appendFileSync(seedPath, `\n${sql}`, 'utf8');
-    console.log(`Appended ${rows} generated invoice rows to ${seedPath}`);
-  }
-
-  // Display summary stats
-  console.log('\n=== Seed Generation Summary ===');
-  console.log(`Total Rows Generated: ${stats.totalRows}`);
-  console.log(`Total Revenue (PAID): ${stats.totalPaidAmount.toLocaleString('vi-VN')} VND`);
-  console.log(`Total Value (All):    ${stats.totalAmount.toLocaleString('vi-VN')} VND`);
-  console.log('\nBreakdown by Status:');
-  Object.entries(stats.status).forEach(([key, val]) => {
-    const pct = ((val / stats.totalRows) * 100).toFixed(1);
-    console.log(`- ${key}: ${val} rows (${pct}%)`);
-  });
-  console.log('\nBreakdown by Plan:');
-  Object.entries(stats.plan).forEach(([key, val]) => {
-    console.log(`- ${key}: ${val} rows`);
-  });
-  console.log('\nBreakdown by Currency:');
-  Object.entries(stats.currency).forEach(([key, val]) => {
-    const pct = ((val / stats.totalRows) * 100).toFixed(1);
-    console.log(`- ${key}: ${val} rows (${pct}%)`);
-  });
-  console.log('===============================\n');
 }
 
-main().catch(err => {
-  console.error('Error running seed generator:', err);
-  process.exit(1);
+const users = Array.from({ length: Math.max(minRows, 80) }, (_, i) => ({
+  id: hexId('user', i),
+  rawId: strId('user', i),
+  email: `seed.user${String(i + 1).padStart(3, '0')}@synkork.test`,
+  username: `seed_user_${String(i + 1).padStart(3, '0')}`,
+  name: `Seed User ${String(i + 1).padStart(3, '0')}`,
+  role: pick(enums.role, i),
+  plan: pick(enums.plan, i),
+  status: pick(enums.userStatus, i)
+}));
+
+const rooms = Array.from({ length: minRows }, (_, i) => ({
+  id: hexId('room', i),
+  rawId: strId('room', i),
+  owner: users[i % users.length],
+  name: `Seed Room ${String(i + 1).padStart(3, '0')}`,
+  type: pick(enums.roomType, i),
+  status: pick(enums.roomStatus, i)
+}));
+
+const roomMembers = [];
+for (let roomIndex = 0; roomIndex < rooms.length; roomIndex += 1) {
+  for (let memberIndex = 0; memberIndex < 5; memberIndex += 1) {
+    const userIndex = (roomIndex * 5 + memberIndex) % users.length;
+    roomMembers.push({
+      id: hexId('room-member', roomIndex * 5 + memberIndex),
+      rawId: strId('room-member', roomIndex * 5 + memberIndex),
+      room: rooms[roomIndex],
+      user: users[userIndex],
+      role: memberIndex === 0 ? 'OWNER' : pick(enums.roomMemberRole, memberIndex + roomIndex)
+    });
+  }
+}
+
+const spaces = [];
+for (let roomIndex = 0; roomIndex < rooms.length; roomIndex += 1) {
+  for (let typeIndex = 0; typeIndex < enums.spaceType.length; typeIndex += 1) {
+    const index = roomIndex * enums.spaceType.length + typeIndex;
+    const type = enums.spaceType[typeIndex];
+    spaces.push({
+      id: hexId('space', index),
+      rawId: strId('space', index),
+      room: rooms[roomIndex],
+      type,
+      name: `${type.charAt(0)}${type.slice(1).toLowerCase()} Space ${String(roomIndex + 1).padStart(3, '0')}`
+    });
+  }
+}
+
+const chatSpaces = spaces.filter(space => space.type === 'CHAT');
+const taskSpaces = spaces.filter(space => space.type === 'TASK');
+const noteSpaces = spaces.filter(space => space.type === 'NOTE');
+const calendarSpaces = spaces.filter(space => space.type === 'CALENDAR');
+
+const columns = [];
+const columnNames = ['Backlog', 'Todo', 'Doing', 'Review', 'Done'];
+taskSpaces.forEach((space, spaceIndex) => {
+  columnNames.forEach((name, columnIndex) => {
+    const index = spaceIndex * columnNames.length + columnIndex;
+    columns.push({
+      id: hexId('column', index),
+      rawId: strId('column', index),
+      space,
+      name,
+      position: columnIndex
+    });
+  });
 });
+
+const cards = Array.from({ length: Math.max(minRows, 120) }, (_, i) => {
+  const column = columns[i % columns.length];
+  const roomMember = roomMembers.find(member => member.room.rawId === column.space.room.rawId) || roomMembers[i % roomMembers.length];
+  return {
+    id: hexId('card', i),
+    rawId: strId('card', i),
+    column,
+    createdBy: roomMember,
+    position: i % 20
+  };
+});
+
+const calendarEvents = Array.from({ length: minRows }, (_, i) => ({
+  id: hexId('calendar-event', i),
+  rawId: strId('calendar-event', i),
+  space: calendarSpaces[i % calendarSpaces.length],
+  createdBy: users[i % users.length]
+}));
+
+const reports = Array.from({ length: minRows }, (_, i) => {
+  const reason = pick(enums.reportReason, i);
+  const reportType = pick(enums.reportType, i);
+  return {
+    id: hexId('report', i),
+    rawId: strId('report', i),
+    targetUser: reportType === 'USER' ? users[(i + 7) % users.length] : null,
+    targetRoom: reportType === 'ROOM' ? rooms[(i + 3) % rooms.length] : null,
+    reporter: users[i % users.length],
+    reason,
+    severity: enums.severityByReason[reason],
+    reportType
+  };
+});
+
+const sections = [];
+
+sections.push(insert('users',
+  ['id', 'username', 'display_name', 'email', 'password', 'avatar_url', 'avatar_id', 'provider', 'role', 'status', 'current_plan', 'plan_expires_at', 'personal_note_id', 'personal_calendar_id', 'google_calendar_refresh_token', 'google_calendar_access_token', 'google_calendar_access_token_expires_at', 'warning', 'created_at', 'updated_at'],
+  users.map((user, i) => [
+    user.id, q(user.username), q(user.name), q(user.email), q(passwordHash), q(`https://cdn.synkork.test/avatar/${i + 1}.png`), q(`seed-avatar-${i + 1}`),
+    q(pick(enums.provider, i)), q(user.role), q(user.status), q(user.plan),
+    user.plan === 'FREE' ? 'NULL' : q(dt(i, 24 * 45)),
+    'NULL', 'NULL', 'NULL', 'NULL', 'NULL', i % 5, createdAt(i, users.length), updatedAt(i, users.length)
+  ])));
+
+sections.push(insert('rooms',
+  ['id', 'name', 'avatar_url', 'avatar_id', 'description', 'type', 'status', 'invite_code', 'owner_id', 'warning', 'created_at', 'updated_at'],
+  rooms.map((room, i) => [
+    room.id, q(room.name), 'NULL', 'NULL', q(`Seed workspace room ${i + 1}`), q(room.type), q(room.status),
+    q(`SEED${String(i + 1).padStart(4, '0')}`), room.owner.id, i % 4, createdAt(i, rooms.length), updatedAt(i, rooms.length)
+  ])));
+
+sections.push(insert('room_members',
+  ['id', 'room_id', 'user_id', 'role', 'joined_at', 'muted', 'deafen'],
+  roomMembers.map((member, i) => [
+    member.id, member.room.id, member.user.id, q(member.role), q(dt(i, 4)), bool(i % 17 === 0), bool(i % 23 === 0)
+  ])));
+
+sections.push(insert('spaces',
+  ['id', 'name', 'type', 'room_id', 'status', 'is_restricted', 'created_at', 'updated_at'],
+  spaces.map((space, i) => [
+    space.id, q(space.name), q(space.type), space.room.id, q(pick(enums.spaceStatus, i)), bool(i % 19 === 0), createdAt(i, spaces.length), updatedAt(i, spaces.length)
+  ])));
+
+sections.push(insert('messages',
+  ['id', 'space_id', 'sender_id', 'content', 'deleted', 'pinned', 'edited', 'type', 'reply_to_id', 'attachment_url', 'attachment_public_id', 'attachment_resource_type', 'attachment_name', 'created_at', 'updated_at'],
+  Array.from({ length: Math.max(minRows, 150) }, (_, i) => {
+    const space = chatSpaces[i % chatSpaces.length];
+    const sender = roomMembers.find(member => member.room.rawId === space.room.rawId) || roomMembers[i % roomMembers.length];
+    const type = pick(enums.messageType, i);
+    return [
+      hexId('message', i), space.id, sender.id, q(`Seed message ${i + 1} in ${space.name}`),
+      bool(false), bool(i % 31 === 0), bool(i % 11 === 0), q(type), i > 0 && i % 10 === 0 ? hexId('message', i - 1) : 'NULL',
+      type === 'TEXT' ? 'NULL' : q(`https://cdn.synkork.test/files/message-${i + 1}`),
+      type === 'TEXT' ? 'NULL' : q(`seed/messages/${i + 1}`),
+      type === 'IMAGE' ? q('image') : type === 'FILE' ? q('raw') : 'NULL',
+      type === 'TEXT' ? 'NULL' : q(`message-${i + 1}.${type === 'IMAGE' ? 'png' : 'pdf'}`),
+      createdAt(i, Math.max(minRows, 150)), updatedAt(i, Math.max(minRows, 150))
+    ];
+  })));
+
+sections.push(insert('columns',
+  ['id', 'space_id', 'name', 'position', 'archived', 'archived_at'],
+  columns.map((column, i) => [
+    column.id, column.space.id, q(column.name), column.position, bool(false), i % 37 === 0 ? q(dt(i, 20)) : 'NULL'
+  ])));
+
+sections.push(insert('cards',
+  ['id', 'column_id', 'title', 'description', 'position', 'created_by', 'created_at', 'updated_at', 'due_date', 'overdue_mail_sent', 'due_soon_mail_sent', 'archived', 'archived_at'],
+  cards.map((card, i) => [
+    card.id, card.column.id, q(`Seed task card ${i + 1}`), q(`Generated task card ${i + 1} for ${card.column.name}`), card.position, card.createdBy.id,
+    createdAt(i, cards.length), updatedAt(i, cards.length), q(dt(i, 24 * (3 + (i % 21)))), bool(i % 18 === 0), bool(i % 15 === 0), bool(i % 41 === 0), i % 41 === 0 ? q(dt(i, 11)) : 'NULL'
+  ])));
+
+sections.push(insert('card_assignees',
+  ['card_id', 'room_member_id'],
+  cards.map((card, i) => [
+    card.id, roomMembers[(i * 3) % roomMembers.length].id
+  ])));
+
+sections.push(insert('notes',
+  ['id', 'space_id', 'title', 'note', 'pinned', 'allow_edit_all', 'created_by', 'color', 'pos_x', 'pos_y', 'width', 'height', 'reminder_at', 'reminder_sent', 'archived', 'created_at', 'updated_at'],
+  Array.from({ length: minRows }, (_, i) => {
+    const space = noteSpaces[i % noteSpaces.length];
+    return [
+      hexId('note', i), space.id, q(`Seed note ${i + 1}`), q(`Long note body for seed note ${i + 1}`), bool(i % 9 === 0), bool(i % 4 !== 0),
+      users[i % users.length].id, q(pick(['#FDE68A', '#BFDBFE', '#BBF7D0', '#FBCFE8', '#DDD6FE'], i)), (i % 6) * 2, Math.floor(i / 6) % 8, 2 + (i % 3), 2 + (i % 2),
+      i % 5 === 0 ? q(dt(i, 24 * 7)) : 'NULL', bool(i % 13 === 0), bool(i % 29 === 0), createdAt(i, minRows), updatedAt(i, minRows)
+    ];
+  })));
+
+sections.push(insert('calendar_events',
+  ['id', 'space_id', 'title', 'description', 'event_date', 'start_time', 'end_time', 'recurrence_type', 'recurrence_end_date', 'allow_edit_all', 'remind_before_minutes', 'created_by', 'created_at', 'updated_at'],
+  calendarEvents.map((event, i) => [
+    event.id, event.space.id, q(`Seed event ${i + 1}`), q(`Calendar fixture event ${i + 1}`), q(dateOnly(i)), q(timeOnly(i)), q(timeOnly(i, 9)),
+    q(pick(enums.recurrence, i)), i % 4 === 0 ? q(dateOnly(i + 30)) : 'NULL', bool(i % 3 !== 0), pick([5, 10, 15, 30, 60], i), event.createdBy.id, createdAt(i, calendarEvents.length), updatedAt(i, calendarEvents.length)
+  ])));
+
+sections.push(insert('event_attendees',
+  ['id', 'event_id', 'user_id', 'created_at', 'updated_at'],
+  calendarEvents.map((event, i) => [
+    hexId('event-attendee', i), event.id, users[(i * 2 + 1) % users.length].id, createdAt(i, calendarEvents.length), updatedAt(i, calendarEvents.length)
+  ])));
+
+sections.push(insert('event_attachments',
+  ['id', 'event_id', 'uploaded_by', 'file_url', 'file_name', 'file_size_kb', 'type', 'created_at', 'updated_at'],
+  calendarEvents.map((event, i) => {
+    const type = pick(enums.attachmentType, i);
+    return [
+      hexId('event-attachment', i), event.id, users[(i + 5) % users.length].id,
+      q(`https://cdn.synkork.test/calendar/event-${i + 1}.${type === 'IMAGE' ? 'png' : 'pdf'}`),
+      q(`event-${i + 1}.${type === 'IMAGE' ? 'png' : 'pdf'}`), 128 + (i * 7), q(type), createdAt(i, calendarEvents.length), updatedAt(i, calendarEvents.length)
+    ];
+  })));
+
+sections.push(insert('friend_requests',
+  ['id', 'sender_id', 'receiver_id', 'status', 'message', 'created_at', 'updated_at'],
+  Array.from({ length: minRows }, (_, i) => [
+    hexId('friend-request', i), users[i % users.length].id, users[(i + 17) % users.length].id, q(pick(enums.friendRequestStatus, i)),
+    q(`Seed friend request ${i + 1}`), createdAt(i, minRows), updatedAt(i, minRows)
+  ])));
+
+sections.push(insert('friends',
+  ['id', 'user_id', 'friend_id', 'conversation_id', 'created_at'],
+  Array.from({ length: minRows }, (_, i) => [
+    hexId('friend', i), users[i % users.length].id, users[(i + 23) % users.length].id, hexId('friend-conversation', i), createdAt(i, minRows)
+  ])));
+
+sections.push(insert('notifications',
+  ['id', 'user_id', 'actor_id', 'type', 'ref_id', 'ref_type', 'is_read', 'created_at', 'room_id', 'space_id'],
+  Array.from({ length: Math.max(minRows, 100) }, (_, i) => {
+    const room = rooms[i % rooms.length];
+    const space = spaces[i % spaces.length];
+    return [
+      hexId('notification', i), users[i % users.length].id, users[(i + 3) % users.length].id, q(pick(enums.notificationType, i)),
+      i % 2 === 0 ? cards[i % cards.length].id : calendarEvents[i % calendarEvents.length].id, q(pick(enums.notificationRefType, i)), bool(i % 4 === 0), createdAt(i, Math.max(minRows, 100)), room.id, space.id
+    ];
+  })));
+
+sections.push(insert('invoices',
+  ['id', 'user_id', 'amount', 'status', 'payment_method', 'transaction_id', 'paid_at', 'created_at', 'updated_at'],
+  Array.from({ length: Math.max(minRows, 100) }, (_, i) => {
+    const status = pick(enums.invoiceStatus, i);
+    const method = pick(enums.paymentMethod, i);
+    const amount = pick([99000, 199000, 249000, 399000, 499000], i).toFixed(2);
+    return [
+      hexId('invoice', i), users[i % users.length].id, amount, q(status), q(method),
+      q(`${method}-SEED-${String(i + 1).padStart(6, '0')}`), status === 'PAID' ? updatedAt(i, Math.max(minRows, 100)) : 'NULL', createdAt(i, Math.max(minRows, 100)), updatedAt(i, Math.max(minRows, 100))
+    ];
+  })));
+
+sections.push(insert('reports',
+  ['id', 'target_user_id', 'target_room_id', 'reason', 'description', 'report_type', 'reporter_id', 'status', 'severity', 'created_at', 'updated_at'],
+  reports.map((report, i) => [
+    report.id, report.targetUser ? report.targetUser.id : 'NULL', report.targetRoom ? report.targetRoom.id : 'NULL',
+    q(report.reason), q(`Seed report ${i + 1}`), q(report.reportType), report.reporter.id, q(pick(enums.reportStatus, i)), q(report.severity), createdAt(i, reports.length), updatedAt(i, reports.length)
+  ])));
+
+sections.push(insert('audit_logs',
+  ['id', 'actor_id', 'actor_email', 'action', 'entity_type', 'entity_id', 'entity_name', 'workspace_id', 'description', 'metadata', 'created_at'],
+  Array.from({ length: Math.max(minRows, 100) }, (_, i) => {
+    const actor = users[i % users.length];
+    const target = reports[i % reports.length];
+    return [
+      hexId('audit-log', i), actor.id, q(actor.email), q(pick(enums.auditAction, i)), q(pick(enums.auditEntityType, i)),
+      q(target.rawId), q(`Seed audit target ${i + 1}`), rooms[i % rooms.length].id, q(`Seed audit log ${i + 1}`),
+      q(JSON.stringify({ seed: true, index: i + 1, source: 'database/seed-generator.js' })), createdAt(i, Math.max(minRows, 100))
+    ];
+  })));
+
+sections.push(insert('statistics',
+  ['id', 'created_at', 'new_users', 'new_rooms', 'new_subscriptions', 'user_onlines', 'total_users', 'total_rooms', 'total_subscriptions'],
+  Array.from({ length: minRows }, (_, i) => [
+    hexId('statistic', i), updatedAt(i, minRows), 2 + Math.floor((minRows - 1 - i) / 6), 1 + Math.floor((minRows - 1 - i) / 10), Math.floor((minRows - 1 - i) / 8), 10 + Math.floor((minRows - 1 - i) / 2), 80 + (minRows - 1 - i), 50 + (minRows - 1 - i), 20 + (minRows - 1 - i)
+  ])));
+
+sections.push(insert('password_reset_requests',
+  ['id', 'user_id', 'new_password', 'status', 'created_at', 'updated_at'],
+  Array.from({ length: minRows }, (_, i) => [
+    hexId('password-reset', i), users[i % users.length].id, q(`${passwordHash}-reset-${i + 1}`), q(pick(enums.passwordResetStatus, i)), createdAt(i, minRows), updatedAt(i, minRows)
+  ])));
+
+sections.push(insert('verification',
+  ['id', 'created_at', 'expired_at', 'user_id', 'type', 'otp-code'],
+  Array.from({ length: minRows }, (_, i) => [
+    hexId('verification', i), createdAt(i, minRows), updatedAt(i, minRows), users[i % users.length].id, q(pick(enums.verifyType, i)), q(String(100000 + i).slice(-6))
+  ])));
+
+const sql = [
+  '-- ===============================================',
+  '-- Synkork Comprehensive MySQL Seed',
+  `-- Generated by database/seed-generator.js`,
+  `-- Minimum rows per entity: ${minRows}`,
+  '-- Password for generated users uses existing bcrypt fixture hash.',
+  '-- ===============================================',
+  'SET FOREIGN_KEY_CHECKS = 0;',
+  '',
+  ...sections,
+  'SET FOREIGN_KEY_CHECKS = 1;',
+  '-- ===== END COMPREHENSIVE SEED =====',
+  ''
+].join('\n');
+
+fs.writeFileSync(seedPath, sql, 'utf8');
+
+console.log(`Generated ${seedPath}`);
+console.log(`Minimum rows per entity: ${minRows}`);
+console.log(`Users: ${users.length}`);
+console.log(`Rooms: ${rooms.length}`);
+console.log(`Room members: ${roomMembers.length}`);
+console.log(`Spaces: ${spaces.length}`);
+console.log(`Columns: ${columns.length}`);
+console.log(`Cards: ${cards.length}`);
+console.log(`Calendar events: ${calendarEvents.length}`);
+console.log(`Reports: ${reports.length}`);
