@@ -222,6 +222,7 @@ public class AdminUserService {
                 transferOwnerBeforeRemoving(room, remainingMembers);
             }
 
+            roomMemberRepository.removeFromCardAssignees(deletingMember.getId());
             roomMemberRepository.delete(deletingMember);
         }
     }
