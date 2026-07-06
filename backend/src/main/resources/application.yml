@@ -7,7 +7,7 @@ spring:
   sql:
     init:
       mode: always
-      data-locations: file:../database/seed.sql
+      data-locations: classpath:db/seed.sql
 
   jpa:
     defer-datasource-initialization: true
