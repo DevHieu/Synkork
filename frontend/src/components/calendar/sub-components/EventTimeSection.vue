@@ -114,18 +114,18 @@ onMounted(syncInternalState);
 </script>
 
 <template>
-  <div class="space-y-6 rounded-xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)] cursor-default">
+  <div class="space-y-6 rounded-md border border-border/60 bg-background p-4 shadow-sm cursor-default">
     <!-- Định dạng giờ -->
-    <div class="rounded-xl border border-border/80 bg-muted/20 p-4 cursor-default">
-      <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-3 cursor-default">ĐỊNH DẠNG GIỜ</label>
-      <div class="flex w-fit rounded-full border-2 border-border bg-background p-1">
+    <div class="rounded-md border border-border/60 bg-muted/15 p-4 cursor-default">
+      <label class="block text-[9px] font-sans font-semibold text-muted-foreground uppercase tracking-wider mb-3 cursor-default">ĐỊNH DẠNG GIỜ</label>
+      <div class="flex w-fit rounded-md border border-border/60 bg-background p-0.5">
         <button type="button" @click="timeFormat = '24h'" :class="[
-          'rounded-full px-6 py-2 text-[10px] font-mono font-bold uppercase tracking-widest transition-colors',
-          timeFormat === '24h' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+          'rounded-sm px-4 py-1.5 text-[10px] font-sans font-bold uppercase tracking-wider transition-all duration-200',
+          timeFormat === '24h' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
         ]">24H</button>
         <button type="button" @click="timeFormat = '12h'" :class="[
-          'rounded-full px-6 py-2 text-[10px] font-mono font-bold uppercase tracking-widest transition-colors',
-          timeFormat === '12h' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+          'rounded-sm px-4 py-1.5 text-[10px] font-sans font-bold uppercase tracking-wider transition-all duration-200',
+          timeFormat === '12h' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
         ]">12H (AM/PM)</button>
       </div>
     </div>
@@ -133,14 +133,14 @@ onMounted(syncInternalState);
     <!-- Ngày & Giờ -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
-        <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">NGÀY BẮT ĐẦU *</label>
+        <label class="block text-[9px] font-sans font-semibold text-muted-foreground uppercase tracking-wider mb-2 cursor-default">NGÀY BẮT ĐẦU *</label>
         <Popover :modal="true" v-model:open="isStartDateOpen">
           <PopoverTrigger as-child>
             <Button
               variant="outline"
               type="button"
               :class="cn(
-                'w-full h-12 justify-start text-left font-mono font-normal rounded-lg border-2 border-border bg-background px-4 text-sm text-foreground hover:bg-muted/10',
+                'w-full h-10 justify-start text-left font-sans font-normal rounded-md border border-border/60 bg-background px-3.5 text-sm text-foreground hover:bg-muted/10',
                 !eventDate && 'text-muted-foreground'
               )"
             >
@@ -154,14 +154,14 @@ onMounted(syncInternalState);
         </Popover>
       </div>
       <div>
-        <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">NGÀY KẾT THÚC *</label>
+        <label class="block text-[9px] font-sans font-semibold text-muted-foreground uppercase tracking-wider mb-2 cursor-default">NGÀY KẾT THÚC *</label>
         <Popover :modal="true" v-model:open="isEndDateOpen">
           <PopoverTrigger as-child>
             <Button
               variant="outline"
               type="button"
               :class="cn(
-                'w-full h-12 justify-start text-left font-mono font-normal rounded-lg border-2 border-border bg-background px-4 text-sm text-foreground hover:bg-muted/10',
+                'w-full h-10 justify-start text-left font-sans font-normal rounded-md border border-border/60 bg-background px-3.5 text-sm text-foreground hover:bg-muted/10',
                 !endDate && 'text-muted-foreground'
               )"
             >
@@ -176,74 +176,74 @@ onMounted(syncInternalState);
       </div>
 
       <!-- Giờ bắt đầu -->
-      <div class="rounded-xl border border-border/80 bg-muted/20 p-4 cursor-default">
-        <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">GIỜ BẮT ĐẦU *</label>
+      <div class="rounded-md border border-border/60 bg-muted/15 p-4 cursor-default">
+        <label class="block text-[9px] font-sans font-semibold text-muted-foreground uppercase tracking-wider mb-2 cursor-default">GIỜ BẮT ĐẦU *</label>
         <div class="flex gap-2 items-center">
           <Select v-model="startHour">
-            <SelectTrigger class="w-full font-mono">
+            <SelectTrigger class="w-full font-sans rounded-md border-border/60 h-10">
               <SelectValue />
             </SelectTrigger>
             <SelectContent class="max-h-60">
-              <SelectItem class="font-mono" v-for="h in (timeFormat === '24h' ? hours24 : hours12)" :key="h" :value="h">
+              <SelectItem class="font-sans" v-for="h in (timeFormat === '24h' ? hours24 : hours12)" :key="h" :value="h">
                 {{ h }}
               </SelectItem>
             </SelectContent>
           </Select>
-          <span class="text-foreground font-mono font-bold">:</span>
+          <span class="text-foreground font-sans font-bold">:</span>
           <Select v-model="startMinute">
-            <SelectTrigger class="w-full font-mono">
+            <SelectTrigger class="w-full font-sans rounded-md border-border/60 h-10">
               <SelectValue />
             </SelectTrigger>
             <SelectContent class="max-h-60">
-              <SelectItem class="font-mono" v-for="m in minutes" :key="m" :value="m">
+              <SelectItem class="font-sans" v-for="m in minutes" :key="m" :value="m">
                 {{ m }}
               </SelectItem>
             </SelectContent>
           </Select>
           <Select v-if="timeFormat === '12h'" v-model="startAmPm">
-            <SelectTrigger class="w-full font-mono">
+            <SelectTrigger class="w-full font-sans rounded-md border-border/60 h-10">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem class="font-mono" value="AM">AM</SelectItem>
-              <SelectItem class="font-mono" value="PM">PM</SelectItem>
+              <SelectItem class="font-sans" value="AM">AM</SelectItem>
+              <SelectItem class="font-sans" value="PM">PM</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
       <!-- Giờ kết thúc -->
-      <div class="rounded-xl border border-border/80 bg-muted/20 p-4 cursor-default">
-        <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">GIỜ KẾT THÚC *</label>
+      <div class="rounded-md border border-border/60 bg-muted/15 p-4 cursor-default">
+        <label class="block text-[9px] font-sans font-semibold text-muted-foreground uppercase tracking-wider mb-2 cursor-default">GIỜ KẾT THÚC *</label>
         <div class="flex gap-2 items-center">
           <Select v-model="endHour">
-            <SelectTrigger class="w-full font-mono">
+            <SelectTrigger class="w-full font-sans rounded-md border-border/60 h-10">
               <SelectValue />
             </SelectTrigger>
             <SelectContent class="max-h-60">
-              <SelectItem class="font-mono" v-for="h in (timeFormat === '24h' ? hours24 : hours12)" :key="h" :value="h">
+              <SelectItem class="font-sans" v-for="h in (timeFormat === '24h' ? hours24 : hours12)" :key="h" :value="h">
                 {{ h }}
               </SelectItem>
             </SelectContent>
           </Select>
-          <span class="text-foreground font-mono font-bold">:</span>
+          <span class="text-foreground font-sans font-bold">:</span>
           <Select v-model="endMinute">
-            <SelectTrigger class="w-full font-mono">
+            <SelectTrigger class="w-full font-sans rounded-md border-border/60 h-10">
               <SelectValue />
             </SelectTrigger>
             <SelectContent class="max-h-60">
-              <SelectItem class="font-mono" v-for="m in minutes" :key="m" :value="m">
+              <SelectItem class="font-sans" v-for="m in minutes" :key="m" :value="m">
                 {{ m }}
               </SelectItem>
             </SelectContent>
           </Select>
           <Select v-if="timeFormat === '12h'" v-model="endAmPm">
-            <SelectTrigger class="w-full font-mono">
+            <SelectTrigger class="w-full font-sans rounded-md border-border/60 h-10">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem class="font-mono" value="AM">AM</SelectItem>
-              <SelectItem class="font-mono" value="PM">PM</SelectItem>
+              <SelectItem class="font-sans" value="AM">AM</SelectItem>
+              <SelectItem class="font-sans" value="PM">PM</SelectItem>
             </SelectContent>
           </Select>
         </div>

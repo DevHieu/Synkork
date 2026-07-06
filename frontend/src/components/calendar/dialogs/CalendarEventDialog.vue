@@ -28,8 +28,14 @@ import EventAttachmentsSection from "../sub-components/EventAttachmentsSection.v
 import { useEventForm, type EventFormData } from "../composables/useEventForm";
 import type { Member } from "@/types/Member";
 import { useSpaceStore } from "@/stores/spaceStore";
+import { useRoomsStore } from "@/stores/roomStore";
+import { useUserStore } from "@/stores/userStore";
+import { useRoomMemberStore } from "@/stores/roomMemberStore";
 
 const spaceStore = useSpaceStore();
+const roomsStore = useRoomsStore();
+const userStore = useUserStore();
+const roomMemberStore = useRoomMemberStore();
 
 const voiceSpaces = computed(() => spaceStore.voiceSpaces || []);
 
@@ -75,11 +81,23 @@ const onAttachmentsChange = (list: any[]) => {
 };
 
 // Luôn reset form theo initialData mới nhất trước khi người dùng thao tác.
-// Đồng bộ trạng thái khi Dialog đóng/mở
+// Đồng bộ trạng thái khi Dialog đóng/mở và tải danh sách thành viên phòng
 watch(
   () => props.show,
-  (isOpen) => {
-    if (isOpen) resetForm(props.initialData);
+  async (isOpen) => {
+    if (isOpen) {
+      resetForm(props.initialData);
+      
+      const roomId = roomsStore.currentRoom?.id;
+      const username = userStore.user?.username;
+      if (roomId && username) {
+        try {
+          await roomMemberStore.fetchMembers(roomId, username);
+        } catch (error) {
+          console.error("Lỗi khi tải thành viên phòng:", error);
+        }
+      }
+    }
   }
 );
 
@@ -94,11 +112,11 @@ const handleSubmit = (): void => {
 <template>
   <Dialog :open="show" @update:open="emit('update:show', $event)">
     <DialogContent
-      class="overflow-hidden rounded-lg border border-border/80 bg-background p-0 text-foreground shadow-2xl sm:max-w-2xl cursor-default flex flex-col max-h-[90vh]"
+      class="overflow-hidden rounded-md border border-border/60 bg-background p-0 text-foreground shadow-lg sm:max-w-2xl cursor-default flex flex-col max-h-[90vh]"
     >
       <DialogHeader class="border-b border-border/60 bg-muted/40 px-5 py-3.5 cursor-default shrink-0">
         <div class="flex items-center gap-2">
-          <div class="inline-flex items-center gap-2 rounded-md border border-primary/10 bg-primary/5 px-2.5 py-1">
+          <div class="inline-flex items-center gap-2 rounded-sm border border-primary/10 bg-primary/5 px-2.5 py-1">
             <component :is="isEditing ? Pencil : CalendarPlus2" class="text-primary h-4 w-4" />
             <h2 class="text-xs font-sans font-bold text-primary uppercase tracking-wider">
               {{ isEditing ? "Chỉnh sửa sự kiện" : "Thêm sự kiện mới" }}
@@ -113,40 +131,40 @@ const handleSubmit = (): void => {
           <div class="space-y-4 px-6 py-5">
             <!-- Tiêu đề -->
             <div class="space-y-1.5">
-              <Label class="text-xs font-semibold text-foreground">Tiêu đề *</Label>
+              <Label class="text-[10px] font-sans font-bold text-muted-foreground uppercase tracking-wider">Tiêu đề *</Label>
               <Input
                 v-model="formData.title"
                 type="text"
                 required
                 placeholder="Nhập tiêu đề sự kiện..."
-                class="w-full"
+                class="w-full rounded-md border-border/60 h-10 font-sans"
               />
             </div>
 
             <!-- Mô tả -->
             <div class="space-y-1.5">
-              <Label class="text-xs font-semibold text-foreground">Mô tả</Label>
+              <Label class="text-[10px] font-sans font-bold text-muted-foreground uppercase tracking-wider">Mô tả</Label>
               <Textarea
                 v-model="formData.description"
                 placeholder="Mô tả chi tiết sự kiện..."
-                class="w-full min-h-[80px]"
+                class="w-full min-h-[80px] rounded-md border-border/60 font-sans text-xs"
               />
             </div>
 
             <!-- Link sự kiện -->
             <div class="space-y-1.5">
-              <Label class="text-xs font-semibold text-foreground">Link sự kiện</Label>
+              <Label class="text-[10px] font-sans font-bold text-muted-foreground uppercase tracking-wider">Link sự kiện</Label>
               <Input
                 v-model="formData.eventLink"
                 type="text"
                 placeholder="https://..."
-                class="w-full"
+                class="w-full rounded-md border-border/60 h-10 font-sans"
               />
             </div>
 
             <!-- Ngày & Giờ Section -->
             <div class="space-y-1.5">
-              <Label class="text-xs font-semibold text-foreground">Thời gian sự kiện</Label>
+              <Label class="text-[10px] font-sans font-bold text-muted-foreground uppercase tracking-wider">Thời gian sự kiện</Label>
               <EventTimeSection
                 :show="show"
                 :initial-date="initialData.eventDate"
@@ -160,7 +178,7 @@ const handleSubmit = (): void => {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <!-- Chế độ lặp lại Section -->
               <div class="space-y-1.5">
-                <Label class="text-xs font-semibold text-foreground">Chế độ lặp lại</Label>
+                <Label class="text-[10px] font-sans font-bold text-muted-foreground uppercase tracking-wider">Chế độ lặp lại</Label>
                 <EventRecurrenceSection
                   :initial-type="initialData.recurrenceType || 'NONE'"
                   :initial-end-date="initialData.recurrenceEndDate"
@@ -171,9 +189,9 @@ const handleSubmit = (): void => {
 
               <!-- Liên kết phòng họp (Voice space) -->
               <div class="space-y-1.5">
-                <Label class="text-xs font-semibold text-foreground">Phòng họp trực tiếp</Label>
+                <Label class="text-[10px] font-sans font-bold text-muted-foreground uppercase tracking-wider">Phòng họp trực tiếp</Label>
                 <Select :model-value="formData.callRoomSpaceId || 'none'" @update:model-value="val => formData.callRoomSpaceId = val === 'none' ? undefined : val">
-                  <SelectTrigger class="w-full">
+                  <SelectTrigger class="w-full rounded-md border-border/60 h-10 font-sans">
                     <SelectValue placeholder="---" />
                   </SelectTrigger>
                   <SelectContent>
@@ -190,7 +208,7 @@ const handleSubmit = (): void => {
 
             <!-- Người tham gia Section -->
             <div class="space-y-1.5">
-              <Label class="text-xs font-semibold text-foreground">Người tham gia</Label>
+              <Label class="text-[10px] font-sans font-bold text-muted-foreground uppercase tracking-wider">Người tham gia</Label>
               <EventAttendeesSection
                 :show="show"
                 :room-members="roomMembers"
@@ -201,7 +219,7 @@ const handleSubmit = (): void => {
 
             <!-- Tệp đính kèm Section -->
             <div class="space-y-1.5">
-              <Label class="text-xs font-semibold text-foreground">Tệp đính kèm</Label>
+              <Label class="text-[10px] font-sans font-bold text-muted-foreground uppercase tracking-wider">Tệp đính kèm</Label>
               <EventAttachmentsSection
                 :show="show"
                 :initial-attachments="initialData.attachments"
@@ -210,16 +228,16 @@ const handleSubmit = (): void => {
             </div>
 
             <!-- Cho phép mọi người chỉnh sửa -->
-            <div class="flex items-center space-x-2 rounded-md border border-border/60 bg-card/30 p-3">
+            <div class="flex items-center space-x-2 rounded-md border border-border/60 bg-muted/15 p-3">
               <input
                 id="allow-edit-all"
                 v-model="formData.allowEditAll"
                 type="checkbox"
-                class="h-4 w-4 cursor-pointer rounded border-gray-300 text-primary focus:ring-primary dark:border-gray-600 dark:bg-gray-700"
+                class="h-3.5 w-3.5 cursor-pointer rounded-sm border-border/60 text-primary focus:ring-primary"
               />
               <label
                 for="allow-edit-all"
-                class="text-xs font-medium text-foreground cursor-pointer select-none"
+                class="text-[11px] font-sans font-semibold text-muted-foreground uppercase tracking-wider cursor-pointer select-none"
               >
                 Cho phép mọi người chỉnh sửa
               </label>
@@ -228,12 +246,12 @@ const handleSubmit = (): void => {
         </ScrollArea>
 
         <!-- Footer actions -->
-        <div class="flex justify-end gap-3 border-t border-border/60 bg-background/95 p-4.5 pt-3.5 backdrop-blur shrink-0">
+        <div class="flex justify-end gap-2.5 border-t border-border/60 bg-background/95 p-4.5 pt-3.5 backdrop-blur shrink-0">
           <Button
             type="button"
             variant="outline"
             size="sm"
-            class="rounded-md border border-border bg-background font-sans text-xs font-semibold px-4 py-2 hover:bg-accent"
+            class="rounded-sm border border-border/60 bg-background font-sans text-xs font-semibold px-4 py-2 hover:bg-accent"
             @click="emit('update:show', false)"
           >
             <X class="mr-1.5 h-3.5 w-3.5" />
@@ -242,7 +260,7 @@ const handleSubmit = (): void => {
           <Button
             type="submit"
             size="sm"
-            class="rounded-md bg-primary font-sans text-xs font-semibold text-primary-foreground px-4 py-2 shadow-sm hover:bg-primary/90"
+            class="rounded-sm bg-primary font-sans text-xs font-semibold text-primary-foreground px-4 py-2 shadow-sm hover:bg-primary/90"
           >
             <component :is="isEditing ? Pencil : CalendarPlus2" class="mr-1.5 h-3.5 w-3.5" />
             {{ isEditing ? "Cập nhật" : "Tạo sự kiện" }}

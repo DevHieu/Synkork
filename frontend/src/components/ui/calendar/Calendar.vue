@@ -55,7 +55,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
 <template>
   <DefineMonthTemplate v-slot="{ date }">
     <Select
-      :modal="true"
+      :modal="false"
       :model-value="date.month.toString()"
       @update:model-value="(val) => {
         placeholder = placeholder.set({
@@ -80,7 +80,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
 
   <DefineYearTemplate v-slot="{ date }">
     <Select
-      :modal="true"
+      :modal="false"
       :model-value="date.year.toString()"
       @update:model-value="(val) => {
         placeholder = placeholder.set({
@@ -112,11 +112,11 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     :class="cn('p-3', props.class)"
   >
     <CalendarHeader class="pt-0">
-      <nav class="flex items-center gap-1 absolute top-0 inset-x-0 justify-between">
-        <CalendarPrevButton>
+      <nav class="flex items-center gap-1 absolute top-0 inset-x-0 justify-between pointer-events-none">
+        <CalendarPrevButton class="pointer-events-auto">
           <slot name="calendar-prev-icon" />
         </CalendarPrevButton>
-        <CalendarNextButton>
+        <CalendarNextButton class="pointer-events-auto">
           <slot name="calendar-next-icon" />
         </CalendarNextButton>
       </nav>
