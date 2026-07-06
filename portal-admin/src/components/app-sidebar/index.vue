@@ -1,20 +1,23 @@
 <script lang="ts" setup>
-import { storeToRefs } from 'pinia';
-import Button from '../ui/button/Button.vue';
-import { sidebarData } from './data/sidebar-data'
-import NavTeam from './nav-team.vue'
-import NavFooter from './nav-footer.vue';
+import { storeToRefs } from 'pinia'
 
-const {logout} = useAuth()
+import Button from '../ui/button/Button.vue'
+import { sidebarData } from './data/sidebar-data'
+import NavFooter from './nav-footer.vue'
+import NavTeam from './nav-team.vue'
+
+const { logout } = useAuth()
 
 const { user, loading } = storeToRefs(useAuthStore())
 
-const visibleNavMain = computed(() => sidebarData.navMain.map(group => ({
-  ...group,
-  items: group.items.filter(item =>
-    item.url !== '/manager' || user.value?.role === 'ADMIN',
-  ),
-})))
+const visibleNavMain = computed(() => sidebarData.navMain
+  .map(group => ({
+    ...group,
+    items: group.items.filter((item) => {
+      return (item.url !== '/manager' && item.url !== '/log') || user.value?.role === 'ADMIN'
+    }),
+  }))
+  .filter(group => group.items.length > 0))
 </script>
 
 <template>
@@ -33,11 +36,15 @@ const visibleNavMain = computed(() => sidebarData.navMain.map(group => ({
     <UiSidebarContent>
       <NavTeam :nav-main="visibleNavMain" />
     </UiSidebarContent>
-    
+
     <UiSidebarFooter>
-      <Button class="cursor-pointer" variant="destructive" @click="() => {
-        logout()
-      }">Log out</Button>
+      <Button
+        class="cursor-pointer" variant="destructive" @click="() => {
+          logout()
+        }"
+      >
+        Log out
+      </Button>
     </UiSidebarFooter>
     <UiSidebarRail />
   </UiSidebar>

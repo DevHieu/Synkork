@@ -1,7 +1,13 @@
 package com.synkork.backend.modules.admin.manager;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.common.utils.EmailService;
+import com.synkork.backend.modules.admin.auditLog.AuditLogService;
+import com.synkork.backend.modules.admin.auditLog.dtos.BuildLog;
+import com.synkork.backend.modules.admin.auditLog.enums.LogActionEnum;
+import com.synkork.backend.modules.admin.auditLog.enums.LogEntityTypeEnum;
 import com.synkork.backend.modules.admin.manager.dto.*;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.enums.RoleEnum;
@@ -30,6 +36,12 @@ public class ManagerService {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private AuditLogService auditLogService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     public Page<UserEntity> getManagers(ManagerFilterRequest request) {
         request.validate();
@@ -65,6 +77,7 @@ public class ManagerService {
 
         UserEntity saved = managerRepository.save(account);
         sendWelcomeEmail(saved, temporaryPassword);
+        logManagerAction(LogActionEnum.CREATE_MANAGER, saved, null, "created manager account " + saved.getEmail());
         return ManagerResponse.from(saved);
     }
 
@@ -105,6 +118,22 @@ public class ManagerService {
         } else {
             sendManagerUpdatedEmail(saved, oldDisplayName, oldEmail, oldStatus, oldRole);
         }
+
+        logManagerAction(
+                LogActionEnum.UPDATE_MANAGER,
+                saved,
+                Map.of(
+                        "oldDisplayName", valueOrDash(oldDisplayName),
+                        "oldEmail", valueOrDash(oldEmail),
+                        "oldStatus", valueOrDash(oldStatus),
+                        "oldRole", valueOrDash(oldRole),
+                        "newDisplayName", valueOrDash(saved.getDisplayName()),
+                        "newEmail", valueOrDash(saved.getEmail()),
+                        "newStatus", valueOrDash(saved.getStatus()),
+                        "newRole", valueOrDash(saved.getRole())
+                ),
+                "updated manager account " + saved.getEmail()
+        );
         return ManagerResponse.from(saved);
     }
 
@@ -119,6 +148,12 @@ public class ManagerService {
         account.setStatus(UserStatusEnum.BANNED);
         managerRepository.save(account);
         sendManagerLockedEmail(account, reason);
+        logManagerAction(
+                LogActionEnum.LOCK_MANAGER,
+                account,
+                Map.of("reason", reason, "newStatus", valueOrDash(account.getStatus())),
+                "locked manager account " + account.getEmail()
+        );
         return Map.of("message", "Da khoa tai khoan manager/admin thanh cong");
     }
 
@@ -168,6 +203,34 @@ public class ManagerService {
             return UserStatusEnum.valueOf(status.toUpperCase());
         } catch (IllegalArgumentException exception) {
             throw new IllegalArgumentException("Trang thai khong hop le");
+        }
+    }
+
+    private void logManagerAction(LogActionEnum action, UserEntity account, Map<String, Object> changes, String description) {
+        auditLogService.log(BuildLog.builder()
+                .action(action)
+                .entityType(LogEntityTypeEnum.MANAGER)
+                .entityId(account.getId().toString())
+                .entityName(account.getEmail())
+                .description(AuthUtils.getCurrentUsername() + " " + description)
+                .metadata(createManagerMetadata(account, changes))
+                .build());
+    }
+
+    private String createManagerMetadata(UserEntity account, Map<String, Object> changes) {
+        try {
+            Map<String, Object> metadata = Map.of(
+                    "managerId", account.getId().toString(),
+                    "username", valueOrDash(account.getUsername()),
+                    "email", valueOrDash(account.getEmail()),
+                    "displayName", valueOrDash(account.getDisplayName()),
+                    "role", valueOrDash(account.getRole()),
+                    "status", valueOrDash(account.getStatus()),
+                    "changes", changes != null ? changes : Map.of()
+            );
+            return objectMapper.writeValueAsString(metadata);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize manager audit metadata", e);
         }
     }
 

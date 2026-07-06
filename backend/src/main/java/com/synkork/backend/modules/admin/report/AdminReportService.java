@@ -1,5 +1,17 @@
 package com.synkork.backend.modules.admin.report;
 
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.synkork.backend.common.utils.AuthUtils;
@@ -13,14 +25,6 @@ import com.synkork.backend.modules.admin.report.dtos.ReportResponse;
 import com.synkork.backend.modules.admin.report.dtos.ReportUpdateStatusRequest;
 import com.synkork.backend.modules.report.ReportEntity;
 import com.synkork.backend.modules.report.enums.ReportStatusEnums;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.*;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 @Service
 public class AdminReportService {
@@ -44,7 +48,8 @@ public class AdminReportService {
     }
 
     public ReportResponse getReportById(UUID id) {
-        ReportEntity entity = adminReportRepository.findById(id).orElseThrow(() -> new RuntimeException("Report không tồn tại"));
+        ReportEntity entity = adminReportRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Report không tồn tại"));
 
         return new ReportResponse(entity);
     }
@@ -54,16 +59,16 @@ public class AdminReportService {
         request.validate(); // validate dateFrom and dateTo
 
         Specification<ReportEntity> spec = ReportSpecification.from(request);
- 
+
         Pageable pageable = PageRequest.of(
                 request.getPage(),
                 request.getSize(),
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
- 
+
         return adminReportRepository.findAll(spec, pageable);
     }
- 
+
     public ReportEntity updateReportStatus(UUID reportId, ReportUpdateStatusRequest request) {
         ReportEntity report = adminReportRepository.findById(reportId)
                 .orElseThrow(() -> new RuntimeException("Report không tồn tại: " + reportId));
@@ -75,6 +80,7 @@ public class AdminReportService {
             throw new RuntimeException("Report này đã được xử lý xong, không thể thay đổi trạng thái");
         }
 
+        ReportStatusEnums previousStatus = report.getStatus();
         report.setStatus(newStatus);
         ReportEntity savedReport = adminReportRepository.save(report);
 
@@ -87,11 +93,15 @@ public class AdminReportService {
             );
 
             BuildLog log = BuildLog.builder()
-                    .action(newStatus == ReportStatusEnums.RESOLVED ? LogActionEnum.RESOLVE_REPORT : LogActionEnum.DISMISS_REPORT)
+                    .action(newStatus == ReportStatusEnums.RESOLVED
+                            ? LogActionEnum.RESOLVE_REPORT
+                            : LogActionEnum.DISMISS_REPORT)
                     .entityType(LogEntityTypeEnum.REPORT)
                     .entityId(savedReport.getId().toString())
-                    .description(AuthUtils.getCurrentUsername() + " Đã xử lí tố cáo của user " + savedReport.getTargetUser().getEmail())
-                    .metadata(this.createMetadata(report, savedReport))
+                    .entityName(getReportTargetName(savedReport))
+                    .workspaceId(savedReport.getTargetRoom() != null ? savedReport.getTargetRoom().getId() : null)
+                    .description(AuthUtils.getCurrentUsername() + " processed report " + savedReport.getId())
+                    .metadata(createMetadata(previousStatus, savedReport, request.note()))
                     .build();
 
             auditLogService.log(log);
@@ -109,25 +119,49 @@ public class AdminReportService {
                 .action(LogActionEnum.REPORT_DELETED)
                 .entityType(LogEntityTypeEnum.REPORT)
                 .entityId(report.getId().toString())
-                .description(AuthUtils.getCurrentUsername() + " Đã xóa tố cáo")
-                .metadata(this.createMetadata(report, report))
+                .entityName(getReportTargetName(report))
+                .workspaceId(report.getTargetRoom() != null ? report.getTargetRoom().getId() : null)
+                .description(AuthUtils.getCurrentUsername() + " deleted report " + report.getId())
+                .metadata(createMetadata(report.getStatus(), report, null))
                 .build();
 
         auditLogService.log(log);
     }
 
-    public String createMetadata(ReportEntity previousReport, ReportEntity newReport) {
+    public String createMetadata(ReportStatusEnums previousStatus, ReportEntity report, String note) {
         try {
             Map<String, Object> metadataMap = Map.of(
-                    "reportId", newReport.getId().toString(),
-                    "reportType", newReport.getReportType(),
-                    "targetUserId", newReport.getTargetUser().getId().toString(),
-                    "targetUserEmail", newReport.getTargetUser().getEmail(),
-                    "previousStatus", previousReport.getStatus()
+                    "reportId", report.getId().toString(),
+                    "reportType", report.getReportType(),
+                    "targetId", getReportTargetId(report),
+                    "targetName", getReportTargetName(report),
+                    "previousStatus", previousStatus,
+                    "newStatus", report.getStatus(),
+                    "note", note != null ? note : ""
             );
             return objectMapper.writeValueAsString(metadataMap);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Failed to serialize metadata", e);
         }
+    }
+
+    private String getReportTargetId(ReportEntity report) {
+        if (report.getTargetUser() != null) {
+            return report.getTargetUser().getId().toString();
+        }
+        if (report.getTargetRoom() != null) {
+            return report.getTargetRoom().getId().toString();
+        }
+        return "";
+    }
+
+    private String getReportTargetName(ReportEntity report) {
+        if (report.getTargetUser() != null) {
+            return report.getTargetUser().getEmail();
+        }
+        if (report.getTargetRoom() != null) {
+            return report.getTargetRoom().getName();
+        }
+        return "";
     }
 }

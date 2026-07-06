@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.admin.auditLog.enums;
 
 public enum LogActionEnum {
+    CREATE_USER,
     CREATE_INVOICE,
     UPDATE_INVOICE,
     DELETE_INVOICE,
@@ -9,11 +10,20 @@ public enum LogActionEnum {
 
     BAN_USER,
     UNBAN_USER,
+    WARN_USER,
     UPDATE_USER,
     DELETE_USER,
 
+    CREATE_WORKSPACE,
     UPDATE_WORKSPACE,
     DELETE_WORKSPACE,
+    LOCK_WORKSPACE,
+    UNLOCK_WORKSPACE,
+    WARN_WORKSPACE,
+
+    CREATE_MANAGER,
+    UPDATE_MANAGER,
+    LOCK_MANAGER,
 
     RESOLVE_REPORT,
     DISMISS_REPORT,

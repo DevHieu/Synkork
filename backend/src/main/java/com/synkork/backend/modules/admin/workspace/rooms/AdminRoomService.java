@@ -1,6 +1,9 @@
 package com.synkork.backend.modules.admin.workspace.rooms;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +13,10 @@ import org.springframework.stereotype.Service;
 
 import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.common.utils.EmailService;
+import com.synkork.backend.modules.admin.auditLog.AuditLogService;
+import com.synkork.backend.modules.admin.auditLog.dtos.BuildLog;
+import com.synkork.backend.modules.admin.auditLog.enums.LogActionEnum;
+import com.synkork.backend.modules.admin.auditLog.enums.LogEntityTypeEnum;
 import com.synkork.backend.modules.admin.workspace.members.dtos.AdminRoomMemberResponse;
 import com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminRoomDetailResponse;
 import com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminRoomRequest;
@@ -34,6 +41,12 @@ public class AdminRoomService {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private AuditLogService auditLogService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     public Page<RoomEntity> getRooms(RoomFilterRequest request) {
         request.validate();
@@ -107,13 +120,20 @@ public class AdminRoomService {
                 .owner(owner)
                 .build();
 
-        return new AdminRoomResponse(roomRepository.save(room));
+        RoomEntity saved = roomRepository.save(room);
+        logRoomAction(LogActionEnum.CREATE_WORKSPACE, saved, null, "created room " + valueOrDash(saved.getName()));
+        return new AdminRoomResponse(saved);
     }
 
     // ─── CẬP NHẬT ────────────────────────────────────────────────────────────
 
     public AdminRoomResponse updateRoom(String roomId, AdminRoomRequest request) {
         RoomEntity room = findRoomOrThrow(roomId);
+        String oldName = room.getName();
+        String oldDescription = room.getDescription();
+        String oldAvatarUrl = room.getAvatarUrl();
+        RoomStatusEnum oldStatus = room.getStatus();
+        UUID oldOwnerId = room.getOwner() != null ? room.getOwner().getId() : null;
 
         if (request.status() == RoomStatusEnum.PENDING_REMOVAL) {
             throw new IllegalArgumentException("Không thể đặt trạng thái Pending Removal thủ công");
@@ -124,8 +144,18 @@ public class AdminRoomService {
             if (request.status() != null) {
                 room.setStatus(request.status());
             }
-            AdminRoomResponse saved = new AdminRoomResponse(roomRepository.save(room));
+            RoomEntity savedRoom = roomRepository.save(room);
+            AdminRoomResponse saved = new AdminRoomResponse(savedRoom);
             sendOwnerUpdateEmail(room);
+            logRoomAction(
+                    LogActionEnum.UPDATE_WORKSPACE,
+                    savedRoom,
+                    Map.of(
+                            "oldStatus", valueOrDash(oldStatus),
+                            "newStatus", valueOrDash(savedRoom.getStatus())
+                    ),
+                    "updated direct room " + savedRoom.getId()
+            );
             return saved;
         }
 
@@ -149,8 +179,26 @@ public class AdminRoomService {
             room.setOwner(newOwner);
         }
 
-        AdminRoomResponse saved = new AdminRoomResponse(roomRepository.save(room));
+        RoomEntity savedRoom = roomRepository.save(room);
+        AdminRoomResponse saved = new AdminRoomResponse(savedRoom);
         sendOwnerUpdateEmail(room);
+        logRoomAction(
+                LogActionEnum.UPDATE_WORKSPACE,
+                savedRoom,
+                Map.of(
+                        "oldName", valueOrDash(oldName),
+                        "oldDescription", valueOrDash(oldDescription),
+                        "oldAvatarUrl", valueOrDash(oldAvatarUrl),
+                        "oldStatus", valueOrDash(oldStatus),
+                        "oldOwnerId", valueOrDash(oldOwnerId),
+                        "newName", valueOrDash(savedRoom.getName()),
+                        "newDescription", valueOrDash(savedRoom.getDescription()),
+                        "newAvatarUrl", valueOrDash(savedRoom.getAvatarUrl()),
+                        "newStatus", valueOrDash(savedRoom.getStatus()),
+                        "newOwnerId", savedRoom.getOwner() != null ? savedRoom.getOwner().getId().toString() : ""
+                ),
+                "updated room " + savedRoom.getId()
+        );
         return saved;
     }
 
@@ -160,6 +208,7 @@ public class AdminRoomService {
         RoomEntity room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy room"));
 
+        int oldWarning = room.getWarning();
         room.setWarning(room.getWarning() + 1);
 
         RoomEntity saved = roomRepository.save(room);
@@ -168,6 +217,15 @@ public class AdminRoomService {
             emailService.sendWarningEmail(owner.getEmail(), saved.getName(), "phòng của bạn", saved.getWarning());
         }
 
+        logRoomAction(
+                LogActionEnum.WARN_WORKSPACE,
+                saved,
+                Map.of(
+                        "oldWarning", oldWarning,
+                        "newWarning", saved.getWarning()
+                ),
+                "warned room " + saved.getId()
+        );
         return new AdminRoomResponse(saved);
     }
 
@@ -199,6 +257,7 @@ public class AdminRoomService {
             throw new RuntimeException("Room đang mở rồi!");
         }
 
+        RoomStatusEnum oldStatus = room.getStatus();
         room.setStatus(status);
         RoomEntity saved = roomRepository.save(room);
 
@@ -210,10 +269,53 @@ public class AdminRoomService {
             }
         }
 
+        logRoomAction(
+                status == RoomStatusEnum.OPEN ? LogActionEnum.UNLOCK_WORKSPACE : LogActionEnum.LOCK_WORKSPACE,
+                saved,
+                Map.of(
+                        "oldStatus", valueOrDash(oldStatus),
+                        "newStatus", valueOrDash(saved.getStatus())
+                ),
+                "changed room status for " + saved.getId()
+        );
         return new AdminRoomResponse(saved);
     }
 
     // ─── Private helpers ─────────────────────────────────────────────────────
+
+    private void logRoomAction(LogActionEnum action, RoomEntity room, Map<String, Object> changes, String description) {
+        auditLogService.log(BuildLog.builder()
+                .action(action)
+                .entityType(LogEntityTypeEnum.WORKSPACE)
+                .entityId(room.getId().toString())
+                .entityName(valueOrDash(room.getName()))
+                .workspaceId(room.getId())
+                .description(AuthUtils.getCurrentUsername() + " " + description)
+                .metadata(createRoomMetadata(room, changes))
+                .build());
+    }
+
+    private String createRoomMetadata(RoomEntity room, Map<String, Object> changes) {
+        try {
+            Map<String, Object> metadata = Map.of(
+                    "roomId", room.getId().toString(),
+                    "name", valueOrDash(room.getName()),
+                    "type", valueOrDash(room.getType()),
+                    "status", valueOrDash(room.getStatus()),
+                    "ownerId", room.getOwner() != null ? room.getOwner().getId().toString() : "",
+                    "ownerEmail", room.getOwner() != null ? valueOrDash(room.getOwner().getEmail()) : "",
+                    "warning", room.getWarning(),
+                    "changes", changes != null ? changes : Map.of()
+            );
+            return objectMapper.writeValueAsString(metadata);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize room audit metadata", e);
+        }
+    }
+
+    private String valueOrDash(Object value) {
+        return value == null ? "" : value.toString();
+    }
 
     private RoomEntity findRoomOrThrow(String roomId) {
         return roomRepository.findById(UUID.fromString(roomId))

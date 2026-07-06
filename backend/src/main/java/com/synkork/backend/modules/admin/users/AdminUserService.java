@@ -1,6 +1,13 @@
 package com.synkork.backend.modules.admin.users;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.common.utils.EmailService;
+import com.synkork.backend.modules.admin.auditLog.AuditLogService;
+import com.synkork.backend.modules.admin.auditLog.dtos.BuildLog;
+import com.synkork.backend.modules.admin.auditLog.enums.LogActionEnum;
+import com.synkork.backend.modules.admin.auditLog.enums.LogEntityTypeEnum;
 import com.synkork.backend.modules.admin.users.dtos.AdminUserResponse;
 import com.synkork.backend.modules.admin.users.dtos.CreateUserRequest;
 import com.synkork.backend.modules.admin.users.dtos.DeleteUserRequest;
@@ -55,6 +62,12 @@ public class AdminUserService {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private AuditLogService auditLogService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
     public Page<UserEntity> getUsers(UserFilterRequest request) {
         request.validate();
 
@@ -90,6 +103,7 @@ public class AdminUserService {
 
         UserEntity saved = userAdminRepository.save(user);
         sendWelcomeEmail(saved.getEmail(), saved.getUsername(), tempPassword);
+        logUserAction(LogActionEnum.CREATE_USER, saved, null, "created user " + saved.getEmail());
         return AdminUserResponse.from(saved);
     }
 
@@ -127,6 +141,23 @@ public class AdminUserService {
 
         UserEntity saved = userAdminRepository.save(user);
         sendUserUpdatedEmail(saved, oldDisplayName, oldEmail, oldPlan, oldStatus, oldRole);
+        logUserAction(
+                LogActionEnum.UPDATE_USER,
+                saved,
+                Map.of(
+                        "oldDisplayName", valueOrDash(oldDisplayName),
+                        "oldEmail", valueOrDash(oldEmail),
+                        "oldPlan", valueOrDash(oldPlan),
+                        "oldStatus", valueOrDash(oldStatus),
+                        "oldRole", valueOrDash(oldRole),
+                        "newDisplayName", valueOrDash(saved.getDisplayName()),
+                        "newEmail", valueOrDash(saved.getEmail()),
+                        "newPlan", valueOrDash(saved.getCurrentPlan()),
+                        "newStatus", valueOrDash(saved.getStatus()),
+                        "newRole", valueOrDash(saved.getRole())
+                ),
+                "updated user " + saved.getEmail()
+        );
         return AdminUserResponse.from(saved);
     }
 
@@ -142,12 +173,19 @@ public class AdminUserService {
         user.setStatus(UserStatusEnum.INACTIVE);
         userAdminRepository.save(user);
         sendUserDeletedEmail(user, reason);
+        logUserAction(
+                LogActionEnum.DELETE_USER,
+                user,
+                Map.of("reason", reason),
+                "deactivated user " + user.getEmail()
+        );
 
         return Map.of("message", "Da chuyen nguoi dung sang INACTIVE va xoa khoi cac room dang tham gia");
     }
 
     public AdminUserResponse lockUser(UUID userId, UserStatusEnum status) {
         UserEntity user = findUserOrThrow(userId);
+        UserStatusEnum oldStatus = user.getStatus();
         user.setStatus(status);
         UserEntity saved = userAdminRepository.save(user);
 
@@ -158,12 +196,22 @@ public class AdminUserService {
             emailService.sendLockEmail(saved.getEmail(), targetName, "tài khoản của bạn");
         }
 
+        logUserAction(
+                status == UserStatusEnum.ACTIVE ? LogActionEnum.UNBAN_USER : LogActionEnum.BAN_USER,
+                saved,
+                Map.of(
+                        "oldStatus", valueOrDash(oldStatus),
+                        "newStatus", valueOrDash(saved.getStatus())
+                ),
+                "changed user status for " + saved.getEmail()
+        );
         return AdminUserResponse.from(saved);
     }
 
     public AdminUserResponse warnUser(UUID userId) {
         UserEntity user = findUserOrThrow(userId);
 
+        int oldWarning = user.getWarning();
         user.setWarning(user.getWarning() + 1);
 
         UserEntity saved = userAdminRepository.save(user);
@@ -172,7 +220,46 @@ public class AdminUserService {
                 : saved.getUsername();
         emailService.sendWarningEmail(saved.getEmail(), targetName, "tài khoản của bạn", saved.getWarning());
 
+        logUserAction(
+                LogActionEnum.WARN_USER,
+                saved,
+                Map.of(
+                        "oldWarning", oldWarning,
+                        "newWarning", saved.getWarning()
+                ),
+                "warned user " + saved.getEmail()
+        );
         return AdminUserResponse.from(saved);
+    }
+
+    private void logUserAction(LogActionEnum action, UserEntity user, Map<String, Object> changes, String description) {
+        auditLogService.log(BuildLog.builder()
+                .action(action)
+                .entityType(LogEntityTypeEnum.USER)
+                .entityId(user.getId().toString())
+                .entityName(user.getEmail())
+                .description(AuthUtils.getCurrentUsername() + " " + description)
+                .metadata(createUserMetadata(user, changes))
+                .build());
+    }
+
+    private String createUserMetadata(UserEntity user, Map<String, Object> changes) {
+        try {
+            Map<String, Object> metadata = Map.of(
+                    "userId", user.getId().toString(),
+                    "username", valueOrDash(user.getUsername()),
+                    "email", valueOrDash(user.getEmail()),
+                    "displayName", valueOrDash(user.getDisplayName()),
+                    "role", valueOrDash(user.getRole()),
+                    "status", valueOrDash(user.getStatus()),
+                    "plan", valueOrDash(user.getCurrentPlan()),
+                    "warning", user.getWarning(),
+                    "changes", changes != null ? changes : Map.of()
+            );
+            return objectMapper.writeValueAsString(metadata);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize user audit metadata", e);
+        }
     }
 
     private UserEntity findUserOrThrow(UUID id) {
