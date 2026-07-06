@@ -8,8 +8,8 @@ import com.synkork.backend.modules.admin.auditLog.AuditLogService;
 import com.synkork.backend.modules.admin.auditLog.dtos.BuildLog;
 import com.synkork.backend.modules.admin.auditLog.enums.LogActionEnum;
 import com.synkork.backend.modules.admin.auditLog.enums.LogEntityTypeEnum;
-import com.synkork.backend.modules.admin.report.dtos.ReportDTO;
 import com.synkork.backend.modules.admin.report.dtos.ReportFilterRequest;
+import com.synkork.backend.modules.admin.report.dtos.ReportResponse;
 import com.synkork.backend.modules.admin.report.dtos.ReportUpdateStatusRequest;
 import com.synkork.backend.modules.report.ReportEntity;
 import com.synkork.backend.modules.report.enums.ReportStatusEnums;
@@ -36,17 +36,17 @@ public class AdminReportService {
     @Autowired
     private ObjectMapper objectMapper;
 
-    public List<ReportDTO> getAllReports() {
+    public List<ReportResponse> getAllReports() {
         return adminReportRepository.findAll()
                 .stream()
-                .map(ReportDTO::new)
+                .map(ReportResponse::new)
                 .toList();
     }
 
-    public ReportDTO getReportById(UUID id) {
+    public ReportResponse getReportById(UUID id) {
         ReportEntity entity = adminReportRepository.findById(id).orElseThrow(() -> new RuntimeException("Report không tồn tại"));
 
-        return new ReportDTO(entity);
+        return new ReportResponse(entity);
     }
 
     public Page<ReportEntity> getFilteredReports(ReportFilterRequest request) {

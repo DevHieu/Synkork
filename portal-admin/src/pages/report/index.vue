@@ -4,7 +4,7 @@ import { refDebounced } from '@vueuse/core'
 import { computed, h, onMounted, ref, watch } from 'vue'
 
 import type { TableColumn } from '@/components/base-table.vue'
-import type { Report, ReportFilterParams, ReportStatus, ReportType } from '@/pages/report/types/Reports.ts'
+import type { Report, ReportFilterParams, ReportReason, ReportSeverity, ReportStatus, ReportType } from '@/pages/report/types/Reports.ts'
 
 import DateRangePicker from '@/components/date-range-picker.vue'
 import { BasicPage } from '@/components/global-layout'
@@ -16,6 +16,7 @@ import { defaultDateRange, formatTimestamp, formatToISODateTime } from '@/utils/
 
 import ReportDetail from './components/ReportDetail.vue'
 import { deleteReport, getReports, updateReportStatus } from './service/reportService'
+import { REASON_LABEL_MAP, SEVERITY_CONFIG } from './utils/report.utils.ts'
 
 const loading = ref(false)
 const currentPage = ref(1)
@@ -28,6 +29,7 @@ const pagedData = ref<Report[]>([])
 const searchKeyword = ref('')
 const filterStatus = ref<ReportStatus | 'ALL'>('ALL')
 const filterType = ref<ReportType | 'ALL'>('ALL')
+const filterSeverity = ref<ReportSeverity | 'ALL'>('ALL')
 const dateRange = ref(defaultDateRange())
 const debouncedSearch = refDebounced(searchKeyword, 500)
 
@@ -48,6 +50,8 @@ async function fetchReports() {
       params.status = filterStatus.value
     if (filterType.value && filterType.value !== 'ALL')
       params.reportType = filterType.value
+    if (filterSeverity.value && filterSeverity.value !== 'ALL')
+      params.severity = filterSeverity.value
     if (dateRange.value?.from) {
       const fromDate = typeof dateRange.value.from === 'string' ? new Date(dateRange.value.from) : dateRange.value.from
       params.fromDate = formatToISODateTime(fromDate)
@@ -72,10 +76,21 @@ async function fetchReports() {
   }
 }
 
+const typeLabelMap: Record<string, string> = {
+  USER: 'Người dùng',
+  ROOM: 'Phòng',
+}
+
+function renderSeverity(severity: string) {
+  const config = SEVERITY_CONFIG[severity as keyof typeof SEVERITY_CONFIG]
+  return h(Badge, { variant: 'outline', class: config ? `px-3 ${config.class}` : '' }, () => config?.label ?? severity)
+}
+
 const hasActiveFilter = computed(() =>
   !!searchKeyword.value
   || (filterStatus.value !== 'ALL')
   || (filterType.value !== 'ALL')
+  || (filterSeverity.value !== 'ALL')
   || dateRange.value !== null, // null = tất cả = không active, có value = đang filter
 )
 
@@ -83,6 +98,7 @@ function clearFilters() {
   searchKeyword.value = ''
   filterStatus.value = 'ALL'
   filterType.value = 'ALL'
+  filterSeverity.value = 'ALL'
   dateRange.value = defaultDateRange()
 }
 
@@ -114,7 +130,7 @@ async function handleUpdateReportStatus({ id, status, note }: { id: string, stat
 }
 
 async function handleDeleteReport(reportId: string) {
-  if (!confirm('Bạn có chắc muốn xó cái nì khum?'))
+  if (!confirm('Bạn có chắc chắn muốn xóa cái này?'))
     return
 
   try {
@@ -163,12 +179,7 @@ function renderStatus(status: string) {
     () => config?.label ?? status,
   )
 }
- 
-const typeLabelMap: Record<string, string> = {
-  USER: 'Người dùng',
-  ROOM: 'Phòng',
-}
- 
+
 const columns = computed<TableColumn<Report>[]>(() => [
   {
     header: 'Loại',
@@ -177,9 +188,20 @@ const columns = computed<TableColumn<Report>[]>(() => [
     render: row =>
       h(Badge, { variant: row.reportType === 'USER' ? 'outline' : 'secondary' }, () => typeLabelMap[row.reportType] ?? row.reportType),
   },
-  { header: 'Lý do', accessor: 'reason', minWidth: 180 },
+  {
+    header: 'Lý do',
+    accessor: 'reason',
+    minWidth: 180,
+    render: row => REASON_LABEL_MAP[row.reason] ?? row.reason,
+  },
+  {
+    header: 'Mức độ',
+    accessor: 'severity',
+    minWidth: 130,
+    render: row => renderSeverity(row.severity),
+  },
   { header: 'Mô tả', accessor: 'description', minWidth: 220 },
-    {
+  {
     header: 'Trạng thái',
     accessor: 'status',
     minWidth: 150,
@@ -210,7 +232,7 @@ const columns = computed<TableColumn<Report>[]>(() => [
             'Xem',
           ],
         ),
- 
+
         h(
           UiButton,
           {
@@ -227,16 +249,16 @@ const columns = computed<TableColumn<Report>[]>(() => [
       ]),
   },
 ])
- 
-watch([debouncedSearch, filterStatus, filterType, dateRange], () => {
+
+watch([debouncedSearch, filterStatus, filterType, filterSeverity, dateRange], () => {
   currentPage.value = 1
   fetchReports()
 })
 watch(currentPage, fetchReports)
- 
+
 onMounted(fetchReports)
 </script>
- 
+
 <template>
   <BasicPage title="Báo cáo vi phạm" description="Quản lý các báo cáo người dùng và phòng" sticky>
     <div class="flex flex-wrap items-center gap-3 mb-4">
@@ -255,35 +277,65 @@ onMounted(fetchReports)
           <X class="h-3.5 w-3.5" />
         </button>
       </div>
- 
+
       <Select v-model="filterStatus">
         <SelectTrigger class="h-9 w-[160px] text-sm">
           <SelectValue placeholder="Tất cả trạng thái" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-          <SelectItem value="PENDING">Chờ xử lý</SelectItem>
-          <SelectItem value="REVIEWED">Đang xem xét</SelectItem>
-          <SelectItem value="RESOLVED">Đã giải quyết</SelectItem>
-          <SelectItem value="DISMISSED">Đã bác bỏ</SelectItem>
+          <SelectItem value="ALL">
+            Tất cả trạng thái
+          </SelectItem>
+          <SelectItem value="PENDING">
+            Chờ xử lý
+          </SelectItem>
+          <SelectItem value="REVIEWED">
+            Đang xem xét
+          </SelectItem>
+          <SelectItem value="RESOLVED">
+            Đã giải quyết
+          </SelectItem>
+          <SelectItem value="DISMISSED">
+            Đã bác bỏ
+          </SelectItem>
         </SelectContent>
       </Select>
- 
+
       <Select v-model="filterType">
         <SelectTrigger class="h-9 w-[150px] text-sm">
           <SelectValue placeholder="Tất cả loại" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="ALL">Tất cả loại</SelectItem>
-          <SelectItem value="USER">Người dùng</SelectItem>
-          <SelectItem value="ROOM">Phòng</SelectItem>
+          <SelectItem value="ALL">
+            Tất cả loại
+          </SelectItem>
+          <SelectItem value="USER">
+            Người dùng
+          </SelectItem>
+          <SelectItem value="ROOM">
+            Phòng
+          </SelectItem>
         </SelectContent>
       </Select>
- 
+
+      <Select v-model="filterSeverity">
+        <SelectTrigger class="h-9 w-[150px] text-sm">
+          <SelectValue placeholder="Tất cả mức độ" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="ALL">
+            Tất cả mức độ
+          </SelectItem>
+          <SelectItem v-for="(config, key) in SEVERITY_CONFIG" :key="key" :value="key">
+            {{ config.label }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
+
       <div>
         <DateRangePicker v-model="dateRange" />
       </div>
- 
+
       <UiButton
         v-if="hasActiveFilter"
         variant="ghost"
@@ -295,7 +347,7 @@ onMounted(fetchReports)
         Xóa bộ lọc
       </UiButton>
     </div>
- 
+
     <div class="relative rounded-md border border-neutral-200 dark:border-neutral-800">
       <div
         v-if="loading"
@@ -303,20 +355,22 @@ onMounted(fetchReports)
       >
         <LoaderIcon class="animate-spin text-primary" />
       </div>
- 
+
       <div
         v-if="!loading && pagedData?.length === 0"
         class="flex flex-col items-center justify-center py-20 text-muted-foreground gap-2"
       >
         <ShieldAlert class="h-10 w-10 opacity-40" />
-        <p class="text-sm">Không tìm thấy báo cáo nào.</p>
+        <p class="text-sm">
+          Không tìm thấy báo cáo nào.
+        </p>
         <UiButton v-if="hasActiveFilter" variant="link" size="sm" @click="clearFilters">
           Xóa bộ lọc để xem tất cả
         </UiButton>
       </div>
- 
+
       <BaseTable v-else :columns="columns" :data="pagedData" />
- 
+
       <Pagination
         v-model:current-page="currentPage"
         :total="totalPages"
@@ -325,6 +379,6 @@ onMounted(fetchReports)
       />
     </div>
   </BasicPage>
- 
+
   <ReportDetail v-if="selectedReport" v-model:open="isDetailOpen" :report="selectedReport" @action="handleUpdateReportStatus" />
 </template>

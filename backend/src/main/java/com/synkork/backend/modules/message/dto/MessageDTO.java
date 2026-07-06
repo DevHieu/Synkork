@@ -50,6 +50,7 @@ public class MessageDTO {
         this.attachmentUrl = message.getAttachmentUrl();
         this.attachmentName = message.getAttachmentName();
         this.sender = new RoomMemberDto(
+                message.getSender().getUser().getId(),
                 message.getSender().getUser().getDisplayName(),
                 message.getSender().getUser().getUsername(),
                 message.getSender().getUser().getAvatarUrl(),
@@ -62,7 +63,7 @@ public class MessageDTO {
 
     public MessageDTO(UUID id,String content, UUID spaceId, boolean deleted, boolean pinned, boolean edited,
                       MessageTypeEnum type, String attachmentUrl, String attachmentName,
-                      String senderUsername, String senderDisplayName,
+                      UUID senderId, String senderUsername, String senderDisplayName,
                       String senderAvatarUrl, RoomMemberRoleEnum senderRole, UUID replyToId,
                       LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
@@ -74,7 +75,7 @@ public class MessageDTO {
         this.type = type;
         this.attachmentUrl = attachmentUrl;
         this.attachmentName = attachmentName;
-        this.sender = new RoomMemberDto(senderDisplayName, senderUsername, senderAvatarUrl, senderRole);
+        this.sender = new RoomMemberDto(senderId, senderDisplayName, senderUsername, senderAvatarUrl, senderRole);
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.replyToId = replyToId;

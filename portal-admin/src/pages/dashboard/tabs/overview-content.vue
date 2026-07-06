@@ -3,7 +3,7 @@ import OverviewChart from '../components/overview-chart.vue'
 import DataCard from '../components/data-card.vue';
 import RecentReports from '../components/recent-reports.vue';
 
-import { Activity, MessagesSquare, Server, Users, Flag } from '@lucide/vue';
+import { Activity, CreditCard, Flag, Server, Users } from '@lucide/vue';
 import { dashboardService } from '../services/dashboardService';
 
 const stats = ref<any>(null)
@@ -26,7 +26,7 @@ onMounted(async () => {
     <DataCard title="Tổng rooms" :data="stats?.totalRooms?.toLocaleString() ?? '—'" :icon="Server"
       :day-growth="stats?.roomDayGrowth" :month-growth="stats?.roomMonthGrowth" />
     <DataCard title="Tổng subscriptions" :data="stats?.totalSubscriptions?.toLocaleString() ?? '—'"
-      :icon="MessagesSquare" :day-growth="stats?.subscriptionDayGrowth"
+      :icon="CreditCard" :day-growth="stats?.subscriptionDayGrowth"
       :month-growth="stats?.subscriptionMonthGrowth" />
   </div>
 
@@ -41,7 +41,9 @@ onMounted(async () => {
         <UiCardDescription>Các report đang chờ xử lý gần đây.</UiCardDescription>
       </UiCardHeader>
       <UiCardContent>
-        <RecentReports />
+        <p class="text-sm text-muted-foreground text-center py-6">
+          Chưa có dữ liệu report.
+        </p>
       </UiCardContent>
     </UiCard>
   </div>

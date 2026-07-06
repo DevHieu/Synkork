@@ -25,7 +25,7 @@ import { Flag } from 'lucide-vue-next'
 import type { User } from "@/types/User"
 import type { Room } from "@/types/Room"
 import { createRoomReport, createUserReport } from '@/services/reportService'
-import type { ReportRequest } from '@/types/Report'
+import type { ReportReason, ReportRequest } from '@/types/Report'
 import { toast } from 'vue-sonner'
 
 const props = defineProps<{
@@ -36,7 +36,7 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:open'])
 
-const reason = ref('')
+const reason = ref<ReportReason | ''>('')
 const description = ref('')
 
 const isUser = computed(() => !!props.user)
@@ -44,12 +44,12 @@ const targetName = computed(() => props.user?.displayName || props.room?.name ||
 const targetAvatar = computed(() => props.user?.avatarUrl || props.room?.roomAvatar)
 const targetSubInfo = computed(() => props.user ? `@${props.user.username}` : (props.room?.description || 'Phòng trò chuyện'))
 
-const reasons = [
-  { value: 'spam', label: 'Spam / Quảng cáo' },
-  { value: 'harassment', label: 'Quấy rối / Đe dọa' },
-  { value: 'inappropriate', label: 'Nội dung không phù hợp' },
-  { value: 'hate_speech', label: 'Ngôn từ thù ghét' },
-  { value: 'other', label: 'Lý do khác' },
+const reasons: { value: ReportReason; label: string }[] = [
+  { value: 'SPAM', label: 'Spam / Quảng cáo' },
+  { value: 'HARASSMENT', label: 'Quấy rối / Đe dọa' },
+  { value: 'INAPPROPRIATE', label: 'Nội dung không phù hợp' },
+  { value: 'HATE_SPEECH', label: 'Ngôn từ thù ghét' },
+  { value: 'OTHER', label: 'Lý do khác' },
 ]
 
 const closeDialog = () => {
@@ -85,7 +85,6 @@ const handleSubmit = async () => {
     const message = error?.response?.data || "Gửi báo cáo thất bại, vui lòng thử lại"
     toast.error(message)
   }
-
 }
 
 </script>

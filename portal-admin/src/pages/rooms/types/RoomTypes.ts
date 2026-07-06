@@ -3,8 +3,8 @@ export interface Room {
   name: string
   description?: string
   avatarUrl?: string
-  type: 'GROUP' | 'DM'
-  status: 'OPEN' | 'CLOSED'
+  type: 'GROUP' | 'DM' | 'PERSONAL'
+  status: 'OPEN' | 'LOCKED' | 'PENDING_REMOVAL'
   inviteCode?: string
   memberCount: number
   ownerId?: string
@@ -44,12 +44,11 @@ export interface RoomParams {
   status?: string
   type?: string
 }
-
 export interface RoomFormPayload {
   name: string
   description?: string
   avatarUrl?: string
-  status: 'OPEN' | 'CLOSED'
+  status: 'OPEN' | 'LOCKED'
   ownerId?: string
 }
 

@@ -60,9 +60,11 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/integrations/google-calendar/callback").permitAll()
+                        .requestMatchers("/integrations/google-calendar/authorize-url").authenticated()
+                        .requestMatchers("/auth/check").authenticated()
                         .requestMatchers("/public/**", "/auth/**", "/ws/**", "/error").permitAll()
                         .requestMatchers("/payment/momo/callback").permitAll() // Cái này cần permit để momo còn trả về. Do Momo ko thể gửi đc JWT Token
-                        .requestMatchers("/auth/check").authenticated()
                         .requestMatchers("/manage/auth/check-login").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/manage/auth/**").permitAll()
                         .requestMatchers("/manage/admin/**").hasAnyRole("ADMIN")

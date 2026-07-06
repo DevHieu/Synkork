@@ -11,6 +11,8 @@ const loading = ref(false)
 async function fetchTopRooms() {
   loading.value = true
   try {
+    // type=GROUP cần truyền vì endpoint /manage/rooms dùng chung với trang
+    // quản lý Rooms (hiển thị cả DM/PERSONAL), không thể ép cứng GROUP ở BE
     const res = await roomService.getRooms({ page: 0, size: 5, type: 'GROUP' })
     // Sort by memberCount descending
     const data: Room[] = res.data ?? []

@@ -2,6 +2,7 @@ package com.synkork.backend.modules.admin.report;
 
 import com.synkork.backend.modules.admin.report.dtos.ReportFilterRequest;
 import com.synkork.backend.modules.report.ReportEntity;
+import com.synkork.backend.modules.report.enums.ReportSeverityEnums;
 import com.synkork.backend.modules.report.enums.ReportStatusEnums;
 import com.synkork.backend.modules.report.enums.ReportTypeEnums;
 import jakarta.persistence.criteria.Predicate;
@@ -35,6 +36,11 @@ public final class ReportSpecification {
             ReportTypeEnums type = filter.reportType();
             if (type != null) {
                 predicates.add(cb.equal(root.get("reportType"), type));
+            }
+
+            ReportSeverityEnums severity = filter.severity();
+            if (severity != null) {
+                predicates.add(cb.equal(root.get("severity"), severity));
             }
 
             LocalDateTime fromDate = filter.fromDate();

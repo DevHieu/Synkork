@@ -11,7 +11,6 @@ import {
 const images = [
   { src: '/assets/carousel/img1.png', alt: 'Image 1', caption: 'Tất cả trong một. Không còn tab thừa' },
   { src: '/assets/carousel/img2.png', alt: 'Image 2', caption: 'Nơi quyết định được đưa ra cùng nhau' },
-  { src: '/assets/carousel/img3.png', alt: 'Image 3', caption: 'Từ startup đến enterprise — một nền tảng duy nhất.' },
   { src: '/assets/carousel/img4.png', alt: 'Image 4', caption: 'Dù xa hay gần — cùng một cuộc họp' },
   { src: '/assets/carousel/img5.png', alt: 'Image 5', caption: 'Thoải mái làm việc. Không mất kết nối' },
 ]

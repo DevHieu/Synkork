@@ -18,4 +18,4 @@ public class AdminUserOptionResponse {
         this.email = user.getEmail();
         this.avatarUrl = user.getAvatarUrl();
     }
-} 
+}  

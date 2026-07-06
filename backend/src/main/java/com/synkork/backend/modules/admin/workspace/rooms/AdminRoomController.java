@@ -28,18 +28,18 @@ public class AdminRoomController {
     public ApiResponse<List<AdminRoomResponse>> getRooms(@ModelAttribute RoomFilterRequest filter) {
         Page<AdminRoomResponse> list = adminRoomService.getRooms(filter).map(AdminRoomResponse::new);
 
-        return ApiResponse.success("Get room list successfully", list.getContent(), PageMeta.from(list));
+        return ApiResponse.success("Lấy danh sách room thành công", list.getContent(), PageMeta.from(list));
     }
 
     @GetMapping("/{roomId}")
     public ApiResponse<AdminRoomDetailResponse> getRoomDetail(@PathVariable String roomId) {
-        return ApiResponse.success("Get room detail successfully", adminRoomService.getRoomDetail(roomId));
+        return ApiResponse.success("Lấy chi tiết room thành công", adminRoomService.getRoomDetail(roomId));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<AdminRoomResponse> createRoom(@RequestBody AdminRoomRequest request) {
-        return ApiResponse.success("Create room successfully", adminRoomService.createRoom(request));
+        return ApiResponse.success("Tạo room thành công", adminRoomService.createRoom(request));
     }
 
     @PutMapping("/{roomId}")
@@ -47,29 +47,23 @@ public class AdminRoomController {
             @PathVariable String roomId,
             @RequestBody AdminRoomRequest request
     ) {
-        return ApiResponse.success("Update room successfully", adminRoomService.updateRoom(roomId, request));
-    }
-
-    @DeleteMapping("/{roomId}")
-    public ApiResponse<Void> deleteRoom(@PathVariable String roomId) {
-        adminRoomService.deleteRoom(roomId);
-        return ApiResponse.success("Delete room successfully", null);
+        return ApiResponse.success("Cập nhật room thành công", adminRoomService.updateRoom(roomId, request));
     }
 
     @GetMapping("/owners/search")
     public ApiResponse<List<AdminUserOptionResponse>> searchOwners(
             @RequestParam(name = "keyword", required = false, defaultValue = "") String keyword
     ) {
-        return ApiResponse.success("Search users successfully", adminRoomService.searchUserOptions(keyword));
+        return ApiResponse.success("Tìm kiếm người dùng thành công", adminRoomService.searchUserOptions(keyword));
     }
-  
+
     @PatchMapping("/{roomId}/status")
     public ApiResponse<AdminRoomResponse> lockRoom(@PathVariable UUID roomId, @RequestBody AdminRoomRequest request){
-        return ApiResponse.success("Lock room successfully", adminRoomService.lockRoom(roomId, request.status()));
+        return ApiResponse.success("Cập nhật trạng thái room thành công", adminRoomService.lockRoom(roomId, request.status()));
     }
 
     @PatchMapping("/{roomId}/warn")
     public ApiResponse<AdminRoomResponse> warnRoom(@PathVariable UUID roomId) {
-        return ApiResponse.success("Lock room successfully", adminRoomService.warnRoom(roomId));
+        return ApiResponse.success("Cảnh báo room thành công", adminRoomService.warnRoom(roomId));
     }
 }

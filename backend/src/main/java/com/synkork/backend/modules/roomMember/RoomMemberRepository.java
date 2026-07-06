@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -31,6 +32,8 @@ public interface RoomMemberRepository extends JpaRepository<RoomMemberEntity, UU
 
     Optional<RoomMemberEntity> findByRoom_IdAndUser_Id(UUID roomId, UUID userId);
 
+    Optional<RoomMemberEntity> findByRoom_IdAndId(UUID roomId, UUID memberId);
+
     @Query("SELECT rm.user FROM RoomMemberEntity rm WHERE rm.room.id = :roomUUID")
     List<UserEntity> findUsersByRoomId(UUID roomUUID);
 
@@ -44,4 +47,8 @@ public interface RoomMemberRepository extends JpaRepository<RoomMemberEntity, UU
 
     @Query("SELECT COUNT(rm) FROM RoomMemberEntity rm WHERE rm.user.id = :userId AND rm.role = :role AND rm.room.type = 'GROUP'")
     long countGroupRoomsByUserIdAndRole(@Param("userId") UUID userId, @Param("role") RoomMemberRoleEnum role);
+
+    @Modifying
+    @Query(value = "DELETE FROM card_assignees WHERE room_member_id = :roomMemberId", nativeQuery = true)
+    void removeFromCardAssignees(@Param("roomMemberId") UUID roomMemberId);
 }

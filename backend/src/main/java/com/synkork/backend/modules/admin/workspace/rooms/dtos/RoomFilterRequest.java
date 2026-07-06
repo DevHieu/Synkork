@@ -12,7 +12,6 @@ import java.time.LocalDate;
 public record RoomFilterRequest(
         String search,
         RoomStatusEnum status,
-        RoomTypeEnum type,
         Integer minMembers,
 
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
