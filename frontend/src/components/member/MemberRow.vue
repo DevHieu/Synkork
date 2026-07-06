@@ -3,22 +3,31 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ref } from "vue";
 import UserInfoPopover from "@/components/dialog/UserInfoPopover.vue";
+import { useRoomsStore } from "@/stores/roomStore";
+import { storeToRefs } from "pinia";
 
 const props = defineProps<{
   member: {
+    memberId: string;
     username: string;
     displayName: string;
     avatarUrl?: string;
-    role: string;
+    role: "OWNER" | "ADMIN" | "MEMBER";
   };
   badge?: "ADMIN" | "OWNER";
 }>();
 
 const isDialogOpen = ref(false);
+const roomStore = useRoomsStore();
+const { currentRoom } = storeToRefs(roomStore);
 </script>
 
 <template>
-  <UserInfoPopover :username="props.member.username">
+  <UserInfoPopover
+    :username="props.member.username"
+    :room-id="currentRoom?.id"
+    :member-id="props.member.memberId"
+    :member-role="props.member.role">
     <div class="member-row flex items-center gap-2.5 px-2 py-1.5 mx-1 rounded cursor-pointer transition-colors"
       @click="isDialogOpen = true">
       <Avatar class="h-8 w-8 shrink-0">
