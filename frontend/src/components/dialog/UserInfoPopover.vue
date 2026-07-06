@@ -29,8 +29,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { muteChatMember, type ChatDisableTime } from "@/services/roomMemberService";
+import { muteChatMember } from "@/services/roomMemberService";
 import { toast } from "vue-sonner";
+import type { ChatDisableTime } from "@/types/Member.ts";
 
 
 const props = defineProps<{
@@ -236,8 +237,7 @@ const handleChatMute = async (time: ChatDisableTime) => {
               <DropdownMenuTrigger as-child>
                 <button
                   class="h-8 w-8 rounded-full bg-background/50 hover:bg-background/70 flex items-center justify-center transition-colors disabled:opacity-50"
-                  :disabled="isChatMuteLoading"
-                  title="Chan chat">
+                  :disabled="isChatMuteLoading" title="Chan chat">
                   <Ban class="h-4 w-4 text-foreground hover:text-destructive" />
                 </button>
               </DropdownMenuTrigger>

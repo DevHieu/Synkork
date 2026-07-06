@@ -118,6 +118,7 @@ public class RoomMemberService {
         LocalDateTime now = LocalDateTime.now();
 
         LocalDateTime chatMutedUntil = switch (chatDisableTime) {
+            case NOT_DISABLE -> null;
             case MINUTE -> now.plusMinutes(1);
             case FIVE_MINUTES -> now.plusMinutes(5);
             case FIFTEEN_MINUTES -> now.plusMinutes(15);

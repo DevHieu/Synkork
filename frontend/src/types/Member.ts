@@ -8,3 +8,11 @@ export interface Member {
   deafen: boolean;
   chatDisableUntil: string | null;
 }
+
+export type ChatDisableTime = "NOT_DISABLE"
+  | "MINUTE"
+  | "FIVE_MINUTES"
+  | "FIFTEEN_MINUTES"
+  | "HOUR"
+  | "DAY"
+  | "WEEK";

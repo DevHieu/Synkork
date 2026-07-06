@@ -1,4 +1,5 @@
 import axiosClient from "@/lib/axiosClient";
+import type { ChatDisableTime } from "@/types/Member";
 
 export const getRoomMembers = async (roomId: string) => {
   const res = await axiosClient.get(`/api/rooms/${roomId}/members`);
@@ -46,14 +47,6 @@ export const muteAudio = async (
 
   return res;
 };
-
-export type ChatDisableTime =
-  | "MINUTE"
-  | "FIVE_MINUTES"
-  | "FIFTEEN_MINUTES"
-  | "HOUR"
-  | "DAY"
-  | "WEEK";
 
 export const muteChatMember = async (
   roomId: string,
