@@ -4,11 +4,6 @@ spring:
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:123}
 
-  sql:
-    init:
-      mode: always
-      data-locations: classpath:db/seed.sql
-
   jpa:
     defer-datasource-initialization: true
     hibernate:
