@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { useAuth } from '@/composables/use-auth'
-import ToForgotPasswordLink from './to-forgot-password-link.vue'
 import { LoginData } from '../types/LoginData'
 
 const { login, loading, error } = useAuth()
