@@ -48,3 +48,8 @@ log/
 .DS_Store
 Thumbs.db
 testFunc.md
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml

@@ -11,6 +11,7 @@ export const useRoomMemberStore = defineStore("roomMember", {
     currentAuthority: null as string | null,
     isMuted: false,
     isDeafen: false,
+    chatDisabledTime: null as string | null,
   }),
 
   actions: {
@@ -65,9 +66,12 @@ export const useRoomMemberStore = defineStore("roomMember", {
     async setInfo(username: string) {
       const current = this.members.find((m) => m.username === username);
 
+      console.log(current);
+
       this.currentAuthority = current?.role ?? "MEMBER";
       this.isMuted = current?.muted ?? false;
       this.isDeafen = current?.deafen ?? false;
+      this.chatDisabledTime = current?.chatDisableUntil ?? null;
     },
 
     async clearMembers() {

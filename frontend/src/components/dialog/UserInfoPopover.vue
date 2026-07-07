@@ -17,26 +17,71 @@ import {
   TooltipTrigger,
   TooltipProvider,
 } from "@/components/ui/tooltip";
-import { UserPlus, UserMinus, MessageCircle, Flag, Clock3, TicketCheck, TicketX } from "lucide-vue-next";
+import { UserPlus, UserMinus, MessageCircle, Flag, Clock3, TicketCheck, TicketX, Ban } from "lucide-vue-next";
 import { useUserStore } from "@/stores/userStore";
 import { useSpaceStore } from "@/stores/spaceStore";
 import ReportDialog from "./ReportDialog.vue";
+import { storeToRefs } from "pinia";
+import { useRoomMemberStore } from "@/stores/roomMemberStore";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { muteChatMember } from "@/services/roomMemberService";
+import { toast } from "vue-sonner";
+import type { ChatDisableTime } from "@/types/Member.ts";
 
 
-const props = defineProps<{ username: string }>();
+const props = defineProps<{
+  username: string;
+  roomId?: string;
+  memberId?: string;
+  memberRole?: "OWNER" | "ADMIN" | "MEMBER";
+}>();
 
 const spaceStore = useSpaceStore();
 const friendStore = useFriendStore();
+const roomMemberStore = useRoomMemberStore();
+const { canManage } = storeToRefs(roomMemberStore);
 
 const isLoading = ref(true);
 const userInfo = ref<User | null>(null);
 const isOpen = ref(false);
 const isReportOpen = ref(false);
 const isMyself = ref(false);
+const isChatMuteLoading = ref(false);
 const friendship = computed(() =>
   friendStore.getFriendshipStatus(props.username),
 );
 const isFriendLoading = ref(false);
+
+const chatMuteOptions: { label: string; value: ChatDisableTime }[] = [
+  { label: "1 phut", value: "MINUTE" },
+  { label: "5 phut", value: "FIVE_MINUTES" },
+  { label: "15 phut", value: "FIFTEEN_MINUTES" },
+  { label: "1 gio", value: "HOUR" },
+  { label: "1 ngay", value: "DAY" },
+  { label: "1 tuan", value: "WEEK" },
+];
+
+const canShowChatMute = computed(
+  () => {
+    console.log("RoomId: " + props.roomId);
+    console.log("MemberId: " + props.memberId);
+    console.log("MemberRole: " + props.memberRole);
+    console.log("");
+
+
+    return !!props.roomId &&
+      !!props.memberId &&
+      canManage.value &&
+      !isMyself.value &&
+      props.memberRole !== "OWNER"
+  }
+
+);
 
 onMounted(async () => {
   isLoading.value = true;
@@ -86,6 +131,22 @@ const handleJumpToDm = async (conversationId: string) => {
   isOpen.value = false;
 };
 
+const handleChatMute = async (time: ChatDisableTime) => {
+  if (!props.roomId || !props.memberId || isChatMuteLoading.value) return;
+
+  isChatMuteLoading.value = true;
+  try {
+    await muteChatMember(props.roomId, props.memberId, time);
+    toast.success("Da chan chat thanh vien");
+    isOpen.value = false;
+  } catch (err) {
+    console.error("Mute chat member error:", err);
+    toast.error("Khong the chan chat thanh vien nay");
+  } finally {
+    isChatMuteLoading.value = false;
+  }
+};
+
 </script>
 
 <template>
@@ -94,7 +155,7 @@ const handleJumpToDm = async (conversationId: string) => {
       <slot />
     </PopoverTrigger>
 
-    <PopoverContent class="w-64 p-0 bg-black/40 backdrop-blur-md border-white/10 overflow-hidden" side="right"
+    <PopoverContent class="w-64 p-0 bg-background/40 backdrop-blur-md border-foreground/10 overflow-hidden" side="right"
       align="start" @open-auto-focus.prevent>
       <div class="relative h-16 bg-primary/30">
         <div v-if="!isLoading && userInfo && !isMyself" class="absolute top-2 right-2 flex items-center gap-1.5">
@@ -105,11 +166,11 @@ const handleJumpToDm = async (conversationId: string) => {
               <Tooltip>
                 <TooltipTrigger as-child>
                   <button
-                    class="h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors disabled:opacity-50"
+                    class="h-8 w-8 rounded-full bg-background/50 hover:bg-background/70 flex items-center justify-center transition-colors disabled:opacity-50"
                     :disabled="isFriendLoading" @click="toggleFriend">
                     <UserMinus v-if="friendship.isFriend" class="h-4 w-4 text-destructive" />
                     <Clock3 v-else-if="friendship.isPending" class="h-4 w-4 text-yellow-500" />
-                    <UserPlus v-else class="h-4 w-4 text-white" />
+                    <UserPlus v-else class="h-4 w-4 text-foreground" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">
@@ -123,7 +184,7 @@ const handleJumpToDm = async (conversationId: string) => {
               <Tooltip>
                 <TooltipTrigger as-child>
                   <button
-                    class="h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors disabled:opacity-50"
+                    class="h-8 w-8 rounded-full bg-background/50 hover:bg-background/70 flex items-center justify-center transition-colors disabled:opacity-50"
                     :disabled="isFriendLoading" @click="() => {
                       friendStore.acceptRequest(friendship.requestId!);
                     }">
@@ -136,7 +197,7 @@ const handleJumpToDm = async (conversationId: string) => {
               <Tooltip>
                 <TooltipTrigger as-child>
                   <button
-                    class="h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors disabled:opacity-50"
+                    class="h-8 w-8 rounded-full bg-background/50 hover:bg-background/70 flex items-center justify-center transition-colors disabled:opacity-50"
                     :disabled="isFriendLoading" @click="() => {
                       friendStore.rejectRequest(friendship.requestId!);
                     }">
@@ -150,9 +211,9 @@ const handleJumpToDm = async (conversationId: string) => {
             <Tooltip>
               <TooltipTrigger as-child>
                 <button v-if="friendship.isFriend"
-                  class="h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
+                  class="h-8 w-8 rounded-full bg-background/50 hover:bg-background/70 flex items-center justify-center transition-colors"
                   @click="() => handleJumpToDm(friendship.friend!.conversationId)">
-                  <MessageCircle class="h-4 w-4 text-white" />
+                  <MessageCircle class="h-4 w-4 text-foreground" />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="bottom">Nhắn tin</TooltipContent>
@@ -162,21 +223,38 @@ const handleJumpToDm = async (conversationId: string) => {
             <Tooltip>
               <TooltipTrigger as-child>
                 <button
-                  class="h-8 w-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
+                  class="h-8 w-8 rounded-full bg-background/50 hover:bg-background/70 flex items-center justify-center transition-colors"
                   @click="() => {
                     isReportOpen = true
                   }">
-                  <Flag class="h-4 w-4 text-white hover:text-destructive" />
+                  <Flag class="h-4 w-4 text-foreground hover:text-destructive" />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="bottom">Tố cáo</TooltipContent>
             </Tooltip>
+
+            <DropdownMenu v-if="canShowChatMute">
+              <DropdownMenuTrigger as-child>
+                <button
+                  class="h-8 w-8 rounded-full bg-background/50 hover:bg-background/70 flex items-center justify-center transition-colors disabled:opacity-50"
+                  :disabled="isChatMuteLoading" title="Chan chat">
+                  <Ban class="h-4 w-4 text-foreground hover:text-destructive" />
+                </button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent align="end" class="w-36">
+                <DropdownMenuItem v-for="option in chatMuteOptions" :key="option.value" :disabled="isChatMuteLoading"
+                  @click="handleChatMute(option.value)">
+                  {{ option.label }}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </TooltipProvider>
         </div>
 
         <!-- Avatar — đè lên border banner/content -->
         <div class="absolute -bottom-8 left-4">
-          <Avatar class="h-16 w-16 text-xs font-bold uppercase ring-4 ring-black/40">
+          <Avatar class="h-16 w-16 text-xs font-bold uppercase ring-4 ring-background/40">
             <AvatarImage v-if="userInfo?.avatarUrl" :src="userInfo.avatarUrl" />
             <AvatarFallback class="bg-primary" />
           </Avatar>

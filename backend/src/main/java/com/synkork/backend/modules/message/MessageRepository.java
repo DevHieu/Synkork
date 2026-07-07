@@ -20,7 +20,7 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
             SELECT new com.synkork.backend.modules.message.dto.MessageDTO(
                 m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
                 m.type, m.attachmentUrl, m.attachmentName,
-                rm.user.username, rm.user.displayName, rm.user.avatarUrl,
+                rm.id, rm.user.username, rm.user.displayName, rm.user.avatarUrl,
                 rm.role, m.replyTo.id, m.createdAt, m.updatedAt
                 )
                 FROM MessageEntity m
@@ -35,7 +35,7 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
                 SELECT new com.synkork.backend.modules.message.dto.MessageDTO(
                     m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
                     m.type, m.attachmentUrl, m.attachmentName,
-                    rm.user.username, rm.user.displayName, rm.user.avatarUrl,
+                    rm.id, rm.user.username, rm.user.displayName, rm.user.avatarUrl,
                     rm.role, m.replyTo.id, m.createdAt, m.updatedAt
                     )
                 FROM MessageEntity m
@@ -55,7 +55,7 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
                 SELECT new com.synkork.backend.modules.message.dto.MessageDTO(
                     m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
                     m.type, m.attachmentUrl, m.attachmentName,
-                    rm.user.username, rm.user.displayName, rm.user.avatarUrl,
+                    rm.id, rm.user.username, rm.user.displayName, rm.user.avatarUrl,
                     rm.role, m.replyTo.id, m.createdAt, m.updatedAt
                 )
                 FROM MessageEntity m
@@ -76,7 +76,7 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
             SELECT new com.synkork.backend.modules.message.dto.MessageDTO(
                 m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
                 m.type, m.attachmentUrl, m.attachmentName,
-                rm.user.username, rm.user.displayName, rm.user.avatarUrl,
+                rm.id, rm.user.username, rm.user.displayName, rm.user.avatarUrl,
                 rm.role, m.replyTo.id, m.createdAt, m.updatedAt
                 )
                 FROM MessageEntity m
@@ -91,7 +91,7 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
                 SELECT new com.synkork.backend.modules.message.dto.MessageDTO(
                     m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
                     m.type, m.attachmentUrl, m.attachmentName,
-                    rm.user.username, rm.user.displayName, rm.user.avatarUrl,
+                    rm.id, rm.user.username, rm.user.displayName, rm.user.avatarUrl,
                     rm.role, m.replyTo.id, m.createdAt, m.updatedAt
                     )
                 FROM MessageEntity m
@@ -143,7 +143,7 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
                 SELECT new com.synkork.backend.modules.message.dto.MessageDTO(
                     m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
                     m.type, m.attachmentUrl, m.attachmentName,
-                    rm.user.username, rm.user.displayName, rm.user.avatarUrl,
+                    rm.id, rm.user.username, rm.user.displayName, rm.user.avatarUrl,
                     rm.role, m.replyTo.id, m.createdAt, m.updatedAt
                 )
                 FROM MessageEntity m
@@ -164,7 +164,7 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
                 SELECT new com.synkork.backend.modules.message.dto.MessageDTO(
                     m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
                     m.type, m.attachmentUrl, m.attachmentName,
-                    rm.user.username, rm.user.displayName, rm.user.avatarUrl,
+                    rm.id, rm.user.username, rm.user.displayName, rm.user.avatarUrl,
                     rm.role, m.replyTo.id, m.createdAt, m.updatedAt
                 )
                 FROM MessageEntity m

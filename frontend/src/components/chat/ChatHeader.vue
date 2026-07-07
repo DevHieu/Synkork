@@ -30,7 +30,7 @@ const emit = defineEmits<{
     <div class="flex items-center gap-2 min-w-0">
       <SidebarTrigger class="-ml-1 shrink-0" />
       <template v-if="isDm && dmFriend">
-        <UserInfoPopover :username="dmFriend.username" :userId="dmFriend.id">
+        <UserInfoPopover :username="dmFriend.username">
           <Avatar class="w-7 h-7 text-xs font-bold uppercase">
             <AvatarImage v-if="dmFriend.avatarUrl" :src="dmFriend.avatarUrl" />
             <AvatarFallback class="bg-primary"> </AvatarFallback>
