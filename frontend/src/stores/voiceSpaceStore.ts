@@ -174,6 +174,12 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
   };
 
   const toggleVideo = async () => {
+    const cameraStatus = await navigator.permissions.query({ name: 'camera' });
+    if (cameraStatus.state === 'denied') {
+      toast.error("Bạn đã tắt quyền truy cập camera. Hãy bật lại để sử dụng camera");
+      return;
+    }
+
     videoOn.value = !videoOn.value;
     if (videoOn.value) {
       await zego.local.publishVideoStream();
@@ -182,12 +188,18 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     }
   };
 
-  const toggleMic = (state?: boolean, isAdmin?: boolean) => {
+  const toggleMic = async (state?: boolean, isAdmin?: boolean) => {
     if (!zegoState.zg) return;
 
     // state dduwwocj truyền vào khi admin chặn/mở. Nên là nếu state không có -> user đang nhấn -> chặn
     if (isMuted.value === true && isAdmin === undefined) {
       toast.error("Bạn đã bị chủ phòng tắt mic. Hãy liên hệ đễ được gỡ");
+      return;
+    }
+
+    const micStatus = await navigator.permissions.query({ name: 'microphone' });
+    if (micStatus.state === 'denied') {
+      toast.error("Bạn đã tắt quyền truy cập micro. Hãy bật lại để sử dụng mic");
       return;
     }
 
