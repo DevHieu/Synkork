@@ -4,6 +4,7 @@ import type { ZegoState } from "@/types/ZegoType";
 import { type Ref } from "vue";
 
 import { zegoUtils } from "./zegoUtils";
+import { toast } from "vue-sonner";
 
 export function zegoLocalStream(
   state: ZegoState,
@@ -81,7 +82,8 @@ export function zegoLocalStream(
       // Cái cập nhập trạng thái mic thì làm luôn ở store rồi. Tại có hàm mute nữa nên làm ngoài store cho tiện
     } catch (e) {
       console.warn("Không mở được mic:", e);
-      audioOn.value = false;
+      micOn.value = false;
+      toast.error("Bạn đã tắt quyền truy cập micro. Hãy bật lại để sử dụng mic");
       return null;
     }
   };
