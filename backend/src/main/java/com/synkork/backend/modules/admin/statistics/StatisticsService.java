@@ -13,6 +13,7 @@ import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import com.synkork.backend.modules.admin.statistics.dtos.OverviewChartResponse;
 import com.synkork.backend.modules.admin.statistics.dtos.OverviewStatsResponse;
 import com.synkork.backend.modules.admin.statistics.dtos.ReportChartResponse;
+import com.synkork.backend.modules.admin.statistics.dtos.ReportReasonStatsResponse;
 import com.synkork.backend.modules.admin.statistics.dtos.ReportStatsResponse;
 import com.synkork.backend.modules.admin.statistics.dtos.SubscriptionDashboardResponse;
 import com.synkork.backend.modules.admin.statistics.enums.PeriodEnum;
@@ -64,6 +65,7 @@ public class StatisticsService {
     }
 
     private double calcGrowth(long current, long previous) {
+        System.out.println("current: " + current + " previous: " + previous);
         if (previous == 0) return 100.0;
         return Math.round(((double) (current - previous) / previous) * 1000.0) / 10.0;
     }
@@ -236,4 +238,9 @@ public class StatisticsService {
                 ))
                 .toList();
     }
+
+    public List<ReportReasonStatsResponse> getReportReasonStats() {
+        return reportRepository.findReasonCountsGroupedByType();
+    }
 }
+

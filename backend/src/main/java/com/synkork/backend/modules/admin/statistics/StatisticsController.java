@@ -24,7 +24,7 @@ public class StatisticsController {
     private StatisticsService statisticsService;
 
     @GetMapping("/dashboard/overview/stats")
-    public ResponseEntity<OverviewStatsResponse> getOverviewData() {
+    private ResponseEntity<OverviewStatsResponse> getOverviewData() {
         return ResponseEntity.ok(statisticsService.getOverviewStatsData());
     }
 
@@ -57,4 +57,10 @@ public class StatisticsController {
         PeriodEnum periodEnum = PeriodEnum.valueOf(period);
         return ResponseEntity.ok(statisticsService.getReportChart(periodEnum));
     }
+
+    @GetMapping("/dashboard/reports/top-reasons")
+    public ResponseEntity<List<ReportReasonStatsResponse>> getReportReasonStats() {
+        return ResponseEntity.ok(statisticsService.getReportReasonStats());
+    }
 }
+
