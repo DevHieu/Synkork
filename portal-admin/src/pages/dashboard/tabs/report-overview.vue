@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { VisArea, VisAxis, VisDonut, VisLine, VisSingleContainer, VisXYContainer } from '@unovis/vue'
+import { VisAxis, VisGroupedBar, VisXYContainer } from '@unovis/vue'
 import { Activity, CheckCircle2, Clock3, Flag, ShieldAlert, XCircle } from '@lucide/vue'
 
 import type { ChartConfig } from '@/components/ui/chart'
@@ -30,6 +30,35 @@ interface ChartRow {
   color: string
 }
 
+interface ReasonStatRow {
+  reason: string
+  reportType: 'USER' | 'ROOM'
+  count: number
+}
+
+interface ReasonRow {
+  reason: string
+  count: number
+}
+
+type ReasonScope = 'all' | 'user' | 'room'
+
+const REASON_LABELS: Record<string, string> = {
+  SPAM: 'Spam',
+  INAPPROPRIATE: 'Nội dung không phù hợp',
+  HARASSMENT: 'Quấy rối',
+  HATE_SPEECH: 'Ngôn từ thù ghét',
+  OTHER: 'Khác',
+}
+
+const REASON_COLORS: Record<string, string> = {
+  SPAM: 'var(--chart-1)',
+  INAPPROPRIATE: 'var(--chart-2)',
+  HARASSMENT: 'var(--chart-3)',
+  HATE_SPEECH: 'var(--chart-4)',
+  OTHER: 'var(--chart-5)',
+}
+
 type TimeRange = 'weekly' | 'monthly' | 'quarterly' | 'yearly'
 
 const PERIOD_MAP: Record<TimeRange, 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY'> = {
@@ -47,11 +76,8 @@ const TIME_RANGE_OPTIONS: { value: TimeRange; label: string }[] = [
 ]
 
 const CHART_COLORS = {
-  user: 'var(--chart-1)',
-  room: 'var(--chart-2)',
-  pending: 'var(--chart-1)',
-  resolved: 'var(--chart-2)',
-  dismissed: 'var(--chart-3)',
+  user: 'var(--chart-4)',
+  room: 'var(--chart-5)',
 }
 
 const chartConfig = {
@@ -77,11 +103,41 @@ const isLoadingStats = ref(false)
 const isLoadingChart = ref(false)
 const errorMessage = ref<string | null>(null)
 
-const statusRows = computed<ChartRow[]>(() => [
-  { name: 'Chờ xử lý', value: stats.value?.pendingReports ?? 0, color: CHART_COLORS.pending },
-  { name: 'Đã giải quyết', value: stats.value?.resolvedReports ?? 0, color: CHART_COLORS.resolved },
-  { name: 'Đã bác bỏ', value: stats.value?.dismissedReports ?? 0, color: CHART_COLORS.dismissed },
-])
+const reasonScope = ref<ReasonScope>('all')
+const reasonStats = ref<ReasonStatRow[]>([])
+const isLoadingReasons = ref(false)
+
+async function fetchReasonStats() {
+  isLoadingReasons.value = true
+  try {
+    const data = await dashboardService.getReportReasonStats()
+    reasonStats.value = data
+  } catch (err) {
+    console.error(err)
+    errorMessage.value = 'Failed to load report reasons.'
+  } finally {
+    isLoadingReasons.value = false
+  }
+}
+
+const reasonRows = computed<ReasonRow[]>(() => {
+  const filtered = reasonScope.value === 'all'
+    ? reasonStats.value
+    : reasonStats.value.filter(row => row.reportType === reasonScope.value.toUpperCase())
+
+  const totals = new Map<string, number>()
+  for (const row of filtered) {
+    totals.set(row.reason, (totals.get(row.reason) ?? 0) + row.count)
+  }
+
+  return Array.from(totals.entries())
+    .map(([reason, count]) => ({ reason, count }))
+    .sort((a, b) => b.count - a.count)
+})
+
+const maxReasonCount = computed(() =>
+  Math.max(1, ...reasonRows.value.map(r => r.count)),
+)
 
 const typeRows = computed<ChartRow[]>(() => [
   { name: 'Người dùng', value: stats.value?.userReports ?? 0, color: CHART_COLORS.user },
@@ -126,6 +182,7 @@ watch(timeRange, fetchChart)
 onMounted(() => {
   fetchStats()
   fetchChart()
+  fetchReasonStats()
 })
 </script>
 
@@ -139,43 +196,58 @@ onMounted(() => {
   </div>
 
   <div class="grid gap-4 lg:grid-cols-2">
-    <!-- Status -->
+    <!-- Top Reason -->
     <UiCard>
       <UiCardHeader>
         <UiCardTitle class="flex items-center gap-2 text-base">
           <ShieldAlert class="h-4 w-4 text-muted-foreground" />
-          Trạng thái tố cáo
+          Top lý do tố cáo
         </UiCardTitle>
         <UiCardDescription>
-          Số lượng tố cáo theo trạng thái xử lý
+          Các lý do tố cáo phổ biến nhất
         </UiCardDescription>
       </UiCardHeader>
 
       <UiCardContent>
-        <div class="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-center">
-          <div class="h-[220px]">
-            <VisSingleContainer :data="statusRows" class="h-full">
-              <VisDonut
-                :value="(d: ChartRow) => d.value" :color="(d: ChartRow) => d.color" :arc-width="30"
-                :corner-radius="6" :pad-angle="0.04" central-label="Tố cáo"
-                :central-sub-label="formatNumber(stats?.totalReports)"
-              />
-            </VisSingleContainer>
-          </div>
+        <UiTabs v-model="reasonScope">
+          <UiTabsList class="mb-4 grid w-full grid-cols-3">
+            <UiTabsTrigger value="all">
+              Tất cả
+            </UiTabsTrigger>
+            <UiTabsTrigger value="user">
+              Người dùng
+            </UiTabsTrigger>
+            <UiTabsTrigger value="room">
+              Phòng
+            </UiTabsTrigger>
+          </UiTabsList>
 
-          <div class="space-y-3">
-            <div
-              v-for="row in statusRows" :key="row.name"
-              class="flex min-w-36 items-center justify-between gap-6 text-sm"
-            >
-              <div class="flex items-center gap-2">
-                <span class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: row.color }" />
-                <span class="text-muted-foreground">{{ row.name }}</span>
-              </div>
-              <span class="font-medium">{{ row.value.toLocaleString() }}</span>
+          <UiTabsContent :value="reasonScope">
+            <div v-if="isLoadingReasons" class="py-8 text-center text-sm text-muted-foreground">
+              Đang tải...
             </div>
-          </div>
-        </div>
+            <div v-else-if="reasonRows.length" class="space-y-3">
+              <div v-for="row in reasonRows" :key="row.reason" class="space-y-1">
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-muted-foreground">{{ REASON_LABELS[row.reason] ?? row.reason }}</span>
+                  <span class="font-medium">{{ row.count.toLocaleString() }}</span>
+                </div>
+                <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    class="h-full rounded-full transition-all"
+                    :style="{
+                      width: `${(row.count / maxReasonCount) * 100}%`,
+                      backgroundColor: REASON_COLORS[row.reason] ?? 'var(--chart-1)',
+                    }"
+                  />
+                </div>
+              </div>
+            </div>
+            <p v-else class="py-8 text-center text-sm text-muted-foreground">
+              Không có dữ liệu
+            </p>
+          </UiTabsContent>
+        </UiTabs>
       </UiCardContent>
     </UiCard>
 
@@ -206,24 +278,20 @@ onMounted(() => {
 
       <UiCardContent>
         <ChartContainer :config="chartConfig" class="h-[260px] w-full" :cursor="false">
-          <VisXYContainer :data="trendData" :svg-defs="svgDefs">
-            <VisArea
-              :x="(d: TrendPoint) => d.date" :y="[(d: TrendPoint) => d.user, (d: TrendPoint) => d.room]"
-              :color="(_: TrendPoint, i: number) => ['url(#fillUser)', 'url(#fillRoom)'][i]" :opacity="0.55"
-            />
-
-            <VisLine
-              :x="(d: TrendPoint) => d.date" :y="[(d: TrendPoint) => d.user, (d: TrendPoint) => d.room]"
-              :color="(_: TrendPoint, i: number) => [CHART_COLORS.user, CHART_COLORS.room][i]" :line-width="2"
+          <VisXYContainer :data="trendData" :svg-defs="svgDefs" :x-domain="[-0.5, trendData.length - 0.5]">
+            <VisGroupedBar
+              :x="(_: TrendPoint, i: number) => i" :y="[(d: TrendPoint) => d.user, (d: TrendPoint) => d.room]"
+              :color="(_: TrendPoint, i: number) => ['url(#fillUser)', 'url(#fillRoom)'][i]"
+              :rounded-corners="6" :group-padding="0.25" :bar-padding="0.15"
             />
 
             <VisAxis
-              type="x" :x="(d: TrendPoint) => d.date" :num-ticks="6" :tick-line="false" :domain-line="false"
+              type="x" :x="(_: TrendPoint, i: number) => i" :num-ticks="6" :tick-line="false" :domain-line="false"
               :grid-line="false"
-              :tick-format="(d: Date) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })"
+              :tick-format="(i: number) => trendData[i] ? new Date(trendData[i].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''"
             />
 
-            <VisAxis type="y" :tick-line="false" :domain-line="false" />
+            <VisAxis type="y" :tick-line="false" :domain-line="false" :grid-line="true" />
 
             <ChartTooltip />
 
@@ -239,10 +307,7 @@ onMounted(() => {
             <div class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: row.color }" />
             <div>
               <p class="text-xs text-muted-foreground">
-                Tố cáo {{ row.name }}
-              </p>
-              <p class="font-semibold">
-                {{ row.value.toLocaleString() }}
+                Tố cáo {{ row.name }} <strong>({{ row.value.toLocaleString() }})</strong>
               </p>
             </div>
           </div>

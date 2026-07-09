@@ -48,5 +48,10 @@ export const dashboardService = {
     const res = await axiosClient.get(`/api/manage/dashboard/reports/chart?period=${period}`)
     return res.data
   },
+
+  async getReportReasonStats() {
+    const res = await axiosClient.get('/api/manage/dashboard/reports/top-reasons')
+    return res.data
+  },
 }
 

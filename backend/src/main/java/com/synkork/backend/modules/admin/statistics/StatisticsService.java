@@ -13,6 +13,7 @@ import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import com.synkork.backend.modules.admin.statistics.dtos.OverviewChartResponse;
 import com.synkork.backend.modules.admin.statistics.dtos.OverviewStatsResponse;
 import com.synkork.backend.modules.admin.statistics.dtos.ReportChartResponse;
+import com.synkork.backend.modules.admin.statistics.dtos.ReportReasonStatsResponse;
 import com.synkork.backend.modules.admin.statistics.dtos.ReportStatsResponse;
 import com.synkork.backend.modules.admin.statistics.dtos.SubscriptionDashboardResponse;
 import com.synkork.backend.modules.admin.statistics.enums.PeriodEnum;
@@ -236,6 +237,10 @@ public class StatisticsService {
                         ((Number) row[2]).longValue()
                 ))
                 .toList();
+    }
+
+    public List<ReportReasonStatsResponse> getReportReasonStats() {
+        return reportRepository.findReasonCountsGroupedByType();
     }
 }
 
