@@ -24,7 +24,7 @@ public class StatisticsController {
     private StatisticsService statisticsService;
 
     @GetMapping("/dashboard/overview/stats")
-    private ResponseEntity<OverviewStatsResponse> getOverviewData() {
+    public ResponseEntity<OverviewStatsResponse> getOverviewData() {
         return ResponseEntity.ok(statisticsService.getOverviewStatsData());
     }
 

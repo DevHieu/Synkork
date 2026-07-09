@@ -1,34 +1,23 @@
 package com.synkork.backend.modules.admin.auditLog;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.modules.admin.auditLog.dtos.AuditLogFilterRequest;
 import com.synkork.backend.modules.admin.auditLog.dtos.AuditLogRequest;
 import com.synkork.backend.modules.admin.auditLog.dtos.BuildLog;
-import com.synkork.backend.modules.admin.auditLog.enums.LogActionEnum;
-import com.synkork.backend.modules.admin.auditLog.enums.LogEntityTypeEnum;
-import com.synkork.backend.modules.payment.InvoiceEntity;
-import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class AuditLogService {
 
-    private final AuditLogRepository auditLogRepository;
-    private final ObjectMapper objectMapper;
+    @Autowired
+    private AuditLogRepository auditLogRepository;
 
     public Page<AuditLogEntity> findAll(AuditLogFilterRequest request) {
 
@@ -86,37 +75,6 @@ public class AuditLogService {
         entity.setDescription(request.description());
         entity.setMetadata(request.metadata());
         return auditLogRepository.save(entity);
-    }
-
-    public void logInvoice(InvoiceEntity entity, LogActionEnum action, InvoiceStatusEnum previousStatus) {
-        String userEmail = entity.getUser() != null ? entity.getUser().getEmail() : "N/A";
-        
-        BuildLog buildLog = BuildLog.builder()
-                .action(action)
-                .entityType(LogEntityTypeEnum.SUBSCRIPTION)
-                .entityId(entity.getId().toString())
-                .entityName(userEmail)
-                .description(AuthUtils.getCurrentUsername() + " đã thực hiện " + action.name() + " hóa đơn của " + userEmail)
-                .metadata(createInvoiceMetadata(entity, previousStatus))
-                .build();
-
-        this.log(buildLog);
-    }
-
-    private String createInvoiceMetadata(InvoiceEntity entity, InvoiceStatusEnum previousStatus) {
-        try {
-            Map<String, Object> metadata = new HashMap<>();
-            metadata.put("invoiceId", entity.getId().toString());
-            metadata.put("userEmail", entity.getUser() != null ? entity.getUser().getEmail() : null);
-            metadata.put("amount", entity.getAmount() != null ? entity.getAmount().toString() : "0");
-            metadata.put("paymentMethod", entity.getPaymentMethod() != null ? entity.getPaymentMethod().name() : null);
-            metadata.put("transactionId", entity.getTransactionId());
-            metadata.put("previousStatus", previousStatus != null ? previousStatus.name() : null);
-            metadata.put("newStatus", entity.getStatus() != null ? entity.getStatus().name() : null);
-            return objectMapper.writeValueAsString(metadata);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to serialize invoice metadata", e);
-        }
     }
 
     public void deleteLog(String id) {
