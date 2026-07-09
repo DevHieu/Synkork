@@ -56,7 +56,6 @@ public class StatisticsService {
     }
 
     private double calcGrowth(long current, long previous) {
-        System.out.println("current: " + current + " previous: " + previous);
         if (previous == 0) return 100.0;
         return Math.round(((double) (current - previous) / previous) * 1000.0) / 10.0;
     }
