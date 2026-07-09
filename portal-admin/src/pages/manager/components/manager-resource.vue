@@ -25,7 +25,7 @@ const title = computed(() =>
 )
 const description = computed(() => props.account
   ? `Cập nhật thông tin và vai trò của ${props.account.username}`
-  : 'Tạo tài khoản Manager hoặc Admin mới. Mật khẩu tạm thời sẽ được gửi qua email.')
+  : 'Tạo tài khoản quản lý hoặc quản trị viên mới. Mật khẩu tạm thời sẽ được gửi qua email.')
 </script>
 
 <template>

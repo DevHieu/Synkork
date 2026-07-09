@@ -4,6 +4,7 @@ import com.synkork.backend.common.utils.uuid.UuidV7Annotation;
 import com.synkork.backend.modules.admin.auditLog.dtos.AuditLogRequest;
 import com.synkork.backend.modules.admin.auditLog.enums.LogActionEnum;
 import com.synkork.backend.modules.admin.auditLog.enums.LogEntityTypeEnum;
+import com.synkork.backend.modules.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -24,7 +25,10 @@ public class AuditLogEntity {
     @UuidV7Annotation
     private UUID id;
 
-    private UUID actorId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "actor_id")
+    private UserEntity actor;
+
     private String actorEmail;
 
     @Enumerated(EnumType.STRING)

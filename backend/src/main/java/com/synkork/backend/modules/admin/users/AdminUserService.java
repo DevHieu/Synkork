@@ -44,9 +44,6 @@ public class AdminUserService {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    private EmailService emailService;
-
-    @Autowired
     private RoomMemberRepository roomMemberRepository;
 
     @Autowired
@@ -54,6 +51,9 @@ public class AdminUserService {
 
     @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private EmailService emailService;
 
     public Page<UserEntity> getUsers(UserFilterRequest request) {
         request.validate();
@@ -222,6 +222,7 @@ public class AdminUserService {
                 transferOwnerBeforeRemoving(room, remainingMembers);
             }
 
+            roomMemberRepository.removeFromCardAssignees(deletingMember.getId());
             roomMemberRepository.delete(deletingMember);
         }
     }

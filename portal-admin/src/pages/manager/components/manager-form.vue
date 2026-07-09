@@ -98,7 +98,7 @@ async function onSubmit() {
     </div>
 
     <div class="space-y-2">
-      <label class="text-sm font-medium">Username</label>
+      <label class="text-sm font-medium">Tên đăng nhập</label>
       <Input
         v-model="form.username"
         placeholder="nguyenvana"
@@ -118,8 +118,8 @@ async function onSubmit() {
           <SelectValue placeholder="Chọn vai trò" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="manager">Manager</SelectItem>
-          <SelectItem value="admin">Admin</SelectItem>
+          <SelectItem value="manager">Quản lý</SelectItem>
+          <SelectItem value="admin">Quản trị viên</SelectItem>
         </SelectContent>
       </Select>
     </div>

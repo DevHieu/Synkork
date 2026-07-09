@@ -30,7 +30,9 @@ export const managerService = {
     return response.data
   },
 
-  async delete(id: string) {
-    await axiosClient.delete(`${baseUrl}/${id}`)
+  async lock(id: string, reason: string) {
+    await axiosClient.delete(`${baseUrl}/${id}`, {
+      data: { reason },
+    })
   },
 }

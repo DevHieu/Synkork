@@ -4,6 +4,7 @@ import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.modules.roomMember.dto.ChangeAuthorityDTO;
 import com.synkork.backend.modules.roomMember.dto.MuteRequest;
 import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
+import com.synkork.backend.modules.roomMember.enums.ChatDisableTime;
 import com.synkork.backend.security.UserPrinciple;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -66,6 +67,22 @@ public class RoomMemberController {
         messagingTemplate.convertAndSendToUser(targetEmail, "/queue/kick", roomId);
 
         return  ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{memberId}/chat-mute")
+    public ResponseEntity<Void> chatDisableMember(@PathVariable String roomId, @PathVariable String memberId, @RequestParam ChatDisableTime time) {
+        UUID memberUUID = UUID.fromString(memberId);
+        UUID roomUUID = UUID.fromString(roomId);
+        UUID requesterId = AuthUtils.getCurrentUserId();
+
+        RoomMemberEntity member = roomMemberService.setChatMuteMember(memberUUID, roomUUID, requesterId, time);
+        RoomMemberDto resp = new RoomMemberDto(member);
+
+        messagingTemplate.convertAndSend(
+                "/topic/room/" + roomId + "/members/changeAuthority", resp
+        );
+
+        return ResponseEntity.ok().build();
     }
 
     @PatchMapping("/{memberId}/mute")

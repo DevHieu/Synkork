@@ -15,7 +15,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import com.synkork.backend.modules.report.ReportService;
-import com.synkork.backend.modules.admin.report.dtos.ReportDTO;
 import com.synkork.backend.modules.admin.report.dtos.ReportFilterRequest;
 import com.synkork.backend.modules.admin.report.dtos.ReportUpdateStatusRequest;
 
@@ -37,8 +36,9 @@ public class AdminReportController {
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<ReportDTO> getReportById(@PathVariable UUID id) {
-        return ApiResponse.success("Get report detail successfully", adminReportService.getReportById(id));
+    public ApiResponse<ReportResponse> getReportById(@PathVariable UUID id) {
+        ReportResponse entity = adminReportService.getReportById(id);
+        return ApiResponse.success("Get report detail successfully", entity);
     }
 
     @PostMapping("/users")

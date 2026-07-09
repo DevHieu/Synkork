@@ -201,7 +201,6 @@ public class RoomService {
 
         RoomEntity room = this.findById(roomId);
 
-        room.setStatus(RoomStatusEnum.DELETED);
     }
 
     public RoomMemberDto inviteFriendToRoom(UUID roomId, UUID friendId) {

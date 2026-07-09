@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { watch, ref, onMounted, onUnmounted, computed } from "vue";
-import { CirclePlus, Smile } from "lucide-vue-next";
+import { Ban, CirclePlus, Smile } from "lucide-vue-next";
 import { useUserStore } from "@/stores/userStore.ts";
 import { useMessageStore } from "@/stores/messageStore";
 import { storeToRefs } from "pinia";
 import { PlanLimitUtils } from "@/utils/PlanLimitUtils.ts";
+import { chatComposable } from "./composable/chat.composable.ts"
 
 import EmojiPicker from "vue3-emoji-picker";
 import "vue3-emoji-picker/css"; // Nó báo lỗi thì kệ mịa nó đi, sửa lại đúng đường dẫn là ko chạy được đâu á
@@ -14,9 +15,12 @@ import FilePreview from "./sub-components/FilePreview.vue";
 import PlanLimitDialog from "../dialog/PlanLimitDialog.vue";
 import { useThemeStore } from "@/stores/themeStore.ts";
 
-const { userPlan } = storeToRefs(useUserStore());
+const userStore = useUserStore();
+const { userPlan } = storeToRefs(userStore);
+const { isChatDisabled, chatDisabledLabel } = chatComposable();
 
 const newMessage = ref("");
+const now = ref(Date.now());
 const inputRef = ref<HTMLInputElement | null>(null);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const showEmojiPicker = ref(false);
@@ -39,6 +43,8 @@ const fileSizeDialogOpen = ref(false);
 const rejectedFile = ref<File | null>(null);
 
 const addFiles = (newFiles: FileList | File[]) => {
+  if (isChatDisabled.value) return;
+
   Array.from(newFiles).forEach((file) => {
     if (file.size > PlanLimitUtils.maxFileSizeBytes(userPlan.value)) {
       rejectedFile.value = file;
@@ -80,6 +86,7 @@ const clearFiles = () => {
 };
 
 const handleSubmit = async () => {
+  if (isChatDisabled.value) return;
   if (!newMessage.value.trim() && !hasFiles.value) return;
 
   const content = newMessage.value.trim();
@@ -106,6 +113,8 @@ const handleSubmit = async () => {
 };
 
 const handleFileChange = (e: Event) => {
+  if (isChatDisabled.value) return;
+
   const files = (e.target as HTMLInputElement).files;
   if (files) addFiles(files);
   if (fileInputRef.value) fileInputRef.value.value = "";
@@ -113,11 +122,15 @@ const handleFileChange = (e: Event) => {
 };
 
 const onSelectEmoji = (emoji: { i: string }) => {
+  if (isChatDisabled.value) return;
+
   newMessage.value += emoji.i;
   inputRef.value?.focus();
 };
 
 const toggleEmojiPicker = () => {
+  if (isChatDisabled.value) return;
+
   if (!showEmojiPicker.value && emojiButtonRef.value) {
     const rect = emojiButtonRef.value.getBoundingClientRect();
     emojiPickerPos.value = {
@@ -153,6 +166,8 @@ watch(
 // Xử lí ném file vào ô input
 const isDragging = ref(false);
 const handleDragOver = (e: DragEvent) => {
+  if (isChatDisabled.value) return;
+
   e.preventDefault();
   isDragging.value = true;
 };
@@ -162,13 +177,25 @@ const handleDragLeave = () => {
 const handleDrop = (e: DragEvent) => {
   e.preventDefault();
   isDragging.value = false;
+  if (isChatDisabled.value) return;
+
   if (e.dataTransfer?.files) addFiles(e.dataTransfer.files);
 };
 
-onMounted(() => document.addEventListener("mousedown", handleClickOutside));
-onUnmounted(() =>
-  document.removeEventListener("mousedown", handleClickOutside),
-);
+let nowTimer: number | null = null;
+
+onMounted(() => {
+  document.addEventListener("mousedown", handleClickOutside);
+  nowTimer = window.setInterval(() => {
+    now.value = Date.now();
+  }, 1000);
+});
+onUnmounted(() => {
+  document.removeEventListener("mousedown", handleClickOutside);
+  if (nowTimer !== null) {
+    window.clearInterval(nowTimer);
+  }
+});
 </script>
 
 <template>
@@ -190,24 +217,35 @@ onUnmounted(() =>
         @clear="clearFiles" @add-more="fileInputRef?.click()" />
     </Transition>
 
+    <div v-if="isChatDisabled"
+      class="mx-3 mt-3 flex items-center gap-2 rounded-lg border border-destructive/25 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+      <Ban class="h-4 w-4 shrink-0" />
+      <span>Bạn đang bị chặn nhắn tin đến {{ chatDisabledLabel }}.</span>
+    </div>
+
     <div class="flex items-center gap-1 px-3 py-3">
-      <button @click="fileInputRef?.click()" title="Đính kèm file"
-        class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-all">
+      <button @click="fileInputRef?.click()" title="Đính kèm file" :disabled="isChatDisabled"
+        class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-all disabled:cursor-not-allowed disabled:opacity-50">
         <CirclePlus />
       </button>
       <input ref="fileInputRef" type="file" multiple class="hidden" @change="handleFileChange" />
 
       <div
-        class="flex-1 flex items-center bg-muted/50 rounded-lg px-3 gap-2 border border-border focus-within:border-primary/50 transition-colors">
+        class="flex-1 flex items-center bg-muted/50 rounded-lg px-3 gap-2 border border-border focus-within:border-primary/50 transition-colors"
+        :class="isChatDisabled ? 'opacity-70' : ''">
         <input ref="inputRef" v-model="newMessage" :placeholder="replyingTo
           ? `Trả lời ${replyingTo.sender?.displayName}...`
-          : 'Nhắn tin...'
+          : isChatDisabled
+            ? 'Bạn đang bị chặn chat'
+            : 'Nhắn tin...'
           "
           class="flex-1 bg-transparent py-2.5 text-foreground placeholder:text-muted-foreground focus:outline-none text-sm"
-          @keydown.esc="messageStore.setReply(null)" @keydown.enter.exact.prevent="handleSubmit" />
+          @keydown.esc="messageStore.setReply(null)" @keydown.enter.exact.prevent="handleSubmit"
+          :disabled="isChatDisabled" />
         <div class="relative shrink-0">
-          <button ref="emojiButtonRef" @click="toggleEmojiPicker" title="Emoji"
-            class="w-8 h-8 rounded-full flex items-center justify-center transition-all" :class="showEmojiPicker
+          <button ref="emojiButtonRef" @click="toggleEmojiPicker" title="Emoji" :disabled="isChatDisabled"
+            class="w-8 h-8 rounded-full flex items-center justify-center transition-all disabled:cursor-not-allowed disabled:opacity-50"
+            :class="showEmojiPicker
               ? 'text-primary'
               : 'text-muted-foreground hover:text-foreground'
               ">

@@ -205,7 +205,7 @@ const columns = computed<TableColumn<User>[]>(() => [
 
 <template>
   <BasicPage
-    title="Quản lý user"
+    title="Quản lý người dùng"
     description="Quản lý và theo dõi danh sách người dùng trong hệ thống"
     sticky
   >
@@ -215,7 +215,7 @@ const columns = computed<TableColumn<User>[]>(() => [
         <UiInput
           v-model="keyword"
           type="text"
-          placeholder="Tìm theo email, tên của user..."
+          placeholder="Tìm theo username hoặc email..."
           class="pl-8 h-9"
         />
       </div>
@@ -250,7 +250,7 @@ const columns = computed<TableColumn<User>[]>(() => [
         <DateRangePicker v-model="dateRange" />
       </div>
 
-      <!-- Button tạo mới user -->
+      <!-- Button tạo mới người dùng -->
       <div class="ml-auto">
         <UserCreate @saved="fetchData" />
       </div>

@@ -2,6 +2,7 @@ package com.synkork.backend.modules.report;
 
 import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.modules.report.dtos.*;
+import com.synkork.backend.modules.report.enums.ReportReasonEnums;
 import com.synkork.backend.modules.report.enums.ReportStatusEnums;
 import com.synkork.backend.modules.report.enums.ReportTypeEnums;
 import com.synkork.backend.modules.room.RoomEntity;
@@ -40,6 +41,7 @@ public class ReportService {
 
         ReportEntity.ReportEntityBuilder builder = ReportEntity.builder()
                 .reason(request.reason())
+                .severity(request.reason().getDefaultSeverity())
                 .description(request.description())
                 .reporter(reporter)
                 .reportType(type)

@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+
 import { dashboardService } from '../services/dashboardService'
 
 const rawData = ref<any[]>([])
@@ -36,7 +37,8 @@ async function fetchData() {
   try {
     const data = await dashboardService.getOverviewChartData(timeRange.value)
     rawData.value = Array.isArray(data) ? data : []
-  } catch (err) {
+  }
+  catch (err) {
     console.error('Failed to fetch overview:', err)
     rawData.value = []
   }
@@ -48,7 +50,8 @@ onMounted(() => fetchData())
 watch(timeRange, () => fetchData())
 
 const chartData = computed(() => {
-  if (!Array.isArray(rawData.value)) return []
+  if (!Array.isArray(rawData.value))
+    return []
   return rawData.value.map(item => ({
     date: new Date(item.date).getTime(),
     users: item.totalUser,
@@ -90,7 +93,8 @@ const svgDefs = `
 `
 
 const yMax = computed(() => {
-  if (!chartData.value.length) return 10
+  if (!chartData.value.length)
+    return 10
   const max = Math.max(...chartData.value.flatMap(d => [d.users, d.rooms, d.subscriptions]))
   return max === 0 ? 10 : Math.ceil(max * 1.3) // thêm 30% padding trên
 })
@@ -102,10 +106,10 @@ const yMax = computed(() => {
       <div class="grid flex-1 gap-1">
         <CardTitle>Tổng quan tăng trưởng</CardTitle>
         <CardDescription>
-          Users, Rooms và Subscriptions theo 
+          Users, Rooms và Subscriptions theo
           <b>
-            {{ timeRange === 'WEEKLY' ? 'tuần' : timeRange === 'MONTHLY' ? 'tháng' :
-            timeRange === 'QUARTERLY' ? 'quý' : 'năm' }}
+            {{ timeRange === 'WEEKLY' ? 'tuần' : timeRange === 'MONTHLY' ? 'tháng'
+              : timeRange === 'QUARTERLY' ? 'quý' : 'năm' }}
           </b>
         </CardDescription>
       </div>
@@ -114,16 +118,26 @@ const yMax = computed(() => {
           <SelectValue placeholder="Monthly" />
         </SelectTrigger>
         <SelectContent class="rounded-xl">
-          <SelectItem value="WEEKLY" class="rounded-lg">Weekly</SelectItem>
-          <SelectItem value="MONTHLY" class="rounded-lg">Monthly</SelectItem>
-          <SelectItem value="QUARTERLY" class="rounded-lg">Quarterly</SelectItem>
-          <SelectItem value="YEARLY" class="rounded-lg">Yearly</SelectItem>
+          <SelectItem value="WEEKLY" class="rounded-lg">
+            Tuần
+          </SelectItem>
+          <SelectItem value="MONTHLY" class="rounded-lg">
+            Tháng
+          </SelectItem>
+          <SelectItem value="QUARTERLY" class="rounded-lg">
+            Quý
+          </SelectItem>
+          <SelectItem value="YEARLY" class="rounded-lg">
+            Năm
+          </SelectItem>
         </SelectContent>
       </Select>
     </CardHeader>
     <CardContent class="px-2 pt-4 sm:px-6 sm:pt-6 pb-4">
-      <ChartContainer v-if="chartData.length > 0" :config="chartConfig" class="aspect-auto h-[250px] w-full"
-        :cursor="false">
+      <ChartContainer
+        v-if="chartData.length > 0" :config="chartConfig" class="aspect-auto h-[250px] w-full"
+        :cursor="false"
+      >
         <VisXYContainer :data="chartData" :svg-defs="svgDefs" :margin="{ left: -40 }" :y-domain="[0, yMax]">
           <VisArea :x="(d) => d.date" :y="(d) => d.users" color="url(#fillUsers)" :opacity="0.4" />
           <VisLine :x="(d) => d.date" :y="(d) => d.users" :color="chartConfig.users.color" :line-width="2" />
@@ -134,29 +148,37 @@ const yMax = computed(() => {
 
           <!-- Subscriptions -->
           <VisArea :x="(d) => d.date" :y="(d) => d.subscriptions" color="url(#fillMessages)" :opacity="0.6" />
-          <VisLine :x="(d) => d.date" :y="(d) => d.subscriptions" :color="chartConfig.subscriptions.color"
-            :line-width="2" />
+          <VisLine
+            :x="(d) => d.date" :y="(d) => d.subscriptions" :color="chartConfig.subscriptions.color"
+            :line-width="2"
+          />
 
-          <VisAxis type="x" :x="(d) => d.date" :tick-line="false" :domain-line="false" :grid-line="false" :num-ticks="6"
+          <VisAxis
+            type="x" :x="(d) => d.date" :tick-line="false" :domain-line="false" :grid-line="false" :num-ticks="6"
             :tick-format="(d: number, _index: number) => {
               const date = new Date(d)
               return date.toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric',
               })
-            }" />
-          <VisAxis type="y" :num-ticks="3" :tick-line="false" :domain-line="false"
-            :tick-format="(d: number) => Math.round(d).toString()" />
+            }"
+          />
+          <VisAxis
+            type="y" :num-ticks="3" :tick-line="false" :domain-line="false"
+            :tick-format="(d: number) => Math.round(d).toString()"
+          />
           <ChartTooltip />
-          <ChartCrosshair :template="componentToString(chartConfig, ChartTooltipContent, {
-            labelFormatter: (d) => {
-              return new Date(d).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-              })
-            },
-          })"
-            :color="(_d, i) => [chartConfig.rooms.color, chartConfig.users.color, chartConfig.subscriptions.color][i % 3]" />
+          <ChartCrosshair
+            :template="componentToString(chartConfig, ChartTooltipContent, {
+              labelFormatter: (d) => {
+                return new Date(d).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                })
+              },
+            })"
+            :color="(_d, i) => [chartConfig.rooms.color, chartConfig.users.color, chartConfig.subscriptions.color][i % 3]"
+          />
         </VisXYContainer>
 
         <ChartLegendContent />
