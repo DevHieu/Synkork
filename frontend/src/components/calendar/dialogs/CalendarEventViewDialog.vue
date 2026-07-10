@@ -347,7 +347,7 @@ const joinVoiceRoom = () => {
                 <div v-if="attendees.length > 0" class="flex flex-wrap gap-1.5">
                   <Badge
                     v-for="attendee in attendees"
-                    :key="attendee.userId"
+                    :key="attendee.memberId"
                     variant="secondary"
                     class="font-sans text-[9px] font-medium rounded-sm px-1.5 py-0.5"
                   >

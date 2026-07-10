@@ -105,7 +105,7 @@ const createFormDataFromEvent = (event: CalendarEvent): EventFormData => createI
   recurrenceType: event.recurrenceType || "NONE",
   recurrenceEndDate: event.recurrenceEndDate,
   allowEditAll: event.allowEditAll,
-  attendeeIds: event.attendeeIds || event.attendees?.map((attendee) => attendee.userId) || [],
+  attendeeIds: event.attendeeIds || event.attendees?.map((attendee) => attendee.memberId) || [],
   attendees: event.attendees || [],
   attachments: event.attachments || [],
   callRoomSpaceId: event.callRoomSpaceId,

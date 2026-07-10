@@ -76,16 +76,9 @@ public class CalendarEventDTO {
             this.callRoomSpaceName = entity.getCallRoomSpace().getName();
         }
         if (entity.getAttendees() != null) {
-            for (var attendee : entity.getAttendees()) {
-                var user = attendee.getUser();
-                this.attendeeIds.add(user.getId().toString());
-                this.attendees.add(new CalendarEventAttendeeDTO(
-                    user.getId(),
-                    user.getUsername(),
-                    user.getDisplayName(),
-                    user.getAvatarUrl(),
-                    user.getEmail()
-                ));
+            for (var member : entity.getAttendees()) {
+                this.attendeeIds.add(member.getId().toString());
+                this.attendees.add(new CalendarEventAttendeeDTO(member));
             }
         }
         if (entity.getAttachments() != null) {

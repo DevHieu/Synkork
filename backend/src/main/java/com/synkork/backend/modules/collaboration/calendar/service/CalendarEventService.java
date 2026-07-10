@@ -2,19 +2,18 @@ package com.synkork.backend.modules.collaboration.calendar.service;
 
 import com.synkork.backend.modules.collaboration.calendar.entity.CalendarEventEntity;
 import com.synkork.backend.modules.collaboration.calendar.entity.EventAttachmentEntity;
-import com.synkork.backend.modules.collaboration.calendar.entity.EventAttendeeEntity;
 import com.synkork.backend.modules.collaboration.calendar.enums.AttachmentTypeEnum;
 import com.synkork.backend.modules.collaboration.calendar.dto.CalendarEventDTO;
 import com.synkork.backend.modules.collaboration.calendar.dto.CalendarEventAttachmentDTO;
 import com.synkork.backend.modules.collaboration.calendar.repository.CalendarEventRepository;
+import com.synkork.backend.modules.roomMember.RoomMemberEntity;
+import com.synkork.backend.modules.roomMember.RoomMemberRepository;
 import com.synkork.backend.modules.space.SpaceEntity;
 import com.synkork.backend.modules.space.SpaceRepository;
 import com.synkork.backend.modules.space.SpaceService;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
-import com.synkork.backend.modules.collaboration.calendar.dto.CalendarEventAttendeeDTO;
 import org.springframework.beans.factory.annotation.Autowired;
-import java.util.stream.Collectors;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +41,9 @@ public class CalendarEventService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private RoomMemberRepository roomMemberRepository;
 
     @Autowired
     private SpaceService spaceService;
@@ -277,12 +279,13 @@ public class CalendarEventService {
         event.replaceAttachments(buildAttachments(event, request.getAttachments(), actor));
     }
 
-    private List<EventAttendeeEntity> buildAttendees(CalendarEventEntity event, List<String> attendeeIds) {
+    private List<RoomMemberEntity> buildAttendees(CalendarEventEntity event, List<String> attendeeIds) {
         if (attendeeIds == null || attendeeIds.isEmpty()) {
             return new ArrayList<>();
         }
 
-        List<EventAttendeeEntity> attendees = new ArrayList<>();
+        UUID roomId = event.getSpace().getRoom().getId();
+        List<RoomMemberEntity> attendees = new ArrayList<>();
         Set<String> uniqueIds = new LinkedHashSet<>();
 
         for (String idStr : attendeeIds) {
@@ -295,12 +298,9 @@ public class CalendarEventService {
                 continue;
             }
 
-            UUID userId = UUID.fromString(idTrim);
-            UserEntity user = userRepository.findById(userId)
-                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng với ID: " + userId));
-            EventAttendeeEntity attendee = new EventAttendeeEntity();
-            attendee.setEvent(event);
-            attendee.setUser(user);
+            UUID memberId = UUID.fromString(idTrim);
+            RoomMemberEntity attendee = roomMemberRepository.findByRoom_IdAndId(roomId, memberId)
+                    .orElseThrow(() -> new IllegalArgumentException("Khong tim thay thanh vien phong voi ID: " + memberId));
             attendees.add(attendee);
         }
 

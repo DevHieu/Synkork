@@ -51,4 +51,8 @@ public interface RoomMemberRepository extends JpaRepository<RoomMemberEntity, UU
     @Modifying
     @Query(value = "DELETE FROM card_assignees WHERE room_member_id = :roomMemberId", nativeQuery = true)
     void removeFromCardAssignees(@Param("roomMemberId") UUID roomMemberId);
+
+    @Modifying
+    @Query(value = "DELETE FROM calendar_event_room_members WHERE room_member_id = :roomMemberId", nativeQuery = true)
+    void removeFromCalendarEventRoomMembers(@Param("roomMemberId") UUID roomMemberId);
 }

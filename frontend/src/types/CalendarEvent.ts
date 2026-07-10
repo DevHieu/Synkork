@@ -8,8 +8,7 @@ export interface CalendarEventAttachment {
 }
 
 export interface CalendarEventAttendee {
-  userId: string;
-  email: string;
+  memberId: string;
   username: string;
   displayName: string;
   avatarUrl?: string;

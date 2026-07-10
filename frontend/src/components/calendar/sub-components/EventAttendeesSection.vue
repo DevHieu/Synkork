@@ -3,7 +3,6 @@ import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import { Plus, X, Check } from "lucide-vue-next";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { useUserStore } from "@/stores/userStore";
 import type { Member } from "@/types/Member";
 
 const props = defineProps<{
@@ -21,22 +20,19 @@ const search = ref("");
 const isOpen = ref(false);
 const containerRef = ref<HTMLElement | null>(null);
 
-const userStore = useUserStore();
-const currentUserId = computed(() => (userStore.user as any)?.id || "");
-
 const selectedMembers = computed(() =>
   selectedIds.value
-    .map((id) => props.roomMembers.find((member) => member.userId === id))
+    .map((id) => props.roomMembers.find((member) => member.memberId === id))
     .filter(Boolean) as Member[],
 );
 
 const filteredMembers = computed(() => {
   const query = search.value.trim().toLowerCase();
   return props.roomMembers
-    .filter((member) => member.userId && member.userId !== currentUserId.value)
+    .filter((member) => member.memberId)
     .filter((member) => {
       if (!query) return true;
-      return [member.displayName, member.username, member.email]
+      return [member.displayName, member.username]
         .filter(Boolean)
         .some((value) => value!.toLowerCase().includes(query));
     })
@@ -44,27 +40,27 @@ const filteredMembers = computed(() => {
 });
 
 const firstUnselectedMember = computed(() => {
-  return filteredMembers.value.find((member) => member.userId && !selectedIds.value.includes(member.userId));
+  return filteredMembers.value.find((member) => member.memberId && !selectedIds.value.includes(member.memberId));
 });
 
 const addMember = (member: Member) => {
-  if (!member.userId || selectedIds.value.includes(member.userId)) return;
-  selectedIds.value.push(member.userId);
+  if (!member.memberId || selectedIds.value.includes(member.memberId)) return;
+  selectedIds.value.push(member.memberId);
   search.value = "";
 };
 
 const toggleMember = (member: Member) => {
-  if (!member.userId) return;
-  if (selectedIds.value.includes(member.userId)) {
-    selectedIds.value = selectedIds.value.filter((id) => id !== member.userId);
+  if (!member.memberId) return;
+  if (selectedIds.value.includes(member.memberId)) {
+    selectedIds.value = selectedIds.value.filter((id) => id !== member.memberId);
   } else {
-    selectedIds.value.push(member.userId);
+    selectedIds.value.push(member.memberId);
   }
 };
 
-const removeMember = (userId?: string) => {
-  if (!userId) return;
-  selectedIds.value = selectedIds.value.filter((id) => id !== userId);
+const removeMember = (memberId?: string) => {
+  if (!memberId) return;
+  selectedIds.value = selectedIds.value.filter((id) => id !== memberId);
 };
 
 const handleClickOutside = (event: MouseEvent) => {
@@ -81,7 +77,7 @@ onUnmounted(() => {
   document.removeEventListener("click", handleClickOutside);
 });
 
-// Section này chỉ quản lý danh sách email cục bộ của form hiện tại.
+// Section này chỉ quản lý danh sách thành viên tham gia cục bộ của form hiện tại.
 // Đồng bộ với component cha khi danh sách người tham gia thay đổi
 watch(selectedIds, (newList) => {
   emit("change", newList);
@@ -138,16 +134,16 @@ watch(() => props.show, (isOpened) => {
               </Avatar>
               <div class="min-w-0">
                 <p class="font-bold uppercase truncate text-[11px]">{{ member.displayName || member.username }}</p>
-                <p class="text-muted-foreground truncate text-[9px]">{{ member.email || `@${member.username}` }}</p>
+                <p class="text-muted-foreground truncate text-[9px]">@{{ member.username }}</p>
               </div>
             </div>
             
             <Button
               type="button"
-              :variant="selectedIds.includes(member.userId) ? 'secondary' : 'outline'"
+              :variant="selectedIds.includes(member.memberId) ? 'secondary' : 'outline'"
               class="h-7 px-2.5 text-[9px] font-bold rounded-sm pointer-events-none"
             >
-              <span v-if="selectedIds.includes(member.userId)" class="flex items-center gap-1 text-primary">
+              <span v-if="selectedIds.includes(member.memberId)" class="flex items-center gap-1 text-primary">
                 <Check :size="12" /> ĐÃ THÊM
               </span>
               <span v-else class="flex items-center gap-1 text-foreground">
@@ -167,7 +163,7 @@ watch(() => props.show, (isOpened) => {
       <div v-if="selectedMembers.length > 0" class="flex flex-wrap gap-2 mt-2">
         <div
           v-for="member in selectedMembers"
-          :key="member.userId"
+          :key="member.memberId"
           class="flex items-center gap-2 rounded-md border border-border/60 bg-muted/20 pl-1.5 pr-2.5 py-1 text-xs font-sans text-foreground"
         >
           <Avatar class="size-5 border border-border/60 shrink-0 rounded-sm">
@@ -177,7 +173,7 @@ watch(() => props.show, (isOpened) => {
           <span class="font-medium text-[11px]">{{ member.displayName || member.username }}</span>
           <button
             type="button"
-            @click="removeMember(member.userId)"
+            @click="removeMember(member.memberId)"
             class="text-muted-foreground hover:text-destructive transition-colors ml-0.5"
           >
             <X :size="12" />
