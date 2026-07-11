@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.common.utils.EmailService;
+import com.synkork.backend.common.utils.FileService;
 import com.synkork.backend.modules.admin.auditLog.AuditLogService;
 import com.synkork.backend.modules.admin.auditLog.dtos.BuildLog;
 import com.synkork.backend.modules.admin.auditLog.enums.LogActionEnum;
@@ -35,6 +36,9 @@ public class AdminReportService {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired 
+    private FileService fileService;
 
     public List<ReportResponse> getAllReports() {
         return adminReportRepository.findAll()
@@ -104,6 +108,10 @@ public class AdminReportService {
         ReportEntity report = adminReportRepository.findById(reportId)
                 .orElseThrow(() -> new RuntimeException("Report không tồn tại: " + reportId));
         adminReportRepository.delete(report);
+
+        if(report.getEvidenceUrl() != null){
+            fileService.deleteFile(report.getEvidencePublicId(), report.getEvidenceResourceType());
+        }
 
         BuildLog log = BuildLog.builder()
                 .action(LogActionEnum.REPORT_DELETED)
