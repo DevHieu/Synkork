@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.roomMember;
 
 import com.synkork.backend.common.utils.AuthUtils;
+import com.synkork.backend.modules.roomMember.dto.ChatDisableRequest;
 import com.synkork.backend.modules.roomMember.dto.ChangeAuthorityDTO;
 import com.synkork.backend.modules.roomMember.dto.MuteRequest;
 import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
@@ -74,9 +75,30 @@ public class RoomMemberController {
         UUID memberUUID = UUID.fromString(memberId);
         UUID requesterId = AuthUtils.getCurrentUserId();
 
-        roomMemberService.toggleMuteMembers(roomUUID, memberUUID, requesterId, muteRequest);
+        RoomMemberEntity member = roomMemberService.toggleMuteMembers(roomUUID, memberUUID, requesterId, muteRequest);
+        RoomMemberDto dto = new RoomMemberDto(member);
+
+        messagingTemplate.convertAndSend(
+                "/topic/room/" + roomId + "/members/updated", dto
+        );
 
         return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{memberId}/chat-disable")
+    public ResponseEntity<RoomMemberDto> changeChatDisable(@PathVariable String roomId, @PathVariable String memberId, @RequestBody ChatDisableRequest request) {
+        UUID roomUUID = UUID.fromString(roomId);
+        UUID memberUUID = UUID.fromString(memberId);
+        UUID requesterId = AuthUtils.getCurrentUserId();
+
+        RoomMemberEntity member = roomMemberService.changeChatDisable(roomUUID, memberUUID, requesterId, request);
+        RoomMemberDto dto = new RoomMemberDto(member);
+
+        messagingTemplate.convertAndSend(
+                "/topic/room/" + roomId + "/members/updated", dto
+        );
+
+        return ResponseEntity.ok(dto);
     }
 
     @DeleteMapping("/leave")

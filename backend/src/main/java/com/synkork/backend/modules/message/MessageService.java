@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.concurrent.CompletableFuture;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -85,6 +86,7 @@ public class MessageService {
                 .orElseThrow(() -> new IllegalArgumentException("Space not found"));
 
         RoomMemberEntity sender = resolveSender(space.getRoom().getId(), senderId, senderEmail);
+        requireChatEnabled(sender);
 
         entity.setSender(sender);
         entity.setSpace(space);
@@ -249,6 +251,7 @@ public class MessageService {
         RoomMemberEntity sender = roomMemberRepository
                 .findByUserIdAndRoom_IdWithUser(userId, space.getRoom().getId())
                 .orElseThrow(() -> new IllegalArgumentException("User is not a member of this room"));
+        requireChatEnabled(sender);
 
         // Gửi từng file message
         for (MultipartFile file : fileList) {
@@ -294,6 +297,13 @@ public class MessageService {
                 m.setReplyTo(previewMap.get(m.getReplyToId()));
             }
         });
+    }
+
+    private void requireChatEnabled(RoomMemberEntity sender) {
+        LocalDateTime chatDisableUntil = sender.getChatDisableUntil();
+        if (chatDisableUntil != null && chatDisableUntil.isAfter(LocalDateTime.now())) {
+            throw new IllegalStateException("Bạn đang bị chặn chat trong phòng này");
+        }
     }
 
     private void broadcastSuggestion(MessageEntity message, RoomMemberEntity sender) {

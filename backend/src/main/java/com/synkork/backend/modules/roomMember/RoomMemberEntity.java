@@ -53,4 +53,7 @@ public class RoomMemberEntity {
     @Builder.Default
     private boolean deafen = false;
 
+    @Column(nullable = true)
+    private LocalDateTime chatDisableUntil;
+
 }
