@@ -10,6 +10,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import com.synkork.backend.modules.message.dto.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -22,7 +23,6 @@ import com.synkork.backend.common.dtos.FileUploaded;
 import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.common.utils.FileService;
 import com.synkork.backend.common.utils.LLMFunction.ChatEventLlmService;
-import com.synkork.backend.modules.message.dto.MessageRequest;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
 import com.synkork.backend.modules.space.SpaceEntity;
@@ -303,13 +303,6 @@ public class MessageService {
                 m.setReplyTo(previewMap.get(m.getReplyToId()));
             }
         });
-    }
-
-    private void requireChatEnabled(RoomMemberEntity sender) {
-        LocalDateTime chatDisableUntil = sender.getChatDisableUntil();
-        if (chatDisableUntil != null && chatDisableUntil.isAfter(LocalDateTime.now())) {
-            throw new IllegalStateException("Bạn đang bị chặn chat trong phòng này");
-        }
     }
 
     private void broadcastSuggestion(MessageEntity message, RoomMemberEntity sender) {

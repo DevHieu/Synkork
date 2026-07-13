@@ -57,18 +57,5 @@ export const muteChatMember = async (
     { params: { time } },
   );
 
-  return res;
-};
-
-export const changeChatDisable = async (
-  roomId: string,
-  memberId: string,
-  time: ChatDisableTime,
-) => {
-  const res = await axiosClient.patch(
-    `/api/rooms/${roomId}/members/${memberId}/chat-disable`,
-    { time },
-  );
-
   return res.data;
 };

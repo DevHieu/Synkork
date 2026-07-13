@@ -70,7 +70,7 @@ public class RoomMemberController {
     }
 
     @PatchMapping("/{memberId}/chat-mute")
-    public ResponseEntity<Void> chatDisableMember(@PathVariable String roomId, @PathVariable String memberId, @RequestParam ChatDisableTime time) {
+    public ResponseEntity<RoomMemberDto> chatDisableMember(@PathVariable String roomId, @PathVariable String memberId, @RequestParam ChatDisableTime time) {
         UUID memberUUID = UUID.fromString(memberId);
         UUID roomUUID = UUID.fromString(roomId);
         UUID requesterId = AuthUtils.getCurrentUserId();
@@ -82,7 +82,7 @@ public class RoomMemberController {
                 "/topic/room/" + roomId + "/members/changeAuthority", resp
         );
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(resp);
     }
 
     @PatchMapping("/{memberId}/mute")
@@ -99,22 +99,6 @@ public class RoomMemberController {
         );
 
         return ResponseEntity.ok().build();
-    }
-
-    @PatchMapping("/{memberId}/chat-disable")
-    public ResponseEntity<RoomMemberDto> changeChatDisable(@PathVariable String roomId, @PathVariable String memberId, @RequestBody ChatDisableRequest request) {
-        UUID roomUUID = UUID.fromString(roomId);
-        UUID memberUUID = UUID.fromString(memberId);
-        UUID requesterId = AuthUtils.getCurrentUserId();
-
-        RoomMemberEntity member = roomMemberService.changeChatDisable(roomUUID, memberUUID, requesterId, request);
-        RoomMemberDto dto = new RoomMemberDto(member);
-
-        messagingTemplate.convertAndSend(
-                "/topic/room/" + roomId + "/members/updated", dto
-        );
-
-        return ResponseEntity.ok(dto);
     }
 
     @DeleteMapping("/leave")

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import {
   Users,
   Crown,
@@ -12,10 +12,10 @@ import {
   MessageSquareOff,
 } from "lucide-vue-next";
 import {
-  changeChatDisable,
   changeMemberAuthority,
   kickMember,
   muteAudio,
+  muteChatMember,
 } from "@/services/roomMemberService";
 import type { ChatDisableTime, Member } from "@/types/Member";
 import { useRoomMemberStore } from "@/stores/roomMemberStore";
@@ -44,6 +44,8 @@ import DropdownMenuSub from "@/components/ui/dropdown-menu/DropdownMenuSub.vue";
 import DropdownMenuSubContent from "@/components/ui/dropdown-menu/DropdownMenuSubContent.vue";
 import DropdownMenuSubTrigger from "@/components/ui/dropdown-menu/DropdownMenuSubTrigger.vue";
 import InviteMemberDialog from "../InviteMemberDialog.vue";
+
+type AudioToggleField = "muted" | "deafen";
 
 const props = defineProps<{ roomId: string }>();
 
@@ -111,29 +113,18 @@ const handleChangeRole = async (memberId: string, newRole: string) => {
   }
 };
 
-const handleToggleMute = async (member: Member) => {
+const handleToggleAudioState = async (member: Member, field: AudioToggleField) => {
+  const newValue = !member[field];
+
   try {
     await muteAudio(props.roomId, member.memberId, {
-      muted: !member.muted,
-      deafen: null,
+      muted: field === "muted" ? newValue : null,
+      deafen: field === "deafen" ? newValue : null,
     });
 
-    roomMemberStore.updateMember({ ...member, muted: !member.muted });
+    roomMemberStore.updateMember({ ...member, [field]: newValue });
   } catch (err) {
-    console.error("Mute member error:", err);
-  }
-};
-
-const handleToggleDeafen = async (member: Member) => {
-  try {
-    await muteAudio(props.roomId, member.memberId, {
-      muted: null,
-      deafen: !member.deafen,
-    });
-
-    roomMemberStore.updateMember({ ...member, deafen: !member.deafen });
-  } catch (err) {
-    console.error("Deafen member error:", err);
+    console.error(`Toggle ${field} error:`, err);
   }
 };
 
@@ -142,7 +133,7 @@ const handleChangeChatDisable = async (
   time: ChatDisableTime,
 ) => {
   try {
-    const updatedMember = await changeChatDisable(
+    const updatedMember = await muteChatMember(
       props.roomId,
       member.memberId,
       time,
@@ -153,6 +144,12 @@ const handleChangeChatDisable = async (
     console.error("Change chat disable error:", err);
   }
 };
+
+
+watch(filteredMembers, (newMember) => {
+  console.log(newMember);
+
+})
 </script>
 
 <template>
@@ -205,44 +202,6 @@ const handleChangeChatDisable = async (
 
         <!-- Actions -->
         <div class="opacity-0 group-hover:opacity-100 transition flex items-center gap-1">
-          <DropdownMenu v-if="canModerateMember(member)">
-            <DropdownMenuTrigger as-child>
-              <Button variant="ghost" size="icon" class="h-7 w-7 text-muted-foreground" title="Thao tác">
-                <MoreVertical class="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" class="w-48">
-              <DropdownMenuCheckboxItem :checked="member.muted" @select.prevent="handleToggleMute(member)">
-                <MicOff class="mr-2 h-3.5 w-3.5" />
-                Mute mic
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem :checked="member.deafen" @select.prevent="handleToggleDeafen(member)">
-                <VolumeX class="mr-2 h-3.5 w-3.5" />
-                Mute loa
-              </DropdownMenuCheckboxItem>
-
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  <MessageSquareOff class="mr-2 h-3.5 w-3.5" />
-                  Chặn chat
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent class="w-40">
-                  <DropdownMenuItem v-for="option in chatDisableOptions" :key="option.value"
-                    @click="handleChangeChatDisable(member, option.value)"
-                    :class="option.value === 'NOT_DISABLE' && !isChatDisabled(member) ? 'text-primary' : ''">
-                    {{ option.label }}
-                  </DropdownMenuItem>
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-
-              <DropdownMenuSeparator />
-              <DropdownMenuItem class="text-destructive focus:text-destructive" @select.prevent="memberToKick = member">
-                <UserMinus class="mr-2 h-3.5 w-3.5" />
-                Xóa khỏi phòng
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
           <DropdownMenu v-if="isOwner && member.role !== 'OWNER'">
             <DropdownMenuTrigger as-child>
               <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground">
@@ -279,6 +238,46 @@ const handleChangeChatDisable = async (
           <Shield v-else-if="member.role === 'ADMIN'" class="h-2.5 w-2.5" />
           {{ getRoleLabel(member.role) }}
         </Badge>
+
+        <DropdownMenu v-if="canModerateMember(member)">
+          <DropdownMenuTrigger as-child>
+            <Button variant="ghost" size="icon" class="h-7 w-7 text-muted-foreground" title="Thao tác">
+              <MoreVertical class="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" class="w-48">
+            <DropdownMenuCheckboxItem :checked="member.muted" @update:checked="() => { }"
+              @select.prevent="handleToggleAudioState(member, 'muted')">
+              <MicOff class="h-3.5 w-3.5" />
+              Mute mic
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem :checked="member.deafen" @update:checked="() => { }"
+              @select.prevent="handleToggleAudioState(member, 'deafen')">
+              <VolumeX class="h-3.5 w-3.5" />
+              Mute loa
+            </DropdownMenuCheckboxItem>
+
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <MessageSquareOff class="mr-2 h-3.5 w-3.5" />
+                Chặn chat
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent class="w-40">
+                <DropdownMenuItem v-for="option in chatDisableOptions" :key="option.value"
+                  @click="handleChangeChatDisable(member, option.value)"
+                  :class="option.value === 'NOT_DISABLE' && !isChatDisabled(member) ? 'text-primary' : ''">
+                  {{ option.label }}
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+
+            <DropdownMenuSeparator />
+            <DropdownMenuItem class="text-destructive focus:text-destructive" @select.prevent="memberToKick = member">
+              <UserMinus class="mr-2 h-3.5 w-3.5" />
+              Xóa khỏi phòng
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <Separator v-if="filteredMembers.length > 0" class="my-1" />
