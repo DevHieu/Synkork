@@ -96,7 +96,7 @@ public class ReportService {
 
         FileUploaded uploaded = isImage
                 ? fileService.uploadImage(evidence, "report_file")
-                : fileService.uploadFile(evidence, "report_file");
+                : fileService.uploadFile(evidence, "report_file", false);
    
         builder.evidenceUrl(uploaded.url())
                .evidencePublicId(uploaded.publicId())
