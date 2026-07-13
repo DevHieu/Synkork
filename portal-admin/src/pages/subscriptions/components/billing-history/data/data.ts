@@ -1,4 +1,4 @@
-import { CircleDashedIcon, CircleSlashIcon, ClockAlertIcon, HandCoinsIcon } from '@lucide/vue'
+import { CircleDashedIcon, ClockAlertIcon, HandCoinsIcon } from '@lucide/vue'
 import { h } from 'vue'
 
 export const plans = [
@@ -9,9 +9,8 @@ export const plans = [
 
 export const statuses = [
   { value: 'paid', label: 'Paid', icon: h(HandCoinsIcon), color: 'green' },
-  { value: 'unpaid', label: 'Unpaid', icon: h(CircleDashedIcon), color: 'orange' },
-  { value: 'overdue', label: 'Overdue', icon: h(ClockAlertIcon), color: 'red' },
-  { value: 'cancelled', label: 'Cancelled', icon: h(CircleSlashIcon), color: 'gray' },
+  { value: 'pending', label: 'Pending', icon: h(CircleDashedIcon), color: 'orange' },
+  { value: 'failed', label: 'Failed', icon: h(ClockAlertIcon), color: 'red' },
 ]
 
-export type PayState = 'paid' | 'unpaid' | 'overdue' | 'cancelled'
+export type PayState = 'paid' | 'pending' | 'failed'

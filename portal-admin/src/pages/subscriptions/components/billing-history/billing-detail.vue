@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
 import { VisuallyHidden } from 'reka-ui'
+import { computed } from 'vue'
 
 import { ModalDescription, ModalHeader, ModalTitle } from '@/components/prop-ui/modal'
 import { formatTimestamp } from '@/utils/date.utils'
@@ -15,11 +15,19 @@ const props = defineProps<{
 
 const normalizedState = computed(() => {
   const status = props.billing.status?.toLowerCase()
-  if (status === 'paid') return 'paid'
-  if (status === 'failed') return 'cancelled'
-  if (status === 'cancelled') return 'cancelled'
-  return 'unpaid'
+  if (status === 'paid')
+    return 'paid'
+  if (status === 'failed')
+    return 'failed'
+  if (status === 'pending')
+    return 'pending'
+  return 'pending'
 })
+
+function formatMoney(amount?: number | string | null) {
+  const value = typeof amount === 'string' ? Number(amount) : amount ?? 0
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(value)
+}
 
 const updatedAt = computed(() => props.billing.paidAt || props.billing.updatedAt || props.billing.createdAt)
 </script>
@@ -38,7 +46,7 @@ const updatedAt = computed(() => props.billing.paidAt || props.billing.updatedAt
     <TransactionCard
       :card-no="billing.id.length"
       :order-id="billing.transactionId || billing.id"
-      :price="billing.amount"
+      :price="formatMoney(billing.amount)"
       currency="₫"
       :state="normalizedState"
       :updated-at="formatTimestamp(updatedAt)"

@@ -11,7 +11,7 @@ import { statuses } from '../billing-history/data/data'
 interface Props {
   cardNo: number
   orderId: string
-  price: number
+  price: string
   currency: string
   invoiceNo: string
   state: PayState
@@ -47,7 +47,6 @@ const currentState = computed(() => {
       </div>
 
       <div class="mt-6 text-4xl">
-        <span class="ml-1 text-stone-500">{{ currency }}</span>
         <span class="font-medium">{{ price }}</span>
       </div>
     </header>

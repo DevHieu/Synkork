@@ -2,6 +2,7 @@
 import { LoaderIcon, Search, X } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
 import { computed, h, onMounted, ref, shallowRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { TableColumn } from '@/components/base-table.vue'
 
@@ -19,6 +20,8 @@ import { defaultDateRange, formatTimestamp, formatToISODateTime } from '@/utils/
 import type { Invoice, InvoiceSearchParams } from './types/invoiceTypes'
 
 import { subscriptionService } from './service/subscriptionService'
+
+const { t } = useI18n()
 
 const loading = ref(false)
 const currentPage = ref(1)
@@ -44,7 +47,6 @@ const statusOptions = [
   { value: 'PENDING', label: 'Pending' },
   { value: 'PAID', label: 'Paid' },
   { value: 'FAILED', label: 'Failed' },
-  { value: 'CANCELLED', label: 'Cancelled' },
 ]
 
 const planOptions = [
@@ -58,7 +60,6 @@ const paymentMethodOptions = [
   { value: 'ALL', label: 'Tất cả phương thức' },
   { value: 'MOMO', label: 'MoMo' },
   { value: 'VNPAY', label: 'VNPay' },
-  { value: 'BANK_TRANSFER', label: 'Bank transfer' },
 ]
 
 function statusMeta(status?: string | null) {
@@ -165,24 +166,33 @@ onMounted(() => {
 })
 
 const columns = computed<TableColumn<Invoice>[]>(() => [
-  { header: 'Invoice', accessor: 'id', minWidth: 210 },
   {
-    header: 'User',
-    minWidth: 220,
-    render: row => row.username || row.userEmail || 'N/A',
+    header: t('subscriptions.username'),
+    minWidth: 150,
+    render: row => row.username || 'N/A',
   },
   {
-    header: 'Plan',
+    header: t('subscriptions.email'),
+    minWidth: 200,
+    render: row => row.userEmail || 'N/A',
+  },
+  {
+    header: t('subscriptions.plan'),
     minWidth: 130,
-    render: row => row.plan || 'N/A',
+    render: row => row.plan,
   },
   {
-    header: 'Amount',
+    header: t('subscriptions.planExpiry'),
+    minWidth: 170,
+    render: row => row.planExpiresAt ? formatTimestamp(row.planExpiresAt) : 'N/A',
+  },
+  {
+    header: t('subscriptions.amount'),
     minWidth: 140,
     render: row => formatMoney(row.amount),
   },
   {
-    header: 'Status',
+    header: t('subscriptions.status'),
     minWidth: 150,
     render: (row) => {
       const meta = statusMeta(row.status)
@@ -194,38 +204,43 @@ const columns = computed<TableColumn<Invoice>[]>(() => [
     },
   },
   {
-    header: 'Payment',
+    header: t('subscriptions.payment'),
     minWidth: 140,
-    render: row => row.paymentMethod || 'N/A',
+    render: row => row.paymentMethod,
   },
   {
-    header: 'Created',
+    header: t('subscriptions.paidAt'),
+    minWidth: 170,
+    render: row => row.paidAt ? formatTimestamp(row.paidAt) : 'N/A',
+  },
+  {
+    header: t('subscriptions.created'),
     minWidth: 170,
     render: row => formatTimestamp(row.createdAt),
   },
   {
-    header: 'Actions',
+    header: t('subscriptions.actions'),
     minWidth: 110,
     render: row => h(UiButton, {
       variant: 'outline',
       size: 'sm',
       class: 'h-8 gap-1 px-2 text-xs',
       onClick: () => handleSelectDetail(row),
-    }, () => 'Chi tiết'),
+    }, () => t('subscriptions.details')),
   },
 ])
 </script>
 
 <template>
   <BasicPage
-    title="Subscriptions"
+    title="Gói đăng ký"
     description="Quản lý hóa đơn và lịch sử thanh toán theo kiểu bảng vận hành."
     sticky
   >
     <div class="mb-4 flex flex-wrap items-center gap-3">
       <div class="relative w-full max-w-sm">
         <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <UiInput v-model="searchKeyword" placeholder="Tìm theo email..." class="h-9 pl-8" />
+        <UiInput v-model="searchKeyword" placeholder="Tìm theo id hoặc email..." class="h-9 pl-8" />
       </div>
       <div class="w-[180px]">
         <UiSelect v-model="selectedStatus">
