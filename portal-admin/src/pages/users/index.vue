@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { Eye, LoaderIcon, Lock, Search } from '@lucide/vue'
+import { Eye, LoaderIcon, Lock, Search, Unlock } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
 import { computed, h, onMounted, ref, watch } from 'vue'
+import { toast } from 'vue-sonner'
 
 import type { TableColumn } from '@/components/base-table.vue'
 
 import BaseTable from '@/components/base-table.vue'
+import ConfirmDialog from '@/components/confirm-dialog.vue'
 import DateRangePicker from '@/components/date-range-picker.vue'
 import { BasicPage } from '@/components/global-layout'
 import Pagination from '@/components/pagination.vue'
@@ -19,7 +21,6 @@ import { defaultDateRange, formatToISODateTime } from '@/utils/date.utils'
 import type { User, UserParams, UserPlan, UserStatus } from './types/userTypes'
 
 import UserCreate from './components/user-create.vue'
-import UserDelete from './components/user-delete.vue'
 import UserResource from './components/user-resource.vue'
 import { userService } from './services/userService'
 
@@ -37,9 +38,10 @@ const totalPage = ref(0)
 const debounceKeyword = refDebounced(keyword, 500)
 
 const editTarget = ref<User | null>(null)
-const deleteTarget = ref<User | null>(null)
+const actionTarget = ref<User | null>(null)
+const actionReason = ref('')
 const showEditModal = ref(false)
-const showDeleteModal = ref(false)
+const showActionDialog = ref(false)
 
 const statusOptions = [
   { value: 'ALL', label: 'Tất cả trạng thái' },
@@ -121,17 +123,49 @@ function handleViewDetail(user: User) {
 }
 
 function handleDelete(user: User) {
-  deleteTarget.value = user
-  showDeleteModal.value = true
+  actionTarget.value = user
+  actionReason.value = ''
+  showActionDialog.value = true
+}
+
+function handleOpenUnlock(user: User) {
+  actionTarget.value = user
+  actionReason.value = ''
+  showActionDialog.value = true
+}
+
+async function handleConfirmUserAction(reason: string) {
+  if (!actionTarget.value)
+    return
+
+  loading.value = true
+  try {
+    if (actionTarget.value.status === 'ACTIVE') {
+      await userService.delete(actionTarget.value.id, reason)
+      toast.success(`Đã khóa người dùng: ${actionTarget.value.username}`)
+    }
+    else {
+      await userService.updateStatus(actionTarget.value.id, 'ACTIVE')
+      toast.success(`Đã mở khóa người dùng: ${actionTarget.value.username}`)
+    }
+    showActionDialog.value = false
+    fetchData()
+  }
+  catch (err: any) {
+    const message = err?.response?.data?.message
+      || err?.response?.data?.error
+      || (typeof err?.response?.data === 'string' ? err.response.data : null)
+      || err?.message
+      || 'Cập nhật tài khoản thất bại'
+    toast.error(message)
+  }
+  finally {
+    loading.value = false
+  }
 }
 
 function onUserSaved() {
   showEditModal.value = false
-  fetchData()
-}
-
-function onUserDeleted() {
-  showDeleteModal.value = false
   fetchData()
 }
 
@@ -213,15 +247,24 @@ const columns = computed<TableColumn<User>[]>(() => [
         class: 'h-8 gap-1 px-2 text-xs',
         onClick: () => handleViewDetail(row),
       }, () => [h(Eye, { class: 'h-3.5 w-3.5' }), 'Xem']),
-      h(UiButton, {
-        variant: 'outline',
-        size: 'sm',
-        class: 'h-8 gap-1 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 hover:border-destructive/30',
-        onClick: () => handleDelete(row),
-      }, () => [h(Lock, { class: 'h-3.5 w-3.5' }), 'Khóa']),
+      row.status?.toUpperCase() === 'ACTIVE'
+        ? h(UiButton, {
+            variant: 'outline',
+            size: 'sm',
+            class: 'h-8 gap-1 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 hover:border-destructive/30',
+            onClick: () => handleDelete(row),
+          }, () => [h(Lock, { class: 'h-3.5 w-3.5' }), 'Khóa'])
+        : h(UiButton, {
+            variant: 'outline',
+            size: 'sm',
+            class: 'h-8 gap-1 px-2 text-xs text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-900/20',
+            onClick: () => handleOpenUnlock(row),
+          }, () => [h(Unlock, { class: 'h-3.5 w-3.5' }), 'Mở']),
     ]),
   },
 ])
+
+const isLockingUser = computed(() => actionTarget.value?.status === 'ACTIVE')
 </script>
 
 <template>
@@ -310,14 +353,32 @@ const columns = computed<TableColumn<User>[]>(() => [
     </ModalContent>
   </Modal>
 
-  <!-- Modal khóa user -->
-  <Modal v-model:open="showDeleteModal">
-    <ModalContent>
-      <UserDelete
-        v-if="deleteTarget"
-        :user="deleteTarget"
-        @remove="onUserDeleted"
-      />
-    </ModalContent>
-  </Modal>
+  <ConfirmDialog
+    v-model:open="showActionDialog"
+    v-model:reason="actionReason"
+    :destructive="isLockingUser"
+    :require-reason="isLockingUser"
+    :close-on-confirm="false"
+    cancel-button-text="Hủy"
+    :confirm-button-text="isLockingUser ? 'Khóa user' : 'Mở khóa'"
+    reason-label="Lý do khóa/xóa user"
+    reason-placeholder="Nhập lý do để gửi mail cho user"
+    reason-error="Vui lòng nhập lý do khóa tài khoản"
+    :is-loading="loading"
+    @confirm="handleConfirmUserAction"
+  >
+    <template #title>
+      {{ isLockingUser ? `Khóa tài khoản: ${actionTarget?.username}?` : `Mở khóa tài khoản: ${actionTarget?.username}?` }}
+    </template>
+
+    <template #description>
+      <p>
+        {{
+          isLockingUser
+            ? 'User sẽ được chuyển sang INACTIVE, nhận email thông báo lý do, và bị xóa khỏi tất cả room đang tham gia.'
+            : 'User sẽ được chuyển về ACTIVE và có thể sử dụng hệ thống trở lại.'
+        }}
+      </p>
+    </template>
+  </ConfirmDialog>
 </template>

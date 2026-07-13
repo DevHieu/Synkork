@@ -214,7 +214,7 @@ const handleSubmit = async () => {
         <div class="space-y-2">
           <Label class="text-sm font-semibold text-foreground/80">Mô tả chi tiết (không bắt buộc)</Label>
           <Textarea v-model="description" placeholder="Hãy cung cấp thêm chi tiết để chúng tôi xử lý tốt hơn..."
-            class="min-h-[100px] bg-background border-border focus:ring-primary/50 rounded-md resize-none" />
+            class="h-[100px] bg-background border-border focus:ring-primary/50 rounded-md resize-none" />
         </div>
 
         <!-- Bằng chứng đính kèm -->

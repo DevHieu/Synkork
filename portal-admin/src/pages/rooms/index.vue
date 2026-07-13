@@ -1,23 +1,14 @@
 <script lang="ts" setup>
-import { Eye, Lock, LoaderIcon, Pencil, PlusIcon, RefreshCwIcon, Search, Unlock, X } from '@lucide/vue'
+import { Eye, LoaderIcon, Lock, Pencil, PlusIcon, RefreshCwIcon, Search, Unlock, X } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
 import { computed, h, onMounted, ref, watch } from 'vue'
 
 import type { TableColumn } from '@/components/base-table.vue'
 
 import BaseTable from '@/components/base-table.vue'
+import ConfirmDialog from '@/components/confirm-dialog.vue'
 import { BasicPage } from '@/components/global-layout'
 import Pagination from '@/components/pagination.vue'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button as UiButton } from '@/components/ui/button'
 import {
@@ -218,14 +209,17 @@ const isLockConfirmOpen = ref(false)
 const lockTargetRoom = ref<Room | null>(null)
 const isLocking = ref(false)
 const lockError = ref('')
+const lockReason = ref('')
+const isLockAction = computed(() => lockTargetRoom.value?.status !== 'LOCKED')
 
 function handleToggleLock(room: Room) {
   lockTargetRoom.value = room
   lockError.value = ''
+  lockReason.value = ''
   isLockConfirmOpen.value = true
 }
 
-async function confirmToggleLock() {
+async function confirmToggleLock(reason: string) {
   if (!lockTargetRoom.value)
     return
 
@@ -235,7 +229,7 @@ async function confirmToggleLock() {
   const nextStatus = lockTargetRoom.value.status === 'LOCKED' ? 'OPEN' : 'LOCKED'
 
   try {
-    await roomService.lockRoom(lockTargetRoom.value.id, nextStatus)
+    await roomService.changeRoomStatus(lockTargetRoom.value.id, nextStatus, reason)
     isLockConfirmOpen.value = false
     fetchRooms()
   }
@@ -357,7 +351,6 @@ async function fetchRooms() {
 
     if (selectedStatus.value !== 'ALL')
       queryParams.status = selectedStatus.value
-
 
     const response = await roomService.getRooms(queryParams)
 
@@ -621,33 +614,37 @@ onMounted(() => {
     </DialogContent>
   </Dialog>
 
-  <!-- Lock / Unlock confirm -->
-  <AlertDialog v-model:open="isLockConfirmOpen">
-    <AlertDialogContent>
-      <AlertDialogHeader>
-        <AlertDialogTitle>
-          {{ lockTargetRoom?.status === 'LOCKED' ? 'Mở khóa room này?' : 'Khóa room này?' }}
-        </AlertDialogTitle>
-        <AlertDialogDescription>
-          Room <strong>{{ lockTargetRoom?.name }}</strong>
-          {{ lockTargetRoom?.status === 'LOCKED'
-            ? ' sẽ được mở khóa và hoạt động trở lại bình thường.'
-            : ' sẽ bị khóa, thành viên sẽ không thể tương tác trong room này.' }}
-        </AlertDialogDescription>
-      </AlertDialogHeader>
+  <ConfirmDialog
+    v-model:open="isLockConfirmOpen"
+    v-model:reason="lockReason"
+    :destructive="isLockAction"
+    :require-reason="isLockAction"
+    :close-on-confirm="false"
+    cancel-button-text="Hủy"
+    :confirm-button-text="isLockAction ? 'Khóa' : 'Mở khóa'"
+    reason-label="Nội dung thông báo"
+    reason-placeholder="Nhập nội dung/lý do khóa room"
+    reason-error="Vui lòng nhập nội dung khóa room"
+    :is-loading="isLocking"
+    @confirm="confirmToggleLock"
+  >
+    <template #title>
+      {{ isLockAction ? 'Khóa room này?' : 'Mở khóa room này?' }}
+    </template>
 
-      <p v-if="lockError" class="text-[12px] text-red-500">
-        {{ lockError }}
+    <template #description>
+      <p>
+        Room <strong>{{ lockTargetRoom?.name }}</strong>
+        {{
+          isLockAction
+            ? ' sẽ bị khóa, thành viên sẽ không thể tương tác trong room này.'
+            : ' sẽ được mở khóa và hoạt động trở lại bình thường.'
+        }}
       </p>
+    </template>
 
-      <AlertDialogFooter>
-        <AlertDialogCancel :disabled="isLocking">
-          Hủy
-        </AlertDialogCancel>
-        <AlertDialogAction :disabled="isLocking" @click.prevent="confirmToggleLock">
-          {{ isLocking ? 'Đang xử lý...' : (lockTargetRoom?.status === 'LOCKED' ? 'Mở khóa' : 'Khóa') }}
-        </AlertDialogAction>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
+    <p v-if="lockError" class="text-[12px] text-red-500">
+      {{ lockError }}
+    </p>
+  </ConfirmDialog>
 </template>
