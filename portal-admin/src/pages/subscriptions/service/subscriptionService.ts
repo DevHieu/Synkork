@@ -19,7 +19,7 @@ export const subscriptionService = {
   },
 
   async updateInvoice(id: string, payload: InvoiceRequest) {
-    const res = await axiosClient.patch(`/api/manage/invoices/${id}`, payload)
+    const res = await axiosClient.put(`/api/manage/invoices/${id}`, payload)
     return res.data
   },
 

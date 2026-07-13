@@ -2,13 +2,14 @@
 import { computed } from "vue";
 import { AlertTriangle, Info, Trash2, XCircle } from "lucide-vue-next";
 import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 export type NotificationType = "info" | "warning" | "error" | "confirm" | "delete";
 
@@ -24,8 +25,8 @@ const props = withDefaults(
   }>(),
   {
     type: "info",
-    confirmText: "ĐỒNG Ý",
-    cancelText: "HỦY",
+    confirmText: "Đồng ý",
+    cancelText: "Hủy",
     isLoading: false,
   }
 );
@@ -72,77 +73,85 @@ const themeClasses = computed(() => {
     case "delete":
       return {
         icon: "text-destructive",
-        border: "border-destructive",
-        bg: "bg-destructive/10",
-        btn: "bg-destructive text-destructive-foreground border-destructive hover:bg-background hover:text-destructive",
-        shadow: "box-shadow: 4px 4px 0px 0px var(--color-destructive);",
+        border: "border-destructive/20",
+        bg: "bg-destructive/5",
+        btn: "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
       };
     case "warning":
       return {
-        icon: "text-accent",
-        border: "border-accent",
-        bg: "bg-accent/10",
-        btn: "bg-accent text-accent-foreground border-accent hover:bg-background hover:text-accent",
-        shadow: "box-shadow: 4px 4px 0px 0px var(--color-accent);",
+        icon: "text-amber-500",
+        border: "border-amber-500/20",
+        bg: "bg-amber-500/5",
+        btn: "bg-amber-500 text-amber-950 hover:bg-amber-500/90",
       };
     default:
       return {
         icon: "text-primary",
-        border: "border-primary",
-        bg: "bg-primary/10",
-        btn: "bg-primary text-primary-foreground border-primary hover:bg-background hover:text-primary",
-        shadow: "box-shadow: 4px 4px 0px 0px var(--color-primary);",
+        border: "border-primary/20",
+        bg: "bg-primary/5",
+        btn: "bg-primary text-primary-foreground hover:bg-primary/90",
       };
   }
 });
 </script>
 
 <template>
-  <AlertDialog :open="show" @update:open="handleOpenChange">
-    <AlertDialogContent
-      class="max-w-sm overflow-hidden rounded-[1.5rem] border-2 bg-background p-0 text-foreground shadow-[0_32px_100px_-48px_rgba(0,0,0,0.75)] sm:max-w-[425px]"
-      :class="themeClasses.border"
+  <Dialog :open="show" @update:open="handleOpenChange">
+    <DialogContent
+      class="max-w-[calc(100%-2rem)] sm:max-w-[425px] overflow-hidden p-0 border-border/80"
+      :show-close-button="false"
+      @pointer-down-outside="(e) => e.preventDefault()"
+      @escape-key-down="(e) => e.preventDefault()"
     >
-      <div class="p-6">
-        <AlertDialogHeader class="flex flex-row items-center gap-4 space-y-0 pb-4">
-          <div
-            class="flex size-12 items-center justify-center rounded-full border-2"
-            :class="[themeClasses.border, themeClasses.bg, themeClasses.icon]"
-          >
-            <component :is="iconComponent" :size="24" stroke-width="2.5" />
-          </div>
-          <div class="flex flex-col gap-1">
-            <AlertDialogTitle class="font-mono font-bold text-lg uppercase tracking-widest text-foreground">
+      <div class="p-6 pb-4">
+        <DialogHeader class="flex flex-col gap-2">
+          <div class="flex items-center gap-3 min-w-0 w-full">
+            <div
+              class="flex size-9 shrink-0 items-center justify-center rounded-md border bg-background/50"
+              :class="[themeClasses.border, themeClasses.icon]"
+            >
+              <component :is="iconComponent" :size="18" />
+            </div>
+            <DialogTitle class="font-sans font-bold text-base text-foreground leading-none break-words min-w-0">
               {{ title }}
-            </AlertDialogTitle>
+            </DialogTitle>
           </div>
-        </AlertDialogHeader>
+        </DialogHeader>
 
-        <AlertDialogDescription class="font-mono text-sm uppercase text-muted-foreground leading-relaxed">
-          <span v-html="message"></span>
-        </AlertDialogDescription>
+        <DialogDescription
+          class="mt-3 font-sans text-sm leading-relaxed text-muted-foreground break-words"
+          as="div"
+        >
+          <div v-html="message" class="break-words"></div>
+        </DialogDescription>
       </div>
 
-      <AlertDialogFooter class="flex items-center justify-end gap-3 border-t-2 bg-background p-4" :class="themeClasses.border">
-        <button
+      <DialogFooter class="border-t border-border/60 bg-muted/20 p-4">
+        <Button
           v-if="type === 'confirm' || type === 'delete'"
           :disabled="isLoading"
+          variant="outline"
+          size="sm"
           @click="handleOpenChange(false)"
-          class="flex h-10 items-center justify-center rounded-full border-2 border-border px-4 font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
+          class="mt-0 sm:mt-0 w-full sm:w-auto text-xs font-semibold"
         >
           {{ cancelText }}
-        </button>
+        </Button>
         
-        <button
-          @click="handleConfirm"
+        <Button
           :disabled="isLoading"
-          class="flex h-10 items-center justify-center gap-2 rounded-full border-2 px-5 font-mono text-xs font-bold uppercase tracking-wider transition-colors"
+          @click="handleConfirm"
+          size="sm"
+          class="w-full sm:w-auto text-xs font-semibold"
           :class="themeClasses.btn"
         >
-          <span v-if="isLoading" class="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin"></span>
+          <span v-if="isLoading" class="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin mr-1.5"></span>
           {{ confirmText }}
-        </button>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>
+
+<style scoped>
+</style>

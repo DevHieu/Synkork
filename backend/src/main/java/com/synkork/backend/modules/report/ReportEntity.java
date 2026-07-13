@@ -13,8 +13,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.UUID;
-
 @Entity
 @Table(name = "reports")
 @Data
@@ -52,4 +50,9 @@ public class ReportEntity extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ReportSeverityEnums severity;
+
+    private String evidenceUrl;
+    private String evidencePublicId;
+    private String evidenceResourceType;
+    private String evidenceName;
 }

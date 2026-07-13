@@ -2,8 +2,7 @@ import axiosClient from '@/lib/axiosClient'
 
 export const dashboardService = {
   async getOverviewStatsData() {
-    const res = await axiosClient.get('/api/manage/dashboard/overview/stats')
-    console.log(res);
+    const res = await axiosClient.get(`/api/manage/dashboard/overview/stats`)
     return res.data
   },
 
@@ -46,6 +45,11 @@ export const dashboardService = {
  
   async getReportChartData(period: 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY') {
     const res = await axiosClient.get(`/api/manage/dashboard/reports/chart?period=${period}`)
+    return res.data
+  },
+
+  async getReportReasonStats() {
+    const res = await axiosClient.get('/api/manage/dashboard/reports/top-reasons')
     return res.data
   },
 }

@@ -35,7 +35,7 @@ const getEventsForDate = (date: dayjs.Dayjs) => {
   
   for (let i = 0; i < props.events.length; i++) {
     const event = props.events[i];
-    if (event && event.eventDate === targetDate) {
+    if (event && (event.displayDate || event.eventDate) === targetDate) {
       result.push(event);
     }
   }
@@ -45,31 +45,48 @@ const getEventsForDate = (date: dayjs.Dayjs) => {
 };
 
 // View tuần render trực tiếp từ mảng event đã được store đồng bộ sẵn.
+const getDisplayStartTime = (event: CalendarEvent) =>
+  (event.displayStartTime || event.startTime).substring(0, 5);
+
+const getOriginalStartLabel = (event: CalendarEvent) => {
+  const dateTime = event.originalStartDateTime
+    ? dayjs(event.originalStartDateTime)
+    : dayjs(`${event.eventDate}T${event.startTime}`);
+  if (!dateTime.isValid()) return event.startTime.substring(0, 5);
+  return `${dateTime.format("HH:mm")} ${dateTime.format("DD/MM")}`;
+};
+
+const getContinuationLabel = (event: CalendarEvent) => {
+  if (event.continuesFromPreviousDay && event.continuesToNextDay) return "TIẾP TỤC";
+  if (event.continuesFromPreviousDay) return "TỪ HÔM TRƯỚC";
+  if (event.continuesToNextDay) return "SANG HÔM SAU";
+  return "";
+};
 </script>
 <template>
   <ScrollArea class="calendar-scroll-area min-h-0 flex-1">
     <div class="bg-transparent p-4 text-foreground">
-      <div class="grid grid-cols-7 overflow-hidden rounded-[1.5rem] border-2 border-border bg-background shadow-[0_30px_80px_-48px_var(--color-foreground)]">
+      <div class="grid grid-cols-7 overflow-hidden rounded-lg border border-border/60 bg-background shadow-sm">
         <div
           v-for="(date, idx) in weekDays"
           :key="idx"
-          :class="['flex flex-col h-full min-h-[400px] border-r-2 border-border last:border-r-0']"
+          :class="['flex flex-col h-full min-h-[400px] border-r border-border/60 last:border-r-0']"
         >
           <!-- Day Header -->
           <div
             @click="emit('selectDate', date)"
             :class="[
-              'cursor-pointer border-b-2 border-border p-3 text-center transition-colors',
+              'cursor-pointer border-b border-border/60 p-3 text-center transition-colors',
               isToday(date) ? 'bg-primary text-primary-foreground' : 'bg-muted/30 hover:bg-muted/70',
-              isSelected(date) ? 'bg-primary/5 ring-2 ring-inset ring-primary' : '',
+              isSelected(date) ? 'bg-primary/5 ring-1 ring-inset ring-primary/45' : '',
             ]"
           >
-            <div :class="['text-[10px] font-mono font-bold uppercase tracking-widest', isToday(date) ? 'text-primary-foreground/80' : 'text-muted-foreground']">
+            <div :class="['text-[10px] font-sans font-semibold uppercase tracking-wider', isToday(date) ? 'text-primary-foreground/80' : 'text-muted-foreground']">
               {{ dayNames[date.day()] }}
             </div>
             <div
               :class="[
-                'text-xl font-mono font-bold mt-1',
+                'text-lg font-sans font-bold mt-1',
                 isToday(date) ? 'text-primary-foreground' : 'text-foreground',
               ]"
             >
@@ -83,18 +100,22 @@ const getEventsForDate = (date: dayjs.Dayjs) => {
               v-for="event in getEventsForDate(date)"
               :key="event.id"
               @click="emit('viewEvent', event)"
-              class="cursor-pointer rounded-xl border-2 border-border bg-muted/35 p-3 text-foreground shadow-[0_16px_28px_-28px_var(--color-primary)] transition-all hover:-translate-y-0.5 hover:border-primary hover:bg-background"
+              class="group cursor-pointer rounded-md border border-border/60 bg-muted/25 p-3 text-foreground shadow-sm transition-all hover:border-primary/80 hover:bg-background"
             >
-              <p class="text-xs font-mono font-bold truncate uppercase text-primary">
+              <p class="text-xs font-sans font-semibold truncate text-primary">
                 {{ event.title }}
               </p>
-              <p class="mt-2 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-mono font-bold text-primary w-fit">
-                {{ event.startTime.substring(0, 5) }}
+              <p class="mt-2 rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-sans font-semibold text-primary w-fit">
+                <span class="group-hover:hidden">{{ getDisplayStartTime(event) }}</span>
+                <span class="hidden group-hover:inline">{{ getOriginalStartLabel(event) }}</span>
+              </p>
+              <p v-if="getContinuationLabel(event)" class="mt-2 text-[9px] font-sans font-semibold uppercase tracking-wider text-muted-foreground">
+                {{ getContinuationLabel(event) }}
               </p>
             </div>
             <div
               v-if="getEventsForDate(date).length === 0"
-              class="mt-4 rounded-lg border border-dashed border-border bg-muted/20 px-3 py-4 text-center font-mono text-[10px] uppercase text-muted-foreground"
+              class="mt-4 rounded-md border border-dashed border-border bg-muted/10 px-3 py-4 text-center font-sans text-[10px] uppercase text-muted-foreground"
             >
               KHÔNG SỰ KIỆN
             </div>

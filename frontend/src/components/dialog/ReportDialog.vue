@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onBeforeUnmount } from 'vue'
+import { X, FileVideo, ImageIcon, Paperclip, UploadCloud } from "lucide-vue-next";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +39,15 @@ const emit = defineEmits(['update:open'])
 
 const reason = ref<ReportReason | ''>('')
 const description = ref('')
+const submitting = ref(false)
+
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024
+const MAX_VIDEO_SIZE = 50 * 1024 * 1024 
+
+const evidenceFile = ref<File | null>(null)
+const evidencePreviewUrl = ref<string | null>(null)
+const evidenceIsVideo = ref(false)
+const fileInput = ref<HTMLInputElement | null>(null)
 
 const isUser = computed(() => !!props.user)
 const targetName = computed(() => props.user?.displayName || props.room?.name || 'Đối tượng')
@@ -52,10 +62,73 @@ const reasons: { value: ReportReason; label: string }[] = [
   { value: 'OTHER', label: 'Lý do khác' },
 ]
 
+const openFilePicker = () => fileInput.value?.click()
+
+const formatFileSize = (bytes: number) => {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+const clearEvidence = () => {
+  if (evidencePreviewUrl.value) URL.revokeObjectURL(evidencePreviewUrl.value)
+  evidenceFile.value = null
+  evidencePreviewUrl.value = null
+  evidenceIsVideo.value = false
+}
+
+const processFile = (file: File) => {
+  const isImage = file.type.startsWith('image/')
+  const isVideo = file.type.startsWith('video/')
+
+  if (!isImage && !isVideo) {
+    toast.error(`"${file.name}" không phải ảnh hoặc video`)
+    return
+  }
+
+  const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE
+  if (file.size > maxSize) {
+    toast.error(`"${file.name}" vượt quá dung lượng cho phép (${isVideo ? '50MB' : '10MB'})`)
+    return
+  }
+
+  clearEvidence()
+  evidenceFile.value = file
+  evidencePreviewUrl.value = URL.createObjectURL(file)
+  evidenceIsVideo.value = isVideo
+}
+
+const handleFileChange = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  processFile(file)
+}
+
+const isDragging = ref(false)
+const handleDragOver = (e: DragEvent) => {
+  e.preventDefault()
+  isDragging.value = true
+}
+const handleDragLeave = () => {
+  isDragging.value = false
+}
+const handleDrop = (e: DragEvent) => {
+  e.preventDefault()
+  isDragging.value = false
+
+  const file = e.dataTransfer?.files?.[0]
+  if (file) processFile(file)
+}
+
+onBeforeUnmount(clearEvidence)
+
 const closeDialog = () => {
   emit('update:open')
   reason.value = ''
   description.value = ''
+  clearEvidence()
 }
 
 const handleSubmit = async () => {
@@ -70,11 +143,12 @@ const handleSubmit = async () => {
     description: description.value,
   }
 
+  submitting.value = true
   try {
     if (props.user) {
-      await createUserReport(data)
+      await createUserReport(data, evidenceFile.value)
     } else {
-      await createRoomReport(data)
+      await createRoomReport(data, evidenceFile.value)
     }
 
     closeDialog()
@@ -84,7 +158,9 @@ const handleSubmit = async () => {
 
     const message = error?.response?.data || "Gửi báo cáo thất bại, vui lòng thử lại"
     toast.error(message)
-  }
+  } finally {
+    submitting.value = false
+  } 
 }
 
 </script>
@@ -139,6 +215,62 @@ const handleSubmit = async () => {
           <Label class="text-sm font-semibold text-foreground/80">Mô tả chi tiết (không bắt buộc)</Label>
           <Textarea v-model="description" placeholder="Hãy cung cấp thêm chi tiết để chúng tôi xử lý tốt hơn..."
             class="min-h-[100px] bg-background border-border focus:ring-primary/50 rounded-md resize-none" />
+        </div>
+
+        <!-- Bằng chứng đính kèm -->
+        <div class="space-y-2">
+          <Label class="text-sm font-semibold text-foreground/80">Bằng chứng (ảnh/video, không bắt buộc)</Label>
+
+          <input
+            ref="fileInput"
+            type="file"
+            accept="image/*,video/*"
+            class="hidden"
+            @change="handleFileChange"
+          />
+
+          <!-- Đã có file: hiển thị preview lớn hơn, kèm tên/dung lượng, hover để đổi file -->
+          <div v-if="evidenceFile"
+            class="relative flex items-center gap-3 p-2 rounded-md border border-border bg-muted/50 group">
+            <div class="relative w-16 h-16 shrink-0 rounded-md overflow-hidden bg-background">
+              <video v-if="evidenceIsVideo" :src="evidencePreviewUrl!" class="w-full h-full object-cover" muted />
+              <img v-else :src="evidencePreviewUrl!" class="w-full h-full object-cover" />
+
+              <div class="absolute top-1 left-1 bg-background/80 rounded p-0.5">
+                <FileVideo v-if="evidenceIsVideo" class="w-3 h-3" />
+                <ImageIcon v-else class="w-3 h-3" />
+              </div>
+
+              <button type="button" @click="openFilePicker"
+                class="absolute inset-0 flex items-center justify-center bg-background/70 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-semibold">
+                Đổi file
+              </button>
+            </div>
+
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-medium truncate">{{ evidenceFile.name }}</p>
+              <p class="text-[11px] text-muted-foreground">{{ formatFileSize(evidenceFile.size) }}</p>
+            </div>
+
+            <button type="button" @click="clearEvidence"
+              class="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+              <X class="w-4 h-4" />
+            </button>
+          </div>
+
+          <!-- Chưa có file: khu vực chọn / kéo-thả -->
+          <button v-else type="button" @click="openFilePicker" @dragover="handleDragOver"
+            @dragleave="handleDragLeave" @drop="handleDrop"
+            class="relative w-full h-24 rounded-md border border-dashed flex flex-col items-center justify-center gap-1 text-muted-foreground transition-colors"
+            :class="isDragging
+              ? 'border-primary/60 bg-primary/10 text-primary'
+              : 'border-border hover:bg-muted/50 hover:text-foreground'">
+            <UploadCloud v-if="isDragging" class="w-5 h-5" />
+            <Paperclip v-else class="w-4 h-4" />
+            <span class="text-[11px]">{{ isDragging ? 'Thả file vào đây' : 'Chọn hoặc kéo thả tệp' }}</span>
+          </button>
+
+          <p class="text-[11px] text-muted-foreground">Ảnh tối đa 10MB, video tối đa 50MB. Chỉ 1 tệp.</p>
         </div>
       </div>
 

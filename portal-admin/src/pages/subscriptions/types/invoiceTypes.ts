@@ -10,7 +10,6 @@ export interface Invoice {
   paymentMethod?: string | null
   userEmail?: string | null
   username?: string | null
-  planExpiresAt?: string | null
 }
 
 export interface InvoiceRequest {

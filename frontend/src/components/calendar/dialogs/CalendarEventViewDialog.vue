@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import dayjs from "dayjs";
 import {
   CalendarDays,
@@ -12,6 +12,8 @@ import {
   Trash2,
   UserRound,
   Users,
+  PhoneCall,
+  CheckSquare,
 } from "lucide-vue-next";
 import type { CalendarEvent } from "@/types/CalendarEvent";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -25,6 +27,8 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { useVoiceSpaceStore } from "@/stores/voiceSpaceStore";
+import { useSpaceStore } from "@/stores/spaceStore";
 
 const props = defineProps<{
   show: boolean;
@@ -73,7 +77,7 @@ const recurrenceLabel = computed(() => {
 });
 
 const formattedEventDate = computed(() =>
-  props.event ? dayjs(props.event.eventDate).format("dddd, DD/MM/YYYY") : "",
+  props.event ? dayjs(props.event.displayDate || props.event.eventDate).format("dddd, DD/MM/YYYY") : "",
 );
 
 const formattedCreatedAt = computed(() =>
@@ -85,11 +89,42 @@ const formattedUpdatedAt = computed(() =>
 );
 
 const displayEventDate = computed(() =>
-  props.event?.eventDate ? dayjs(props.event.eventDate).format("DD/MM/YYYY") : "",
+  props.event ? dayjs(props.event.displayDate || props.event.eventDate).format("DD/MM/YYYY") : "",
 );
 
 const attachments = computed(() => props.event?.attachments ?? []);
 const attendees = computed(() => props.event?.attendees ?? []);
+const eventLink = computed(() => props.event?.eventLink?.trim() ?? "");
+const displayStartTime = computed(() =>
+  props.event ? (props.event.displayStartTime || props.event.startTime).substring(0, 5) : "",
+);
+const displayEndTime = computed(() =>
+  props.event ? (props.event.displayEndTime || props.event.endTime).substring(0, 5) : "",
+);
+const formatDateTimeLabel = (value: string | undefined, fallbackDate: string, fallbackTime: string) => {
+  const dateTime = value ? dayjs(value) : dayjs(`${fallbackDate}T${fallbackTime}`);
+  if (!dateTime.isValid()) return fallbackTime.substring(0, 5);
+  return `${dateTime.format("HH:mm")} ${dateTime.format("DD/MM")}`;
+};
+const originalStartLabel = computed(() =>
+  props.event
+    ? formatDateTimeLabel(props.event.originalStartDateTime, props.event.eventDate, props.event.startTime)
+    : "",
+);
+const originalEndLabel = computed(() =>
+  props.event
+    ? formatDateTimeLabel(props.event.originalEndDateTime, props.event.endDate || props.event.eventDate, props.event.endTime)
+    : "",
+);
+const continuationLabel = computed(() => {
+  if (!props.event) return "";
+  if (props.event.continuesFromPreviousDay && props.event.continuesToNextDay) {
+    return "Event này bắt đầu từ ngày hôm trước và tiếp tục ở ngày hôm sau";
+  }
+  if (props.event.continuesFromPreviousDay) return "Event này bắt đầu từ ngày hôm trước";
+  if (props.event.continuesToNextDay) return "Event này tiếp tục ở ngày hôm sau";
+  return "";
+});
 
 const openEdit = () => {
   if (props.event) {
@@ -102,229 +137,281 @@ const openDelete = () => {
     emit("delete", props.event);
   }
 };
+
+const voiceSpaceStore = useVoiceSpaceStore();
+const spaceStore = useSpaceStore();
+
+const joinVoiceRoom = () => {
+  if (props.event?.callRoomSpaceId) {
+    spaceStore.changeSpaceById(props.event.callRoomSpaceId, "VOICE");
+    voiceSpaceStore.joinRoom(props.event.callRoomSpaceId, false);
+    emit("update:show", false);
+  }
+};
 </script>
 
 <template>
   <Dialog :open="show" @update:open="emit('update:show', $event)">
     <DialogContent
-      class="overflow-hidden rounded-[1.5rem] border-2 border-border bg-background p-0 text-foreground shadow-[0_36px_110px_-52px_rgba(0,0,0,0.8)] sm:max-w-2xl cursor-default"
+      class="overflow-hidden rounded-md border border-border/60 bg-background p-0 text-foreground shadow-lg sm:max-w-2xl cursor-default flex flex-col max-h-[90vh]"
     >
-      <DialogHeader class="border-b-2 border-border bg-muted/35 px-5 py-4 cursor-default">
+      <!-- Dialog Header -->
+      <DialogHeader class="border-b border-border/60 bg-muted/30 px-6 py-4 cursor-default shrink-0">
         <div class="flex flex-col gap-3">
           <div class="flex flex-wrap items-center gap-2">
-            <Badge variant="default" class="font-mono uppercase tracking-widest">
+            <Badge variant="default" class="font-sans text-[9px] font-bold uppercase tracking-wider bg-primary text-primary-foreground rounded-sm px-1.5 py-0.5">
               Sự kiện
             </Badge>
             <Badge
               v-if="event?.allowEditAll"
               variant="outline"
-              class="font-mono uppercase tracking-widest"
+              class="font-sans text-[9px] font-bold uppercase tracking-wider text-muted-foreground rounded-sm px-1.5 py-0.5 border-border/60"
             >
-              Cho phép chỉnh sửa
+              Mọi người cùng sửa
             </Badge>
           </div>
 
-          <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-            <div class="min-w-0">
-              <DialogTitle class="font-mono text-xl font-bold uppercase leading-tight tracking-[0.14em] text-foreground">
-                {{ event?.title }}
-              </DialogTitle>
-              <p class="mt-2 font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                {{ formattedEventDate }}
-              </p>
-            </div>
-
-            <div class="rounded-2xl border-2 border-primary/30 bg-primary/10 px-3 py-2.5 cursor-default">
-              <p class="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                Khung giờ
-              </p>
-              <p class="mt-1 font-mono text-sm font-bold uppercase tracking-widest text-primary">
-                {{ event?.startTime?.substring(0, 5) }} → {{ event?.endTime?.substring(0, 5) }}
-              </p>
-            </div>
+          <div class="flex flex-col gap-1.5 min-w-0">
+            <DialogTitle class="font-sans text-lg font-bold text-foreground leading-tight break-words">
+              {{ event?.title }}
+            </DialogTitle>
+            <p class="font-sans text-[11px] text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
+              <CalendarDays class="h-3.5 w-3.5 text-muted-foreground/75" />
+              {{ formattedEventDate }}
+            </p>
           </div>
         </div>
       </DialogHeader>
 
-      <ScrollArea class="max-h-[65vh]">
-        <div class="flex flex-col gap-4 px-5 py-5">
-          <div class="grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
-            <section class="rounded-2xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)]">
-              <div class="flex items-center gap-2">
-                <FileText class="text-primary" data-icon="inline-start" />
-                <h3 class="font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                  Mô tả
+      <!-- Scrollable content -->
+      <ScrollArea class="flex-1 overflow-y-auto min-h-0">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-5 p-5">
+          
+          <!-- Column Trái: Nội dung chính (Mô tả, Link, Room) - Chiếm 3/5 cột -->
+          <div class="md:col-span-3 space-y-4">
+            <!-- Mô tả -->
+            <div class="rounded-md border border-border/60 bg-card overflow-hidden">
+              <div class="flex items-center gap-2 border-b border-border/60 bg-muted/20 px-3.5 py-2">
+                <FileText class="text-primary h-3.5 w-3.5" />
+                <h3 class="font-sans text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Mô tả chi tiết
                 </h3>
               </div>
-              <p class="mt-3 whitespace-pre-wrap rounded-xl border border-border bg-muted/20 p-4 font-mono text-sm leading-relaxed text-foreground cursor-default">
-                {{ event?.description || "Không có mô tả." }}
-              </p>
-            </section>
+              <div class="p-3.5 font-sans text-xs leading-relaxed text-foreground whitespace-pre-wrap break-words min-h-[100px] cursor-default">
+                {{ event?.description || "Không có mô tả cho sự kiện này." }}
+              </div>
+            </div>
 
-            <section class="rounded-2xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)] cursor-default">
-              <div class="flex items-center gap-2">
-                <UserRound class="text-primary" data-icon="inline-start" />
-                <h3 class="font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                  Người tạo
+            <!-- Phòng họp trực tiếp (Voice Room) -->
+            <div v-if="event?.callRoomSpaceId" class="rounded-md border border-border/60 bg-card overflow-hidden">
+              <div class="flex items-center gap-2 border-b border-border/60 bg-muted/20 px-3.5 py-2">
+                <PhoneCall class="text-primary h-3.5 w-3.5" />
+                <h3 class="font-sans text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Phòng họp trực tiếp
                 </h3>
               </div>
-
-              <div class="mt-4 flex items-center gap-3">
-                <Avatar class="size-12 border-2 border-border">
-                  <AvatarImage
-                    v-if="event?.createdByAvatarUrl"
-                    :src="event.createdByAvatarUrl"
-                    :alt="creatorLabel"
-                  />
-                  <AvatarFallback />
-                </Avatar>
-
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3.5">
                 <div class="min-w-0">
-                  <p class="truncate font-mono text-sm font-bold uppercase tracking-wider text-foreground">
-                    {{ creatorLabel }}
+                  <p class="font-sans text-xs font-bold text-foreground truncate">
+                    {{ event?.callRoomSpaceName || 'Phòng voice' }}
                   </p>
-                  <p class="mt-1 truncate font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                    {{ event?.createdByUsername }}
+                  <p class="font-sans text-[9px] text-muted-foreground/80 mt-0.5 uppercase tracking-wider">
+                    Click tham gia cuộc họp bằng âm thanh và hình ảnh
                   </p>
                 </div>
+                <Button
+                  @click="joinVoiceRoom"
+                  size="sm"
+                  class="rounded-sm bg-primary font-sans text-[10px] font-bold text-primary-foreground px-3.5 py-1.5 shadow-sm hover:bg-primary/95 shrink-0"
+                >
+                  Vào phòng call
+                </Button>
               </div>
+            </div>
 
-              <Separator class="my-4" />
-
-              <div class="grid gap-3">
-                <div>
-                  <p class="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Tạo lúc
-                  </p>
-                  <p class="mt-1 font-mono text-xs font-bold uppercase tracking-wider text-foreground">
-                    {{ formattedCreatedAt }}
-                  </p>
-                </div>
-                <div>
-                  <p class="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Cập nhật lúc
-                  </p>
-                  <p class="mt-1 font-mono text-xs font-bold uppercase tracking-wider text-foreground">
-                    {{ formattedUpdatedAt }}
-                  </p>
-                </div>
+            <!-- Link sự kiện -->
+            <div v-if="eventLink" class="rounded-md border border-border/60 bg-card overflow-hidden">
+              <div class="flex items-center gap-2 border-b border-border/60 bg-muted/20 px-3.5 py-2">
+                <LinkIcon class="text-primary h-3.5 w-3.5" />
+                <h3 class="font-sans text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Link sự kiện
+                </h3>
               </div>
-            </section>
+              <div class="flex items-center justify-between gap-3 p-3.5 bg-muted/5">
+                <p class="min-w-0 break-all font-sans text-xs text-foreground/90 font-medium">
+                  {{ eventLink }}
+                </p>
+                <a
+                  :href="eventLink"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-sm border border-border bg-background px-3 py-1.5 font-sans text-[10px] font-semibold text-muted-foreground transition-colors hover:bg-accent"
+                >
+                  <LinkIcon class="h-3 w-3" />
+                  Mở link
+                </a>
+              </div>
+            </div>
           </div>
 
-          <section class="grid gap-4 md:grid-cols-3">
-            <div class="rounded-2xl border-2 border-border bg-background p-3.5 cursor-default">
-              <div class="flex items-center gap-2">
-                <CalendarDays class="text-primary" data-icon="inline-start" />
-                <p class="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  Ngày
+          <!-- Column Phải: Metadata Sidebar (Thời gian, Người tạo, Người tham gia, Tệp đính kèm) - Chiếm 2/5 cột -->
+          <div class="md:col-span-2 space-y-4">
+            <!-- Khung giờ -->
+            <div class="rounded-md border border-primary/20 bg-primary/5 p-4 space-y-3">
+              <div>
+                <p class="font-sans text-[9px] font-bold uppercase tracking-wider text-primary/80">
+                  Thời gian hoạt động
+                </p>
+                <p class="font-sans text-xs font-bold text-primary mt-1.5 flex items-center gap-1.5">
+                  <Clock3 class="h-3.5 w-3.5 text-primary" />
+                  <span>{{ displayStartTime }} &rarr; {{ displayEndTime }}</span>
+                </p>
+                <p class="font-sans text-[9px] text-muted-foreground/80 mt-1">
+                  Múi giờ: {{ originalStartLabel }} - {{ originalEndLabel }}
+                </p>
+                <p v-if="continuationLabel" class="mt-1 font-sans text-[9px] font-medium text-warning-foreground bg-warning/10 px-2 py-0.5 rounded-sm inline-block uppercase tracking-wider">
+                  {{ continuationLabel }}
                 </p>
               </div>
-              <p class="mt-3 font-mono text-sm font-bold uppercase tracking-wider text-foreground">
-                {{ displayEventDate }}
-              </p>
+
+              <div class="pt-3 border-t border-primary/10 grid grid-cols-2 gap-2">
+                <div>
+                  <p class="font-sans text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+                    Ngày bắt đầu
+                  </p>
+                  <p class="font-sans text-[11px] font-medium text-foreground mt-0.5">
+                    {{ displayEventDate }}
+                  </p>
+                </div>
+                <div>
+                  <p class="font-sans text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+                    Lặp lại
+                  </p>
+                  <p class="font-sans text-[11px] font-medium text-foreground mt-0.5 truncate" :title="recurrenceLabel">
+                    {{ recurrenceLabel }}
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div class="rounded-2xl border-2 border-border bg-background p-3.5 cursor-default">
-              <div class="flex items-center gap-2">
-                <Clock3 class="text-primary" data-icon="inline-start" />
-                <p class="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  Lặp lại
+            <!-- Người tạo -->
+            <div class="rounded-md border border-border/60 bg-card overflow-hidden">
+              <div class="flex items-center gap-2 border-b border-border/60 bg-muted/20 px-3.5 py-2">
+                <UserRound class="text-primary h-3.5 w-3.5" />
+                <h4 class="font-sans text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Người tạo
+                </h4>
+              </div>
+              <div class="p-3.5 space-y-3">
+                <div class="flex items-center gap-3">
+                  <Avatar class="size-8 border border-border/60 shrink-0 rounded-sm">
+                    <AvatarImage
+                      v-if="event?.createdByAvatarUrl"
+                      :src="event.createdByAvatarUrl"
+                      :alt="creatorLabel"
+                    />
+                    <AvatarFallback />
+                  </Avatar>
+                  <div class="min-w-0">
+                    <p class="truncate font-sans text-xs font-bold text-foreground">
+                      {{ creatorLabel }}
+                    </p>
+                    <p class="truncate font-sans text-[9px] text-muted-foreground">
+                      @{{ event?.createdByUsername }}
+                    </p>
+                  </div>
+                </div>
+                
+                <div class="pt-2.5 border-t border-border/40 grid grid-cols-2 gap-2 text-[9px] text-muted-foreground">
+                  <div>
+                    <span class="block text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80">Tạo ngày</span>
+                    <span class="font-medium mt-0.5 block">{{ formattedCreatedAt }}</span>
+                  </div>
+                  <div>
+                    <span class="block text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80">Cập nhật</span>
+                    <span class="font-medium mt-0.5 block">{{ formattedUpdatedAt }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Người tham gia -->
+            <div class="rounded-md border border-border/60 bg-card overflow-hidden">
+              <div class="flex items-center gap-2 border-b border-border/60 bg-muted/20 px-3.5 py-2">
+                <Users class="text-primary h-3.5 w-3.5" />
+                <h4 class="font-sans text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Tham gia ({{ attendees.length }})
+                </h4>
+              </div>
+              <div class="p-3.5">
+                <div v-if="attendees.length > 0" class="flex flex-wrap gap-1.5">
+                  <Badge
+                    v-for="attendee in attendees"
+                    :key="attendee.memberId"
+                    variant="secondary"
+                    class="font-sans text-[9px] font-medium rounded-sm px-1.5 py-0.5"
+                  >
+                    {{ attendee.displayName || attendee.username }}
+                  </Badge>
+                </div>
+                <p v-else class="font-sans text-[10px] text-muted-foreground italic uppercase tracking-wider">
+                  Chưa có ai tham gia.
                 </p>
               </div>
-              <p class="mt-3 font-mono text-sm font-bold uppercase tracking-wider text-foreground">
-                {{ recurrenceLabel }}
-              </p>
             </div>
 
-            <div class="rounded-2xl border-2 border-border bg-background p-3.5 cursor-default">
-              <div class="flex items-center gap-2">
-                <ShieldCheck class="text-primary" data-icon="inline-start" />
-                <p class="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  Quyền sửa
-                </p>
+            <!-- Tệp đính kèm -->
+            <div class="rounded-md border border-border/60 bg-card overflow-hidden">
+              <div class="flex items-center gap-2 border-b border-border/60 bg-muted/20 px-3.5 py-2">
+                <Paperclip class="text-primary h-3.5 w-3.5" />
+                <h4 class="font-sans text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Đính kèm ({{ attachments.length }})
+                </h4>
               </div>
-              <p class="mt-3 font-mono text-sm font-bold uppercase tracking-wider text-foreground">
-                {{ event?.allowEditAll ? "Mọi người có thể sửa" : "Chỉ người tạo được sửa" }}
-              </p>
-            </div>
-          </section>
-
-          <div class="grid gap-4 md:grid-cols-2">
-            <section class="rounded-2xl border-2 border-border bg-background p-4 cursor-default">
-              <div class="flex items-center gap-2">
-                <Users class="text-primary" data-icon="inline-start" />
-                <h3 class="font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                  Người tham gia
-                </h3>
-              </div>
-
-              <div v-if="attendees.length > 0" class="mt-4 flex flex-wrap gap-2">
-                <Badge
-                  v-for="attendee in attendees"
-                  :key="attendee"
-                  variant="outline"
-                  class="font-mono uppercase tracking-wide"
-                >
-                  {{ attendee }}
-                </Badge>
-              </div>
-              <p v-else class="mt-4 font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                Không có người tham gia.
-              </p>
-            </section>
-
-            <section class="rounded-2xl border-2 border-border bg-background p-4 cursor-default">
-              <div class="flex items-center gap-2">
-                <Paperclip class="text-primary" data-icon="inline-start" />
-                <h3 class="font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                  Tệp đính kèm
-                </h3>
-              </div>
-
-              <div v-if="attachments.length > 0" class="mt-4 flex flex-col gap-3">
-                <div
-                  v-for="attachment in attachments"
-                  :key="`${attachment.name}-${attachment.fileUrl}`"
-                  class="rounded-xl border border-border bg-muted/15 px-4 py-3"
-                >
-                  <div class="flex items-start justify-between gap-3">
+              <div class="p-3.5">
+                <div v-if="attachments.length > 0" class="flex flex-col gap-2 max-h-[150px] overflow-y-auto calendar-scrollbar">
+                  <div
+                    v-for="attachment in attachments"
+                    :key="`${attachment.name}-${attachment.fileUrl}`"
+                    class="flex items-center justify-between gap-2 p-2 rounded-sm border border-border/60 bg-muted/15"
+                  >
                     <div class="min-w-0">
-                      <p class="truncate font-mono text-xs font-bold uppercase tracking-wider text-foreground">
+                      <p class="truncate font-sans text-xs font-semibold text-foreground" :title="attachment.name">
                         {{ attachment.name }}
                       </p>
-                      <p class="mt-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                      <p class="font-sans text-[9px] text-muted-foreground/80 mt-0.5">
                         {{ attachment.size }} KB
                       </p>
                     </div>
-
                     <a
                       v-if="attachment.fileUrl"
                       :href="attachment.fileUrl"
                       target="_blank"
                       rel="noreferrer"
-                      class="inline-flex shrink-0 items-center gap-1 rounded-full border border-border px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                      class="inline-flex items-center gap-1 rounded-sm border border-border bg-background px-2 py-1 font-sans text-[9px] font-semibold text-muted-foreground hover:bg-accent shrink-0 transition-colors"
                     >
-                      <LinkIcon data-icon="inline-end" />
+                      <LinkIcon class="h-2.5 w-2.5" />
                       Mở
                     </a>
                   </div>
                 </div>
+                <p v-else class="font-sans text-[10px] text-muted-foreground italic uppercase tracking-wider">
+                  Không có đính kèm.
+                </p>
               </div>
-              <p v-else class="mt-4 font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                Không có tệp đính kèm.
-              </p>
-            </section>
+            </div>
           </div>
+          
         </div>
       </ScrollArea>
 
-      <div class="flex flex-wrap items-center justify-end gap-2.5 border-t-2 border-border bg-background px-5 py-3.5">
+      <!-- Footer Buttons -->
+      <div class="flex flex-wrap items-center justify-end gap-2 border-t border-border/60 bg-background px-6 py-3.5 shrink-0">
         <Button
           type="button"
           variant="outline"
           size="sm"
-          class="rounded-full border-2 font-mono text-xs font-bold uppercase tracking-widest"
+          class="rounded-sm border border-border/60 bg-background font-sans text-xs font-semibold px-4 py-2 hover:bg-accent"
           @click="emit('update:show', false)"
         >
           Đóng
@@ -333,23 +420,23 @@ const openDelete = () => {
         <Button
           v-if="canDelete"
           type="button"
-          variant="outline"
+          variant="destructive"
           size="sm"
-          class="rounded-full border-2 border-destructive font-mono text-xs font-bold uppercase tracking-widest text-destructive hover:bg-destructive hover:text-destructive-foreground"
+          class="rounded-sm font-sans text-xs font-semibold px-4 py-2"
           @click="openDelete"
         >
-          <Trash2 data-icon="inline-start" />
-          Xóa
+          <Trash2 class="mr-1.5 h-3.5 w-3.5" />
+          Xóa sự kiện
         </Button>
 
         <Button
           v-if="canEdit"
           type="button"
           size="sm"
-          class="rounded-full border-2 border-primary bg-primary font-mono text-xs font-bold uppercase tracking-widest text-primary-foreground shadow-[0_16px_34px_-22px_var(--color-primary)] hover:bg-background hover:text-primary"
+          class="rounded-sm bg-primary font-sans text-xs font-semibold text-primary-foreground px-4 py-2 shadow-sm hover:bg-primary/95"
           @click="openEdit"
         >
-          <Pencil data-icon="inline-start" />
+          <Pencil class="mr-1.5 h-3.5 w-3.5" />
           Chỉnh sửa
         </Button>
       </div>

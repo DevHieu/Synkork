@@ -1,5 +1,6 @@
 package com.synkork.backend.modules.report;
 
+import com.synkork.backend.modules.admin.statistics.dtos.ReportReasonStatsResponse;
 import com.synkork.backend.modules.report.enums.ReportStatusEnums;
 import com.synkork.backend.modules.report.enums.ReportTypeEnums;
 import com.synkork.backend.modules.room.RoomEntity;
@@ -46,4 +47,16 @@ public interface ReportRepository extends JpaRepository<ReportEntity, UUID>, Jpa
         ORDER BY CAST(r.createdAt AS LocalDate)
     """)
     List<Object[]> findDailyReportCounts(@Param("from") LocalDateTime from);
+
+    @Query("""
+        SELECT new com.synkork.backend.modules.admin.statistics.dtos.ReportReasonStatsResponse(
+            r.reason,
+            r.reportType,
+            COUNT(r)
+        )
+        FROM ReportEntity r
+        GROUP BY r.reason, r.reportType
+        ORDER BY COUNT(r) DESC
+    """)
+    List<ReportReasonStatsResponse> findReasonCountsGroupedByType();
 }

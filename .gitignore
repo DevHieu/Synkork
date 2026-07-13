@@ -1,8 +1,7 @@
 .idea/
 skills/
-llm/
-developCode/
-skills-lock.json
+database/
+
 docs/
 README.md
 README.zh-CN.md
@@ -11,5 +10,5 @@ README.en.md
 .agents/
 .antigravitycli/
 
-# Ignore repository documentation files
+
 **/README*.md
