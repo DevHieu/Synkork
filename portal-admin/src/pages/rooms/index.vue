@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { Eye, Lock, LoaderIcon, Pencil, PlusIcon, RefreshCwIcon, Search, Unlock } from '@lucide/vue'
+import { Eye, Lock, LoaderIcon, Pencil, PlusIcon, RefreshCwIcon, Search, Unlock, X } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
 import { computed, h, onMounted, ref, watch } from 'vue'
 
@@ -18,6 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Badge } from '@/components/ui/badge'
 import { Button as UiButton } from '@/components/ui/button'
 import {
   Dialog,
@@ -65,10 +66,19 @@ const selectedStatus = ref<string>('ALL')
 const debounceSearchKeyword = refDebounced(searchKeyword, 500)
 
 const totalPage = computed(() => Math.ceil(totalCount.value / pageSize))
+const hasActiveFilter = computed(() =>
+  !!searchKeyword.value
+  || selectedStatus.value !== 'ALL',
+)
 
 function handleViewDetail(room: Room) {
   selectedRoom.value = room
   isDetailOpen.value = true
+}
+
+function clearFilters() {
+  searchKeyword.value = ''
+  selectedStatus.value = 'ALL'
 }
 
 // ===================== Form (create/edit) =====================
@@ -237,6 +247,28 @@ async function confirmToggleLock() {
   }
 }
 
+function renderRoomStatus(status: string) {
+  const config = {
+    OPEN: {
+      label: 'Đang mở',
+      class: 'border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+    },
+    LOCKED: {
+      label: 'Đã khóa',
+      class: 'border-rose-200 bg-rose-100 text-rose-800 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
+    },
+    PENDING_REMOVAL: {
+      label: 'Chờ xóa',
+      class: 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300',
+    },
+  }[status]
+
+  return h(Badge, {
+    variant: 'outline',
+    class: `text-xs font-semibold ${config?.class ?? ''}`,
+  }, () => config?.label ?? status)
+}
+
 // ===================== Columns =====================
 const columns = computed<TableColumn<any>[]>(() => [
   {
@@ -260,7 +292,8 @@ const columns = computed<TableColumn<any>[]>(() => [
   {
     header: 'Trạng thái',
     accessor: 'status',
-    minWidth: 100,
+    minWidth: 130,
+    render: row => renderRoomStatus(row.status),
   },
   {
     header: 'Thành viên',
@@ -300,7 +333,7 @@ const columns = computed<TableColumn<any>[]>(() => [
             disabled: row.status === 'PENDING_REMOVAL',
             class: row.status === 'LOCKED'
               ? 'h-8 gap-1 px-2 text-xs text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700'
-              : 'h-8 gap-1 px-2 text-xs text-red-500 hover:bg-red-50 hover:text-red-600',
+              : 'h-8 gap-1 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 hover:border-destructive/30',
             onClick: () => handleToggleLock(row),
           },
           () => [h(row.status === 'LOCKED' ? Unlock : Lock, { class: 'h-3.5 w-3.5' })],
@@ -409,6 +442,17 @@ onMounted(() => {
           </SelectContent>
         </Select>
       </div>
+
+      <UiButton
+        v-if="hasActiveFilter"
+        variant="ghost"
+        size="sm"
+        class="h-9 gap-1.5 text-sm text-muted-foreground"
+        @click="clearFilters"
+      >
+        <X class="h-3.5 w-3.5" />
+        Xóa bộ lọc
+      </UiButton>
     </div>
 
     <!-- table -->
