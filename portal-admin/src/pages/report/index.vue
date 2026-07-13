@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Eye, LoaderIcon, Search, ShieldAlert, Trash2, X } from '@lucide/vue'
+import { Eye, LoaderIcon, Lock, Search, ShieldAlert, Trash2, X } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
 import { computed, h, onMounted, ref, watch } from 'vue'
 
@@ -232,20 +232,12 @@ const columns = computed<TableColumn<Report>[]>(() => [
             'Xem',
           ],
         ),
-
-        h(
-          UiButton,
-          {
-            variant: 'destructive',
-            size: 'sm',
-            class: 'h-8 gap-1 px-2 text-xs',
-            onClick: () => handleDeleteReport(row.id),
-          },
-          () => [
-            h(Trash2, { class: 'h-3.5 w-3.5' }),
-            'Xóa',
-          ],
-        ),
+        h(UiButton, {
+          variant: 'outline',
+          size: 'sm',
+          class: 'h-8 gap-1 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 hover:border-destructive/30',
+          onClick: () => handleDeleteReport(row.id),
+        }, () => [h(Lock, { class: 'h-3.5 w-3.5' }), 'Khóa']),
       ]),
   },
 ])

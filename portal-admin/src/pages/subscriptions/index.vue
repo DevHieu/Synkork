@@ -62,20 +62,50 @@ const paymentMethodOptions = [
   { value: 'VNPAY', label: 'VNPay' },
 ]
 
-function statusMeta(status?: string | null) {
-  const normalized = (status || 'PENDING').toUpperCase()
-  if (normalized === 'PAID')
-    return { label: 'Paid', tone: 'green' }
-  if (normalized === 'FAILED')
-    return { label: 'Failed', tone: 'red' }
-  if (normalized === 'CANCELLED')
-    return { label: 'Cancelled', tone: 'gray' }
-  return { label: 'Pending', tone: 'orange' }
-}
-
 function formatMoney(amount?: number | string | null) {
   const value = typeof amount === 'string' ? Number(amount) : amount ?? 0
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(value)
+}
+
+function renderPlan(plan: string) {
+  let badgeClass = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold '
+  if (plan === 'BUSINESS')
+    badgeClass += 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+  else if (plan === 'TEAM')
+    badgeClass += 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+  else
+    badgeClass += 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+
+  return h('span', { class: `${badgeClass}` }, plan)
+}
+
+function renderStatus(status: string) {
+  const config = {
+    PENDING: {
+      label: 'Chờ xử lý',
+      class:
+        'border-amber-300 bg-amber-50 px-3 text-amber-700 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300',
+    },
+    PAID: {
+      label: 'Đã giải quyết',
+      class:
+        'border-emerald-300 bg-emerald-50 px-3 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
+    },
+    FAILED: {
+      label: 'Đã bác bỏ',
+      class:
+        'border-red-300 bg-red-50 px-3 text-red-700 dark:border-red-700 dark:bg-red-950 dark:text-red-300',
+    },
+  }[status]
+
+  return h(
+    Badge,
+    {
+      variant: 'outline',
+      class: config?.class,
+    },
+    () => config?.label ?? status,
+  )
 }
 
 function buildParams(): InvoiceSearchParams {
@@ -179,7 +209,7 @@ const columns = computed<TableColumn<Invoice>[]>(() => [
   {
     header: t('subscriptions.plan'),
     minWidth: 130,
-    render: row => row.plan,
+    render: row => renderPlan(row.plan),
   },
   {
     header: t('subscriptions.planExpiry'),
@@ -195,12 +225,7 @@ const columns = computed<TableColumn<Invoice>[]>(() => [
     header: t('subscriptions.status'),
     minWidth: 150,
     render: (row) => {
-      const meta = statusMeta(row.status)
-      return h(Badge, {
-        class: 'flex max-w-[120px] items-center',
-        style: { color: meta.tone },
-        variant: 'secondary',
-      }, () => meta.label)
+      return renderStatus(row.status)
     },
   },
   {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Eye, LoaderIcon, Search, Trash2 } from '@lucide/vue'
+import { Eye, LoaderIcon, Lock, Search } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
 import { computed, h, onMounted, ref, watch } from 'vue'
 
@@ -10,6 +10,7 @@ import DateRangePicker from '@/components/date-range-picker.vue'
 import { BasicPage } from '@/components/global-layout'
 import Pagination from '@/components/pagination.vue'
 import { Modal, ModalContent } from '@/components/prop-ui/modal'
+import Badge from '@/components/ui/badge/Badge.vue'
 import { Button as UiButton } from '@/components/ui/button'
 import { Input as UiInput } from '@/components/ui/input'
 import { SelectContent, SelectItem, SelectTrigger, SelectValue, Select as UiSelect } from '@/components/ui/select'
@@ -46,12 +47,6 @@ const statusOptions = [
   { value: 'INACTIVE', label: 'Ngừng hoạt động' },
   { value: 'BANNED', label: 'Bị khóa' },
 ] as const
-
-const statusLabels: Record<UserStatus, string> = {
-  ACTIVE: 'Hoạt động',
-  INACTIVE: 'Ngừng hoạt động',
-  BANNED: 'Bị khóa',
-}
 
 const planOptions = [
   { value: 'ALL', label: 'Tất cả' },
@@ -140,6 +135,56 @@ function onUserDeleted() {
   fetchData()
 }
 
+function renderPlan(plan: string) {
+  const normalized = plan?.toUpperCase() || 'FREE'
+
+  const config = {
+    BUSINESS: {
+      class: 'border-purple-200 bg-purple-100 text-purple-800 dark:border-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+    },
+    TEAM: {
+      class: 'border-blue-200 bg-blue-100 text-blue-800 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+    },
+    FREE: {
+      class: 'border-slate-200 bg-slate-100 text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300',
+    },
+  }[normalized]
+
+  return h(
+    'span',
+    { class: `inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border ${config?.class ?? ''}` },
+    normalized,
+  )
+}
+
+function renderStatus(status: string) {
+  const normalized = (status?.toUpperCase() || 'INACTIVE') as UserStatus
+
+  const config = {
+    ACTIVE: {
+      label: 'Hoạt động',
+      class: 'border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+    },
+    INACTIVE: {
+      label: 'Ngừng hoạt động',
+      class: 'border-slate-200 bg-slate-100 text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300',
+    },
+    BANNED: {
+      label: 'Bị khóa',
+      class: 'border-rose-200 bg-rose-100 text-rose-800 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
+    },
+  }[normalized]
+
+  return h(
+    Badge,
+    {
+      variant: 'outline',
+      class: `text-xs font-semibold ${config?.class ?? ''}`,
+    },
+    () => config?.label ?? normalized,
+  )
+}
+
 const columns = computed<TableColumn<User>[]>(() => [
   { header: 'Username', accessor: 'username', minWidth: 150 },
   {
@@ -151,36 +196,12 @@ const columns = computed<TableColumn<User>[]>(() => [
   {
     header: 'Plan',
     minWidth: 120,
-    render: (row) => {
-      const plan = row.plan?.toUpperCase() || 'FREE'
-      let badgeClass = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold '
-      if (plan === 'BUSINESS')
-        badgeClass += 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
-      else if (plan === 'TEAM')
-        badgeClass += 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
-      else
-        badgeClass += 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-
-      return h('span', { class: `${badgeClass}` }, plan)
-    },
+    render: row => renderPlan(row.plan ?? ''),
   },
   {
     header: 'Trạng thái',
     minWidth: 120,
-    render: (row) => {
-      const status = (row.status?.toUpperCase() || 'INACTIVE') as UserStatus
-      let badgeClass = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold '
-      if (status === 'ACTIVE')
-        badgeClass += 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-      else if (status === 'BANNED')
-        badgeClass += 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
-      else if (status === 'INACTIVE')
-        badgeClass += 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-      else
-        badgeClass += 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
-
-      return h('span', { class: badgeClass }, statusLabels[status] ?? status)
-    },
+    render: row => renderStatus(row.status ?? ''),
   },
   {
     header: 'Thao tác',
@@ -191,13 +212,13 @@ const columns = computed<TableColumn<User>[]>(() => [
         size: 'sm',
         class: 'h-8 gap-1 px-2 text-xs',
         onClick: () => handleViewDetail(row),
-      }, () => [h(Eye, { class: 'h-3.5 w-3.5' }), 'Chi tiết']),
+      }, () => [h(Eye, { class: 'h-3.5 w-3.5' }), 'Xem']),
       h(UiButton, {
         variant: 'outline',
         size: 'sm',
         class: 'h-8 gap-1 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 hover:border-destructive/30',
         onClick: () => handleDelete(row),
-      }, () => [h(Trash2, { class: 'h-3.5 w-3.5' }), 'Khóa']),
+      }, () => [h(Lock, { class: 'h-3.5 w-3.5' }), 'Khóa']),
     ]),
   },
 ])
