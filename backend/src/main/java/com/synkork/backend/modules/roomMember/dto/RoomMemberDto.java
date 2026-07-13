@@ -1,12 +1,13 @@
 package com.synkork.backend.modules.roomMember.dto;
 
-import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
-import com.synkork.backend.modules.roomMember.RoomMemberEntity;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.time.LocalDateTime;
 import java.util.UUID;
+
+import com.synkork.backend.modules.roomMember.RoomMemberEntity;
+import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
+
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor

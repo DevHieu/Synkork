@@ -40,6 +40,11 @@ export const useRoomMemberStore = defineStore("roomMember", {
         this.members.push(member);
       });
 
+      roomMemberSocket.subscribeMemberUpdated(roomId, (member) => {
+        this.updateMember(member);
+        this.setInfo(username);
+      });
+
       userSocket.subscribeKicked();
       userSocket.subscribeRoomDeleted();
     },
@@ -79,6 +84,12 @@ export const useRoomMemberStore = defineStore("roomMember", {
       this.currentAuthority = null;
     },
 
+    updateMember(member: Member) {
+      const idx = this.members.findIndex((m) => m.memberId === member.memberId);
+      if (idx !== -1) {
+        this.members[idx] = member;
+      }
+    },
 
   },
 
