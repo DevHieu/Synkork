@@ -1,29 +1,33 @@
 package com.synkork.backend.modules.message;
 
-import com.synkork.backend.common.dtos.FileUploaded;
-import com.synkork.backend.common.utils.AuthUtils;
-import com.synkork.backend.common.utils.FileService;
-import com.synkork.backend.common.utils.LLMFunction.ChatEventLlmService;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+
 import com.synkork.backend.modules.message.dto.*;
-import com.synkork.backend.modules.roomMember.RoomMemberEntity;
-import com.synkork.backend.modules.roomMember.RoomMemberRepository;
-import com.synkork.backend.modules.space.SpaceEntity;
-import com.synkork.backend.modules.space.SpaceRepository;
-import com.synkork.backend.modules.user.enums.PlanEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.concurrent.CompletableFuture;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
-
-
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.synkork.backend.common.dtos.FileUploaded;
+import com.synkork.backend.common.utils.AuthUtils;
+import com.synkork.backend.common.utils.FileService;
+import com.synkork.backend.common.utils.LLMFunction.ChatEventLlmService;
+import com.synkork.backend.modules.roomMember.RoomMemberEntity;
+import com.synkork.backend.modules.roomMember.RoomMemberRepository;
+import com.synkork.backend.modules.space.SpaceEntity;
+import com.synkork.backend.modules.space.SpaceRepository;
+import com.synkork.backend.modules.user.enums.PlanEnum;
 
 @Service
 public class MessageService {
@@ -251,6 +255,7 @@ public class MessageService {
         RoomMemberEntity sender = roomMemberRepository
                 .findByUserIdAndRoom_IdWithUser(userId, space.getRoom().getId())
                 .orElseThrow(() -> new IllegalArgumentException("User is not a member of this room"));
+        requireChatEnabled(sender);
 
         // Gửi từng file message
         requireChatEnabled(sender);
