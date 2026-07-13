@@ -76,8 +76,8 @@ const TIME_RANGE_OPTIONS: { value: TimeRange; label: string }[] = [
 ]
 
 const CHART_COLORS = {
-  user: 'var(--chart-4)',
-  room: 'var(--chart-5)',
+  user: 'var(--chart-1)',
+  room: 'var(--chart-2)',
 }
 
 const chartConfig = {

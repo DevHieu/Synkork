@@ -31,6 +31,7 @@ export interface Report {
   reportType: ReportType
   status: ReportStatus
   createdAt: string
+  evidenceUrl: string | null
 }
 
 export interface ReportFilterParams {
