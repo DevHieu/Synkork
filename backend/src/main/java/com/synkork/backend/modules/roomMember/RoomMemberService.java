@@ -12,6 +12,7 @@ import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -91,6 +92,7 @@ public class RoomMemberService {
         return roomMemberRepository.save(member);
     }
 
+    @Transactional
     public String kickMember(UUID memberUUID, UUID roomUUID, UUID userId) {
         RoomMemberEntity kicker = this.getRoomMemberByRoomIdAndUserId(roomUUID, userId);
         PermissionService.requirePermission(kicker, RoomMemberRoleEnum.OWNER, RoomMemberRoleEnum.ADMIN);
@@ -106,6 +108,8 @@ public class RoomMemberService {
             throw new RuntimeException("ADMIN cannot kick another ADMIN");
         }
 
+        roomMemberRepository.removeFromCardAssignees(memberUUID);
+        roomMemberRepository.removeFromCalendarEventRoomMembers(memberUUID);
         roomMemberRepository.deleteById(memberUUID);
 
         return target.getUser().getEmail();
@@ -154,9 +158,12 @@ public class RoomMemberService {
         return roomMemberRepository.findUsersByRoomId(roomUUID);
     }
 
+    @Transactional
     public void leaveRoom(UUID roomUUID, UUID requesterId) {
         RoomMemberEntity member = this.getRoomMemberByRoomIdAndUserId(roomUUID, requesterId);
 
+        roomMemberRepository.removeFromCardAssignees(member.getId());
+        roomMemberRepository.removeFromCalendarEventRoomMembers(member.getId());
         roomMemberRepository.delete(member);
     }
 }

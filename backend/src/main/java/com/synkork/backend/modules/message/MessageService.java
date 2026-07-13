@@ -3,7 +3,7 @@ package com.synkork.backend.modules.message;
 import com.synkork.backend.common.dtos.FileUploaded;
 import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.common.utils.FileService;
-import com.synkork.backend.common.utils.ChatEventLlmService;
+import com.synkork.backend.common.utils.LLMFunction.ChatEventLlmService;
 import com.synkork.backend.modules.message.dto.*;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;

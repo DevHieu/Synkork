@@ -52,7 +52,7 @@ const hasEvent = (date: dayjs.Dayjs, monthIndex: number) => {
   
   for (let i = 0; i < props.events.length; i++) {
     const event = props.events[i];
-    if (event && event.eventDate === targetDate) {
+    if (event && (event.displayDate || event.eventDate) === targetDate) {
       return true;
     }
   }
@@ -70,11 +70,11 @@ const hasEvent = (date: dayjs.Dayjs, monthIndex: number) => {
           v-for="m in yearMonths"
           :key="m.month"
           @click="emit('clickYearMonth', m.month)"
-          class="group cursor-pointer overflow-hidden rounded-[1.5rem] border-2 border-border bg-background p-0 shadow-[0_26px_60px_-44px_var(--color-foreground)] transition-all duration-200 hover:-translate-y-1 hover:border-primary"
+          class="group cursor-pointer overflow-hidden rounded-lg border border-border/60 bg-background p-0 shadow-sm transition-all duration-200 hover:border-primary/80"
         >
           <h4
             :class="[
-              'border-b-2 border-border py-3 text-center text-xs font-mono font-bold uppercase tracking-widest transition-colors group-hover:border-primary',
+              'border-b border-border/60 py-2.5 text-center text-xs font-sans font-semibold uppercase tracking-wider transition-colors group-hover:border-primary/80',
               currentDate.month() === m.month
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-muted/45 text-muted-foreground group-hover:text-primary',
@@ -82,11 +82,11 @@ const hasEvent = (date: dayjs.Dayjs, monthIndex: number) => {
           >
             {{ m.name }}
           </h4>
-          <div class="grid grid-cols-7 gap-px bg-border/60 p-3 transition-colors group-hover:bg-primary/20">
+          <div class="grid grid-cols-7 gap-px bg-border/30 p-2.5 transition-colors group-hover:bg-primary/5">
             <div
               v-for="dn in ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']"
               :key="dn"
-              class="bg-background py-1 text-center text-[8px] font-mono font-bold text-muted-foreground"
+              class="bg-background py-1 text-center text-[8px] font-sans font-semibold text-muted-foreground"
             >
               {{ dn }}
             </div>
@@ -94,10 +94,10 @@ const hasEvent = (date: dayjs.Dayjs, monthIndex: number) => {
               v-for="(day, di) in m.days.slice(0, 42)"
               :key="di"
               :class="[
-                'flex items-center justify-center bg-background p-1 text-center text-[10px] font-mono',
+                'flex items-center justify-center bg-background p-1 text-center text-[10px] font-sans',
                 day.month() === m.month ? 'text-foreground' : 'text-muted-foreground opacity-30',
-                isToday(day) ? 'bg-primary text-primary-foreground font-bold shadow-[0_8px_20px_-14px_var(--color-primary)]' : '',
-                hasEvent(day, m.month) && !isToday(day) ? 'border border-primary bg-primary/5 font-bold text-primary' : '',
+                isToday(day) ? 'bg-primary text-primary-foreground font-semibold rounded-full shadow-sm' : '',
+                hasEvent(day, m.month) && !isToday(day) ? 'bg-primary/10 font-semibold text-primary rounded-full' : '',
               ]"
             >
               {{ day.date() }}

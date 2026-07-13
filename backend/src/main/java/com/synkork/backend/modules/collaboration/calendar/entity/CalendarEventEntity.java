@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.collaboration.calendar.entity;
 
 import com.synkork.backend.common.base.BaseEntity;
+import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.space.SpaceEntity;
 import com.synkork.backend.modules.user.UserEntity;
 import jakarta.persistence.*;
@@ -23,6 +24,10 @@ public class CalendarEventEntity extends BaseEntity {
     @ManyToOne( fetch = FetchType.LAZY)
     @JoinColumn(name= "space_id", nullable = false, columnDefinition = "BINARY(16)")
     private SpaceEntity space;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "call_room_space_id", columnDefinition = "BINARY(16)", nullable = true)
+    private SpaceEntity callRoomSpace;
 
     @Column(nullable = false)
     private String title;
@@ -49,9 +54,15 @@ public class CalendarEventEntity extends BaseEntity {
     @JoinColumn(name="created_by",nullable = false, columnDefinition = "BINARY(16)")
     private UserEntity createdBy;
 
-    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "calendar_event_room_members",
+            joinColumns = @JoinColumn(name = "event_id"),
+            inverseJoinColumns = @JoinColumn(name = "room_member_id"),
+            uniqueConstraints = @UniqueConstraint(columnNames = {"event_id", "room_member_id"})
+    )
     @Setter(AccessLevel.NONE)
-    private List<EventAttendeeEntity> attendees;
+    private List<RoomMemberEntity> attendees;
 
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
     @Setter(AccessLevel.NONE)
@@ -62,7 +73,7 @@ public class CalendarEventEntity extends BaseEntity {
         this.attachments = new ArrayList<>();
     }
 
-    public void replaceAttendees(Collection<EventAttendeeEntity> newAttendees) {
+    public void replaceAttendees(Collection<RoomMemberEntity> newAttendees) {
         if (attendees == null) {
             attendees = new ArrayList<>();
         }
@@ -71,11 +82,10 @@ public class CalendarEventEntity extends BaseEntity {
             return;
         }
 
-        for (EventAttendeeEntity attendee : newAttendees) {
+        for (RoomMemberEntity attendee : newAttendees) {
             if (attendee == null) {
                 continue;
             }
-            attendee.setEvent(this);
             attendees.add(attendee);
         }
     }

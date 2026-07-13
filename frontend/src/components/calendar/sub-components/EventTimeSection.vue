@@ -1,19 +1,61 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from "vue";
 import { useTimeSelector } from "../composables/useTimeSelector";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon } from "lucide-vue-next";
+import { computed } from "vue";
+import dayjs from "dayjs";
+import { parseDate } from "@internationalized/date";
+import { cn } from "@/lib/utils";
 
 const props = defineProps<{
   initialDate: string;
+  initialEndDate?: string;
   initialStartTime: string;
   initialEndTime: string;
   show: boolean;
 }>();
 
 const emit = defineEmits<{
-  (e: "change", data: { eventDate: string; startTime: string; endTime: string }): void;
+  (e: "change", data: { eventDate: string; endDate: string; startTime: string; endTime: string }): void;
 }>();
 
 const eventDate = ref(props.initialDate);
+const endDate = ref(props.initialEndDate || props.initialDate);
+
+const dateValue = computed({
+  get: () => eventDate.value ? parseDate(eventDate.value) : undefined,
+  set: (val) => {
+    if (val) eventDate.value = val.toString();
+  }
+});
+
+const endDateValue = computed({
+  get: () => endDate.value ? parseDate(endDate.value) : undefined,
+  set: (val) => {
+    if (val) endDate.value = val.toString();
+  }
+});
+
+const isStartDateOpen = ref(false);
+const isEndDateOpen = ref(false);
+
+watch(dateValue, () => {
+  isStartDateOpen.value = false;
+});
+
+watch(endDateValue, () => {
+  isEndDateOpen.value = false;
+});
 
 const {
   timeFormat, hours24, hours12, minutes,
@@ -26,6 +68,7 @@ const {
 // Đồng bộ trạng thái nội bộ với props khi dialog mở hoặc dữ liệu thay đổi
 const syncInternalState = () => {
   eventDate.value = props.initialDate;
+  endDate.value = props.initialEndDate || props.initialDate;
   parseTimeString(props.initialStartTime, true);
   parseTimeString(props.initialEndTime, false);
 };
@@ -41,6 +84,7 @@ const notifyParent = () => {
 
   emit("change", {
     eventDate: eventDate.value,
+    endDate: endDate.value || eventDate.value,
     startTime,
     endTime
   });
@@ -58,7 +102,7 @@ watch([startHour, startMinute, startAmPm], () => {
   notifyParent();
 });
 
-watch([endHour, endMinute, endAmPm, eventDate], notifyParent);
+watch([endHour, endMinute, endAmPm, eventDate, endDate], notifyParent);
 
 watch(timeFormat, () => {
   const start = buildTimeString(startHour.value, startMinute.value, startAmPm.value);
@@ -70,69 +114,138 @@ onMounted(syncInternalState);
 </script>
 
 <template>
-  <div class="space-y-6 rounded-xl border-2 border-border bg-background p-4 shadow-[0_16px_34px_-30px_var(--color-foreground)] cursor-default">
+  <div class="space-y-6 rounded-md border border-border/60 bg-background p-4 shadow-sm cursor-default">
     <!-- Định dạng giờ -->
-    <div class="rounded-xl border border-border/80 bg-muted/20 p-4 cursor-default">
-      <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-3 cursor-default">ĐỊNH DẠNG GIỜ</label>
-      <div class="flex w-fit rounded-full border-2 border-border bg-background p-1">
+    <div class="rounded-md border border-border/60 bg-muted/15 p-4 cursor-default">
+      <label class="block text-[9px] font-sans font-semibold text-muted-foreground uppercase tracking-wider mb-3 cursor-default">ĐỊNH DẠNG GIỜ</label>
+      <div class="flex w-fit rounded-md border border-border/60 bg-background p-0.5">
         <button type="button" @click="timeFormat = '24h'" :class="[
-          'rounded-full px-6 py-2 text-[10px] font-mono font-bold uppercase tracking-widest transition-colors',
-          timeFormat === '24h' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+          'rounded-sm px-4 py-1.5 text-[10px] font-sans font-bold uppercase tracking-wider transition-all duration-200',
+          timeFormat === '24h' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
         ]">24H</button>
         <button type="button" @click="timeFormat = '12h'" :class="[
-          'rounded-full px-6 py-2 text-[10px] font-mono font-bold uppercase tracking-widest transition-colors',
-          timeFormat === '12h' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+          'rounded-sm px-4 py-1.5 text-[10px] font-sans font-bold uppercase tracking-wider transition-all duration-200',
+          timeFormat === '12h' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
         ]">12H (AM/PM)</button>
       </div>
     </div>
 
     <!-- Ngày & Giờ -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div class="md:col-span-2">
-        <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">NGÀY DIỄN RA *</label>
-        <input v-model="eventDate" type="date" required
-          class="w-full rounded-lg border-2 border-border bg-background px-4 py-3 font-mono text-sm uppercase text-foreground transition-colors focus:outline-none focus:border-primary" />
+      <div>
+        <label class="block text-[9px] font-sans font-semibold text-muted-foreground uppercase tracking-wider mb-2 cursor-default">NGÀY BẮT ĐẦU *</label>
+        <Popover :modal="true" v-model:open="isStartDateOpen">
+          <PopoverTrigger as-child>
+            <Button
+              variant="outline"
+              type="button"
+              :class="cn(
+                'w-full h-10 justify-start text-left font-sans font-normal rounded-md border border-border/60 bg-background px-3.5 text-sm text-foreground hover:bg-muted/10',
+                !eventDate && 'text-muted-foreground'
+              )"
+            >
+              <CalendarIcon class="mr-2 h-4 w-4 shrink-0 opacity-50" />
+              <span>{{ eventDate ? dayjs(eventDate).format("DD/MM/YYYY") : "Chọn ngày" }}</span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent class="w-auto p-0" align="start">
+            <Calendar v-model="dateValue" initial-focus />
+          </PopoverContent>
+        </Popover>
+      </div>
+      <div>
+        <label class="block text-[9px] font-sans font-semibold text-muted-foreground uppercase tracking-wider mb-2 cursor-default">NGÀY KẾT THÚC *</label>
+        <Popover :modal="true" v-model:open="isEndDateOpen">
+          <PopoverTrigger as-child>
+            <Button
+              variant="outline"
+              type="button"
+              :class="cn(
+                'w-full h-10 justify-start text-left font-sans font-normal rounded-md border border-border/60 bg-background px-3.5 text-sm text-foreground hover:bg-muted/10',
+                !endDate && 'text-muted-foreground'
+              )"
+            >
+              <CalendarIcon class="mr-2 h-4 w-4 shrink-0 opacity-50" />
+              <span>{{ endDate ? dayjs(endDate).format("DD/MM/YYYY") : "Chọn ngày" }}</span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent class="w-auto p-0" align="start">
+            <Calendar v-model="endDateValue" :min-value="dateValue" initial-focus />
+          </PopoverContent>
+        </Popover>
       </div>
 
       <!-- Giờ bắt đầu -->
-      <div class="rounded-xl border border-border/80 bg-muted/20 p-4 cursor-default">
-        <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">GIỜ BẮT ĐẦU *</label>
+      <div class="rounded-md border border-border/60 bg-muted/15 p-4 cursor-default">
+        <label class="block text-[9px] font-sans font-semibold text-muted-foreground uppercase tracking-wider mb-2 cursor-default">GIỜ BẮT ĐẦU *</label>
         <div class="flex gap-2 items-center">
-          <select v-model="startHour"
-            class="calendar-scrollbar w-full cursor-pointer appearance-none rounded-lg border-2 border-border bg-background px-3 py-3 text-center font-mono text-sm text-foreground focus:outline-none focus:border-primary !bg-none">
-            <option class="text-foreground bg-background font-mono" v-for="h in (timeFormat === '24h' ? hours24 : hours12)" :key="h" :value="h">{{ h }}</option>
-          </select>
-          <span class="text-foreground font-mono font-bold">:</span>
-          <select v-model="startMinute"
-            class="calendar-scrollbar w-full cursor-pointer appearance-none rounded-lg border-2 border-border bg-background px-3 py-3 text-center font-mono text-sm text-foreground focus:outline-none focus:border-primary !bg-none">
-            <option class="text-foreground bg-background font-mono" v-for="m in minutes" :key="m" :value="m">{{ m }}</option>
-          </select>
-          <select v-if="timeFormat === '12h'" v-model="startAmPm"
-            class="w-full cursor-pointer appearance-none rounded-lg border-2 border-border bg-background px-3 py-3 text-center font-mono text-sm text-foreground focus:outline-none focus:border-primary !bg-none">
-            <option class="text-foreground bg-background font-mono" value="AM">AM</option>
-            <option class="text-foreground bg-background font-mono" value="PM">PM</option>
-          </select>
+          <Select v-model="startHour">
+            <SelectTrigger class="w-full font-sans rounded-md border-border/60 h-10">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent class="max-h-60">
+              <SelectItem class="font-sans" v-for="h in (timeFormat === '24h' ? hours24 : hours12)" :key="h" :value="h">
+                {{ h }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <span class="text-foreground font-sans font-bold">:</span>
+          <Select v-model="startMinute">
+            <SelectTrigger class="w-full font-sans rounded-md border-border/60 h-10">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent class="max-h-60">
+              <SelectItem class="font-sans" v-for="m in minutes" :key="m" :value="m">
+                {{ m }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <Select v-if="timeFormat === '12h'" v-model="startAmPm">
+            <SelectTrigger class="w-full font-sans rounded-md border-border/60 h-10">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem class="font-sans" value="AM">AM</SelectItem>
+              <SelectItem class="font-sans" value="PM">PM</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
       <!-- Giờ kết thúc -->
-      <div class="rounded-xl border border-border/80 bg-muted/20 p-4 cursor-default">
-        <label class="block text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 cursor-default">GIỜ KẾT THÚC *</label>
+      <div class="rounded-md border border-border/60 bg-muted/15 p-4 cursor-default">
+        <label class="block text-[9px] font-sans font-semibold text-muted-foreground uppercase tracking-wider mb-2 cursor-default">GIỜ KẾT THÚC *</label>
         <div class="flex gap-2 items-center">
-          <select v-model="endHour"
-            class="calendar-scrollbar w-full cursor-pointer appearance-none rounded-lg border-2 border-border bg-background px-3 py-3 text-center font-mono text-sm text-foreground focus:outline-none focus:border-primary !bg-none">
-            <option class="text-foreground bg-background font-mono" v-for="h in (timeFormat === '24h' ? hours24 : hours12)" :key="h" :value="h">{{ h }}</option>
-          </select>
-          <span class="text-foreground font-mono font-bold">:</span>
-          <select v-model="endMinute"
-            class="calendar-scrollbar w-full cursor-pointer appearance-none rounded-lg border-2 border-border bg-background px-3 py-3 text-center font-mono text-sm text-foreground focus:outline-none focus:border-primary !bg-none">
-            <option class="text-foreground bg-background font-mono" v-for="m in minutes" :key="m" :value="m">{{ m }}</option>
-          </select>
-          <select v-if="timeFormat === '12h'" v-model="endAmPm"
-            class="w-full cursor-pointer appearance-none rounded-lg border-2 border-border bg-background px-3 py-3 text-center font-mono text-sm text-foreground focus:outline-none focus:border-primary !bg-none">
-            <option class="text-foreground bg-background font-mono" value="AM">AM</option>
-            <option class="text-foreground bg-background font-mono" value="PM">PM</option>
-          </select>
+          <Select v-model="endHour">
+            <SelectTrigger class="w-full font-sans rounded-md border-border/60 h-10">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent class="max-h-60">
+              <SelectItem class="font-sans" v-for="h in (timeFormat === '24h' ? hours24 : hours12)" :key="h" :value="h">
+                {{ h }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <span class="text-foreground font-sans font-bold">:</span>
+          <Select v-model="endMinute">
+            <SelectTrigger class="w-full font-sans rounded-md border-border/60 h-10">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent class="max-h-60">
+              <SelectItem class="font-sans" v-for="m in minutes" :key="m" :value="m">
+                {{ m }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          <Select v-if="timeFormat === '12h'" v-model="endAmPm">
+            <SelectTrigger class="w-full font-sans rounded-md border-border/60 h-10">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem class="font-sans" value="AM">AM</SelectItem>
+              <SelectItem class="font-sans" value="PM">PM</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
     </div>
