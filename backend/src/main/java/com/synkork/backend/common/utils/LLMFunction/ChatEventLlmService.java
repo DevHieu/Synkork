@@ -8,8 +8,7 @@ import org.springframework.web.client.RestClientException;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -37,6 +36,90 @@ public class ChatEventLlmService {
     /** Keyboard mashing: ≥5 ký tự Latin liên tiếp không có nguyên âm (vd: "sdflkj", "qwrtyp"). */
     private static final Pattern KEYBOARD_MASH = Pattern.compile("[bcdfghjklmnpqrstvwxyz]{5,}", Pattern.CASE_INSENSITIVE);
 
+    private static final String[] EVENT_KEYWORDS = {
+        // Tiếng Việt
+        "sự kiện", "lịch", "lịch hẹn", "hẹn", "họp", "cuộc họp", "meeting",
+        "hội nghị", "hội thảo", "tiệc", "party", "concert", "sinh nhật",
+        "đám cưới", "offline", "online", "seminar", "workshop",
+        "mai", "mốt", "hôm nay", "ngày mai",
+        "thứ", "tuần", "tháng", "năm",
+        "cuối tuần", "đầu tuần",
+        "lúc", "vào", "ngày", "giờ", "chiều", "sáng", "tối",
+
+        // English
+        "event", "appointment", "schedule", "calendar",
+        "conference", "webinar", "call", "zoom", "meet"
+    };
+
+    private static final String[] NOTE_KEYWORDS = {
+        // Tiếng Việt
+        "ghi chú", "ghi lại", "lưu", "lưu lại", "note",
+        "nhớ", "ghi nhớ", "thông tin", "ý tưởng",
+        "idea", "memo", "nhật ký", "log",
+
+        // English
+        "note", "memo", "remember", "save", "write down",
+        "information", "idea"
+    };
+
+    private static final String[] TASK_KEYWORDS = {
+        // Tiếng Việt
+        "việc", "công việc", "nhiệm vụ", "task", "todo",
+        "to do", "cần", "phải", "làm", "hoàn thành",
+        "deadline", "hạn", "hạn chót", "nộp",
+        "nhắc", "nhắc nhở", "reminder",
+
+        // English
+        "task", "todo", "to-do", "remind", "reminder",
+        "finish", "complete", "submit", "due",
+        "deadline", "assignment"
+    };
+
+    private static final List<Pattern> EVENT_PATTERNS = compilePatterns(EVENT_KEYWORDS);
+    private static final List<Pattern> NOTE_PATTERNS = compilePatterns(NOTE_KEYWORDS);
+    private static final List<Pattern> TASK_PATTERNS = compilePatterns(TASK_KEYWORDS);
+
+    public enum MessageType {
+        EVENT,
+        NOTE,
+        TASK,
+        UNKNOWN
+    }
+
+    private static List<Pattern> compilePatterns(String[] keywords) {
+        List<Pattern> list = new ArrayList<>();
+        for (String keyword : keywords) {
+            list.add(Pattern.compile("(?U)\\b" + Pattern.quote(keyword.toLowerCase()) + "\\b"));
+        }
+        return list;
+    }
+
+    private static boolean containsPattern(String text, List<Pattern> patterns) {
+        if (text == null || patterns == null) {
+            return false;
+        }
+        String lower = text.toLowerCase();
+        for (Pattern pattern : patterns) {
+            if (pattern.matcher(lower).find()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static MessageType detectType(String message) {
+        if (containsPattern(message, EVENT_PATTERNS)) {
+            return MessageType.EVENT;
+        }
+        if (containsPattern(message, TASK_PATTERNS)) {
+            return MessageType.TASK;
+        }
+        if (containsPattern(message, NOTE_PATTERNS)) {
+            return MessageType.NOTE;
+        }
+        return MessageType.UNKNOWN;
+    }
+
     private final OpenRouterClient openRouterClient;
 
     public ChatEventLlmService(OpenRouterClient openRouterClient) {
@@ -47,18 +130,48 @@ public class ChatEventLlmService {
 
     public String detectSuggestionFromMessage(String messageContent) {
         if (!openRouterClient.isConfigured()) return "{}";
+
         if (!isWorthAnalyzing(messageContent)) {
-            log.debug("Đã chặn tạo nhanh cho tin nhắn '{}' vì không phù hợp format", messageContent);
+            System.out.println("[LLM Chat] Đã chặn phân tích tin nhắn (spam, quá ngắn, v.v.): '" + messageContent + "'");
             return "{}";
         }
+
+        MessageType messageType = detectType(messageContent);
+        if (messageType == MessageType.UNKNOWN) {
+            System.out.println("[LLM Chat] Không chứa từ khóa liên quan event/task/note, bỏ qua phân tích: '" + messageContent + "'");
+            return "{}";
+        }
+
+        System.out.println("[LLM Chat] Đã phát hiện từ khóa loại " + messageType + " - Bắt đầu gọi LLM: '" + messageContent + "'");
         try {
             ZonedDateTime now = ZonedDateTime.now(BANGKOK_ZONE);
             String raw = callWithFallback(now, messageContent);
             return openRouterClient.parseJsonOrFallback(raw, "{}");
         } catch (Exception e) {
-            log.error("Lỗi khi gọi OpenRouter / LLM", e);
+            System.err.println("[LLM Chat] Lỗi khi gọi OpenRouter / LLM: " + e.getMessage());
             return "{}";
         }
+    }
+
+    public static boolean containsEvent(String messageContent, String[] isEvent) {
+        if (messageContent == null || isEvent == null) {
+            return false;
+        }
+        Set<String> keywords = new HashSet<>();
+        for (String word : isEvent) {
+            keywords.add(word.toLowerCase());
+        }
+
+        // Sử dụng (?U)\\W+ để hỗ trợ Unicode (tiếng Việt), tránh bị tách sai các từ có dấu như "họp", "lịch"
+        String[] words = messageContent.toLowerCase().split("(?U)\\W+");
+
+        for (String word : words) {
+            if (keywords.contains(word)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private String callWithFallback(ZonedDateTime now, String messageContent) throws Exception {
