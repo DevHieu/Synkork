@@ -3,6 +3,7 @@ package com.synkork.backend.common.utils.LLMFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Base64;
@@ -48,20 +49,33 @@ public class MeetingLlmService {
 
     public String summarizeMeeting(String transcript) {
         if (!openRouterClient.isConfigured()) return "{}";
-        try {
-            String raw = openRouterClient.chatCompletion(
-                    LlmPrompts.REFERER_DEFAULT,
-                    LlmPrompts.APP_TITLE,
-                    LlmPrompts.MODEL_MEETING_SUMMARY,
-                    List.of(Map.of("role", "user", "content",
-                            LlmPrompts.MEETING_SUMMARY_PROMPT_TEMPLATE.formatted(transcript))),
-                    true
-            );
-            return openRouterClient.parseJsonOrFallback(raw, "{}");
-        } catch (Exception e) {
-            log.error("Lỗi summarize meeting", e);
-            return "{}";
+        
+        Exception lastException = null;
+        List<Map<String, Object>> messages = List.of(Map.of("role", "user", "content",
+                LlmPrompts.MEETING_SUMMARY_PROMPT_TEMPLATE.formatted(transcript)));
+
+        for (String model : LlmPrompts.MEETING_SUMMARY_MODELS) {
+            try {
+                String raw = openRouterClient.chatCompletion(
+                        LlmPrompts.REFERER_DEFAULT,
+                        LlmPrompts.APP_TITLE,
+                        model,
+                        messages,
+                        true
+                );
+                return openRouterClient.parseJsonOrFallback(raw, "{}");
+            } catch (RestClientException e) {
+                lastException = e;
+                log.warn("Model {} thất bại, thử model dự phòng tiếp theo: {}",
+                         model, e.getMessage());
+            } catch (Exception e) {
+                lastException = e;
+                log.warn("Lỗi không mong muốn với model {}: {}", model, e.getMessage());
+            }
         }
+        
+        log.error("Tất cả các model tóm tắt cuộc họp đều thất bại", lastException);
+        return "{}";
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
