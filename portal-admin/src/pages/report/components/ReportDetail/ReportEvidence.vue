@@ -73,6 +73,7 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
       @update:open="emit('update:open', $event)"
     >
       <DialogContent
+        :show-close-button="false"
         class="!w-[65vw] !max-w-[65vw] p-0 border-0 bg-transparent shadow-none"
       >
         <div class="relative w-full rounded-xl overflow-hidden bg-black/60">
