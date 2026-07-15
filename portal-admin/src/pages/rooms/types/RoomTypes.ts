@@ -7,8 +7,23 @@ export interface Room {
   status: 'OPEN' | 'LOCKED' | 'PENDING_REMOVAL'
   inviteCode?: string
   memberCount: number
+  warning: number
   ownerId?: string
   ownerUsername?: string
+}
+
+export interface Member {
+  id: string
+  username: string
+  email: string
+  avatarUrl?: string
+  role: string
+}
+
+export interface Space {
+  id: string
+  name: string
+  type: string
 }
 
 export interface RoomDetail extends Room {
@@ -22,19 +37,9 @@ export interface RoomDetail extends Room {
     avatarUrl?: string
   }
 
-  members: {
-    id: string
-    username: string
-    email: string
-    avatarUrl?: string
-    role: string
-  }[]
+  members: Member[]
 
-  spaces: {
-    id: string
-    name: string
-    type: string
-  }[]
+  spaces: Space[]
 }
 
 export interface RoomParams {

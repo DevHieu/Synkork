@@ -2,6 +2,7 @@
 import { Eye, LoaderIcon, Lock, Search, Unlock } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
 import { computed, h, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { toast } from 'vue-sonner'
 
 import type { TableColumn } from '@/components/base-table.vue'
@@ -23,6 +24,9 @@ import type { User, UserParams, UserPlan, UserStatus } from './types/userTypes'
 import UserCreate from './components/user-create.vue'
 import UserResource from './components/user-resource.vue'
 import { userService } from './services/userService'
+
+const route = useRoute()
+const keywordParam = (route.query.keyword as string) ?? ''
 
 const loading = ref(false)
 const allUsers = ref<User[]>([])
@@ -123,6 +127,9 @@ watch([debounceKeyword, selectedStatus, selectedPlan, dateRange], () => {
 })
 
 onMounted(() => {
+  if (keywordParam !== '') {
+    return keyword.value = keywordParam
+  }
   fetchData()
 })
 

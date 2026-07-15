@@ -2,6 +2,7 @@
 import { Eye, LoaderIcon, Search, ShieldAlert, Trash2, X } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
 import { computed, h, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import type { TableColumn } from '@/components/base-table.vue'
 import type { Report, ReportFilterParams, ReportReason, ReportSeverity, ReportStatus, ReportType } from '@/pages/report/types/Reports.ts'
@@ -18,6 +19,9 @@ import { defaultDateRange, formatTimestamp, formatToISODateTime } from '@/utils/
 import ReportDetail from './components/ReportDetail.vue'
 import { deleteReport, getReports, updateReportStatus } from './service/reportService'
 import { REASON_LABEL_MAP, SEVERITY_CONFIG } from './utils/report.utils.ts'
+
+const route = useRoute()
+const keywordParam = (route.query.keyword as string) ?? ''
 
 const loading = ref(false)
 const currentPage = ref(1)
@@ -257,7 +261,12 @@ watch([debouncedSearch, filterStatus, filterType, filterSeverity, dateRange], ()
 })
 watch(currentPage, fetchReports)
 
-onMounted(fetchReports)
+onMounted(() => {
+  if (keywordParam !== '') {
+    return searchKeyword.value = keywordParam
+  }
+  fetchReports()
+})
 </script>
 
 <template>

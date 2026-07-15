@@ -1,7 +1,8 @@
 <script lang="ts" setup>
-import { Eye, LoaderIcon, Lock, Pencil, PlusIcon, RefreshCwIcon, Search, Unlock, X } from '@lucide/vue'
+import { Eye, LoaderIcon, Lock, PlusIcon, RefreshCwIcon, Search, Unlock, X } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
 import { computed, h, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import type { TableColumn } from '@/components/base-table.vue'
 
@@ -31,7 +32,6 @@ import { Textarea as UiTextarea } from '@/components/ui/textarea'
 
 import type {
   Room,
-  RoomDetail,
   RoomFormPayload,
   RoomParams,
   UserOption,
@@ -40,7 +40,9 @@ import type {
 import RoomDetailDialog from './components/RoomDetailDialog.vue'
 import { roomService } from './service/roomService'
 
-// ===================== Table & filters =====================
+const route = useRoute()
+const keywordParam = (route.query.keyword as string) ?? ''
+
 const selectedRoom = ref<Room | null>(null)
 const isDetailOpen = ref(false)
 
@@ -72,12 +74,8 @@ function clearFilters() {
   selectedStatus.value = 'ALL'
 }
 
-// ===================== Form (create/edit) =====================
-const isFormOpen = ref(false)
-const editingRoom = ref<Room | RoomDetail | null>(null)
-const isEdit = computed(() => !!editingRoom.value)
-const isDmRoom = computed(() => editingRoom.value?.type === 'DM')
-const isPendingRemoval = computed(() => editingRoom.value?.status === 'PENDING_REMOVAL')
+// ===================== Create form =====================
+const isCreateOpen = ref(false)
 
 const form = ref<RoomFormPayload>({
   name: '',
@@ -111,31 +109,8 @@ function resetForm() {
 }
 
 function handleCreate() {
-  editingRoom.value = null
   resetForm()
-  isFormOpen.value = true
-}
-
-function handleEdit(room: Room | RoomDetail) {
-  editingRoom.value = room
-  resetForm()
-
-  form.value = {
-    name: room.name,
-    description: room.description || '',
-    status: room.status === 'PENDING_REMOVAL' ? 'OPEN' : room.status,
-    ownerId: room.ownerId,
-  }
-
-  selectedOwner.value = room.ownerId
-    ? {
-        id: room.ownerId,
-        username: room.ownerUsername || (('owner' in room && room.owner?.username) || ''),
-        email: ('owner' in room && room.owner?.email) || '',
-      }
-    : null
-
-  isFormOpen.value = true
+  isCreateOpen.value = true
 }
 
 watch(debouncedOwnerKeyword, async (keyword) => {
@@ -166,15 +141,15 @@ function clearOwner() {
   form.value.ownerId = undefined
 }
 
-async function handleSubmitForm() {
+async function handleSubmitCreate() {
   formError.value = ''
 
-  if (!isDmRoom.value && !form.value.name.trim()) {
+  if (!form.value.name.trim()) {
     formError.value = 'Tên room không được để trống'
     return
   }
 
-  if (!isEdit.value && !form.value.ownerId) {
+  if (!form.value.ownerId) {
     formError.value = 'Vui lòng chọn owner cho room'
     return
   }
@@ -182,18 +157,8 @@ async function handleSubmitForm() {
   isSubmitting.value = true
 
   try {
-    if (isEdit.value && editingRoom.value) {
-      // Room đang Chờ xóa: không cho phép đổi status qua API, dù field đã bị disable ở UI
-      const payload = isPendingRemoval.value
-        ? { ...form.value, status: undefined as any }
-        : form.value
-      await roomService.updateRoom(editingRoom.value.id, payload)
-    }
-    else {
-      await roomService.createRoom(form.value)
-    }
-
-    isFormOpen.value = false
+    await roomService.createRoom(form.value)
+    isCreateOpen.value = false
     fetchRooms()
   }
   catch (error: any) {
@@ -204,7 +169,6 @@ async function handleSubmitForm() {
   }
 }
 
-// ===================== Lock / Unlock =====================
 const isLockConfirmOpen = ref(false)
 const lockTargetRoom = ref<Room | null>(null)
 const isLocking = ref(false)
@@ -309,16 +273,6 @@ const columns = computed<TableColumn<any>[]>(() => [
           },
           () => [h(Eye, { class: 'h-3.5 w-3.5' }), 'Chi tiết'],
         ),
-        h(
-          UiButton,
-          {
-            variant: 'outline',
-            size: 'sm',
-            class: 'h-8 gap-1 px-2 text-xs',
-            onClick: () => handleEdit(row),
-          },
-          () => [h(Pencil, { class: 'h-3.5 w-3.5' }), 'Sửa'],
-        ),
         row.status === 'LOCKED'
           ? h(UiButton, {
               variant: 'outline',
@@ -378,6 +332,9 @@ watch(currentPage, () => {
 })
 
 onMounted(() => {
+  if (keywordParam !== '') {
+    return searchKeyword.value = keywordParam
+  }
   fetchRooms()
 })
 </script>
@@ -470,37 +427,29 @@ onMounted(() => {
     </div>
   </BasicPage>
 
-  <!-- Detail dialog -->
+  <!-- Detail + Edit dialog (gộp làm 1) -->
   <RoomDetailDialog
     v-if="selectedRoom"
     v-model:open="isDetailOpen"
     :room-id="selectedRoom.id"
-    @edit="handleEdit"
+    @updated="fetchRooms"
   />
 
-  <!-- Create / Edit dialog -->
-  <Dialog v-model:open="isFormOpen">
+  <!-- Create dialog -->
+  <Dialog v-model:open="isCreateOpen">
     <DialogContent class="max-w-[520px]">
       <DialogHeader>
         <DialogTitle>
-          {{ isEdit ? 'Chỉnh sửa Room' : 'Tạo Room mới' }}
+          Tạo Room mới
         </DialogTitle>
         <DialogDescription class="sr-only">
-          {{ isEdit ? 'Form chỉnh sửa thông tin room' : 'Form tạo room mới' }}
+          Form tạo room mới
         </DialogDescription>
       </DialogHeader>
 
       <div class="flex flex-col gap-4 py-2">
-        <p
-          v-if="isDmRoom"
-          class="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-[12px] text-amber-700"
-        >
-          Đây là room DM (do hệ thống tự tạo giữa 2 user). Admin chỉ có thể
-          thay đổi trạng thái của room này.
-        </p>
-
         <!-- Name -->
-        <div v-if="!isDmRoom" class="flex flex-col gap-1.5">
+        <div class="flex flex-col gap-1.5">
           <label class="text-[12px] font-medium text-muted-foreground">
             Tên Room <span class="text-red-500">*</span>
           </label>
@@ -511,7 +460,7 @@ onMounted(() => {
         </div>
 
         <!-- Description -->
-        <div v-if="!isDmRoom" class="flex flex-col gap-1.5">
+        <div class="flex flex-col gap-1.5">
           <label class="text-[12px] font-medium text-muted-foreground">
             Description
           </label>
@@ -523,9 +472,9 @@ onMounted(() => {
         </div>
 
         <!-- Owner -->
-        <div v-if="!isDmRoom" class="flex flex-col gap-1.5">
+        <div class="flex flex-col gap-1.5">
           <label class="text-[12px] font-medium text-muted-foreground">
-            Owner <span v-if="!isEdit" class="text-red-500">*</span>
+            Owner <span class="text-red-500">*</span>
           </label>
 
           <div
@@ -579,7 +528,7 @@ onMounted(() => {
           <label class="text-[12px] font-medium text-muted-foreground">
             Trạng thái
           </label>
-          <Select v-model="form.status" :disabled="isPendingRemoval">
+          <Select v-model="form.status">
             <SelectTrigger class="h-9 w-full">
               <SelectValue placeholder="Trạng thái" />
             </SelectTrigger>
@@ -592,10 +541,6 @@ onMounted(() => {
               </SelectItem>
             </SelectContent>
           </Select>
-          <p v-if="isPendingRemoval" class="text-[11px] text-amber-600">
-            Room đang ở trạng thái Chờ xóa do tài khoản chủ phòng hết hạn gói —
-            admin không thể thay đổi trạng thái này.
-          </p>
         </div>
 
         <p v-if="formError" class="text-[12px] text-red-500">
@@ -604,10 +549,10 @@ onMounted(() => {
       </div>
 
       <DialogFooter>
-        <UiButton variant="outline" :disabled="isSubmitting" @click="isFormOpen = false">
+        <UiButton variant="outline" :disabled="isSubmitting" @click="isCreateOpen = false">
           Hủy
         </UiButton>
-        <UiButton :disabled="isSubmitting" @click="handleSubmitForm">
+        <UiButton :disabled="isSubmitting" @click="handleSubmitCreate">
           {{ isSubmitting ? 'Đang lưu...' : 'Lưu' }}
         </UiButton>
       </DialogFooter>
