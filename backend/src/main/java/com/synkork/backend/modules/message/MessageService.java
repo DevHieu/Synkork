@@ -108,9 +108,10 @@ public class MessageService {
         responseDto.setReplyToId(replyUUID);
 
         // Chỉ người có nạp VIP thì mới có cái suggestion này thôiiii
-        if (sender.getUser().getCurrentPlan() != PlanEnum.FREE) {
-            broadcastSuggestion(newMessage, sender);
-        }
+//        if (sender.getUser().getCurrentPlan() != PlanEnum.FREE) {
+//            broadcastSuggestion(newMessage, sender);
+//        } dang test - thaihoc
+        broadcastSuggestion(newMessage, sender);
 
         return responseDto;
     }
@@ -123,13 +124,13 @@ public class MessageService {
                 Optional<RoomMemberEntity> senderById = roomMemberRepository
                         .findByUserIdAndRoom_IdWithUser(userId, roomId);
                 if (senderById.isPresent()) {
-                    System.out.println("[Tin nhan] Tim duoc sender theo userId=" + senderId + " trong roomId=" + roomId);
+                    // System.out.println("[Tin nhan] Tim duoc sender theo userId=" + senderId + " trong roomId=" + roomId);
                     return senderById.get();
                 }
-                System.out.println("[Tin nhan] Khong tim thay sender theo userId=" + senderId + " trong roomId=" + roomId);
+                // System.out.println("[Tin nhan] Khong tim thay sender theo userId=" + senderId + " trong roomId=" + roomId);
             } catch (IllegalArgumentException ignored) {
                 // Bỏ qua để fallback sang email nếu userId trong session không hợp lệ.
-                System.out.println("[Tin nhan] senderId khong phai UUID hop le: " + senderId);
+                // System.out.println("[Tin nhan] senderId khong phai UUID hop le: " + senderId);
             }
         }
 
@@ -138,15 +139,13 @@ public class MessageService {
             Optional<RoomMemberEntity> senderByEmail = roomMemberRepository
                     .findByUser_EmailAndRoom_Id(senderEmail, roomId);
             if (senderByEmail.isPresent()) {
-                System.out.println("[Tin nhan] Tim duoc sender theo email=" + senderEmail + " trong roomId=" + roomId);
+                // System.out.println("[Tin nhan] Tim duoc sender theo email=" + senderEmail + " trong roomId=" + roomId);
                 return senderByEmail.get();
             }
-            System.out.println("[Tin nhan] Khong tim thay sender theo email=" + senderEmail + " trong roomId=" + roomId);
+            // System.out.println("[Tin nhan] Khong tim thay sender theo email=" + senderEmail + " trong roomId=" + roomId);
         }
 
-        System.out.println("[Tin nhan] Khong the xac dinh sender. roomId=" + roomId
-                + ", senderId=" + senderId
-                + ", senderEmail=" + senderEmail);
+        System.err.println("[Tin nhan] Khong the xac dinh sender. roomId=" + roomId + ", senderId=" + senderId + ", senderEmail=" + senderEmail);
         throw new IllegalArgumentException("User is not a member of this room");
     }
 
@@ -314,8 +313,8 @@ public class MessageService {
 
         CompletableFuture.runAsync(() -> {
             try {
+                System.out.println("[LLM Chat] Đang phân tích tin nhắn ID: " + message.getId());
                 String jsonResponse = chatEventLlmService.detectSuggestionFromMessage(messageContent);
-                System.out.println("[Goi y LLM] Phan hoi tho cho message " + message.getId() + ": " + jsonResponse);
 
                 JsonNode rootNode = objectMapper.readTree(jsonResponse);
                 MessageSuggestionDTO suggestionPayload = MessageSuggestionDTO.fromJsonNode(
@@ -327,16 +326,14 @@ public class MessageService {
                 if (suggestionPayload.isActionable()) {
                     // Luôn dùng userId thật từ sender đã resolve để tránh lệch với id trong websocket session.
                     String privateChannel = "/topic/user/" + sender.getUser().getId() + "/suggestions";
-                    System.out.println("[Goi y LLM] Dang gui toi " + privateChannel
-                            + " for messageId=" + message.getId()
-                            + " payload=" + suggestionPayload);
+                    System.out.println("[LLM Chat] Thành công tạo suggestion (" + suggestionPayload.getSuggestionType() + ") cho tin nhắn ID: " + message.getId() + ". Đang gửi tới " + privateChannel);
 
                     simpMessagingTemplate.convertAndSend(privateChannel, suggestionPayload);
                 } else {
-                    System.out.println("[Goi y LLM] Bo qua message " + message.getId() + " vi suggestionType=NONE");
+                    System.out.println("[LLM Chat] Bỏ qua tin nhắn ID: " + message.getId() + " vì suggestionType=NONE hoặc không chứa format hợp lệ");
                 }
             } catch (Exception e) {
-                System.err.println("Loi khi phan tich tin nhan bang LLM: " + e.getMessage());
+                System.err.println("[LLM Chat] Thất bại khi phân tích tin nhắn ID: " + message.getId() + ". Lỗi: " + e.getMessage());
             }
         });
     }
