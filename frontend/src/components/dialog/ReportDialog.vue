@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onBeforeUnmount } from 'vue'
+import { ref, computed, onBeforeUnmount, watch } from 'vue'
 import { X, FileVideo, ImageIcon, Paperclip, UploadCloud } from "lucide-vue-next";
 import {
   Dialog,
@@ -163,6 +163,25 @@ const handleSubmit = async () => {
   } 
 }
 
+const truncateMiddle = (name: string, maxLength = 38) => {
+  if (name.length <= maxLength) return name
+
+  const dotIndex = name.lastIndexOf('.')
+  const ext = dotIndex > -1 ? name.slice(dotIndex) : ''
+  const base = dotIndex > -1 ? name.slice(0, dotIndex) : name
+
+  const keep = Math.max(4, Math.floor((maxLength - ext.length - 3) / 2))
+
+  return `${base.slice(0, keep)}...${base.slice(-keep)}${ext}`
+}
+
+watch(() => props.open, (newVal) => {
+  if(!newVal) {
+    reason.value =  '',
+    description.value = '',
+    clearEvidence()
+  }
+})
 </script>
 
 <template>
@@ -213,8 +232,12 @@ const handleSubmit = async () => {
         <!-- Chi tiết -->
         <div class="space-y-2">
           <Label class="text-sm font-semibold text-foreground/80">Mô tả chi tiết (không bắt buộc)</Label>
-          <Textarea v-model="description" placeholder="Hãy cung cấp thêm chi tiết để chúng tôi xử lý tốt hơn..."
-            class="min-h-[100px] bg-background border-border focus:ring-primary/50 rounded-md resize-none" />
+          <Textarea 
+            v-model="description" 
+            placeholder="Hãy cung cấp thêm chi tiết để chúng tôi xử lý tốt hơn..."
+            style="white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word;"
+            class="min-h-[100px] max-h-[100px] w-full bg-background border-border rounded-md resize-none overflow-y-auto" 
+          />
         </div>
 
         <!-- Bằng chứng đính kèm -->
@@ -247,8 +270,10 @@ const handleSubmit = async () => {
               </button>
             </div>
 
-            <div class="flex-1 min-w-0">
-              <p class="text-xs font-medium truncate">{{ evidenceFile.name }}</p>
+            <div class="flex-1 min-w-0 max-w-[290px]">
+              <p class="text-xs font-medium truncate" :title="evidenceFile.name">
+                {{ truncateMiddle(evidenceFile.name) }}
+              </p>
               <p class="text-[11px] text-muted-foreground">{{ formatFileSize(evidenceFile.size) }}</p>
             </div>
 
