@@ -38,8 +38,6 @@ export const muteAudio = async (
   memberId: string,
   payload: { muted: boolean | null; deafen: boolean | null },
 ) => {
-  console.log("Service");
-
   const res = await axiosClient.patch(
     `/api/rooms/${roomId}/members/${memberId}/mute`,
     payload,
@@ -59,5 +57,5 @@ export const muteChatMember = async (
     { params: { time } },
   );
 
-  return res;
+  return res.data;
 };

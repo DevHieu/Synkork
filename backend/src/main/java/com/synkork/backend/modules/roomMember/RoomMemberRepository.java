@@ -26,6 +26,8 @@ public interface RoomMemberRepository extends JpaRepository<RoomMemberEntity, UU
 
     List<RoomMemberEntity> findByRoom_Id(UUID roomId);
 
+    Optional<RoomMemberEntity> findByIdAndRoom_Id(UUID id, UUID roomId);
+
     Long countByRoom_Id(UUID id);
 
     boolean existsByRoom_IdAndUser_Id(UUID id, UUID userId);
@@ -51,4 +53,8 @@ public interface RoomMemberRepository extends JpaRepository<RoomMemberEntity, UU
     @Modifying
     @Query(value = "DELETE FROM card_assignees WHERE room_member_id = :roomMemberId", nativeQuery = true)
     void removeFromCardAssignees(@Param("roomMemberId") UUID roomMemberId);
+
+    @Modifying
+    @Query(value = "DELETE FROM calendar_event_room_members WHERE room_member_id = :roomMemberId", nativeQuery = true)
+    void removeFromCalendarEventRoomMembers(@Param("roomMemberId") UUID roomMemberId);
 }

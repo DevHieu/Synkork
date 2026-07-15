@@ -42,7 +42,7 @@ const description = ref('')
 const submitting = ref(false)
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024
-const MAX_VIDEO_SIZE = 50 * 1024 * 1024 
+const MAX_VIDEO_SIZE = 50 * 1024 * 1024
 
 const evidenceFile = ref<File | null>(null)
 const evidencePreviewUrl = ref<string | null>(null)
@@ -160,7 +160,7 @@ const handleSubmit = async () => {
     toast.error(message)
   } finally {
     submitting.value = false
-  } 
+  }
 }
 
 const truncateMiddle = (name: string, maxLength = 38) => {
@@ -244,13 +244,7 @@ watch(() => props.open, (newVal) => {
         <div class="space-y-2">
           <Label class="text-sm font-semibold text-foreground/80">Bằng chứng (ảnh/video, không bắt buộc)</Label>
 
-          <input
-            ref="fileInput"
-            type="file"
-            accept="image/*,video/*"
-            class="hidden"
-            @change="handleFileChange"
-          />
+          <input ref="fileInput" type="file" accept="image/*,video/*" class="hidden" @change="handleFileChange" />
 
           <!-- Đã có file: hiển thị preview lớn hơn, kèm tên/dung lượng, hover để đổi file -->
           <div v-if="evidenceFile"
@@ -284,8 +278,8 @@ watch(() => props.open, (newVal) => {
           </div>
 
           <!-- Chưa có file: khu vực chọn / kéo-thả -->
-          <button v-else type="button" @click="openFilePicker" @dragover="handleDragOver"
-            @dragleave="handleDragLeave" @drop="handleDrop"
+          <button v-else type="button" @click="openFilePicker" @dragover="handleDragOver" @dragleave="handleDragLeave"
+            @drop="handleDrop"
             class="relative w-full h-24 rounded-md border border-dashed flex flex-col items-center justify-center gap-1 text-muted-foreground transition-colors"
             :class="isDragging
               ? 'border-primary/60 bg-primary/10 text-primary'

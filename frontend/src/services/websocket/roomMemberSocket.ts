@@ -27,4 +27,13 @@ export const roomMemberSocket = {
       },
     );
   },
+
+  subscribeMemberUpdated(roomId: string, callback: (member: any) => void) {
+    return socketService.subscribe(
+      `/topic/room/${roomId}/members/updated`,
+      (member) => {
+        callback(member);
+      },
+    );
+  },
 };

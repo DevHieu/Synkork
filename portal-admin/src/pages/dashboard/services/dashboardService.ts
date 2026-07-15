@@ -2,8 +2,7 @@ import axiosClient from '@/lib/axiosClient'
 
 export const dashboardService = {
   async getOverviewStatsData() {
-    const res = await axiosClient.get('/api/manage/dashboard/overview/stats')
-    console.log(res);
+    const res = await axiosClient.get(`/api/manage/dashboard/overview/stats`)
     return res.data
   },
 

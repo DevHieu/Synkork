@@ -41,19 +41,19 @@ public class AdminReportController {
         return ApiResponse.success("Get report detail successfully", entity);
     }
 
-    @PostMapping("/users")
-    @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<ReportResponse> createUserReport(@RequestBody ReportRequestDto request) {
-        ReportEntity entity = reportService.createReport(request, ReportTypeEnums.USER);
-        return ApiResponse.success("User report created successfully", new ReportResponse(entity));
-    }
-
-    @PostMapping("/rooms")
-    @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<ReportResponse> createRoomReport(@RequestBody ReportRequestDto request) {
-        ReportEntity entity = reportService.createReport(request, ReportTypeEnums.ROOM);
-        return ApiResponse.success("Room report created successfully", new ReportResponse(entity));
-    }
+//    @PostMapping("/users")
+//    @ResponseStatus(HttpStatus.CREATED)
+//    public ApiResponse<ReportResponse> createUserReport(@RequestBody ReportRequestDto request) {
+//        ReportEntity entity = reportService.createReport(request, ReportTypeEnums.USER);
+//        return ApiResponse.success("User report created successfully", new ReportResponse(entity));
+//    }
+//
+//    @PostMapping("/rooms")
+//    @ResponseStatus(HttpStatus.CREATED)
+//    public ApiResponse<ReportResponse> createRoomReport(@RequestBody ReportRequestDto request) {
+//        ReportEntity entity = reportService.createReport(request, ReportTypeEnums.ROOM);
+//        return ApiResponse.success("Room report created successfully", new ReportResponse(entity));
+//    }
 
     @PatchMapping("/{id}/status")
     public ApiResponse<ReportResponse> updateStatus(@PathVariable UUID id, @Valid @RequestBody ReportUpdateStatusRequest request) {

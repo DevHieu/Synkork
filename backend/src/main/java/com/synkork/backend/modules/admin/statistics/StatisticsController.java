@@ -1,14 +1,7 @@
 package com.synkork.backend.modules.admin.statistics;
 
-import com.synkork.backend.modules.admin.statistics.dtos.OverviewChartResponse;
-import com.synkork.backend.modules.admin.statistics.dtos.OverviewStatsResponse;
-import com.synkork.backend.modules.admin.statistics.dtos.SubscriptionDashboardResponse;
-import com.synkork.backend.modules.admin.statistics.dtos.ReportChartResponse;
-import com.synkork.backend.modules.admin.statistics.dtos.ReportReasonStatsResponse;
-import com.synkork.backend.modules.admin.statistics.dtos.ReportStatsResponse;
-import com.synkork.backend.modules.admin.statistics.dtos.UserStatsResponse;
+import com.synkork.backend.modules.admin.statistics.dtos.*;
 import com.synkork.backend.modules.admin.statistics.enums.PeriodEnum;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

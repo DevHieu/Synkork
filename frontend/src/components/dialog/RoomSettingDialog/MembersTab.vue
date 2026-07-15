@@ -1,10 +1,23 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { Users, Crown, Shield, UserMinus, ChevronDown } from "lucide-vue-next";
+import { computed, ref, watch } from "vue";
+import {
+  Users,
+  Crown,
+  Shield,
+  UserMinus,
+  ChevronDown,
+  MoreVertical,
+  MicOff,
+  VolumeX,
+  MessageSquareOff,
+} from "lucide-vue-next";
 import {
   changeMemberAuthority,
   kickMember,
+  muteAudio,
+  muteChatMember,
 } from "@/services/roomMemberService";
+import type { ChatDisableTime, Member } from "@/types/Member";
 import { useRoomMemberStore } from "@/stores/roomMemberStore";
 import { storeToRefs } from "pinia";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -24,9 +37,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import DropdownMenuCheckboxItem from "@/components/ui/dropdown-menu/DropdownMenuCheckboxItem.vue";
+import DropdownMenuSeparator from "@/components/ui/dropdown-menu/DropdownMenuSeparator.vue";
+import DropdownMenuSub from "@/components/ui/dropdown-menu/DropdownMenuSub.vue";
+import DropdownMenuSubContent from "@/components/ui/dropdown-menu/DropdownMenuSubContent.vue";
+import DropdownMenuSubTrigger from "@/components/ui/dropdown-menu/DropdownMenuSubTrigger.vue";
 import InviteMemberDialog from "../InviteMemberDialog.vue";
+
+type AudioToggleField = "muted" | "deafen";
 
 const props = defineProps<{ roomId: string }>();
 
@@ -37,6 +56,17 @@ const { members, canManage, isOwner, sortedMembers } =
   storeToRefs(roomMemberStore);
 
 const filterRole = ref("ALL");
+const memberToKick = ref<Member | null>(null);
+
+const chatDisableOptions: { value: ChatDisableTime; label: string }[] = [
+  { value: "NOT_DISABLE", label: "Bỏ chặn chat" },
+  { value: "MINUTE", label: "1 phút" },
+  { value: "FIVE_MINUTES", label: "5 phút" },
+  { value: "FIFTEEN_MINUTES", label: "15 phút" },
+  { value: "HOUR", label: "1 giờ" },
+  { value: "DAY", label: "1 ngày" },
+  { value: "WEEK", label: "1 tuần" },
+];
 
 const filteredMembers = computed(() => {
   if (filterRole.value === "ALL") return sortedMembers.value;
@@ -49,12 +79,27 @@ const getRoleLabel = (role: string) => {
   return "Thành viên";
 };
 
-const handleKick = (username: string) => {
-  const member = members.value.find((m) => m.username === username);
+const isChatDisabled = (member: Member) => {
+  if (!member.chatDisableUntil) return false;
+  return new Date(member.chatDisableUntil).getTime() > Date.now();
+};
+
+const canModerateMember = (member: Member) => {
+  if (!canManage.value || member.role === "OWNER") return false;
+  if (isOwner.value) return true;
+  return member.role === "MEMBER";
+};
+
+const handleKick = (member: Member | null) => {
   if (!member) return;
-  kickMember(member.memberId, props.roomId).catch((err) => {
-    console.error("Kick member error:", err);
-  });
+  kickMember(member.memberId, props.roomId)
+    .then(() => {
+      members.value = members.value.filter((m) => m.memberId !== member.memberId);
+      memberToKick.value = null;
+    })
+    .catch((err) => {
+      console.error("Kick member error:", err);
+    });
 };
 
 const handleChangeRole = async (memberId: string, newRole: string) => {
@@ -67,6 +112,44 @@ const handleChangeRole = async (memberId: string, newRole: string) => {
     console.error("Change role error:", err);
   }
 };
+
+const handleToggleAudioState = async (member: Member, field: AudioToggleField) => {
+  const newValue = !member[field];
+
+  try {
+    await muteAudio(props.roomId, member.memberId, {
+      muted: field === "muted" ? newValue : null,
+      deafen: field === "deafen" ? newValue : null,
+    });
+
+    roomMemberStore.updateMember({ ...member, [field]: newValue });
+  } catch (err) {
+    console.error(`Toggle ${field} error:`, err);
+  }
+};
+
+const handleChangeChatDisable = async (
+  member: Member,
+  time: ChatDisableTime,
+) => {
+  try {
+    const updatedMember = await muteChatMember(
+      props.roomId,
+      member.memberId,
+      time,
+    );
+
+    roomMemberStore.updateMember(updatedMember);
+  } catch (err) {
+    console.error("Change chat disable error:", err);
+  }
+};
+
+
+watch(filteredMembers, (newMember) => {
+  console.log(newMember);
+
+})
 </script>
 
 <template>
@@ -119,33 +202,6 @@ const handleChangeRole = async (memberId: string, newRole: string) => {
 
         <!-- Actions -->
         <div class="opacity-0 group-hover:opacity-100 transition flex items-center gap-1">
-          <AlertDialog>
-            <AlertDialogTrigger as-child>
-              <Button v-if="canManage" variant="ghost" size="icon"
-                class="h-7 w-7 hover:bg-destructive/10 hover:text-destructive text-muted-foreground"
-                title="Xóa khỏi phòng">
-                <UserMinus class="h-4 w-4" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Xóa thành viên khỏi phòng?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  <span class="font-medium text-foreground">@{{ member.username }}</span>
-                  sẽ bị xóa khỏi phòng và mất toàn bộ quyền truy cập. Hành động
-                  này không thể hoàn tác.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Hủy</AlertDialogCancel>
-                <AlertDialogAction class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  @click="handleKick(member.username)">
-                  Xóa khỏi phòng
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-
           <DropdownMenu v-if="isOwner && member.role !== 'OWNER'">
             <DropdownMenuTrigger as-child>
               <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground">
@@ -182,6 +238,46 @@ const handleChangeRole = async (memberId: string, newRole: string) => {
           <Shield v-else-if="member.role === 'ADMIN'" class="h-2.5 w-2.5" />
           {{ getRoleLabel(member.role) }}
         </Badge>
+
+        <DropdownMenu v-if="canModerateMember(member)">
+          <DropdownMenuTrigger as-child>
+            <Button variant="ghost" size="icon" class="h-7 w-7 text-muted-foreground" title="Thao tác">
+              <MoreVertical class="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" class="w-48">
+            <DropdownMenuCheckboxItem :checked="member.muted" @update:checked="() => { }"
+              @select.prevent="handleToggleAudioState(member, 'muted')">
+              <MicOff class="h-3.5 w-3.5" />
+              Mute mic
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem :checked="member.deafen" @update:checked="() => { }"
+              @select.prevent="handleToggleAudioState(member, 'deafen')">
+              <VolumeX class="h-3.5 w-3.5" />
+              Mute loa
+            </DropdownMenuCheckboxItem>
+
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <MessageSquareOff class="mr-2 h-3.5 w-3.5" />
+                Chặn chat
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent class="w-40">
+                <DropdownMenuItem v-for="option in chatDisableOptions" :key="option.value"
+                  @click="handleChangeChatDisable(member, option.value)"
+                  :class="option.value === 'NOT_DISABLE' && !isChatDisabled(member) ? 'text-primary' : ''">
+                  {{ option.label }}
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+
+            <DropdownMenuSeparator />
+            <DropdownMenuItem class="text-destructive focus:text-destructive" @select.prevent="memberToKick = member">
+              <UserMinus class="mr-2 h-3.5 w-3.5" />
+              Xóa khỏi phòng
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <Separator v-if="filteredMembers.length > 0" class="my-1" />
@@ -191,5 +287,26 @@ const handleChangeRole = async (memberId: string, newRole: string) => {
       </p>
     </div>
   </div>
+
+  <AlertDialog :open="!!memberToKick" @update:open="(open) => !open && (memberToKick = null)">
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Xóa thành viên khỏi phòng?</AlertDialogTitle>
+        <AlertDialogDescription>
+          <span class="font-medium text-foreground">@{{ memberToKick?.username }}</span>
+          sẽ bị xóa khỏi phòng và mất toàn bộ quyền truy cập. Hành động
+          này không thể hoàn tác.
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>Hủy</AlertDialogCancel>
+        <AlertDialogAction class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          @click="handleKick(memberToKick)">
+          Xóa khỏi phòng
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+
   <InviteMemberDialog v-model:open="showInviteDialog" />
 </template>

@@ -1,12 +1,13 @@
 package com.synkork.backend.modules.roomMember.dto;
 
-import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
-import com.synkork.backend.modules.roomMember.RoomMemberEntity;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.time.LocalDateTime;
 import java.util.UUID;
+
+import com.synkork.backend.modules.roomMember.RoomMemberEntity;
+import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
+
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
@@ -22,9 +23,11 @@ public class RoomMemberDto {
 
     public RoomMemberDto(RoomMemberEntity entity) {
         this.memberId = entity.getId();
-        this.displayName = entity.getUser().getDisplayName();
-        this.username = entity.getUser().getUsername();
-        this.avatarUrl = entity.getUser().getAvatarUrl();
+        if (entity.getUser() != null) {
+            this.displayName = entity.getUser().getDisplayName();
+            this.username = entity.getUser().getUsername();
+            this.avatarUrl = entity.getUser().getAvatarUrl();
+        }
         this.role = entity.getRole();
         this.muted = entity.isMuted();
         this.deafen = entity.isDeafen();

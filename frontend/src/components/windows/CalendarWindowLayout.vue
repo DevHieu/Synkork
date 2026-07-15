@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useSpaceStore } from "@/stores/spaceStore";
 import { useUserStore } from "@/stores/userStore";
 import { useSuggestionStore } from "@/stores/calendarStore";
+import { useRoomMemberStore } from "@/stores/roomMemberStore";
 import { storeToRefs } from "pinia";
 import { useCalendar } from "@/components/calendar/composables/useCalendar";
 import type { CalendarEvent } from "@/types/CalendarEvent";
@@ -22,8 +23,10 @@ import type { EventFormData } from "@/components/calendar/composables/useEventFo
 const spaceStore = useSpaceStore();
 const userStore = useUserStore();
 const calendarSuggestionStore = useSuggestionStore();
+const roomMemberStore = useRoomMemberStore();
 const { currentSpace, isPersonalSpace } = storeToRefs(spaceStore);
 const { user } = storeToRefs(userStore);
+const { members } = storeToRefs(roomMemberStore);
 
 // Current user ID
 const currentUserId = computed(() => (user.value as any)?.id || "");
@@ -61,7 +64,9 @@ const selectedEvent = ref<CalendarEvent | null>(null);
 const initialFormData = ref<EventFormData>({
   title: "",
   description: "",
+  eventLink: "",
   eventDate: "",
+  endDate: "",
   startTime: "09:00",
   endTime: "10:00",
   recurrenceType: "NONE",
@@ -69,12 +74,15 @@ const initialFormData = ref<EventFormData>({
   allowEditAll: false,
   attendees: [],
   attachments: [],
+  callRoomSpaceId: undefined,
 });
 
 const createInitialFormData = (overrides: Partial<EventFormData> = {}): EventFormData => ({
   title: "",
   description: "",
+  eventLink: "",
   eventDate: "",
+  endDate: "",
   startTime: "09:00",
   endTime: "10:00",
   recurrenceType: "NONE",
@@ -82,20 +90,25 @@ const createInitialFormData = (overrides: Partial<EventFormData> = {}): EventFor
   allowEditAll: false,
   attendees: [],
   attachments: [],
+  callRoomSpaceId: undefined,
   ...overrides,
 });
 
 const createFormDataFromEvent = (event: CalendarEvent): EventFormData => createInitialFormData({
   title: event.title,
   description: event.description || "",
+  eventLink: event.eventLink || "",
   eventDate: event.eventDate,
+  endDate: event.endDate || event.eventDate,
   startTime: event.startTime.substring(0, 5),
   endTime: event.endTime.substring(0, 5),
   recurrenceType: event.recurrenceType || "NONE",
   recurrenceEndDate: event.recurrenceEndDate,
   allowEditAll: event.allowEditAll,
+  attendeeIds: event.attendeeIds || event.attendees?.map((attendee) => attendee.memberId) || [],
   attendees: event.attendees || [],
   attachments: event.attachments || [],
+  callRoomSpaceId: event.callRoomSpaceId,
 });
 
 // Điều hướng bằng bàn phím
@@ -146,6 +159,7 @@ const openCreateDialog = () => {
 
   initialFormData.value = createInitialFormData({
     eventDate: selectedDate.value.format("YYYY-MM-DD"),
+    endDate: selectedDate.value.format("YYYY-MM-DD"),
     startTime,
     endTime,
   });
@@ -161,6 +175,7 @@ const openSuggestedCreateDialog = (draft: SuggestedEventDraft) => {
     title: draft.title,
     description: draft.description,
     eventDate: draft.eventDate,
+    endDate: draft.eventDate,
     startTime: draft.startTime,
     endTime: draft.endTime,
     allowEditAll: draft.allowEditAll,
@@ -217,12 +232,20 @@ const pendingSavePayload = ref<{
   data: EventFormData;
 } | null>(null);
 
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
 const buildConflictMessage = (conflicts: CalendarEvent[]) => {
   const items = conflicts
     .slice(0, 4)
     .map(
       (event) =>
-        `<li><span class="text-foreground font-bold">${event.title}</span> (${event.startTime.substring(0, 5)} - ${event.endTime.substring(0, 5)})</li>`,
+        `<li class="break-all"><span class="text-foreground font-bold break-all">${escapeHtml(event.title)}</span> (${event.startTime.substring(0, 5)} - ${event.endTime.substring(0, 5)})</li>`,
     )
     .join("");
   const moreCount = conflicts.length - 4;
@@ -268,6 +291,7 @@ const handleSaveEvent = async (data: EventFormData) => {
 
   const conflicts = await checkConflicts(
     data.eventDate,
+    data.endDate || data.eventDate,
     data.startTime,
     data.endTime,
     payload.isEditing ? payload.eventId : undefined,
@@ -298,7 +322,7 @@ const handleDeleteEvent = (event: CalendarEvent) => {
   showNotification(
     "delete",
     "XÓA SỰ KIỆN",
-    `BẠN CÓ CHẮC CHẮN MUỐN XÓA SỰ KIỆN "<span class="text-foreground font-bold">${event.title}</span>" KHÔNG?<br/><br/>HÀNH ĐỘNG NÀY KHÔNG THỂ HOÀN TÁC.`
+    `BẠN CÓ CHẮC CHẮN MUỐN XÓA SỰ KIỆN "<span class="text-foreground font-bold">${escapeHtml(event.title)}</span>" KHÔNG?<br/><br/>HÀNH ĐỘNG NÀY KHÔNG THỂ HOÀN TÁC.`
   );
 };
 
@@ -342,9 +366,9 @@ const handleNotificationCancel = () => {
 
   if (notificationState.value.type === "delete") {
     eventToDelete.value = null;
-  } else {
-    notificationState.value.show = false;
   }
+  
+  notificationState.value.show = false;
 };
 
 watch(
@@ -390,7 +414,7 @@ watch(
     <CalendarEventViewDialog v-model:show="showViewDialog" :event="selectedEvent" :current-user-id="currentUserId"
       @edit="openEditDialog" @delete="handleDeleteEvent" />
 
-    <CalendarEventDialog v-model:show="showDialog" :is-editing="isEditing" :initial-data="initialFormData"
+    <CalendarEventDialog v-model:show="showDialog" :is-editing="isEditing" :initial-data="initialFormData" :room-members="members"
       @save="handleSaveEvent" />
 
     <!-- Unified Notification Dialog -->

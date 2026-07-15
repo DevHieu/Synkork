@@ -35,6 +35,7 @@ const inviteInfo  = ref<InviteInfo | null>(null)
 const currentUser = ref<any>(null)
 const state       = ref<"loading" | "ready" | "joining" | "error" | "invalid">("loading")
 const errorMsg    = ref("")
+const needsLogin  = ref(false)
 
 const getInitials = (name?: string) =>
   (name ?? "??")
@@ -54,10 +55,18 @@ onMounted(async () => {
     } catch { /* chưa đăng nhập */ }
     state.value = "ready"
   } catch (e: any) {
-    state.value = e?.response?.status === 404 ? "invalid" : "error"
-    errorMsg.value = e?.response?.data?.message || "Không thể tải thông tin lời mời"
+    const status = e?.response?.status
+    state.value = status === 404 ? "invalid" : "error"
+    needsLogin.value = status === 401 || status === 403
+    errorMsg.value = needsLogin.value
+      ? "Bạn cần đăng nhập để xem và chấp nhận lời mời này."
+      : e?.response?.data?.message || "Không thể tải thông tin lời mời"
   }
 })
+
+const goToAuth = () => {
+  router.push("/auth")
+}
 
 // Fetch space đầu tiên của room, ưu tiên CHAT
 const navigateToRoom = async (roomId: string) => {
@@ -142,9 +151,13 @@ const handleAccept = async () => {
         <!-- ERROR -->
         <template v-else-if="state === 'error'">
           <p class="text-5xl mb-4">⚠️</p>
-          <h2 class="text-xl font-extrabold text-white">Đã có lỗi xảy ra</h2>
+          <h2 class="text-xl font-extrabold text-white">
+            {{ needsLogin ? "Cần đăng nhập" : "Đã có lỗi xảy ra" }}
+          </h2>
           <p class="mt-2 text-sm text-white/50">{{ errorMsg }}</p>
-          <Button class="w-full mt-6" @click="router.push('/')">Về trang chủ</Button>
+          <Button class="w-full mt-6" @click="needsLogin ? goToAuth() : router.push('/')">
+            {{ needsLogin ? "Quay về đăng nhập" : "Về trang chủ" }}
+          </Button>
         </template>
 
         <!-- READY / JOINING -->
@@ -180,10 +193,6 @@ const handleAccept = async () => {
 
           <!-- Stats badges -->
           <div class="flex items-center justify-center gap-3 mt-3.5">
-            <Badge variant="outline" class="gap-1.5 border-white/10 text-white/55 bg-white/5 text-xs">
-              <span class="size-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#23d16066]" />
-              {{ inviteInfo.onlineCount ?? 0 }} Trực tuyến
-            </Badge>
             <Badge variant="outline" class="gap-1.5 border-white/10 text-white/55 bg-white/5 text-xs">
               <span class="size-2 rounded-full bg-white/35" />
               {{ getMemberCount(inviteInfo) }} Thành viên
