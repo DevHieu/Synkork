@@ -40,13 +40,6 @@ public class AdminReportService {
     @Autowired 
     private FileService fileService;
 
-    public List<ReportResponse> getAllReports() {
-        return adminReportRepository.findAll()
-                .stream()
-                .map(ReportResponse::new)
-                .toList();
-    }
-
     public ReportResponse getReportById(UUID id) {
         ReportEntity entity = adminReportRepository.findById(id).orElseThrow(() -> new RuntimeException("Report không tồn tại"));
 

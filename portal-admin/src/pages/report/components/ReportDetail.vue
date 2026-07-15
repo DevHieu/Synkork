@@ -111,7 +111,7 @@ async function handleLockTarget() {
       await userService.updateStatus(targetId.value, 'BANNED')
     }
     else {
-      await roomService.lockRoom(targetId.value, 'LOCKED')
+      await roomService.changeRoomStatus(targetId.value, 'LOCKED')
     }
     targetStatus.value = LOCKED_STATUS[props.report.reportType]
     emit('locked', { reportType: props.report.reportType, targetId: targetId.value })

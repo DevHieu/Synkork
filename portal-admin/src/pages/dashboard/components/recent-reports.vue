@@ -79,7 +79,7 @@ async function handleLockTarget({ reportType, targetId }: { reportType: 'USER' |
     if (reportType === 'USER') {
       await userService.updateStatus(targetId, 'BANNED')
     } else {
-      await roomService.lockRoom(targetId, 'LOCKED')
+      await roomService.changeRoomStatus(targetId, 'LOCKED')
     }
   } catch (error) {
     console.error('Lỗi khoá đối tượng:', error)

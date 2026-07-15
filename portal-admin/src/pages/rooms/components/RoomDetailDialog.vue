@@ -19,6 +19,7 @@ import {
 import { formatTimestamp } from '@/utils/date.utils'
 
 import type { RoomDetail } from '../types/RoomTypes'
+
 import { roomService } from '../service/roomService'
 
 const props = defineProps<{
@@ -42,6 +43,47 @@ const loadError = ref('')
 
 const isMembersOpen = ref(false)
 const isSpacesOpen = ref(false)
+
+const spaceGroups = computed(() => {
+  const spaces = room.value?.spaces ?? []
+  const groups = [
+    {
+      key: 'CHAT',
+      label: 'Chat',
+      items: spaces.filter(space => normalizeSpaceType(space.type) === 'CHAT'),
+    },
+    {
+      key: 'VOICE',
+      label: 'Voice',
+      items: spaces.filter(space => normalizeSpaceType(space.type) === 'VOICE'),
+    },
+    {
+      key: 'CALENDAR',
+      label: 'Calendar',
+      items: spaces.filter(space => normalizeSpaceType(space.type) === 'CALENDAR'),
+    },
+    {
+      key: 'NOTE',
+      label: 'Note',
+      items: spaces.filter(space => normalizeSpaceType(space.type) === 'NOTE'),
+    },
+    {
+      key: 'TASK',
+      label: 'Task',
+      items: spaces.filter(space => normalizeSpaceType(space.type) === 'TASK'),
+    },
+  ]
+
+  const groupedIds = new Set(groups.flatMap(group => group.items.map(space => space.id)))
+  const ungroupedSpaces = spaces.filter(space => !groupedIds.has(space.id))
+
+  return groups.map(group => ({
+    ...group,
+    items: group.key === 'CHAT'
+      ? [...group.items, ...ungroupedSpaces]
+      : group.items,
+  }))
+})
 
 watch(() => props.open, async (opened) => {
   if (!opened || !props.roomId)
@@ -68,6 +110,21 @@ function handleEdit() {
     emit('edit', room.value)
     isOpen.value = false
   }
+}
+
+function normalizeSpaceType(type: string) {
+  const normalized = type?.toUpperCase().replace(/[\s_-]/g, '') ?? ''
+
+  if (normalized.includes('VOICE') || normalized.includes('CALL'))
+    return 'VOICE'
+  if (normalized.includes('CALENDAR') || normalized.includes('EVENT'))
+    return 'CALENDAR'
+  if (normalized.includes('NOTE') || normalized.includes('DOC'))
+    return 'NOTE'
+  if (normalized.includes('TASK') || normalized.includes('TODO'))
+    return 'TASK'
+
+  return 'CHAT'
 }
 </script>
 
@@ -348,7 +405,7 @@ function handleEdit() {
 
   <!-- Spaces sub-dialog -->
   <Dialog v-model:open="isSpacesOpen">
-    <DialogContent class="max-w-[480px] gap-0 overflow-hidden p-0">
+    <DialogContent class="max-w-[760px] gap-0 overflow-hidden p-0">
       <DialogHeader class="border-b border-border px-6 py-4">
         <DialogTitle class="text-[15px] font-semibold">
           Danh sách Spaces ({{ room?.spaces?.length ?? 0 }})
@@ -358,18 +415,34 @@ function handleEdit() {
         </DialogDescription>
       </DialogHeader>
 
-      <div class="flex max-h-[60vh] flex-wrap gap-2 overflow-y-auto px-6 py-4">
+      <div class="flex max-h-[60vh] flex-col gap-4 overflow-y-auto px-6 py-4">
         <div
-          v-for="space in room?.spaces"
-          :key="space.id"
-          class="rounded-lg border border-border bg-muted/40 px-3 py-2"
+          v-for="group in spaceGroups"
+          :key="group.key"
+          class="space-y-2"
         >
-          <p class="text-[13px] font-medium">
-            {{ space.name }}
+          <p class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+            {{ group.label }} ({{ group.items.length }})
           </p>
-          <p class="text-[11px] text-muted-foreground">
-            {{ space.type }}
-          </p>
+
+          <div class="flex flex-wrap gap-2">
+            <div
+              v-for="space in group.items"
+              :key="space.id"
+              class="rounded-lg border border-border bg-muted/40 px-3 py-2"
+            >
+              <p class="text-[13px] font-medium">
+                {{ space.name }}
+              </p>
+            </div>
+
+            <p
+              v-if="!group.items.length"
+              class="text-sm text-muted-foreground"
+            >
+              Chưa có space {{ group.label.toLowerCase() }}
+            </p>
+          </div>
         </div>
       </div>
 
