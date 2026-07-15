@@ -47,7 +47,7 @@ const statusOptions = [
   { value: 'ALL', label: 'Tất cả trạng thái' },
   { value: 'ACTIVE', label: 'Hoạt động' },
   { value: 'INACTIVE', label: 'Ngừng hoạt động' },
-  { value: 'BANNED', label: 'Bị khóa' },
+  { value: 'BANNED', label: 'Bị chặn' },
 ] as const
 
 const planOptions = [
@@ -56,6 +56,15 @@ const planOptions = [
   { value: 'TEAM', label: 'TEAM' },
   { value: 'BUSINESS', label: 'BUSINESS' },
 ] as const
+
+/**
+ * Nguồn xác định duy nhất cho việc user có đang ACTIVE hay không.
+ * Mọi chỗ cần biết trạng thái active/locked đều phải qua đây,
+ * tránh lặp lại `.toUpperCase() === 'ACTIVE'` rải rác gây lệch logic.
+ */
+function isUserActive(user: Pick<User, 'status'> | null | undefined): boolean {
+  return user?.status?.toUpperCase() === 'ACTIVE'
+}
 
 async function fetchData() {
   loading.value = true
@@ -122,13 +131,7 @@ function handleViewDetail(user: User) {
   showEditModal.value = true
 }
 
-function handleDelete(user: User) {
-  actionTarget.value = user
-  actionReason.value = ''
-  showActionDialog.value = true
-}
-
-function handleOpenUnlock(user: User) {
+function handleOpenUserAction(user: User) {
   actionTarget.value = user
   actionReason.value = ''
   showActionDialog.value = true
@@ -140,7 +143,7 @@ async function handleConfirmUserAction(reason: string) {
 
   loading.value = true
   try {
-    if (actionTarget.value.status === 'ACTIVE') {
+    if (isUserActive(actionTarget.value)) {
       await userService.delete(actionTarget.value.id, reason)
       toast.success(`Đã khóa người dùng: ${actionTarget.value.username}`)
     }
@@ -204,7 +207,7 @@ function renderStatus(status: string) {
       class: 'border-slate-200 bg-slate-100 text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300',
     },
     BANNED: {
-      label: 'Bị khóa',
+      label: 'Bị chặn',
       class: 'border-rose-200 bg-rose-100 text-rose-800 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
     },
   }[normalized]
@@ -247,24 +250,24 @@ const columns = computed<TableColumn<User>[]>(() => [
         class: 'h-8 gap-1 px-2 text-xs',
         onClick: () => handleViewDetail(row),
       }, () => [h(Eye, { class: 'h-3.5 w-3.5' }), 'Xem']),
-      row.status?.toUpperCase() === 'ACTIVE'
+      isUserActive(row)
         ? h(UiButton, {
             variant: 'outline',
             size: 'sm',
             class: 'h-8 gap-1 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 hover:border-destructive/30',
-            onClick: () => handleDelete(row),
+            onClick: () => handleOpenUserAction(row),
           }, () => [h(Lock, { class: 'h-3.5 w-3.5' }), 'Khóa'])
         : h(UiButton, {
             variant: 'outline',
             size: 'sm',
             class: 'h-8 gap-1 px-2 text-xs text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-900/20',
-            onClick: () => handleOpenUnlock(row),
+            onClick: () => handleOpenUserAction(row),
           }, () => [h(Unlock, { class: 'h-3.5 w-3.5' }), 'Mở']),
     ]),
   },
 ])
 
-const isLockingUser = computed(() => actionTarget.value?.status === 'ACTIVE')
+const isLockingUser = computed(() => isUserActive(actionTarget.value))
 </script>
 
 <template>
@@ -344,7 +347,7 @@ const isLockingUser = computed(() => actionTarget.value?.status === 'ACTIVE')
 
   <!-- Edit Modal -->
   <Modal v-model:open="showEditModal">
-    <ModalContent>
+    <ModalContent class="overflow-hidden p-0 sm:max-w-2xl">
       <UserResource
         :user="editTarget ?? undefined"
         @close="showEditModal = false"

@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { LoaderIcon, LockKeyhole, Pencil, Plus, Search, X } from '@lucide/vue'
+import { LoaderIcon, LockKeyhole, Pencil, Plus, Search, Unlock, X } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
 import { computed, h, onMounted, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 
 import type { TableColumn } from '@/components/base-table.vue'
 
+import ConfirmDialog from '@/components/confirm-dialog.vue'
 import { BasicPage } from '@/components/global-layout'
 import { Modal, ModalContent } from '@/components/prop-ui/modal'
 import { Badge } from '@/components/ui/badge'
@@ -25,7 +26,6 @@ import type {
   ManagerStatus,
 } from './types/managerTypes'
 
-import ManagerLock from './components/manager-lock.vue'
 import ManagerResource from './components/manager-resource.vue'
 import { managerService } from './services/managerService'
 
@@ -44,6 +44,7 @@ const debouncedKeyword = refDebounced(keyword, 400)
 
 const editTarget = ref<ManagerAccount>()
 const lockTarget = ref<ManagerAccount>()
+const lockReason = ref('')
 const showResourceModal = ref(false)
 const showLockModal = ref(false)
 
@@ -115,6 +116,7 @@ function openEditModal(account: ManagerAccount) {
 
 function openLockModal(account: ManagerAccount) {
   lockTarget.value = account
+  lockReason.value = ''
   showLockModal.value = true
 }
 
@@ -122,6 +124,38 @@ function refreshAfterChange() {
   showResourceModal.value = false
   showLockModal.value = false
   fetchData()
+}
+
+const isLockingManager = computed(() => lockTarget.value?.status === 'active')
+
+async function confirmManagerStatusAction(reason: string) {
+  if (!lockTarget.value)
+    return
+
+  loading.value = true
+  try {
+    if (isLockingManager.value) {
+      await managerService.lock(lockTarget.value.id, reason)
+      toast.success(`Đã khóa tài khoản ${lockTarget.value.username}`)
+    }
+    else {
+      await managerService.update(lockTarget.value.id, { status: 'active' })
+      toast.success(`Đã mở khóa tài khoản ${lockTarget.value.username}`)
+    }
+
+    showLockModal.value = false
+    fetchData()
+  }
+  catch (error: any) {
+    const data = error?.response?.data
+    const message = typeof data === 'string'
+      ? data
+      : data?.message || error?.message || 'Không thể cập nhật trạng thái tài khoản'
+    toast.error(message)
+  }
+  finally {
+    loading.value = false
+  }
 }
 
 function renderStatus(status: ManagerStatus) {
@@ -181,9 +215,14 @@ const columns = computed<TableColumn<ManagerAccount>[]>(() => [
       h(UiButton, {
         variant: 'outline',
         size: 'sm',
-        class: 'h-8 gap-1 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 hover:border-destructive/30',
+        class: row.status === 'active'
+          ? 'h-8 gap-1 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 hover:border-destructive/30'
+          : 'h-8 gap-1 px-2 text-xs text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-900/20',
         onClick: () => openLockModal(row),
-      }, () => [h(LockKeyhole, { class: 'h-3.5 w-3.5' }), 'Khóa']),
+      }, () => [
+        h(row.status === 'active' ? LockKeyhole : Unlock, { class: 'h-3.5 w-3.5' }),
+        row.status === 'active' ? 'Khóa' : 'Mở',
+      ]),
     ]),
   },
 ])
@@ -302,7 +341,7 @@ function clearFilters() {
   </BasicPage>
 
   <Modal v-model:open="showResourceModal">
-    <ModalContent class="sm:max-w-lg">
+    <ModalContent class="overflow-hidden p-0 sm:max-w-2xl">
       <ManagerResource
         :account="editTarget"
         @close="showResourceModal = false"
@@ -311,14 +350,32 @@ function clearFilters() {
     </ModalContent>
   </Modal>
 
-  <Modal v-model:open="showLockModal">
-    <ModalContent>
-      <ManagerLock
-        v-if="lockTarget"
-        :account="lockTarget"
-        @close="showLockModal = false"
-        @locked="refreshAfterChange"
-      />
-    </ModalContent>
-  </Modal>
+  <ConfirmDialog
+    v-model:open="showLockModal"
+    v-model:reason="lockReason"
+    :destructive="isLockingManager"
+    :require-reason="isLockingManager"
+    :close-on-confirm="false"
+    cancel-button-text="Hủy"
+    :confirm-button-text="isLockingManager ? 'Khóa tài khoản' : 'Mở khóa'"
+    reason-label="Lý do khóa tài khoản"
+    reason-placeholder="Nhập lý do để gửi mail cho manager/admin"
+    reason-error="Vui lòng nhập lý do khóa tài khoản"
+    :is-loading="loading"
+    @confirm="confirmManagerStatusAction"
+  >
+    <template #title>
+      {{ isLockingManager ? `Khóa tài khoản ${lockTarget?.username}?` : `Mở khóa tài khoản ${lockTarget?.username}?` }}
+    </template>
+
+    <template #description>
+      <p>
+        {{
+          isLockingManager
+            ? 'Tài khoản sẽ chuyển sang trạng thái bị khóa và không thể tiếp tục đăng nhập.'
+            : 'Tài khoản sẽ được chuyển về hoạt động và có thể đăng nhập trở lại.'
+        }}
+      </p>
+    </template>
+  </ConfirmDialog>
 </template>

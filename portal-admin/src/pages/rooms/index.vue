@@ -319,19 +319,19 @@ const columns = computed<TableColumn<any>[]>(() => [
           },
           () => [h(Pencil, { class: 'h-3.5 w-3.5' }), 'Sửa'],
         ),
-        h(
-          UiButton,
-          {
-            variant: 'outline',
-            size: 'sm',
-            disabled: row.status === 'PENDING_REMOVAL',
-            class: row.status === 'LOCKED'
-              ? 'h-8 gap-1 px-2 text-xs text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700'
-              : 'h-8 gap-1 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 hover:border-destructive/30',
-            onClick: () => handleToggleLock(row),
-          },
-          () => [h(row.status === 'LOCKED' ? Unlock : Lock, { class: 'h-3.5 w-3.5' })],
-        ),
+        row.status === 'LOCKED'
+          ? h(UiButton, {
+              variant: 'outline',
+              size: 'sm',
+              class: 'h-8 gap-1 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 hover:border-destructive/30',
+              onClick: () => handleToggleLock(row),
+            }, () => [h(Lock, { class: 'h-3.5 w-3.5' }), 'Khóa'])
+          : h(UiButton, {
+              variant: 'outline',
+              size: 'sm',
+              class: 'h-8 gap-1 px-2 text-xs text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-900/20',
+              onClick: () => handleToggleLock(row),
+            }, () => [h(Unlock, { class: 'h-3.5 w-3.5' }), 'Mở']),
       ]),
   },
 ])

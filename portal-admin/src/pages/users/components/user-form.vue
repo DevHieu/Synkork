@@ -96,90 +96,101 @@ async function onSubmit() {
 </script>
 
 <template>
-  <div class="max-h-[500px] overflow-y-auto">
-    <form class="space-y-4" @submit.prevent="onSubmit">
+  <div class="max-h-[70vh] overflow-y-auto px-6 py-5">
+    <form class="space-y-5" @submit.prevent="onSubmit">
       <!-- Họ tên (chỉ khi tạo mới) -->
-      <template v-if="!isEdit">
-        <div class="space-y-2">
-          <label class="text-sm font-medium">Tên</label>
-          <Input v-model="form.firstName" type="text" placeholder="Nhập tên" required />
+      <div class="grid gap-3 md:grid-cols-2">
+        <template v-if="!isEdit">
+          <div class="space-y-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+            <label class="text-[12px] font-medium text-muted-foreground">Tên</label>
+            <Input v-model="form.firstName" type="text" placeholder="Nhập tên" required />
+          </div>
+          <div class="space-y-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+            <label class="text-[12px] font-medium text-muted-foreground">Họ</label>
+            <Input v-model="form.lastName" type="text" placeholder="Nhập họ" required />
+          </div>
+        </template>
+
+        <!-- Tên hiển thị (chỉ khi cập nhật) -->
+        <div v-else class="space-y-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5 md:col-span-2">
+          <label class="text-[12px] font-medium text-muted-foreground">Tên hiển thị</label>
+          <Input v-model="form.displayName" type="text" placeholder="Nhập tên hiển thị" required />
         </div>
-        <div class="space-y-2">
-          <label class="text-sm font-medium">Họ</label>
-          <Input v-model="form.lastName" type="text" placeholder="Nhập họ" required />
+
+        <div class="space-y-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+          <label class="text-[12px] font-medium text-muted-foreground">Username</label>
+          <Input v-model="form.username" type="text" required />
         </div>
-      </template>
 
-      <!-- Tên hiển thị (chỉ khi cập nhật) -->
-      <div v-else class="space-y-2">
-        <label class="text-sm font-medium">Tên hiển thị</label>
-        <Input v-model="form.displayName" type="text" placeholder="Nhập tên hiển thị" required />
+        <div class="space-y-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+          <label class="text-[12px] font-medium text-muted-foreground">Email</label>
+          <Input v-model="form.email" type="email" :disabled="isEdit" required />
+        </div>
+
+        <div class="space-y-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+          <label class="text-[12px] font-medium text-muted-foreground">Trạng thái</label>
+          <Select v-model="form.status">
+            <SelectTrigger class="w-full bg-background">
+              <SelectValue placeholder="Chọn trạng thái" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem v-for="s in statusOptions" :key="s.value" :value="s.value">
+                  {{ s.label }}
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div class="space-y-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+          <label class="text-[12px] font-medium text-muted-foreground">Gói dịch vụ</label>
+          <Select v-model="form.plan">
+            <SelectTrigger class="w-full bg-background">
+              <SelectValue placeholder="Chọn gói dịch vụ" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem v-for="p in planOptions" :key="p" :value="p">
+                  {{ p }}
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div v-if="isEdit && canChangeRole" class="space-y-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5 md:col-span-2">
+          <label class="text-[12px] font-medium text-muted-foreground">Vai trò</label>
+          <Select v-model="form.role">
+            <SelectTrigger class="w-full bg-background">
+              <SelectValue placeholder="Chọn vai trò" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="user">User</SelectItem>
+                <SelectItem value="manager">Manager</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <p class="text-xs text-muted-foreground">
+            Khi nâng lên Manager hoặc Admin, tài khoản sẽ chuyển sang trang Manager & Admin.
+          </p>
+        </div>
       </div>
 
-      <div class="space-y-2">
-        <label class="text-sm font-medium">Username</label>
-        <Input v-model="form.username" type="text" required />
-      </div>
+      <p v-if="errorMessage" class="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+        {{ errorMessage }}
+      </p>
 
-      <div class="space-y-2">
-        <label class="text-sm font-medium">Email</label>
-        <Input v-model="form.email" type="email" :disabled="isEdit" required />
+      <div class="flex justify-end gap-2 border-t border-border pt-4">
+        <Button type="button" variant="outline" :disabled="isLoading" @click="emits('close')">
+          Hủy
+        </Button>
+        <Button type="submit" :disabled="isLoading">
+          {{ isLoading ? 'Đang lưu...' : (isEdit ? 'Lưu thay đổi' : 'Tạo người dùng') }}
+        </Button>
       </div>
-
-      <div class="space-y-2">
-        <label class="text-sm font-medium">Trạng thái</label>
-        <Select v-model="form.status">
-          <SelectTrigger class="w-full">
-            <SelectValue placeholder="Chọn trạng thái" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem v-for="s in statusOptions" :key="s.value" :value="s.value">
-                {{ s.label }}
-              </SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div class="space-y-2">
-        <label class="text-sm font-medium">Gói dịch vụ</label>
-        <Select v-model="form.plan">
-          <SelectTrigger class="w-full">
-            <SelectValue placeholder="Chọn gói dịch vụ" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem v-for="p in planOptions" :key="p" :value="p">
-                {{ p }}
-              </SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div v-if="isEdit && canChangeRole" class="space-y-2">
-        <label class="text-sm font-medium">Vai trò</label>
-        <Select v-model="form.role">
-          <SelectTrigger class="w-full">
-            <SelectValue placeholder="Chọn vai trò" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem value="user">User</SelectItem>
-              <SelectItem value="manager">Manager</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-        <p class="text-xs text-muted-foreground">
-          Khi nâng lên Manager hoặc Admin, tài khoản sẽ chuyển sang trang Manager & Admin.
-        </p>
-      </div>
-
-      <Button type="submit" class="w-full" :disabled="isLoading">
-        {{ isLoading ? 'Đang lưu...' : (isEdit ? 'Lưu thay đổi' : 'Tạo người dùng') }}
-      </Button>
     </form>
   </div>
 </template>
