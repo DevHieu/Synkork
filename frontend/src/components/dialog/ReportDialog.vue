@@ -176,10 +176,10 @@ const truncateMiddle = (name: string, maxLength = 38) => {
 }
 
 watch(() => props.open, (newVal) => {
-  if(!newVal) {
-    reason.value =  '',
-    description.value = '',
-    clearEvidence()
+  if (!newVal) {
+    reason.value = '',
+      description.value = '',
+      clearEvidence()
   }
 })
 </script>
@@ -232,12 +232,9 @@ watch(() => props.open, (newVal) => {
         <!-- Chi tiết -->
         <div class="space-y-2">
           <Label class="text-sm font-semibold text-foreground/80">Mô tả chi tiết (không bắt buộc)</Label>
-          <Textarea 
-            v-model="description" 
-            placeholder="Hãy cung cấp thêm chi tiết để chúng tôi xử lý tốt hơn..."
+          <Textarea v-model="description" placeholder="Hãy cung cấp thêm chi tiết để chúng tôi xử lý tốt hơn..."
             style="white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word;"
-            class="min-h-[100px] max-h-[100px] w-full bg-background border-border rounded-md resize-none overflow-y-auto" 
-          />
+            class="min-h-[100px] max-h-[100px] w-full bg-background border-border rounded-md resize-none overflow-y-auto" />
         </div>
 
         <!-- Bằng chứng đính kèm -->
