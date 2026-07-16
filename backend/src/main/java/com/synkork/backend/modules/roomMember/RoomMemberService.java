@@ -17,6 +17,7 @@ import com.synkork.backend.modules.roomMember.dto.MuteRequest;
 import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
 import com.synkork.backend.modules.roomMember.enums.ChatDisableTime;
 import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
+import com.synkork.backend.modules.roomMember.enums.RoomMemberStatusEnum;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
 
@@ -57,16 +58,20 @@ public class RoomMemberService {
     }
 
     public RoomMemberEntity addRoomMembers(String userId, String roomID, String role) {
-        RoomMemberEntity roomMemberEntity = new RoomMemberEntity();
-
         RoomEntity room = roomRepository.findById(UUID.fromString(roomID))
                 .orElseThrow(() -> new RuntimeException("Room not found: " + roomID));
 
         UserEntity user = userRepository.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
 
+        RoomMemberEntity roomMemberEntity = roomMemberRepository
+                .findIncludingInactiveByRoomIdAndUserId(room.getId(), user.getId())
+                .orElseGet(RoomMemberEntity::new);
+
         roomMemberEntity.setRoom(room);
         roomMemberEntity.setUser(user);
+        roomMemberEntity.setStatus(RoomMemberStatusEnum.ACTIVE);
+        roomMemberEntity.setJoinedAt(LocalDateTime.now());
 
         try {
             roomMemberEntity.setRole(role != null
@@ -99,7 +104,7 @@ public class RoomMemberService {
         RoomMemberEntity kicker = this.getRoomMemberByRoomIdAndUserId(roomUUID, userId);
         PermissionService.requirePermission(kicker, RoomMemberRoleEnum.OWNER, RoomMemberRoleEnum.ADMIN);
 
-        RoomMemberEntity target = this.getRoomMemberById(memberUUID);;
+        RoomMemberEntity target = this.getRoomMemberByRoomIdAndMemberId(roomUUID, memberUUID);
 
         if (target.getRole() == RoomMemberRoleEnum.OWNER) {
             throw new RuntimeException("Cannot kick OWNER");
@@ -110,9 +115,8 @@ public class RoomMemberService {
             throw new RuntimeException("ADMIN cannot kick another ADMIN");
         }
 
-        roomMemberRepository.removeFromCardAssignees(memberUUID);
-        roomMemberRepository.removeFromCalendarEventRoomMembers(memberUUID);
-        roomMemberRepository.deleteById(memberUUID);
+        target.setStatus(RoomMemberStatusEnum.KICKED);
+        roomMemberRepository.save(target);
 
         return target.getUser().getEmail();
     }

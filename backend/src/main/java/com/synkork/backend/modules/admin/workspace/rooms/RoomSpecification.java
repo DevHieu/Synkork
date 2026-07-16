@@ -4,6 +4,7 @@ import com.synkork.backend.modules.admin.workspace.rooms.dtos.RoomFilterRequest;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
+import com.synkork.backend.modules.roomMember.enums.RoomMemberStatusEnum;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
@@ -48,7 +49,10 @@ public class RoomSpecification {
                 Subquery<Long> subquery = query.subquery(Long.class);
                 var memberRoot = subquery.from(RoomMemberEntity.class);
                 subquery.select(cb.count(memberRoot))
-                        .where(cb.equal(memberRoot.get("room"), root));
+                        .where(
+                                cb.equal(memberRoot.get("room"), root),
+                                cb.equal(memberRoot.get("status"), RoomMemberStatusEnum.ACTIVE)
+                        );
                 predicates.add(cb.greaterThanOrEqualTo(subquery, (long) request.minMembers()));
             }
 

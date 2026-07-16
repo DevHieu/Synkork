@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { VisDonut, VisSingleContainer } from '@unovis/vue'
+import { VisArea, VisAxis, VisDonut, VisLine, VisSingleContainer, VisXYContainer } from '@unovis/vue'
 import {
   Activity,
   CalendarPlus,
@@ -11,6 +11,8 @@ import {
 
 import DataCard from '../components/data-card.vue'
 import { dashboardService } from '../services/dashboardService'
+import type { ChartConfig } from '@/components/ui/chart'
+import { ChartContainer, ChartCrosshair, ChartTooltip, ChartTooltipContent, componentToString } from '@/components/ui/chart'
 
 interface UserStats {
   totalUsers: number
@@ -30,7 +32,28 @@ interface ChartRow {
   color: string
 }
 
+interface UserTrendPoint {
+  date: number
+  newUsers: number
+}
+
+type Period = 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY'
+
 const stats = ref<UserStats | null>(null)
+const period = ref<Period>('WEEKLY')
+const trendData = ref<UserTrendPoint[]>([])
+const isLoadingTrend = ref(false)
+
+const trendConfig = {
+  newUsers: { label: 'Người dùng mới', color: 'var(--chart-1)' },
+} satisfies ChartConfig
+
+const trendSvgDefs = `
+  <linearGradient id="fillNewUsers" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="5%" stop-color="var(--chart-1)" stop-opacity="0.7" />
+    <stop offset="95%" stop-color="var(--chart-1)" stop-opacity="0.05" />
+  </linearGradient>
+`
 
 const statusRows = computed<ChartRow[]>(() => [
   { name: 'Active', value: stats.value?.activeUsers ?? 0, color: 'var(--chart-1)' },
@@ -44,6 +67,26 @@ const planRows = computed<ChartRow[]>(() => [
   { name: 'Business', value: stats.value?.businessUsers ?? 0, color: 'var(--chart-3)' },
 ])
 
+async function fetchTrend() {
+  isLoadingTrend.value = true
+  try {
+    const data = await dashboardService.getUserChartData(period.value)
+    trendData.value = data.map((row: { date: string; newUsers: number }) => ({
+      date: new Date(row.date).getTime(),
+      newUsers: row.newUsers,
+    }))
+  }
+  catch (err) {
+    console.error(err)
+    trendData.value = []
+  }
+  finally {
+    isLoadingTrend.value = false
+  }
+}
+
+watch(period, fetchTrend)
+
 onMounted(async () => {
   try {
     stats.value = await dashboardService.getUserStatsData()
@@ -51,6 +94,7 @@ onMounted(async () => {
   catch (err) {
     console.error(err)
   }
+  fetchTrend()
 })
 </script>
 
@@ -141,4 +185,54 @@ onMounted(async () => {
       </UiCardContent>
     </UiCard>
   </div>
+
+  <UiCard>
+    <UiCardHeader class="flex items-center gap-3 space-y-0 sm:flex-row">
+      <div class="grid flex-1 gap-1">
+        <UiCardTitle class="text-base">
+          Xu hướng người dùng mới
+        </UiCardTitle>
+        <UiCardDescription>Số tài khoản user được tạo theo khoảng thời gian.</UiCardDescription>
+      </div>
+      <UiSelect v-model="period">
+        <UiSelectTrigger class="w-[140px]">
+          <UiSelectValue />
+        </UiSelectTrigger>
+        <UiSelectContent>
+          <UiSelectItem value="WEEKLY">Tuần</UiSelectItem>
+          <UiSelectItem value="MONTHLY">Tháng</UiSelectItem>
+          <UiSelectItem value="QUARTERLY">Quý</UiSelectItem>
+          <UiSelectItem value="YEARLY">Năm</UiSelectItem>
+        </UiSelectContent>
+      </UiSelect>
+    </UiCardHeader>
+    <UiCardContent>
+      <div v-if="isLoadingTrend" class="flex h-[260px] items-center justify-center text-sm text-muted-foreground">
+        Đang tải...
+      </div>
+      <ChartContainer v-else :config="trendConfig" class="h-[260px] w-full" :cursor="false">
+        <VisXYContainer :data="trendData" :svg-defs="trendSvgDefs" :margin="{ left: -30 }">
+          <VisArea :x="d => d.date" :y="d => d.newUsers" color="url(#fillNewUsers)" />
+          <VisLine :x="d => d.date" :y="d => d.newUsers" :color="trendConfig.newUsers.color" :line-width="2" />
+          <VisAxis
+            type="x"
+            :x="d => d.date"
+            :tick-line="false"
+            :domain-line="false"
+            :grid-line="false"
+            :num-ticks="6"
+            :tick-format="(value: number) => new Date(value).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })"
+          />
+          <VisAxis type="y" :tick-line="false" :domain-line="false" :num-ticks="4" />
+          <ChartTooltip />
+          <ChartCrosshair
+            :template="componentToString(trendConfig, ChartTooltipContent, {
+              labelFormatter: value => new Date(value).toLocaleDateString('vi-VN'),
+            })"
+            :color="trendConfig.newUsers.color"
+          />
+        </VisXYContainer>
+      </ChartContainer>
+    </UiCardContent>
+  </UiCard>
 </template>

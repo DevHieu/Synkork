@@ -55,5 +55,16 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
     long countActiveSubscriptions(@Param("freePlan") PlanEnum freePlan, @Param("now") LocalDateTime now);
 
     List<UserEntity> findTop10ByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(String username, String email);
+
+    @Query("""
+        SELECT CAST(u.createdAt AS LocalDate), COUNT(u)
+        FROM UserEntity u
+        WHERE u.createdAt >= :from AND u.role = :role
+        GROUP BY CAST(u.createdAt AS LocalDate)
+        ORDER BY CAST(u.createdAt AS LocalDate)
+    """)
+    List<Object[]> findDailyNewUserCounts(
+            @Param("from") LocalDateTime from,
+            @Param("role") RoleEnum role);
 }
 

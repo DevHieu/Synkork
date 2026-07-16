@@ -3,6 +3,7 @@ import { LoaderIcon, Search, X } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
 import { computed, h, onMounted, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 
 import type { TableColumn } from '@/components/base-table.vue'
 
@@ -22,6 +23,7 @@ import type { Invoice, InvoiceSearchParams } from './types/invoiceTypes'
 import { subscriptionService } from './service/subscriptionService'
 
 const { t } = useI18n()
+const route = useRoute()
 
 const loading = ref(false)
 const currentPage = ref(1)
@@ -162,6 +164,11 @@ watch(currentPage, () => {
 })
 
 onMounted(() => {
+  const keyword = typeof route.query.keyword === 'string' ? route.query.keyword : ''
+  if (keyword) {
+    searchKeyword.value = keyword
+    return
+  }
   fetchInvoices()
 })
 

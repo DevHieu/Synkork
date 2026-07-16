@@ -2,6 +2,8 @@ package com.synkork.backend.modules.admin.users;
 
 import com.synkork.backend.common.utils.EmailService;
 import com.synkork.backend.modules.admin.users.dtos.AdminUserResponse;
+import com.synkork.backend.modules.admin.users.dtos.AdminUserDetailResponse;
+import com.synkork.backend.modules.admin.users.dtos.AdminUserRoomResponse;
 import com.synkork.backend.modules.admin.users.dtos.CreateUserRequest;
 import com.synkork.backend.modules.admin.users.dtos.DeleteUserRequest;
 import com.synkork.backend.modules.admin.users.dtos.UpdateUserRequest;
@@ -11,6 +13,7 @@ import com.synkork.backend.modules.room.RoomRepository;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
 import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
+import com.synkork.backend.modules.roomMember.enums.RoomMemberStatusEnum;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.enums.PlanEnum;
 import com.synkork.backend.modules.user.enums.RoleEnum;
@@ -20,7 +23,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import jakarta.persistence.EntityManager;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -50,9 +52,6 @@ public class AdminUserService {
     private RoomRepository roomRepository;
 
     @Autowired
-    private EntityManager entityManager;
-
-    @Autowired
     private EmailService emailService;
 
     public Page<UserEntity> getUsers(UserFilterRequest request) {
@@ -65,8 +64,14 @@ public class AdminUserService {
         return userAdminRepository.findAll(spec, pageable);
     }
 
-    public AdminUserResponse getUserById(UUID id) {
-        return AdminUserResponse.from(findUserOrThrow(id));
+    public AdminUserDetailResponse getUserById(UUID id) {
+        UserEntity user = findUserOrThrow(id);
+        List<AdminUserRoomResponse> rooms = roomMemberRepository
+                .findByUserIdAndStatusWithRoom(id, RoomMemberStatusEnum.ACTIVE)
+                .stream()
+                .map(AdminUserRoomResponse::from)
+                .toList();
+        return AdminUserDetailResponse.from(user, rooms);
     }
 
     public AdminUserResponse createUser(CreateUserRequest req) {
@@ -138,12 +143,25 @@ public class AdminUserService {
                 .filter(value -> !value.isBlank())
                 .orElse("Tai khoan cua ban da bi khoa boi quan tri vien.");
 
-        removeUserFromJoinedRooms(user);
+        kickUserFromJoinedRooms(user);
         user.setStatus(UserStatusEnum.INACTIVE);
         userAdminRepository.save(user);
         sendUserDeletedEmail(user, reason);
 
-        return Map.of("message", "Da chuyen nguoi dung sang INACTIVE va xoa khoi cac room dang tham gia");
+        return Map.of("message", "Da chuyen nguoi dung sang INACTIVE va kick khoi cac room dang tham gia");
+    }
+
+    @Transactional
+    public AdminUserRoomResponse kickUserFromRoom(UUID userId, UUID membershipId) {
+        findUserOrThrow(userId);
+        RoomMemberEntity member = roomMemberRepository.findByIdAndUser_Id(membershipId, userId)
+                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay room membership cua user"));
+        if (member.getStatus() == RoomMemberStatusEnum.KICKED) {
+            throw new IllegalArgumentException("User da bi kick khoi room nay");
+        }
+
+        kickMembership(member);
+        return AdminUserRoomResponse.from(member);
     }
 
     public AdminUserResponse lockUser(UUID userId, UserStatusEnum status) {
@@ -203,28 +221,28 @@ public class AdminUserService {
         emailService.send(email, "[Synkork] Tai khoan cua ban da duoc tao", body);
     }
 
-    private void removeUserFromJoinedRooms(UserEntity user) {
-        List<RoomMemberEntity> joinedRooms = entityManager.createQuery(
-                        "SELECT rm FROM RoomMemberEntity rm JOIN FETCH rm.room WHERE rm.user.id = :userId",
-                        RoomMemberEntity.class
-                )
-                .setParameter("userId", user.getId())
-                .getResultList();
+    private void kickUserFromJoinedRooms(UserEntity user) {
+        List<RoomMemberEntity> joinedRooms = roomMemberRepository
+                .findByUserIdAndStatusWithRoom(user.getId(), RoomMemberStatusEnum.ACTIVE);
 
-        for (RoomMemberEntity deletingMember : joinedRooms) {
-            RoomEntity room = deletingMember.getRoom();
-            List<RoomMemberEntity> remainingMembers = roomMemberRepository.findByRoom_Id(room.getId())
-                    .stream()
-                    .filter(member -> !Objects.equals(member.getUser().getId(), user.getId()))
-                    .toList();
-
-            if (deletingMember.getRole() == RoomMemberRoleEnum.OWNER) {
-                transferOwnerBeforeRemoving(room, remainingMembers);
-            }
-
-            roomMemberRepository.removeFromCardAssignees(deletingMember.getId());
-            roomMemberRepository.delete(deletingMember);
+        for (RoomMemberEntity member : joinedRooms) {
+            kickMembership(member);
         }
+    }
+
+    private void kickMembership(RoomMemberEntity member) {
+        RoomEntity room = member.getRoom();
+        List<RoomMemberEntity> remainingMembers = roomMemberRepository.findByRoom_Id(room.getId())
+                .stream()
+                .filter(candidate -> !Objects.equals(candidate.getId(), member.getId()))
+                .toList();
+
+        if (member.getRole() == RoomMemberRoleEnum.OWNER) {
+            transferOwnerBeforeRemoving(room, remainingMembers);
+        }
+
+        member.setStatus(RoomMemberStatusEnum.KICKED);
+        roomMemberRepository.save(member);
     }
 
     private void transferOwnerBeforeRemoving(RoomEntity room, List<RoomMemberEntity> remainingMembers) {
@@ -299,7 +317,7 @@ public class AdminUserService {
         String body = plainTextEmailBody(String.format(
                 "Xin chao %s,\n\nTai khoan Synkork cua ban da duoc chuyen sang trang thai INACTIVE.\n\n"
                         + "Ly do: %s\n\n"
-                        + "Ban da duoc xoa khoi tat ca room dang tham gia. "
+                        + "Ban da bi kick khoi tat ca room dang tham gia. "
                         + "Neu can ho tro them, vui long lien he quan tri vien.",
                 user.getUsername(),
                 reason

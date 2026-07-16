@@ -20,6 +20,7 @@ import com.synkork.backend.modules.admin.workspace.spaces.dtos.AdminRoomSpaceRes
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.enums.RoomStatusEnum;
 import com.synkork.backend.modules.room.enums.RoomTypeEnum;
+import com.synkork.backend.modules.roomMember.enums.RoomMemberStatusEnum;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
 
@@ -56,6 +57,7 @@ public class AdminRoomService {
     public List<AdminRoomMemberResponse> getRoomMembers(String roomId) {
         RoomEntity room = findRoomOrThrow(roomId);
         return room.getRoomMembers().stream()
+                .filter(member -> member.getStatus() == RoomMemberStatusEnum.ACTIVE)
                 .map(AdminRoomMemberResponse::new)
                 .toList();
     }

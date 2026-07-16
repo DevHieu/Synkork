@@ -15,6 +15,7 @@ import com.synkork.backend.modules.roomMember.RoomMemberRepository;
 import com.synkork.backend.modules.roomMember.RoomMemberService;
 import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
 import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
+import com.synkork.backend.modules.roomMember.enums.RoomMemberStatusEnum;
 import com.synkork.backend.modules.space.SpaceEntity;
 import com.synkork.backend.modules.space.SpaceService;
 import com.synkork.backend.modules.space.dto.CreateSpaceRequest;
@@ -29,6 +30,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -150,18 +152,20 @@ public class RoomService {
         RoomEntity room = roomRepository.findByInviteCode(code)
                 .orElseThrow(() -> new RuntimeException("Link mời không tồn tại"));
 
-        boolean alreadyMember = roomMemberRepository.existsByRoom_IdAndUser_Id(room.getId(), userId);
-        if (alreadyMember)
+        RoomMemberEntity existingMember = roomMemberRepository
+                .findIncludingInactiveByRoomIdAndUserId(room.getId(), userId)
+                .orElse(null);
+        if (existingMember != null && existingMember.getStatus() == RoomMemberStatusEnum.ACTIVE)
             throw new RuntimeException("Bạn đã là thành viên của phòng này");
 
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User không tồn tại"));
 
-        RoomMemberEntity member = RoomMemberEntity.builder()
-                .room(room)
-                .user(user)
-                .role(RoomMemberRoleEnum.MEMBER)
-                .build();
+        RoomMemberEntity member = existingMember != null ? existingMember : RoomMemberEntity.builder()
+                .room(room).user(user).build();
+        member.setRole(RoomMemberRoleEnum.MEMBER);
+        member.setStatus(RoomMemberStatusEnum.ACTIVE);
+        member.setJoinedAt(LocalDateTime.now());
 
         // Vừa save vừa convert sang dto luôn
         RoomMemberDto dto = new RoomMemberDto(roomMemberRepository.save(member));
@@ -213,19 +217,21 @@ public class RoomService {
 
         RoomEntity room = this.findById(roomId);
 
-        boolean alreadyMember = roomMemberRepository.existsByRoom_IdAndUser_Id(roomId, friendId);
-        if (alreadyMember) {
+        RoomMemberEntity existingMember = roomMemberRepository
+                .findIncludingInactiveByRoomIdAndUserId(roomId, friendId)
+                .orElse(null);
+        if (existingMember != null && existingMember.getStatus() == RoomMemberStatusEnum.ACTIVE) {
             throw new RuntimeException("Người này đã ở trong phòng");
         }
 
         UserEntity friend = userRepository.findById(friendId)
                 .orElseThrow(() -> new RuntimeException("User không tồn tại"));
 
-        RoomMemberEntity member = RoomMemberEntity.builder()
-                .room(room)
-                .user(friend)
-                .role(RoomMemberRoleEnum.MEMBER)
-                .build();
+        RoomMemberEntity member = existingMember != null ? existingMember : RoomMemberEntity.builder()
+                .room(room).user(friend).build();
+        member.setRole(RoomMemberRoleEnum.MEMBER);
+        member.setStatus(RoomMemberStatusEnum.ACTIVE);
+        member.setJoinedAt(LocalDateTime.now());
 
         RoomMemberDto dto = new RoomMemberDto(roomMemberRepository.save(member));
         messagingTemplate.convertAndSend("/topic/room/" + room.getId() + "/members/joined", dto);

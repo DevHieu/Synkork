@@ -12,7 +12,7 @@ export const userService = {
   // Lấy 1 user theo id
   async getById(id: string) {
     const res = await axiosClient.get(`/api/manage/users/${id}`)
-    return res.data
+    return res.data.data as User
   },
 
   // Tạo user mới
@@ -57,5 +57,10 @@ export const userService = {
   async warnUser(id: string){
     const res = await axiosClient.patch(`/api/manage/users/${id}/warn`)
     return res.data
-  }
+  },
+
+  async kickFromRoom(userId: string, membershipId: string) {
+    const res = await axiosClient.patch(`/api/manage/users/${userId}/rooms/${membershipId}/kick`)
+    return res.data.data
+  },
 }

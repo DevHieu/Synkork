@@ -21,6 +21,7 @@ import com.synkork.backend.modules.notification.enums.NotificationRefTypeEnum;
 import com.synkork.backend.modules.notification.enums.NotificationTypeEnum;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
+import com.synkork.backend.modules.roomMember.enums.RoomMemberStatusEnum;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
 import com.synkork.backend.security.UserPrinciple;
@@ -66,7 +67,8 @@ public class CardService {
                         .orElseThrow(() -> new RuntimeException("User không phải member của room này")));
 
         if (req.getAssigneeIds() != null && !req.getAssigneeIds().isEmpty()) {
-            List<RoomMemberEntity> assignees = roomMemberRepository.findAllById(req.getAssigneeIds());
+            List<RoomMemberEntity> assignees = roomMemberRepository.findByIdInAndRoom_IdAndStatus(
+                    req.getAssigneeIds(), roomId, RoomMemberStatusEnum.ACTIVE);
             card.setAssignees(assignees);
         }
 
@@ -96,7 +98,9 @@ public class CardService {
                     .map(RoomMemberEntity::getId)
                     .collect(Collectors.toSet());
 
-            List<RoomMemberEntity> newAssignees = roomMemberRepository.findAllById(req.getAssigneeIds());
+            UUID roomId = card.getColumn().getSpace().getRoom().getId();
+            List<RoomMemberEntity> newAssignees = roomMemberRepository.findByIdInAndRoom_IdAndStatus(
+                    req.getAssigneeIds(), roomId, RoomMemberStatusEnum.ACTIVE);
 
             // Tìm người mới được assign (có trong new nhưng không có trong old)
             List<RoomMemberEntity> justAssigned = newAssignees.stream()

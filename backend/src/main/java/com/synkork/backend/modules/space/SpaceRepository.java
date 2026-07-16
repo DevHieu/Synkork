@@ -39,7 +39,7 @@ public interface SpaceRepository extends JpaRepository<SpaceEntity, UUID> {
              LEFT JOIN RoomMemberEntity rm ON s.room.id = rm.room.id
              WHERE s.id = :spaceId
              AND (
-                 rm.user.id = :userId
+                (rm.user.id = :userId AND rm.status = 'ACTIVE')
                 OR s.room.owner.id = :userId
             )
             """)

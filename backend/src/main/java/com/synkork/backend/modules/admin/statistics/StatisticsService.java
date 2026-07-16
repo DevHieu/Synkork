@@ -2,6 +2,7 @@ package com.synkork.backend.modules.admin.statistics;
 
 import com.synkork.backend.config.WebSocketEventListener;
 import com.synkork.backend.modules.admin.statistics.dtos.UserStatsResponse;
+import com.synkork.backend.modules.admin.statistics.dtos.UserChartResponse;
 import com.synkork.backend.modules.message.MessageRepository;
 import com.synkork.backend.modules.payment.InvoiceRepository;
 import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
@@ -185,6 +186,16 @@ public class StatisticsService {
                 userRepository.countByRoleAndCurrentPlan(userRole, PlanEnum.TEAM),
                 userRepository.countByRoleAndCurrentPlan(userRole, PlanEnum.BUSINESS)
         );
+    }
+
+    public List<UserChartResponse> getUserChart(PeriodEnum period) {
+        return userRepository.findDailyNewUserCounts(getStart(period), RoleEnum.USER)
+                .stream()
+                .map(row -> new UserChartResponse(
+                        (LocalDate) row[0],
+                        ((Number) row[1]).longValue()
+                ))
+                .toList();
     }
 
     public SubscriptionDashboardResponse getSubscriptionDashboardData() {

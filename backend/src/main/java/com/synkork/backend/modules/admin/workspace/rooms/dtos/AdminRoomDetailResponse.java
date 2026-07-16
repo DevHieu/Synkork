@@ -2,6 +2,7 @@ package com.synkork.backend.modules.admin.workspace.rooms.dtos;
 
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
+import com.synkork.backend.modules.roomMember.enums.RoomMemberStatusEnum;
 import com.synkork.backend.modules.space.SpaceEntity;
 import com.synkork.backend.modules.user.UserEntity;
 import lombok.Getter;
@@ -54,6 +55,7 @@ public class AdminRoomDetailResponse {
         private String email;
         private String avatarUrl;
         private String role;
+        private String status;
 
         public MemberDto(RoomMemberEntity member) {
             this.id = member.getUser().getId();
@@ -61,6 +63,7 @@ public class AdminRoomDetailResponse {
             this.email = member.getUser().getEmail();
             this.avatarUrl = member.getUser().getAvatarUrl();
             this.role = member.getRole() != null ? member.getRole().name() : null;
+            this.status = member.getStatus() != null ? member.getStatus().name() : null;
         }
     }
 
@@ -95,7 +98,10 @@ public class AdminRoomDetailResponse {
         }
 
         this.members = room.getRoomMembers() != null
-                ? room.getRoomMembers().stream().map(MemberDto::new).toList()
+                ? room.getRoomMembers().stream()
+                        .filter(member -> member.getStatus() == RoomMemberStatusEnum.ACTIVE)
+                        .map(MemberDto::new)
+                        .toList()
                 : List.of();
         this.memberCount = this.members.size();
 

@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
+import com.synkork.backend.modules.roomMember.enums.RoomMemberStatusEnum;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,6 +18,7 @@ public class RoomMemberDto {
     private String username;
     private String avatarUrl;
     private RoomMemberRoleEnum role;
+    private RoomMemberStatusEnum status;
     private boolean muted;
     private boolean deafen;
     private LocalDateTime chatDisableUntil;
@@ -29,6 +31,7 @@ public class RoomMemberDto {
             this.avatarUrl = entity.getUser().getAvatarUrl();
         }
         this.role = entity.getRole();
+        this.status = entity.getStatus();
         this.muted = entity.isMuted();
         this.deafen = entity.isDeafen();
         this.chatDisableUntil = entity.getChatDisableUntil();

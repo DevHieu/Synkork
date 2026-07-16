@@ -3,6 +3,7 @@ package com.synkork.backend.common.utils;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
 import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
+import com.synkork.backend.modules.roomMember.enums.RoomMemberStatusEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +23,9 @@ public class PermissionService {
 
     // Overload 1: Đã có entity
     public static void requirePermission(RoomMemberEntity member, RoomMemberRoleEnum... allowedRoles) {
+        if (member.getStatus() != RoomMemberStatusEnum.ACTIVE) {
+            throw new RuntimeException("Không có quyền");
+        }
         boolean hasPermission = Arrays.stream(allowedRoles)
                 .anyMatch(role -> role == member.getRole());
         if (!hasPermission) {

@@ -3,6 +3,7 @@ package com.synkork.backend.modules.admin.workspace.rooms.dtos;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.enums.RoomStatusEnum;
 import com.synkork.backend.modules.room.enums.RoomTypeEnum;
+import com.synkork.backend.modules.roomMember.enums.RoomMemberStatusEnum;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -32,7 +33,11 @@ public class AdminRoomResponse {
         this.description = room.getDescription();
         this.type = room.getType();
         this.status = room.getStatus();
-        this.memberCount = room.getRoomMembers() != null ? room.getRoomMembers().size() : 0;
+        this.memberCount = room.getRoomMembers() != null
+                ? (int) room.getRoomMembers().stream()
+                        .filter(member -> member.getStatus() == RoomMemberStatusEnum.ACTIVE)
+                        .count()
+                : 0;
         this.inviteCode = room.getInviteCode();
         this.createdAt = room.getCreatedAt();
 

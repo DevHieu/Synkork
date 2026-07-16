@@ -35,6 +35,13 @@ public class StatisticsController {
         return ResponseEntity.ok(statisticsService.getUserStatsData());
     }
 
+    @GetMapping("/dashboard/users/chart")
+    public ResponseEntity<List<UserChartResponse>> getUserChart(
+            @RequestParam(defaultValue = "WEEKLY") PeriodEnum period
+    ) {
+        return ResponseEntity.ok(statisticsService.getUserChart(period));
+    }
+
     @GetMapping("/dashboard/subscriptions/stats")
     public ResponseEntity<SubscriptionDashboardResponse> getSubscriptionStats() {
         return ResponseEntity.ok(statisticsService.getSubscriptionDashboardData());

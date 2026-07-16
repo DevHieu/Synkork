@@ -13,6 +13,20 @@ export interface User {
   avatarUrl: string | null
   provider: string
   createdAt: string
+  updatedAt?: string
+  warning?: number
+  rooms?: UserRoom[]
+}
+
+export interface UserRoom {
+  membershipId: string
+  roomId: string
+  name: string | null
+  type: 'GROUP' | 'DM' | 'PERSONAL'
+  roomStatus: string
+  role: string
+  memberStatus: 'ACTIVE' | 'KICKED'
+  joinedAt: string
 }
 
 export interface UserParams {

@@ -19,6 +19,11 @@ export const dashboardService = {
     return res.data
   },
 
+  async getUserChartData(period: 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY') {
+    const res = await axiosClient.get(`/api/manage/dashboard/users/chart?period=${period}`)
+    return res.data
+  },
+
   async getRoomStatsData() {
     const res = await axiosClient.get('/api/manage/dashboard/rooms/stats')
     return res.data.data

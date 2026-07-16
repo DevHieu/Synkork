@@ -8,6 +8,7 @@ import com.synkork.backend.common.utils.uuid.UuidV7Annotation;
 import com.synkork.backend.modules.message.MessageEntity;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
+import com.synkork.backend.modules.roomMember.enums.RoomMemberStatusEnum;
 import com.synkork.backend.modules.user.UserEntity;
 
 import jakarta.persistence.*;
@@ -44,6 +45,11 @@ public class RoomMemberEntity {
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private RoomMemberRoleEnum role = RoomMemberRoleEnum.MEMBER;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "varchar(20) default 'ACTIVE'")
+    @Builder.Default
+    private RoomMemberStatusEnum status = RoomMemberStatusEnum.ACTIVE;
 
     @Builder.Default
     private LocalDateTime joinedAt =  LocalDateTime.now();

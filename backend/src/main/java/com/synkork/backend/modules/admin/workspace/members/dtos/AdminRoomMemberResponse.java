@@ -2,6 +2,7 @@ package com.synkork.backend.modules.admin.workspace.members.dtos;
 
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
+import com.synkork.backend.modules.roomMember.enums.RoomMemberStatusEnum;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -14,6 +15,7 @@ public class AdminRoomMemberResponse {
     private String username;
     private String avatar;
     private RoomMemberRoleEnum role;
+    private RoomMemberStatusEnum status;
     private LocalDateTime joinedAt;
 
     public AdminRoomMemberResponse(RoomMemberEntity member) {
@@ -22,6 +24,7 @@ public class AdminRoomMemberResponse {
         this.username = member.getUser().getUsername();
         this.avatar = member.getUser().getAvatarUrl();
         this.role = member.getRole();
+        this.status = member.getStatus();
         this.joinedAt = member.getJoinedAt();
     }
 }

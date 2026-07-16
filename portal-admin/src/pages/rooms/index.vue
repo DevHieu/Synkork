@@ -2,6 +2,7 @@
 import { Eye, Lock, LoaderIcon, Pencil, PlusIcon, RefreshCwIcon, Search, Unlock } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
 import { computed, h, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import type { TableColumn } from '@/components/base-table.vue'
 
@@ -48,6 +49,8 @@ import type {
 import RoomDetailDialog from './components/RoomDetailDialog.vue'
 import { roomService } from './service/roomService'
 
+const route = useRoute()
+
 // ===================== Table & filters =====================
 const selectedRoom = ref<Room | null>(null)
 const isDetailOpen = ref(false)
@@ -59,7 +62,7 @@ const totalCount = ref(0)
 const currentPage = ref(1)
 const pageSize = 20
 
-const searchKeyword = ref('')
+const searchKeyword = ref(typeof route.query.keyword === 'string' ? route.query.keyword : '')
 const selectedStatus = ref<string>('ALL')
 
 const debounceSearchKeyword = refDebounced(searchKeyword, 500)

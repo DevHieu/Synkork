@@ -36,8 +36,19 @@ public class AdminUserController {
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<AdminUserResponse> getUserById(@PathVariable UUID id) {
+    public ApiResponse<AdminUserDetailResponse> getUserById(@PathVariable UUID id) {
         return ApiResponse.success("Get user successfully", adminUserService.getUserById(id));
+    }
+
+    @PatchMapping("/{userId}/rooms/{membershipId}/kick")
+    public ApiResponse<AdminUserRoomResponse> kickUserFromRoom(
+            @PathVariable UUID userId,
+            @PathVariable UUID membershipId
+    ) {
+        return ApiResponse.success(
+                "Kick user from room successfully",
+                adminUserService.kickUserFromRoom(userId, membershipId)
+        );
     }
 
     @PostMapping

@@ -17,7 +17,7 @@ import java.util.UUID;
 public interface RoomRepository extends JpaRepository<RoomEntity, UUID> {
     List<RoomEntity> findAllByOwnerId(UUID userId);
 
-    @Query("SELECT r FROM RoomEntity r JOIN r.roomMembers roomMembers WHERE roomMembers.user.id = :userId AND r.type = 'GROUP' AND r.status IN ('OPEN', 'PENDING_REMOVAL') ORDER BY roomMembers.joinedAt DESC")
+    @Query("SELECT r FROM RoomEntity r JOIN r.roomMembers roomMembers WHERE roomMembers.user.id = :userId AND roomMembers.status = 'ACTIVE' AND r.type = 'GROUP' AND r.status IN ('OPEN', 'PENDING_REMOVAL') ORDER BY roomMembers.joinedAt DESC")
     List<RoomEntity> findRoomMembersJoined(@Param("userId") UUID userId);
 
     Optional<RoomEntity> findByInviteCode(String inviteCode);
