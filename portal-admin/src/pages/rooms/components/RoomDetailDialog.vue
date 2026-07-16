@@ -6,7 +6,9 @@ import {
   Layers,
   Users,
 } from '@lucide/vue'
+import { refDebounced } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 
 import { Button as UiButton } from '@/components/ui/button'
 import {
@@ -16,10 +18,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Input as UiInput } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Textarea as UiTextarea } from '@/components/ui/textarea'
 import { formatTimestamp } from '@/utils/date.utils'
 
-import type { RoomDetail } from '../types/RoomTypes'
+import type { RoomDetail, RoomFormPayload, UserOption } from '../types/RoomTypes'
+
 import { roomService } from '../service/roomService'
+import MemberDialog from './MemberDialog.vue'
+import SpacesDialog from './SpacesDialog.vue'
 
 const props = defineProps<{
   roomId: string
@@ -28,8 +42,10 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
-  'edit': [room: RoomDetail]
+  'updated': []
 }>()
+
+const router = useRouter()
 
 const isOpen = computed({
   get: () => props.open,
@@ -43,6 +59,111 @@ const loadError = ref('')
 const isMembersOpen = ref(false)
 const isSpacesOpen = ref(false)
 
+const isPendingRemoval = computed(() => room.value?.status === 'PENDING_REMOVAL')
+
+const form = ref<RoomFormPayload>({
+  name: '',
+  description: '',
+  status: 'OPEN',
+  ownerId: undefined,
+})
+
+const ownerKeyword = ref('')
+const ownerOptions = ref<UserOption[]>([])
+const selectedOwner = ref<UserOption | null>(null)
+const isSearchingOwner = ref(false)
+const showOwnerDropdown = ref(false)
+const debouncedOwnerKeyword = refDebounced(ownerKeyword, 400)
+
+const isSubmitting = ref(false)
+const formError = ref('')
+
+watch(debouncedOwnerKeyword, async (keyword) => {
+  if (!keyword.trim()) {
+    ownerOptions.value = []
+    return
+  }
+
+  isSearchingOwner.value = true
+  try {
+    ownerOptions.value = await roomService.searchOwners(keyword.trim())
+  }
+  finally {
+    isSearchingOwner.value = false
+  }
+})
+
+function pickOwner(user: UserOption) {
+  selectedOwner.value = user
+  form.value.ownerId = user.id
+  ownerKeyword.value = ''
+  ownerOptions.value = []
+  showOwnerDropdown.value = false
+}
+
+function clearOwner() {
+  selectedOwner.value = null
+  form.value.ownerId = undefined
+}
+
+function syncFormFromRoom() {
+  if (!room.value)
+    return
+
+  form.value = {
+    name: room.value.name,
+    description: room.value.description || '',
+    status: room.value.status === 'PENDING_REMOVAL' ? 'OPEN' : room.value.status,
+    ownerId: room.value.ownerId,
+  }
+
+  selectedOwner.value = room.value.owner
+    ? {
+        id: room.value.owner.id,
+        username: room.value.owner.username,
+        email: room.value.owner.email,
+      }
+    : null
+
+  ownerKeyword.value = ''
+  ownerOptions.value = []
+  showOwnerDropdown.value = false
+  formError.value = ''
+}
+
+async function handleSubmitForm() {
+  if (!room.value)
+    return
+
+  formError.value = ''
+
+  if (!form.value.name.trim()) {
+    formError.value = 'Tên room không được để trống'
+    return
+  }
+
+  isSubmitting.value = true
+
+  try {
+    // Room đang Chờ xóa: không cho phép đổi status qua API
+    const payload = isPendingRemoval.value
+      ? { ...form.value, status: undefined as any }
+      : form.value
+
+    await roomService.updateRoom(room.value.id, payload)
+
+    room.value = await roomService.getRoomDetail(room.value.id)
+    syncFormFromRoom()
+    emit('updated')
+  }
+  catch (error: any) {
+    formError.value = error?.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại'
+  }
+  finally {
+    isSubmitting.value = false
+  }
+}
+
 watch(() => props.open, async (opened) => {
   if (!opened || !props.roomId)
     return
@@ -53,6 +174,7 @@ watch(() => props.open, async (opened) => {
 
   try {
     room.value = await roomService.getRoomDetail(props.roomId)
+    syncFormFromRoom()
   }
   catch (error) {
     console.error('Lỗi khi tải chi tiết room:', error)
@@ -63,11 +185,8 @@ watch(() => props.open, async (opened) => {
   }
 }, { immediate: true })
 
-function handleEdit() {
-  if (room.value) {
-    emit('edit', room.value)
-    isOpen.value = false
-  }
+function showReportDetail(userEmail: string) {
+  router.push(`/report?keyword=${userEmail}`)
 }
 </script>
 
@@ -133,47 +252,83 @@ function handleEdit() {
             <span
               class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold"
               :class="room.status === 'OPEN'
-                ? 'border-emerald-300 bg-emerald-100/50 text-emerald-700'
-                : 'border-neutral-300 bg-neutral-200/50 text-neutral-700'"
+                ? 'border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+                : room.status === 'LOCKED'
+                  ? 'border-rose-200 bg-rose-100 text-rose-800 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-300'
+                  : 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300'"
             >
               {{ room.status }}
             </span>
           </div>
 
-          <!-- Room info -->
+          <!-- Room info (luôn chỉnh sửa được) -->
           <div>
             <p class="mb-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
               Thông tin Room
             </p>
 
             <div class="grid grid-cols-2 gap-2.5">
-              <div class="rounded-lg border border-border bg-muted/40 px-3 py-2.5">
+              <!-- Tên Room -->
+              <div class="col-span-2 rounded-lg border border-border bg-muted/40 px-3 py-2.5">
                 <p class="mb-1 text-[11px] text-muted-foreground">
                   Tên Room
                 </p>
-                <p class="text-[13px] font-medium">
-                  {{ room.type === 'DM' ? 'Tin nhắn trực tiếp' : room.name }}
+                <UiInput
+                  v-model="form.name"
+                  class="h-8 text-[13px]"
+                  placeholder="VD: Team Marketing"
+                />
+              </div>
+
+              <!-- Trạng thái -->
+              <div class="rounded-lg border border-border bg-muted/40 px-3 py-2.5">
+                <p class="mb-1 text-[11px] text-muted-foreground">
+                  Trạng thái
+                </p>
+                <Select v-model="form.status" :disabled="isPendingRemoval">
+                  <SelectTrigger class="h-8 w-full text-[13px]">
+                    <SelectValue placeholder="Trạng thái" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="OPEN">
+                      Đang mở
+                    </SelectItem>
+                    <SelectItem value="LOCKED">
+                      Đã khoá
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p v-if="isPendingRemoval" class="mt-1 text-[11px] text-amber-600">
+                  Room đang Chờ xóa — không thể đổi trạng thái.
                 </p>
               </div>
 
               <div class="rounded-lg border border-border bg-muted/40 px-3 py-2.5">
                 <p class="mb-1 text-[11px] text-muted-foreground">
-                  Thành viên
+                  Số lần bị tố cáo
                 </p>
-                <p class="text-[13px] font-medium">
-                  {{ room.memberCount }}
-                </p>
+                <div class="h-8 text-[13px] font-medium flex items-center justify-between">
+                  {{ room.warning }}
+                  <UiButton v-if="room.warning > 0" size="sm" variant="outline" @click="showReportDetail(room.name)">
+                    Chi tiết
+                  </UiButton>
+                </div>
               </div>
 
+              <!-- Mô tả -->
               <div class="col-span-2 rounded-lg border border-border bg-muted/40 px-3 py-2.5">
                 <p class="mb-1 text-[11px] text-muted-foreground">
                   Mô tả
                 </p>
-                <p class="text-[13px]">
-                  {{ room.description || '—' }}
-                </p>
+                <UiTextarea
+                  v-model="form.description"
+                  rows="3"
+                  class="text-[13px]"
+                  placeholder="Mô tả ngắn về room này..."
+                />
               </div>
 
+              <!-- Mã mời -->
               <div class="col-span-2 rounded-lg border border-border bg-muted/40 px-3 py-2.5">
                 <div class="flex items-center gap-2">
                   <KeyRound class="h-4 w-4 text-muted-foreground" />
@@ -188,26 +343,62 @@ function handleEdit() {
 
           <div class="border-t border-border" />
 
-          <!-- Owner -->
-          <div v-if="room.owner">
+          <!-- Owner (luôn chỉnh sửa được) -->
+          <div>
             <p class="mb-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
               Chủ phòng
             </p>
 
-            <div class="rounded-lg border border-border bg-muted/40 p-3">
+            <div
+              v-if="selectedOwner"
+              class="flex items-center justify-between rounded-lg border border-border bg-muted/40 px-3 py-2"
+            >
               <div class="flex items-center gap-3">
                 <Crown class="h-4 w-4 text-amber-500" />
                 <div>
                   <p class="text-[13px] font-medium">
-                    {{ room.owner.username }}
+                    {{ selectedOwner.username }}
                   </p>
-                  <p class="text-[12px] text-muted-foreground">
-                    {{ room.owner.email }}
+                  <p v-if="selectedOwner.email" class="text-[11px] text-muted-foreground">
+                    {{ selectedOwner.email }}
                   </p>
                 </div>
               </div>
+              <UiButton variant="ghost" size="sm" @click="clearOwner">
+                Đổi
+              </UiButton>
+            </div>
+
+            <div v-else class="relative">
+              <UiInput
+                v-model="ownerKeyword"
+                placeholder="Tìm theo username hoặc email..."
+                @focus="showOwnerDropdown = true"
+              />
+
+              <div
+                v-if="showOwnerDropdown && (ownerOptions.length || isSearchingOwner)"
+                class="absolute z-10 mt-1 w-full rounded-lg border border-border bg-background shadow-md"
+              >
+                <p v-if="isSearchingOwner" class="px-3 py-2 text-[12px] text-muted-foreground">
+                  Đang tìm...
+                </p>
+
+                <button
+                  v-for="user in ownerOptions"
+                  :key="user.id"
+                  type="button"
+                  class="flex w-full flex-col items-start px-3 py-2 text-left hover:bg-muted/60"
+                  @click="pickOwner(user)"
+                >
+                  <span class="text-[13px] font-medium">{{ user.username }}</span>
+                  <span class="text-[11px] text-muted-foreground">{{ user.email }}</span>
+                </button>
+              </div>
             </div>
           </div>
+
+          <div class="border-t border-border" />
 
           <!-- Members: count + button -->
           <div>
@@ -276,24 +467,19 @@ function handleEdit() {
               </div>
             </div>
           </div>
+
+          <p v-if="formError" class="text-[12px] text-red-500">
+            {{ formError }}
+          </p>
         </div>
 
         <!-- Footer -->
         <div class="flex justify-end gap-2 border-t border-border px-6 py-4">
-          <UiButton
-            variant="outline"
-            size="sm"
-            @click="isOpen = false"
-          >
+          <UiButton variant="outline" size="sm" :disabled="isSubmitting" @click="isOpen = false">
             Đóng
           </UiButton>
-
-          <UiButton
-            v-if="room.type === 'GROUP'"
-            size="sm"
-            @click="handleEdit"
-          >
-            Sửa Room
+          <UiButton size="sm" :disabled="isSubmitting" @click="handleSubmitForm">
+            {{ isSubmitting ? 'Đang lưu...' : 'Lưu' }}
           </UiButton>
         </div>
       </template>
@@ -301,87 +487,13 @@ function handleEdit() {
   </Dialog>
 
   <!-- Members sub-dialog -->
-  <Dialog v-model:open="isMembersOpen">
-    <DialogContent class="max-w-[480px] gap-0 overflow-hidden p-0">
-      <DialogHeader class="border-b border-border px-6 py-4">
-        <DialogTitle class="text-[15px] font-semibold">
-          Danh sách thành viên ({{ room?.members?.length ?? 0 }})
-        </DialogTitle>
-        <DialogDescription class="sr-only">
-          Danh sách thành viên trong room
-        </DialogDescription>
-      </DialogHeader>
+  <MemberDialog
+    v-model:open="isMembersOpen"
+    :members="room?.members ?? []"
+  />
 
-      <div class="flex max-h-[60vh] flex-col gap-2 overflow-y-auto px-6 py-4">
-        <div
-          v-for="member in room?.members"
-          :key="member.id"
-          class="rounded-lg border border-border bg-muted/40 px-3 py-2.5"
-        >
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-[13px] font-medium">
-                {{ member.username }}
-              </p>
-              <p class="text-[12px] text-muted-foreground">
-                {{ member.email }}
-              </p>
-            </div>
-            <span class="text-[11px] font-medium text-primary">
-              {{ member.role }}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex justify-end border-t border-border px-6 py-3">
-        <UiButton
-          variant="outline"
-          size="sm"
-          @click="isMembersOpen = false"
-        >
-          Đóng
-        </UiButton>
-      </div>
-    </DialogContent>
-  </Dialog>
-
-  <!-- Spaces sub-dialog -->
-  <Dialog v-model:open="isSpacesOpen">
-    <DialogContent class="max-w-[480px] gap-0 overflow-hidden p-0">
-      <DialogHeader class="border-b border-border px-6 py-4">
-        <DialogTitle class="text-[15px] font-semibold">
-          Danh sách Spaces ({{ room?.spaces?.length ?? 0 }})
-        </DialogTitle>
-        <DialogDescription class="sr-only">
-          Danh sách spaces trong room
-        </DialogDescription>
-      </DialogHeader>
-
-      <div class="flex max-h-[60vh] flex-wrap gap-2 overflow-y-auto px-6 py-4">
-        <div
-          v-for="space in room?.spaces"
-          :key="space.id"
-          class="rounded-lg border border-border bg-muted/40 px-3 py-2"
-        >
-          <p class="text-[13px] font-medium">
-            {{ space.name }}
-          </p>
-          <p class="text-[11px] text-muted-foreground">
-            {{ space.type }}
-          </p>
-        </div>
-      </div>
-
-      <div class="flex justify-end border-t border-border px-6 py-3">
-        <UiButton
-          variant="outline"
-          size="sm"
-          @click="isSpacesOpen = false"
-        >
-          Đóng
-        </UiButton>
-      </div>
-    </DialogContent>
-  </Dialog>
+  <SpacesDialog
+    v-model:open="isSpacesOpen"
+    :spaces="room?.spaces ?? []"
+  />
 </template>

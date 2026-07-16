@@ -30,7 +30,7 @@ const description = computed(() => props.account
 
 <template>
   <div>
-    <ModalHeader>
+    <ModalHeader class="border-b border-border bg-muted/30 px-6 py-5">
       <ModalTitle>{{ title }}</ModalTitle>
       <ModalDescription>{{ description }}</ModalDescription>
     </ModalHeader>

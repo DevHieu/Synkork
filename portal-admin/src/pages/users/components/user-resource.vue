@@ -94,9 +94,13 @@ function onSaved(user: User) {
 
 <template>
   <div>
-    <ModalHeader class="border-b px-6 py-5">
-      <ModalTitle>{{ title }}</ModalTitle>
-      <ModalDescription>{{ description }}</ModalDescription>
+    <ModalHeader class="border-b border-border bg-muted/30 px-6 py-5">
+      <ModalTitle>
+        {{ title }}
+      </ModalTitle>
+      <ModalDescription>
+        {{ description }}
+      </ModalDescription>
     </ModalHeader>
 
     <div class="grid max-h-[75vh] gap-6 overflow-y-auto p-6 md:grid-cols-[minmax(0,1fr)_minmax(280px,0.9fr)]">

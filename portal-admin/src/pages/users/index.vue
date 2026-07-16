@@ -1,14 +1,12 @@
 <script setup lang="ts">
-import { Eye, LoaderIcon, Lock, ReceiptText, Search, Unlock } from '@lucide/vue'
+import { Eye, LoaderIcon, Search, Trash2 } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
 import { computed, h, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { toast } from 'vue-sonner'
 
 import type { TableColumn } from '@/components/base-table.vue'
 
 import BaseTable from '@/components/base-table.vue'
-import ConfirmDialog from '@/components/confirm-dialog.vue'
 import DateRangePicker from '@/components/date-range-picker.vue'
 import { BasicPage } from '@/components/global-layout'
 import Pagination from '@/components/pagination.vue'
@@ -24,6 +22,9 @@ import type { User, UserParams, UserPlan, UserStatus } from './types/userTypes'
 import UserCreate from './components/user-create.vue'
 import UserResource from './components/user-resource.vue'
 import { userService } from './services/userService'
+
+const route = useRoute()
+const keywordParam = (route.query.keyword as string) ?? ''
 
 const route = useRoute()
 const router = useRouter()
@@ -139,44 +140,9 @@ function handleViewDetail(user: User) {
   showEditModal.value = true
 }
 
-function handleViewSubscriptions(user: User) {
-  router.push({ path: '/subscriptions', query: { keyword: user.email } })
-}
-
-function handleOpenUserAction(user: User) {
-  actionTarget.value = user
-  actionReason.value = ''
-  showActionDialog.value = true
-}
-
-async function handleConfirmUserAction(reason: string) {
-  if (!actionTarget.value)
-    return
-
-  loading.value = true
-  try {
-    if (isUserActive(actionTarget.value)) {
-      await userService.delete(actionTarget.value.id, reason)
-      toast.success(`Đã khóa người dùng: ${actionTarget.value.username}`)
-    }
-    else {
-      await userService.updateStatus(actionTarget.value.id, 'ACTIVE')
-      toast.success(`Đã mở khóa người dùng: ${actionTarget.value.username}`)
-    }
-    showActionDialog.value = false
-    fetchData()
-  }
-  catch (err: any) {
-    const message = err?.response?.data?.message
-      || err?.response?.data?.error
-      || (typeof err?.response?.data === 'string' ? err.response.data : null)
-      || err?.message
-      || 'Cập nhật tài khoản thất bại'
-    toast.error(message)
-  }
-  finally {
-    loading.value = false
-  }
+function handleDelete(user: User) {
+  deleteTarget.value = user
+  showDeleteModal.value = true
 }
 
 function onUserSaved() {
@@ -261,26 +227,13 @@ const columns = computed<TableColumn<User>[]>(() => [
         size: 'sm',
         class: 'h-8 gap-1 px-2 text-xs',
         onClick: () => handleViewDetail(row),
-      }, () => [h(Eye, { class: 'h-3.5 w-3.5' }), 'Xem']),
+      }, () => [h(Eye, { class: 'h-3.5 w-3.5' }), 'Chi tiết']),
       h(UiButton, {
         variant: 'outline',
         size: 'sm',
-        class: 'h-8 gap-1 px-2 text-xs',
-        onClick: () => handleViewSubscriptions(row),
-      }, () => [h(ReceiptText, { class: 'h-3.5 w-3.5' }), 'Lịch sử mua gói']),
-      isUserActive(row)
-        ? h(UiButton, {
-            variant: 'outline',
-            size: 'sm',
-            class: 'h-8 gap-1 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 hover:border-destructive/30',
-            onClick: () => handleOpenUserAction(row),
-          }, () => [h(Lock, { class: 'h-3.5 w-3.5' }), 'Khóa'])
-        : h(UiButton, {
-            variant: 'outline',
-            size: 'sm',
-            class: 'h-8 gap-1 px-2 text-xs text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-900/20',
-            onClick: () => handleOpenUserAction(row),
-          }, () => [h(Unlock, { class: 'h-3.5 w-3.5' }), 'Mở']),
+        class: 'h-8 gap-1 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 hover:border-destructive/30',
+        onClick: () => handleDelete(row),
+      }, () => [h(Trash2, { class: 'h-3.5 w-3.5' }), 'Khóa']),
     ]),
   },
 ])
@@ -365,7 +318,7 @@ const isLockingUser = computed(() => isUserActive(actionTarget.value))
 
   <!-- Edit Modal -->
   <Modal v-model:open="showEditModal">
-    <ModalContent class="overflow-hidden p-0 sm:max-w-5xl">
+    <ModalContent>
       <UserResource
         :user="editTarget ?? undefined"
         @close="showEditModal = false"
@@ -374,32 +327,14 @@ const isLockingUser = computed(() => isUserActive(actionTarget.value))
     </ModalContent>
   </Modal>
 
-  <ConfirmDialog
-    v-model:open="showActionDialog"
-    v-model:reason="actionReason"
-    :destructive="isLockingUser"
-    :require-reason="isLockingUser"
-    :close-on-confirm="false"
-    cancel-button-text="Hủy"
-    :confirm-button-text="isLockingUser ? 'Khóa user' : 'Mở khóa'"
-    reason-label="Lý do khóa/xóa user"
-    reason-placeholder="Nhập lý do để gửi mail cho user"
-    reason-error="Vui lòng nhập lý do khóa tài khoản"
-    :is-loading="loading"
-    @confirm="handleConfirmUserAction"
-  >
-    <template #title>
-      {{ isLockingUser ? `Khóa tài khoản: ${actionTarget?.username}?` : `Mở khóa tài khoản: ${actionTarget?.username}?` }}
-    </template>
-
-    <template #description>
-      <p>
-        {{
-          isLockingUser
-            ? 'User sẽ được chuyển sang INACTIVE, nhận email thông báo lý do, và membership trong các room sẽ chuyển sang KICKED.'
-            : 'User sẽ được chuyển về ACTIVE và có thể sử dụng hệ thống trở lại.'
-        }}
-      </p>
-    </template>
-  </ConfirmDialog>
+  <!-- Modal khóa user -->
+  <Modal v-model:open="showDeleteModal">
+    <ModalContent>
+      <UserDelete
+        v-if="deleteTarget"
+        :user="deleteTarget"
+        @remove="onUserDeleted"
+      />
+    </ModalContent>
+  </Modal>
 </template>

@@ -4,7 +4,7 @@ export interface Invoice {
   paidAt?: string | null
   createdAt: string
   updatedAt?: string | null
-  plan?: string | null
+  plan: string
   status: string
   transactionId?: string | null
   paymentMethod?: string | null

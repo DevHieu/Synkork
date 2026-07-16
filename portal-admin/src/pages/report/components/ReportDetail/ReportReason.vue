@@ -20,9 +20,12 @@ defineProps<{
       <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">
         Mô tả
       </p>
-      <p class="text-sm text-foreground leading-relaxed rounded-md bg-muted px-3 py-2">
-        {{ description }}
-      </p>
+      <textarea
+        :value="description"
+        disabled
+        rows="3"
+        class="w-full text-sm text-foreground leading-relaxed rounded-md bg-muted px-3 py-2 resize-none disabled:opacity-100 disabled:cursor-default overflow-y-auto"
+      />
     </div>
   </div>
 </template>

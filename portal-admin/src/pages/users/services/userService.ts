@@ -54,7 +54,7 @@ export const userService = {
     return res.data
   },
 
-  async warnUser(id: string){
+  async warnUser(id: string) {
     const res = await axiosClient.patch(`/api/manage/users/${id}/warn`)
     return res.data
   },
@@ -62,5 +62,6 @@ export const userService = {
   async kickFromRoom(userId: string, membershipId: string) {
     const res = await axiosClient.patch(`/api/manage/users/${userId}/rooms/${membershipId}/kick`)
     return res.data.data
+  },
   },
 }

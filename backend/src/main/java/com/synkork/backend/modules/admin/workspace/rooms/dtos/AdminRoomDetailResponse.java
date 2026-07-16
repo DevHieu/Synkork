@@ -22,6 +22,7 @@ public class AdminRoomDetailResponse {
     private String status;
     private String type;
     private String inviteCode;
+    private int warning;
     private int memberCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -89,6 +90,7 @@ public class AdminRoomDetailResponse {
         this.status = room.getStatus() != null ? room.getStatus().name() : null;
         this.type = room.getType() != null ? room.getType().name() : null;
         this.inviteCode = room.getInviteCode();
+        this.warning = room.getWarning();
         this.createdAt = room.getCreatedAt();
         this.updatedAt = room.getUpdatedAt();
 
