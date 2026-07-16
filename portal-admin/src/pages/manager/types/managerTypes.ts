@@ -15,7 +15,7 @@ export interface ManagerAccount {
 }
 
 export interface ManagerParams {
-  keyword?: string
+  search?: string
   status?: ManagerStatus
   role?: ManagementRole
   page?: number
