@@ -1,6 +1,6 @@
 package com.synkork.backend.modules.admin.subscriptions.dtos;
 
-import com.synkork.backend.modules.payment.InvoiceEntity;
+import com.synkork.backend.modules.payment.entity.InvoiceEntity;
 import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
 import com.synkork.backend.modules.payment.enums.PaymentMethodEnum;
 import com.synkork.backend.modules.user.enums.PlanEnum;

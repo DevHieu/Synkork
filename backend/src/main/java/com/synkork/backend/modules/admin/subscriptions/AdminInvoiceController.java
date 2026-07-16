@@ -5,7 +5,8 @@ import com.synkork.backend.common.response.PageMeta;
 import com.synkork.backend.modules.admin.subscriptions.dtos.AdminInvoiceRequest;
 import com.synkork.backend.modules.admin.subscriptions.dtos.AdminInvoiceResponse;
 import com.synkork.backend.modules.admin.subscriptions.dtos.InvoiceFilterRequest;
-import com.synkork.backend.modules.payment.InvoiceEntity;
+import com.synkork.backend.modules.payment.entity.InvoiceEntity;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;

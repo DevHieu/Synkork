@@ -1,11 +1,13 @@
-package com.synkork.backend.modules.payment;
+package com.synkork.backend.modules.payment.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.synkork.backend.common.utils.EmailService;
+import com.synkork.backend.modules.payment.entity.InvoiceEntity;
 import com.synkork.backend.modules.payment.enums.BillingCycleEnum;
 import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
 import com.synkork.backend.modules.payment.enums.PaymentMethodEnum;
+import com.synkork.backend.modules.payment.repository.InvoiceRepository;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
 import com.synkork.backend.modules.user.UserService;

@@ -1,4 +1,4 @@
-package com.synkork.backend.modules.payment;
+package com.synkork.backend.modules.payment.entity;
 
 import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
 import com.synkork.backend.modules.payment.enums.PaymentMethodEnum;

@@ -2,6 +2,8 @@ package com.synkork.backend.modules.payment;
 
 import com.synkork.backend.modules.payment.dto.PaymentRequest;
 import com.synkork.backend.modules.payment.dto.PaymentResponse;
+import com.synkork.backend.modules.payment.service.PaymentService;
+
 import lombok.RequiredArgsConstructor;
 
 import java.util.Base64;
