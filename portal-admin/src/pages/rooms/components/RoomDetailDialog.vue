@@ -154,6 +154,7 @@ async function handleSubmitForm() {
 
     room.value = await roomService.getRoomDetail(room.value.id)
     syncFormFromRoom()
+    isOpen.value = false
     emit('updated')
   }
   catch (error: any) {

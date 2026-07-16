@@ -219,4 +219,10 @@ public class RoomMemberService {
         roomMemberRepository.removeFromCalendarEventRoomMembers(member.getId());
         roomMemberRepository.delete(member);
     }
+
+    public void deleteMember(UUID userId, UUID roomId) {
+        RoomMemberEntity member = this.getRoomMemberByRoomIdAndUserId(roomId, userId);
+//        member.setStatus()
+//        roomMemberRepository.save(member);
+    }
 }
