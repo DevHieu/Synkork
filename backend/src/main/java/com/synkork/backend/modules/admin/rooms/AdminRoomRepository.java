@@ -1,4 +1,4 @@
-package com.synkork.backend.modules.admin.workspace.rooms;
+package com.synkork.backend.modules.admin.rooms;
 
 import com.synkork.backend.modules.room.RoomEntity;
 import org.springframework.data.jpa.repository.JpaRepository;

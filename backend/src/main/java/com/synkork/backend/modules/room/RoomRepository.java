@@ -2,6 +2,7 @@ package com.synkork.backend.modules.room;
 
 import com.synkork.backend.modules.room.enums.RoomStatusEnum;
 import com.synkork.backend.modules.room.enums.RoomTypeEnum;
+import com.synkork.backend.modules.user.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -19,6 +20,9 @@ public interface RoomRepository extends JpaRepository<RoomEntity, UUID> {
 
     @Query("SELECT r FROM RoomEntity r JOIN r.roomMembers roomMembers WHERE roomMembers.user.id = :userId AND r.type = 'GROUP' AND r.status IN ('OPEN', 'PENDING_REMOVAL') ORDER BY roomMembers.joinedAt DESC")
     List<RoomEntity> findRoomMembersJoined(@Param("userId") UUID userId);
+
+    @Query("SELECT r.owner FROM RoomEntity r WHERE r.id = :roomId")
+    Optional<UserEntity> findOwnerByRoomId(@Param("roomId") UUID roomId);
 
     Optional<RoomEntity> findByInviteCode(String inviteCode);
 

@@ -1,17 +1,16 @@
-package com.synkork.backend.modules.admin.workspace.rooms;
+package com.synkork.backend.modules.admin.rooms;
 
 import com.synkork.backend.common.response.ApiResponse;
 import com.synkork.backend.common.response.PageMeta;
-import com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminRoomDetailResponse;
-import com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminRoomRequest;
-import com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminRoomResponse;
-import com.synkork.backend.modules.admin.workspace.rooms.dtos.RoomFilterRequest;
+import com.synkork.backend.modules.admin.rooms.dtos.*;
 
+import com.synkork.backend.modules.admin.users.dtos.AdminUserResponse;
+import com.synkork.backend.modules.room.RoomEntity;
+import com.synkork.backend.modules.roomMember.RoomMemberService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminUserOptionResponse;
 
 
 import java.util.List;
@@ -23,6 +22,8 @@ public class AdminRoomController {
 
     @Autowired
     private AdminRoomService adminRoomService;
+    @Autowired
+    private RoomMemberService roomMemberService;
 
     @GetMapping
     public ApiResponse<List<AdminRoomResponse>> getRooms(@ModelAttribute RoomFilterRequest filter) {
@@ -39,7 +40,13 @@ public class AdminRoomController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<AdminRoomResponse> createRoom(@RequestBody AdminRoomRequest request) {
-        return ApiResponse.success("Tạo room thành công", adminRoomService.createRoom(request));
+        AdminRoomResponse roomEntity = adminRoomService.createRoom(request);
+        roomMemberService.addRoomMembers(
+                roomEntity.getOwnerId().toString(),
+                roomEntity.getId().toString(),
+                "OWNER"
+        );
+        return ApiResponse.success("Tạo room thành công", roomEntity);
     }
 
     @PutMapping("/{roomId}")
@@ -65,5 +72,15 @@ public class AdminRoomController {
     @PatchMapping("/{roomId}/warn")
     public ApiResponse<AdminRoomResponse> warnRoom(@PathVariable UUID roomId) {
         return ApiResponse.success("Cảnh báo room thành công", adminRoomService.warnRoom(roomId));
+    }
+
+    @GetMapping("/{roomId}/members")
+    public ApiResponse<List<AdminRoomMemberResponse>> getMembers(@PathVariable String roomId) {
+        return ApiResponse.success("Lấy danh sách member thành công", adminRoomService.getRoomMembers(roomId));
+    }
+
+    @GetMapping("/{roomId}/spaces")
+    public ApiResponse<List<AdminRoomSpaceResponse>> getSpaces(@PathVariable String roomId) {
+        return ApiResponse.success("Lấy danh sách space thành công", adminRoomService.getRoomSpaces(roomId));
     }
 }

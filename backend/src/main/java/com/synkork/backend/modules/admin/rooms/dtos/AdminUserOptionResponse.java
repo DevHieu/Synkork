@@ -1,4 +1,4 @@
-package com.synkork.backend.modules.admin.workspace.rooms.dtos;
+package com.synkork.backend.modules.admin.rooms.dtos;
 
 import com.synkork.backend.modules.user.UserEntity;
 import lombok.Data;

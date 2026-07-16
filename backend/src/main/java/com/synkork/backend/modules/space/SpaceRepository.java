@@ -19,10 +19,13 @@ public interface SpaceRepository extends JpaRepository<SpaceEntity, UUID> {
             "FROM SpaceEntity s WHERE s.room.id = :roomId ORDER BY s.createdAt ASC")
     List<SpaceDTO> findAllByRoomIdAsDto(@Param("roomId") UUID roomId);
 
+    long countByRoom_Id(UUID roomId);
+
     long countByRoom_IdAndType(UUID roomId, SpaceTypeEnum type);
 
     void deleteByStatus(SpaceStatusEnum spaceStatusEnum);
 
+    List<SpaceEntity> findByRoomIdOrderByCreatedAtDesc(UUID roomId);
     List<SpaceEntity> findByRoomIdAndTypeOrderByCreatedAtDesc(UUID roomId, SpaceTypeEnum type);
 
     @Modifying

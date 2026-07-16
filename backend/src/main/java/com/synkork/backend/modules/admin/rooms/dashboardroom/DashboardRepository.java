@@ -1,4 +1,4 @@
-package com.synkork.backend.modules.admin.workspace.rooms.dashboardroom;
+package com.synkork.backend.modules.admin.rooms.dashboardroom;
 
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.enums.RoomStatusEnum;

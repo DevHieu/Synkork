@@ -1,4 +1,4 @@
-package com.synkork.backend.modules.admin.workspace.rooms.dashboardroom;
+package com.synkork.backend.modules.admin.rooms.dashboardroom;
 
 import com.synkork.backend.modules.room.enums.RoomStatusEnum;
 import com.synkork.backend.modules.room.enums.RoomTypeEnum;
@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 

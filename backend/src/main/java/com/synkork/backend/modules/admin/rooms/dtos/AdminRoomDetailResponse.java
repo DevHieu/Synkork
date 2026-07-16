@@ -1,4 +1,4 @@
-package com.synkork.backend.modules.admin.workspace.rooms.dtos;
+package com.synkork.backend.modules.admin.rooms.dtos;
 
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
@@ -22,14 +22,13 @@ public class AdminRoomDetailResponse {
     private String type;
     private String inviteCode;
     private int warning;
-    private int memberCount;
+    private long memberCount;
+    private long spaceCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     private UUID ownerId;
     private OwnerDto owner;
-    private List<MemberDto> members;
-    private List<SpaceDto> spaces;
 
     @Getter
     @Setter
@@ -47,39 +46,8 @@ public class AdminRoomDetailResponse {
         }
     }
 
-    @Getter
-    @Setter
-    public static class MemberDto {
-        private UUID id;
-        private String username;
-        private String email;
-        private String avatarUrl;
-        private String role;
 
-        public MemberDto(RoomMemberEntity member) {
-            this.id = member.getUser().getId();
-            this.username = member.getUser().getUsername();
-            this.email = member.getUser().getEmail();
-            this.avatarUrl = member.getUser().getAvatarUrl();
-            this.role = member.getRole() != null ? member.getRole().name() : null;
-        }
-    }
-
-    @Getter
-    @Setter
-    public static class SpaceDto {
-        private UUID id;
-        private String name;
-        private String type;
-
-        public SpaceDto(SpaceEntity space) {
-            this.id = space.getId();
-            this.name = space.getName();
-            this.type = space.getType() != null ? space.getType().name() : null;
-        }
-    }
-
-    public AdminRoomDetailResponse(RoomEntity room) {
+    public AdminRoomDetailResponse(RoomEntity room, UserEntity owner, long memberCount, long spaceCount) {
         this.id = room.getId();
         this.name = room.getName();
         this.avatarUrl = room.getAvatarUrl();
@@ -91,18 +59,12 @@ public class AdminRoomDetailResponse {
         this.createdAt = room.getCreatedAt();
         this.updatedAt = room.getUpdatedAt();
 
-        if (room.getOwner() != null) {
-            this.owner = new OwnerDto(room.getOwner());
-            this.ownerId = room.getOwner().getId();
+        if (owner != null) {
+            this.owner = new OwnerDto(owner);
+            this.ownerId = owner.getId();
         }
 
-        this.members = room.getRoomMembers() != null
-                ? room.getRoomMembers().stream().map(MemberDto::new).toList()
-                : List.of();
-        this.memberCount = this.members.size();
-
-        this.spaces = room.getSpaces() != null
-                ? room.getSpaces().stream().map(SpaceDto::new).toList()
-                : List.of();
+        this.memberCount = memberCount;
+        this.spaceCount = spaceCount;
     }
 }

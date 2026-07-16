@@ -1,8 +1,17 @@
-package com.synkork.backend.modules.admin.workspace.rooms;
+package com.synkork.backend.modules.admin.rooms;
 
 import java.util.List;
 import java.util.UUID;
 
+import com.synkork.backend.common.utils.PlanLimitUtils;
+import com.synkork.backend.modules.room.RoomService;
+import com.synkork.backend.modules.roomMember.RoomMemberEntity;
+import com.synkork.backend.modules.roomMember.RoomMemberRepository;
+import com.synkork.backend.modules.roomMember.RoomMemberService;
+import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
+import com.synkork.backend.modules.space.SpaceEntity;
+import com.synkork.backend.modules.space.SpaceRepository;
+import com.synkork.backend.modules.user.enums.PlanEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
@@ -10,13 +19,13 @@ import org.springframework.stereotype.Service;
 
 import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.common.utils.EmailService;
-import com.synkork.backend.modules.admin.workspace.members.dtos.AdminRoomMemberResponse;
-import com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminRoomDetailResponse;
-import com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminRoomRequest;
-import com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminRoomResponse;
-import com.synkork.backend.modules.admin.workspace.rooms.dtos.AdminUserOptionResponse;
-import com.synkork.backend.modules.admin.workspace.rooms.dtos.RoomFilterRequest;
-import com.synkork.backend.modules.admin.workspace.spaces.dtos.AdminRoomSpaceResponse;
+import com.synkork.backend.modules.admin.rooms.dtos.AdminRoomMemberResponse;
+import com.synkork.backend.modules.admin.rooms.dtos.AdminRoomDetailResponse;
+import com.synkork.backend.modules.admin.rooms.dtos.AdminRoomRequest;
+import com.synkork.backend.modules.admin.rooms.dtos.AdminRoomResponse;
+import com.synkork.backend.modules.admin.rooms.dtos.AdminUserOptionResponse;
+import com.synkork.backend.modules.admin.rooms.dtos.RoomFilterRequest;
+import com.synkork.backend.modules.admin.rooms.dtos.AdminRoomSpaceResponse;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.enums.RoomStatusEnum;
 import com.synkork.backend.modules.room.enums.RoomTypeEnum;
@@ -27,10 +36,19 @@ import com.synkork.backend.modules.user.UserRepository;
 public class AdminRoomService {
 
     @Autowired
-    private AdminRoomRepository roomRepository;
+    private AdminRoomRepository adminRoomRepository;
+
+    @Autowired
+    private RoomService roomService;
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private RoomMemberRepository roomMemberRepository;
+
+    @Autowired
+    private SpaceRepository spaceRepository;
 
     @Autowired
     private EmailService emailService;
@@ -45,24 +63,29 @@ public class AdminRoomService {
                 request.getSize(),
                 Sort.by(Sort.Direction.DESC, "createdAt"));
 
-        return roomRepository.findAll(spec, pageable);
+        return adminRoomRepository.findAll(spec, pageable);
     }
 
     public AdminRoomDetailResponse getRoomDetail(String roomId) {
         RoomEntity room = findRoomOrThrow(roomId);
-        return new AdminRoomDetailResponse(room);
+        UserEntity owner = roomService.findOwnerByRoomId(room.getId());
+
+        long memberCount = roomMemberRepository.countByRoom_Id(room.getId());
+        long spaceCount = spaceRepository.countByRoom_Id(room.getId());
+
+        return new AdminRoomDetailResponse(room, owner, memberCount, spaceCount);
     }
 
     public List<AdminRoomMemberResponse> getRoomMembers(String roomId) {
-        RoomEntity room = findRoomOrThrow(roomId);
-        return room.getRoomMembers().stream()
+        List<RoomMemberEntity> members = roomMemberRepository.findByRoom_Id(UUID.fromString(roomId));
+        return members.stream()
                 .map(AdminRoomMemberResponse::new)
                 .toList();
     }
 
     public List<AdminRoomSpaceResponse> getRoomSpaces(String roomId) {
-        RoomEntity room = findRoomOrThrow(roomId);
-        return room.getSpaces().stream()
+        List<SpaceEntity> spaces = spaceRepository.findByRoomIdOrderByCreatedAtDesc(UUID.fromString(roomId));
+        return spaces.stream()
                 .map(AdminRoomSpaceResponse::new)
                 .toList();
     }
@@ -78,8 +101,6 @@ public class AdminRoomService {
                 .toList();
     }
 
-    // ─── TẠO MỚI ─────────────────────────────────────────────────────────────
-
     public AdminRoomResponse createRoom(AdminRoomRequest request) {
         if (request.name() == null || request.name().isBlank()) {
             throw new IllegalArgumentException("Tên room không được để trống");
@@ -89,13 +110,12 @@ public class AdminRoomService {
             throw new IllegalArgumentException("Không thể đặt trạng thái Pending Removal thủ công");
         }
 
-        UserEntity owner;
-        if (request.ownerId() != null) {
-            owner = userRepository.findById(request.ownerId())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy owner: " + request.ownerId()));
-        } else {
-            owner = userRepository.findById(AuthUtils.getCurrentUserId())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+        UserEntity owner = userRepository.findById(request.ownerId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+
+        // Check xem owner được chọn có quá số lượng phòng theo gói hay không
+        if (!PlanLimitUtils.checkMaxRooms(owner.getCurrentPlan(), owner.getId())) {
+            return null;
         }
 
         RoomEntity room = RoomEntity.builder()
@@ -107,10 +127,8 @@ public class AdminRoomService {
                 .owner(owner)
                 .build();
 
-        return new AdminRoomResponse(roomRepository.save(room));
+        return new AdminRoomResponse(adminRoomRepository.save(room));
     }
-
-    // ─── CẬP NHẬT ────────────────────────────────────────────────────────────
 
     public AdminRoomResponse updateRoom(String roomId, AdminRoomRequest request) {
         RoomEntity room = findRoomOrThrow(roomId);
@@ -124,7 +142,7 @@ public class AdminRoomService {
             if (request.status() != null) {
                 room.setStatus(request.status());
             }
-            AdminRoomResponse saved = new AdminRoomResponse(roomRepository.save(room));
+            AdminRoomResponse saved = new AdminRoomResponse(adminRoomRepository.save(room));
             sendOwnerUpdateEmail(room);
             return saved;
         }
@@ -144,25 +162,29 @@ public class AdminRoomService {
         }
         if (request.ownerId() != null && !request.ownerId().equals(
                 room.getOwner() != null ? room.getOwner().getId() : null)) {
+
             UserEntity newOwner = userRepository.findById(request.ownerId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy owner: " + request.ownerId()));
+
+            // Check xem owner được chọn có quá số lượng phòng theo gói hay không
+            if (!PlanLimitUtils.checkMaxRooms(newOwner.getCurrentPlan(), newOwner.getId())) {
+                return null;
+            }
+
             room.setOwner(newOwner);
         }
 
-        AdminRoomResponse saved = new AdminRoomResponse(roomRepository.save(room));
+        AdminRoomResponse saved = new AdminRoomResponse(adminRoomRepository.save(room));
         sendOwnerUpdateEmail(room);
         return saved;
     }
 
-    // ─── CẢNH BÁO ────────────────────────────────────────────────────────────
-
     public AdminRoomResponse warnRoom(UUID roomId) {
-        RoomEntity room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy room"));
+        RoomEntity room = roomService.findById(roomId);
 
         room.setWarning(room.getWarning() + 1);
 
-        RoomEntity saved = roomRepository.save(room);
+        RoomEntity saved = adminRoomRepository.save(room);
         UserEntity owner = saved.getOwner();
         if (owner != null) {
             emailService.sendWarningEmail(owner.getEmail(), saved.getName(), "phòng của bạn", saved.getWarning());
@@ -170,8 +192,6 @@ public class AdminRoomService {
 
         return new AdminRoomResponse(saved);
     }
-
-    // ─── KHÓA / MỞ KHÓA ──────────────────────────────────────────────────────
 
     public AdminRoomResponse lockRoom(UUID roomId, RoomStatusEnum status) {
         if (status == null) {
@@ -182,8 +202,7 @@ public class AdminRoomService {
             throw new IllegalArgumentException("Không thể đặt trạng thái Pending Removal thủ công");
         }
 
-        RoomEntity room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy room: " + roomId));
+        RoomEntity room = roomService.findById(roomId);
 
         if (room.getStatus() == RoomStatusEnum.PENDING_REMOVAL) {
             throw new RuntimeException("Room đang chờ xóa tự động, không thể khóa/mở khóa");
@@ -200,7 +219,7 @@ public class AdminRoomService {
         }
 
         room.setStatus(status);
-        RoomEntity saved = roomRepository.save(room);
+        RoomEntity saved = adminRoomRepository.save(room);
 
         if (saved.getOwner() != null) {
             if (status == RoomStatusEnum.LOCKED) {
@@ -213,11 +232,8 @@ public class AdminRoomService {
         return new AdminRoomResponse(saved);
     }
 
-    // ─── Private helpers ─────────────────────────────────────────────────────
-
     private RoomEntity findRoomOrThrow(String roomId) {
-        return roomRepository.findById(UUID.fromString(roomId))
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy room: " + roomId));
+        return roomService.findById(UUID.fromString(roomId));
     }
 
     private void sendOwnerUpdateEmail(RoomEntity room) {

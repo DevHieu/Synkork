@@ -76,14 +76,9 @@ public class RoomService {
             UserEntity owner = userRepository.findById(ownerId)
                     .orElseThrow(() -> new RuntimeException("User không tồn tại"));
 
-            PlanEnum plan = owner.getCurrentPlan();
-            int maxRooms = PlanLimitUtils.maxRooms(plan);
-            long currentRooms = roomMemberRepository.countGroupRoomsByUserIdAndRole(
-                    ownerId, RoomMemberRoleEnum.OWNER);
-
-            if (currentRooms >= maxRooms) {
-                throw new RuntimeException(
-                        "Gói " + plan + " chỉ được tạo tối đa " + maxRooms + " room. Vui lòng nâng cấp gói.");
+            // Check xem owner được chọn có quá số lượng phòng theo gói hay không
+            if (!PlanLimitUtils.checkMaxRooms(owner.getCurrentPlan(), owner.getId())) {
+                return null;
             }
         }
 
@@ -231,5 +226,9 @@ public class RoomService {
         messagingTemplate.convertAndSend("/topic/room/" + room.getId() + "/members/joined", dto);
 
         return dto;
+    }
+
+    public UserEntity findOwnerByRoomId(UUID roomId) {
+        return roomRepository.findOwnerByRoomId(roomId).orElseThrow(() -> new RuntimeException("Room owner not found!"));
     }
 }
