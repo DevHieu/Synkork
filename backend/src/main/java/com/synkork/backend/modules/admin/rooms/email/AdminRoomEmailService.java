@@ -176,38 +176,40 @@ public class AdminRoomEmailService {
     }
 
     @Async
-    public void sendRoomLockedEmail(RoomEntity room, UserEntity owner) {
+    public void sendRoomLockedEmail(RoomEntity room, UserEntity owner, String reason) {
         if (owner == null || owner.getEmail() == null || owner.getEmail().isBlank()) {
             return;
         }
 
         String roomName = room.getName() != null ? room.getName() : "Direct Message";
         String subject = "[Synkork] Thông báo khóa phòng " + roomName;
+        String reasonText = (reason != null && !reason.isBlank()) ? reason : "Không có mô tả chi tiết";
 
         String body = """
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;
-                            padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px;">
-                    <h2 style="color: #dc2626;">🔒 Thông báo khóa phòng</h2>
-                    <p style="color: #374151;">
-                        Xin chào <strong>%s</strong>,<br/>
-                        Quản trị viên đã khóa phòng <strong>%s</strong> của bạn do phát hiện vi phạm quy định sử dụng của Synkork.
-                    </p>
-                    <div style="margin: 24px 0; padding: 16px; background: #fef2f2;
-                                border-left: 4px solid #ef4444; border-radius: 8px;">
-                        <p style="margin: 0; color: #991b1b; line-height: 1.6;">
-                            📂 <strong>Phòng bị khóa:</strong> %s<br/>
-                            ⚠️ <strong>Trạng thái:</strong> Tạm thời bị khóa (LOCKED)
-                        </p>
-                    </div>
-                    <p style="color: #374151;">
-                        Mọi hoạt động truy cập và tương tác trong phòng sẽ bị tạm dừng. Nếu bạn cho rằng đây là một sự nhầm lẫn, vui lòng phản hồi hoặc liên hệ hỗ trợ.
-                    </p>
-                    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0 16px;"/>
-                    <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">
-                        Đây là email tự động từ Synkork — vui lòng không reply.
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;
+                        padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px;">
+                <h2 style="color: #dc2626;">🔒 Thông báo khóa phòng</h2>
+                <p style="color: #374151;">
+                    Xin chào <strong>%s</strong>,<br/>
+                    Quản trị viên đã khóa phòng <strong>%s</strong> của bạn do phát hiện vi phạm quy định sử dụng của Synkork.
+                </p>
+                <div style="margin: 24px 0; padding: 16px; background: #fef2f2;
+                            border-left: 4px solid #ef4444; border-radius: 8px;">
+                    <p style="margin: 0; color: #991b1b; line-height: 1.6;">
+                        📂 <strong>Phòng bị khóa:</strong> %s<br/>
+                        ⚠️ <strong>Trạng thái:</strong> Tạm thời bị khóa (LOCKED)<br/>
+                        📝 <strong>Lý do:</strong> %s
                     </p>
                 </div>
-                """.formatted(owner.getUsername(), roomName, roomName);
+                <p style="color: #374151;">
+                    Mọi hoạt động truy cập và tương tác trong phòng sẽ bị tạm dừng. Nếu bạn cho rằng đây là một sự nhầm lẫn, vui lòng phản hồi hoặc liên hệ hỗ trợ.
+                </p>
+                <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0 16px;"/>
+                <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">
+                    Đây là email tự động từ Synkork — vui lòng không reply.
+                </p>
+            </div>
+            """.formatted(owner.getUsername(), roomName, roomName, reasonText);
 
         emailService.send(owner.getEmail(), subject, body);
     }

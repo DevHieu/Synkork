@@ -259,13 +259,6 @@ function clearFilters() {
     description="Quản lý các tài khoản quản lý và quản trị viên trong hệ thống"
     sticky
   >
-    <template #actions>
-      <UiButton @click="openCreateModal">
-        <Plus />
-        Tạo tài khoản
-      </UiButton>
-    </template>
-
     <div class="mb-4 flex flex-wrap items-center gap-3">
       <div class="relative w-full max-w-sm">
         <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -317,6 +310,13 @@ function clearFilters() {
         <X class="h-3.5 w-3.5" />
         Xóa bộ lọc
       </UiButton>
+
+      <div class="ml-auto">
+        <UiButton @click="openCreateModal">
+          <Plus />
+          Tạo tài khoản
+        </UiButton>
+      </div>
     </div>
 
     <div class="relative rounded-md border border-neutral-200 dark:border-neutral-800">

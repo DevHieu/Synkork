@@ -4,28 +4,19 @@ import java.util.List;
 import java.util.UUID;
 
 import com.synkork.backend.common.utils.PlanLimitUtils;
+import com.synkork.backend.modules.admin.rooms.dtos.*;
 import com.synkork.backend.modules.room.RoomService;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
 import com.synkork.backend.modules.roomMember.RoomMemberService;
-import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
 import com.synkork.backend.modules.space.SpaceEntity;
 import com.synkork.backend.modules.space.SpaceRepository;
-import com.synkork.backend.modules.user.enums.PlanEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.modules.admin.rooms.email.AdminRoomEmailService;
-import com.synkork.backend.modules.admin.rooms.dtos.AdminRoomMemberResponse;
-import com.synkork.backend.modules.admin.rooms.dtos.AdminRoomDetailResponse;
-import com.synkork.backend.modules.admin.rooms.dtos.AdminRoomRequest;
-import com.synkork.backend.modules.admin.rooms.dtos.AdminRoomResponse;
-import com.synkork.backend.modules.admin.rooms.dtos.AdminUserOptionResponse;
-import com.synkork.backend.modules.admin.rooms.dtos.RoomFilterRequest;
-import com.synkork.backend.modules.admin.rooms.dtos.AdminRoomSpaceResponse;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.enums.RoomStatusEnum;
 import com.synkork.backend.modules.room.enums.RoomTypeEnum;
@@ -190,9 +181,9 @@ public class AdminRoomService {
         RoomEntity saved = adminRoomRepository.save(room);
 
         if (ownerChanged) {
-//            roomMemberService.deleteMember(oldOwner.getId(), room.getId());
-
             if (oldOwner != null) {
+                roomMemberService.deleteMember(oldOwner.getId(), room.getId());
+
                 adminRoomEmailService.sendRoomOwnerTransferredFromEmail(
                         oldOwner.getEmail(),
                         oldOwner.getUsername(),
@@ -231,12 +222,12 @@ public class AdminRoomService {
         return new AdminRoomResponse(saved);
     }
 
-    public AdminRoomResponse lockRoom(UUID roomId, RoomStatusEnum status) {
-        if (status == null) {
+    public AdminRoomResponse toggleRoomStatus(UUID roomId, ToggleRoomStatusRequest request) {
+        if (request.status() == null) {
             throw new IllegalArgumentException("Status không được để trống");
         }
 
-        if (status == RoomStatusEnum.PENDING_REMOVAL) {
+        if (request.status() == RoomStatusEnum.PENDING_REMOVAL) {
             throw new IllegalArgumentException("Không thể đặt trạng thái Pending Removal thủ công");
         }
 
@@ -248,21 +239,26 @@ public class AdminRoomService {
 
         // Chỉ chặn khi cố khóa một room ĐÃ khóa rồi.
         // Khi mở khóa (status = OPEN) thì luôn cho phép, kể cả khi room đang LOCKED.
-        if (status == RoomStatusEnum.LOCKED && room.getStatus() == RoomStatusEnum.LOCKED) {
+        if (request.status() == RoomStatusEnum.LOCKED && room.getStatus() == RoomStatusEnum.LOCKED) {
             throw new RuntimeException("Room đã bị khóa rồi!");
         }
 
-        if (status == RoomStatusEnum.OPEN && room.getStatus() == RoomStatusEnum.OPEN) {
+        if (request.status() == RoomStatusEnum.OPEN && room.getStatus() == RoomStatusEnum.OPEN) {
             throw new RuntimeException("Room đang mở rồi!");
         }
 
-        room.setStatus(status);
+        UserEntity owner = roomService.findOwnerByRoomId(roomId);
+        if (request.status() == RoomStatusEnum.OPEN && !PlanLimitUtils.checkMaxRooms(owner.getCurrentPlan(), owner.getId())) {
+            return null;
+        }
+
+        room.setStatus(request.status());
         RoomEntity saved = adminRoomRepository.save(room);
 
         if (saved.getOwner() != null) {
-            if (status == RoomStatusEnum.LOCKED) {
-                adminRoomEmailService.sendRoomLockedEmail(saved, saved.getOwner());
-            } else if (status == RoomStatusEnum.OPEN) {
+            if (request.status() == RoomStatusEnum.LOCKED) {
+                adminRoomEmailService.sendRoomLockedEmail(saved, saved.getOwner(), request.reason());
+            } else if (request.status() == RoomStatusEnum.OPEN) {
                 adminRoomEmailService.sendRoomUnlockedEmail(saved, saved.getOwner());
             }
         }

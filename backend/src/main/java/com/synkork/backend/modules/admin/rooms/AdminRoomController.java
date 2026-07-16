@@ -4,8 +4,6 @@ import com.synkork.backend.common.response.ApiResponse;
 import com.synkork.backend.common.response.PageMeta;
 import com.synkork.backend.modules.admin.rooms.dtos.*;
 
-import com.synkork.backend.modules.admin.users.dtos.AdminUserResponse;
-import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -65,8 +63,8 @@ public class AdminRoomController {
     }
 
     @PatchMapping("/{roomId}/status")
-    public ApiResponse<AdminRoomResponse> lockRoom(@PathVariable UUID roomId, @RequestBody AdminRoomRequest request){
-        return ApiResponse.success("Cập nhật trạng thái room thành công", adminRoomService.lockRoom(roomId, request.status()));
+    public ApiResponse<AdminRoomResponse> toggleRoomStatus(@PathVariable UUID roomId, @RequestBody ToggleRoomStatusRequest request){
+        return ApiResponse.success("Cập nhật trạng thái room thành công", adminRoomService.toggleRoomStatus(roomId, request));
     }
 
     @PatchMapping("/{roomId}/warn")

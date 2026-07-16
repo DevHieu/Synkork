@@ -1,10 +1,14 @@
 package com.synkork.backend.modules.roomMember;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
+import com.synkork.backend.modules.roomMember.enums.MemberStatusEnum;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +26,9 @@ import com.synkork.backend.modules.user.UserRepository;
 
 @Service
 public class RoomMemberService {
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     @Autowired
     RoomRepository roomRepository;
@@ -50,7 +57,7 @@ public class RoomMemberService {
     }
 
     public List<RoomMemberDto> getRoomMembers(String roomId) {
-        return roomMemberRepository.findByRoom_Id(UUID.fromString(roomId))
+        return roomMemberRepository.findByRoom_IdAndStatus(UUID.fromString(roomId), MemberStatusEnum.ACTIVE)
                 .stream()
                 .map(RoomMemberDto::new)
                 .toList();
@@ -110,9 +117,12 @@ public class RoomMemberService {
             throw new RuntimeException("ADMIN cannot kick another ADMIN");
         }
 
-        roomMemberRepository.removeFromCardAssignees(memberUUID);
-        roomMemberRepository.removeFromCalendarEventRoomMembers(memberUUID);
-        roomMemberRepository.deleteById(memberUUID);
+        target.setStatus(MemberStatusEnum.INACTIVE);
+        roomMemberRepository.save(target);
+
+//        roomMemberRepository.removeFromCardAssignees(memberUUID);
+//        roomMemberRepository.removeFromCalendarEventRoomMembers(memberUUID);
+//        roomMemberRepository.deleteById(memberUUID);
 
         return target.getUser().getEmail();
     }
@@ -214,15 +224,53 @@ public class RoomMemberService {
     @Transactional
     public void leaveRoom(UUID roomUUID, UUID requesterId) {
         RoomMemberEntity member = this.getRoomMemberByRoomIdAndUserId(roomUUID, requesterId);
+        member.setStatus(MemberStatusEnum.INACTIVE);
+        roomMemberRepository.save(member);
 
-        roomMemberRepository.removeFromCardAssignees(member.getId());
-        roomMemberRepository.removeFromCalendarEventRoomMembers(member.getId());
-        roomMemberRepository.delete(member);
+//        roomMemberRepository.removeFromCardAssignees(member.getId());
+//        roomMemberRepository.removeFromCalendarEventRoomMembers(member.getId());
+//        roomMemberRepository.delete(member);
     }
 
     public void deleteMember(UUID userId, UUID roomId) {
         RoomMemberEntity member = this.getRoomMemberByRoomIdAndUserId(roomId, userId);
-//        member.setStatus()
-//        roomMemberRepository.save(member);
+        member.setStatus(MemberStatusEnum.INACTIVE);
+        roomMemberRepository.save(member);
+    }
+
+    public void transferOwnerBeforeRemoving(RoomEntity room, List<RoomMemberEntity> remainingMembers) {
+        Optional<RoomMemberEntity> newOwner = remainingMembers.stream()
+                .filter(member -> member.getRole() == RoomMemberRoleEnum.ADMIN)
+                .min(joinedAtComparator());
+
+        if (newOwner.isEmpty()) {
+            newOwner = remainingMembers.stream()
+                    .min(joinedAtComparator());
+        }
+
+        if (newOwner.isEmpty()) {
+            room.setOwner(null);
+            roomRepository.save(room);
+            return;
+        }
+
+        RoomMemberEntity ownerMember = newOwner.get();
+        ownerMember.setRole(RoomMemberRoleEnum.OWNER);
+        room.setOwner(ownerMember.getUser());
+        roomMemberRepository.save(ownerMember);
+        roomRepository.save(room);
+
+        System.out.println("\"/topic/room/\" + room.getId() + \"/members/changeAuthority\"");
+        System.out.println(ownerMember.getUser().getUsername());
+        messagingTemplate.convertAndSend(
+                "/topic/room/" + room.getId() + "/members/changeAuthority", new RoomMemberDto(ownerMember)
+        );
+    }
+
+    private Comparator<RoomMemberEntity> joinedAtComparator() {
+        return Comparator.comparing(
+                RoomMemberEntity::getJoinedAt,
+                Comparator.nullsLast(Comparator.naturalOrder())
+        );
     }
 }

@@ -268,19 +268,15 @@ const columns = computed<TableColumn<any>[]>(() => [
     description="Quản lý tất cả room trong hệ thống"
     sticky
   >
-    <template #actions>
+    <!-- <template #actions>
       <div class="flex items-center gap-2">
         <UiButton variant="outline" @click="fetchRooms">
           <RefreshCwIcon class="mr-2 h-4 w-4" />
           Refresh
         </UiButton>
 
-        <UiButton @click="handleCreate">
-          <PlusIcon class="mr-2 h-4 w-4" />
-          Tạo Room
-        </UiButton>
       </div>
-    </template>
+    </template> -->
 
     <!-- filters -->
     <div class="mb-4 flex flex-wrap items-center gap-3">
@@ -356,6 +352,13 @@ const columns = computed<TableColumn<any>[]>(() => [
         <X class="h-3.5 w-3.5" />
         Xóa bộ lọc
       </UiButton>
+
+      <div class="ml-auto">
+        <UiButton @click="handleCreate">
+          <PlusIcon class="mr-2 h-4 w-4" />
+          Tạo Room
+        </UiButton>
+      </div>
     </div>
 
     <!-- table -->

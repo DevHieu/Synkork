@@ -9,5 +9,5 @@ public record AdminRoomRequest(
         String description,
         String avatarUrl,
         RoomStatusEnum status,
-        UUID ownerId // chỉ áp dụng cho GROUP room
+        UUID ownerId
 ) {}

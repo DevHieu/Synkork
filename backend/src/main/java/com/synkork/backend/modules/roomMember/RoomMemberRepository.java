@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.synkork.backend.modules.roomMember.enums.MemberStatusEnum;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -16,8 +18,7 @@ import com.synkork.backend.modules.user.UserEntity;
 @Repository
 public interface RoomMemberRepository extends JpaRepository<RoomMemberEntity, UUID> {
 
-    @Query("SELECT rm FROM RoomMemberEntity rm JOIN FETCH rm.user WHERE rm.user.id = :userId")
-    Optional<RoomMemberEntity> findByUserId(@Param("userId") UUID userId);
+    List<RoomMemberEntity> findByUserId(UUID userId);
 
     @Query("SELECT rm FROM RoomMemberEntity rm JOIN FETCH rm.user WHERE rm.user.id = :userId AND rm.room.id = :roomId")
     Optional<RoomMemberEntity> findByUserIdAndRoom_IdWithUser(
@@ -27,6 +28,8 @@ public interface RoomMemberRepository extends JpaRepository<RoomMemberEntity, UU
     List<RoomMemberEntity> findByRoom_Id(UUID roomId);
 
     Optional<RoomMemberEntity> findByIdAndRoom_Id(UUID id, UUID roomId);
+
+    List<RoomMemberEntity> findByRoom_IdAndStatus(UUID roomId, MemberStatusEnum status);
 
     Long countByRoom_Id(UUID id);
 
@@ -47,14 +50,38 @@ public interface RoomMemberRepository extends JpaRepository<RoomMemberEntity, UU
             @Param("email") String email,
             @Param("roomId") UUID roomId);
 
-    @Query("SELECT COUNT(rm) FROM RoomMemberEntity rm WHERE rm.user.id = :userId AND rm.role = :role AND rm.room.type = 'GROUP'")
+    @Query("SELECT COUNT(rm) FROM RoomMemberEntity rm WHERE rm.user.id = :userId AND rm.role = :role AND rm.room.type = 'GROUP' AND rm.status = 'ACTIVE'")
     long countGroupRoomsByUserIdAndRole(@Param("userId") UUID userId, @Param("role") RoomMemberRoleEnum role);
 
-    @Modifying
-    @Query(value = "DELETE FROM card_assignees WHERE room_member_id = :roomMemberId", nativeQuery = true)
-    void removeFromCardAssignees(@Param("roomMemberId") UUID roomMemberId);
+//    @Modifying
+//    @Query(value = "DELETE FROM card_assignees WHERE room_member_id = :roomMemberId", nativeQuery = true)
+//    void removeFromCardAssignees(@Param("roomMemberId") UUID roomMemberId);
+//
+//    @Modifying
+//    @Query(value = "DELETE FROM calendar_event_room_members WHERE room_member_id = :roomMemberId", nativeQuery = true)
+//    void removeFromCalendarEventRoomMembers(@Param("roomMemberId") UUID roomMemberId);
 
     @Modifying
-    @Query(value = "DELETE FROM calendar_event_room_members WHERE room_member_id = :roomMemberId", nativeQuery = true)
-    void removeFromCalendarEventRoomMembers(@Param("roomMemberId") UUID roomMemberId);
+    @Transactional
+    @Query("""
+        UPDATE RoomMemberEntity rm
+        SET rm.status = :status
+        WHERE rm.user.id = :userId
+    """)
+    int updateStatusByUserId(
+            @Param("userId") UUID userId,
+            @Param("status") MemberStatusEnum status
+    );
+
+    @Modifying
+    @Transactional
+    @Query("""
+        UPDATE RoomMemberEntity rm
+        SET rm.role = :role
+        WHERE rm.user.id = :userId
+    """)
+    int updateRoleByUserId(
+            @Param("userId") UUID userId,
+            @Param("role") RoomMemberRoleEnum role
+    );
 }

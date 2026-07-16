@@ -10,6 +10,8 @@ import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.RoomRepository;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
+import com.synkork.backend.modules.roomMember.RoomMemberService;
+import com.synkork.backend.modules.roomMember.enums.MemberStatusEnum;
 import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.enums.PlanEnum;
@@ -30,7 +32,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -54,6 +55,8 @@ public class AdminUserService {
 
     @Autowired
     private EmailService emailService;
+    @Autowired
+    private RoomMemberService roomMemberService;
 
     public Page<UserEntity> getUsers(UserFilterRequest request) {
         request.validate();
@@ -138,7 +141,7 @@ public class AdminUserService {
                 .filter(value -> !value.isBlank())
                 .orElse("Tai khoan cua ban da bi khoa boi quan tri vien.");
 
-        removeUserFromJoinedRooms(user);
+        this.inactiveUserAccount(user);
         user.setStatus(UserStatusEnum.INACTIVE);
         userAdminRepository.save(user);
         sendUserDeletedEmail(user, reason);
@@ -146,16 +149,21 @@ public class AdminUserService {
         return Map.of("message", "Da chuyen nguoi dung sang INACTIVE va xoa khoi cac room dang tham gia");
     }
 
-    public AdminUserResponse lockUser(UUID userId, UserStatusEnum status) {
+    public AdminUserResponse toggleLockUser(UUID userId, UserStatusEnum status) {
         UserEntity user = findUserOrThrow(userId);
         user.setStatus(status);
         UserEntity saved = userAdminRepository.save(user);
 
         if (status == UserStatusEnum.BANNED) {
+            this.inactiveUserAccount(user);
+
             String targetName = saved.getDisplayName() != null && !saved.getDisplayName().isBlank()
                     ? saved.getDisplayName()
                     : saved.getUsername();
+
             emailService.sendLockEmail(saved.getEmail(), targetName, "tài khoản của bạn");
+        } else if (status == UserStatusEnum.ACTIVE) {
+            roomMemberRepository.updateStatusByUserId(user.getId(), MemberStatusEnum.ACTIVE);
         }
 
         return AdminUserResponse.from(saved);
@@ -203,58 +211,20 @@ public class AdminUserService {
         emailService.send(email, "[Synkork] Tai khoan cua ban da duoc tao", body);
     }
 
-    private void removeUserFromJoinedRooms(UserEntity user) {
-        List<RoomMemberEntity> joinedRooms = entityManager.createQuery(
-                        "SELECT rm FROM RoomMemberEntity rm JOIN FETCH rm.room WHERE rm.user.id = :userId",
-                        RoomMemberEntity.class
-                )
-                .setParameter("userId", user.getId())
-                .getResultList();
+    private void inactiveUserAccount(UserEntity user) {
+        roomMemberRepository.updateStatusByUserId(user.getId(), MemberStatusEnum.INACTIVE);
+        roomMemberRepository.updateRoleByUserId(user.getId(), RoomMemberRoleEnum.MEMBER);
 
-        for (RoomMemberEntity deletingMember : joinedRooms) {
-            RoomEntity room = deletingMember.getRoom();
-            List<RoomMemberEntity> remainingMembers = roomMemberRepository.findByRoom_Id(room.getId())
-                    .stream()
-                    .filter(member -> !Objects.equals(member.getUser().getId(), user.getId()))
-                    .toList();
+        List<RoomEntity> ownedRooms = roomRepository.findAllByOwnerId(user.getId());
+        for (RoomEntity room : ownedRooms) {
+            List<RoomMemberEntity> remainingMembers =
+                    roomMemberRepository.findByRoom_Id(room.getId())
+                            .stream()
+                            .filter(member -> !member.getUser().getId().equals(user.getId()))
+                            .toList();
 
-            if (deletingMember.getRole() == RoomMemberRoleEnum.OWNER) {
-                transferOwnerBeforeRemoving(room, remainingMembers);
-            }
-
-            roomMemberRepository.removeFromCardAssignees(deletingMember.getId());
-            roomMemberRepository.delete(deletingMember);
+            roomMemberService.transferOwnerBeforeRemoving(room, remainingMembers);
         }
-    }
-
-    private void transferOwnerBeforeRemoving(RoomEntity room, List<RoomMemberEntity> remainingMembers) {
-        Optional<RoomMemberEntity> newOwner = remainingMembers.stream()
-                .filter(member -> member.getRole() == RoomMemberRoleEnum.ADMIN)
-                .min(joinedAtComparator());
-
-        if (newOwner.isEmpty()) {
-            newOwner = remainingMembers.stream()
-                    .min(joinedAtComparator());
-        }
-
-        if (newOwner.isEmpty()) {
-            room.setOwner(null);
-            roomRepository.save(room);
-            return;
-        }
-
-        RoomMemberEntity ownerMember = newOwner.get();
-        ownerMember.setRole(RoomMemberRoleEnum.OWNER);
-        room.setOwner(ownerMember.getUser());
-        roomMemberRepository.save(ownerMember);
-        roomRepository.save(room);
-    }
-
-    private Comparator<RoomMemberEntity> joinedAtComparator() {
-        return Comparator.comparing(
-                RoomMemberEntity::getJoinedAt,
-                Comparator.nullsLast(Comparator.naturalOrder())
-        );
     }
 
     private void sendUserUpdatedEmail(
