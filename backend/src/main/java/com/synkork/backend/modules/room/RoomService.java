@@ -72,6 +72,25 @@ public class RoomService {
         return roomRepository.findById(uuid).orElseThrow(() -> new RuntimeException("Room không tồn tại!"));
     }
 
+    public UserEntity findOwnerByRoomId(UUID roomId) {
+        return roomRepository.findOwnerByRoomId(roomId).orElseThrow(() -> new RuntimeException("Room owner not found!"));
+    }
+
+    public List<RoomEntity> findRoomUserJoined(@NonNull UUID userId) {
+        return roomRepository.findRoomMembersJoined(userId);
+    }
+
+    public RoomReviewResponse getRoomByInviteCode(String code) {
+        RoomEntity room = roomRepository.findByInviteCode(code)
+                .orElseThrow(() -> new RuntimeException("Link mời không tồn tại"));
+
+        return RoomReviewResponse.builder()
+                .roomName(room.getName())
+                .roomAvatar(room.getAvatarUrl())
+                .roomMembers(roomMemberRepository.countByRoom_Id(room.getId()))
+                .build();
+    }
+
     public RoomEntity createRoom(CreateRoomDto roomData) {
         if (roomData.ownerId() != null) {
             UUID ownerId = UUID.fromString(roomData.ownerId());
@@ -126,21 +145,6 @@ public class RoomService {
         }
 
         return roomRepository.save(room);
-    }
-
-    public List<RoomEntity> findRoomUserJoined(@NonNull UUID userId) {
-        return roomRepository.findRoomMembersJoined(userId);
-    }
-
-    public RoomReviewResponse getRoomByInviteCode(String code) {
-        RoomEntity room = roomRepository.findByInviteCode(code)
-                .orElseThrow(() -> new RuntimeException("Link mời không tồn tại"));
-
-        return RoomReviewResponse.builder()
-                .roomName(room.getName())
-                .roomAvatar(room.getAvatarUrl())
-                .roomMembers(roomMemberRepository.countByRoom_Id(room.getId()))
-                .build();
     }
 
     public RoomDto joinRoom(String code, UUID userId) {
@@ -237,9 +241,5 @@ public class RoomService {
         messagingTemplate.convertAndSend("/topic/room/" + room.getId() + "/members/joined", dto);
 
         return dto;
-    }
-
-    public UserEntity findOwnerByRoomId(UUID roomId) {
-        return roomRepository.findOwnerByRoomId(roomId).orElseThrow(() -> new RuntimeException("Room owner not found!"));
     }
 }

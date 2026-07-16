@@ -1,11 +1,11 @@
 package com.synkork.backend.modules.admin.users;
 
-import com.synkork.backend.common.utils.EmailService;
 import com.synkork.backend.modules.admin.users.dtos.AdminUserResponse;
 import com.synkork.backend.modules.admin.users.dtos.CreateUserRequest;
 import com.synkork.backend.modules.admin.users.dtos.DeleteUserRequest;
 import com.synkork.backend.modules.admin.users.dtos.UpdateUserRequest;
 import com.synkork.backend.modules.admin.users.dtos.UserFilterRequest;
+import com.synkork.backend.modules.admin.users.email.AdminUserEmailService;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.RoomRepository;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
@@ -29,7 +29,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -54,9 +53,18 @@ public class AdminUserService {
     private EntityManager entityManager;
 
     @Autowired
-    private EmailService emailService;
+    private AdminUserEmailService adminUserEmailService;
     @Autowired
     private RoomMemberService roomMemberService;
+
+    private UserEntity findUserById(UUID id) {
+        UserEntity user = userAdminRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay user: " + id));
+        if (user.getRole() != RoleEnum.USER) {
+            throw new IllegalArgumentException("Tai khoan khong thuoc nhom user");
+        }
+        return user;
+    }
 
     public Page<UserEntity> getUsers(UserFilterRequest request) {
         request.validate();
@@ -69,7 +77,7 @@ public class AdminUserService {
     }
 
     public AdminUserResponse getUserById(UUID id) {
-        return AdminUserResponse.from(findUserOrThrow(id));
+        return AdminUserResponse.from(this.findUserById(id));
     }
 
     public AdminUserResponse createUser(CreateUserRequest req) {
@@ -92,12 +100,12 @@ public class AdminUserService {
         user.setStatus(UserStatusEnum.valueOf(req.status().toUpperCase()));
 
         UserEntity saved = userAdminRepository.save(user);
-        sendWelcomeEmail(saved.getEmail(), saved.getUsername(), tempPassword);
+        adminUserEmailService.sendWelcomeEmail(saved.getEmail(), saved.getUsername(), tempPassword);
         return AdminUserResponse.from(saved);
     }
 
     public AdminUserResponse updateUser(UUID id, UpdateUserRequest req) {
-        UserEntity user = findUserOrThrow(id);
+        UserEntity user = findUserById(id);
         String oldDisplayName = user.getDisplayName();
         String oldEmail = user.getEmail();
         PlanEnum oldPlan = user.getCurrentPlan();
@@ -129,13 +137,13 @@ public class AdminUserService {
         }
 
         UserEntity saved = userAdminRepository.save(user);
-        sendUserUpdatedEmail(saved, oldDisplayName, oldEmail, oldPlan, oldStatus, oldRole);
+        adminUserEmailService.sendUserUpdatedEmail(saved, oldDisplayName, oldEmail, oldPlan, oldStatus, oldRole);
         return AdminUserResponse.from(saved);
     }
 
     @Transactional
     public Map<String, String> deleteUser(UUID id, DeleteUserRequest request) {
-        UserEntity user = findUserOrThrow(id);
+        UserEntity user = findUserById(id);
         String reason = Optional.ofNullable(request)
                 .map(DeleteUserRequest::reason)
                 .filter(value -> !value.isBlank())
@@ -144,24 +152,20 @@ public class AdminUserService {
         this.inactiveUserAccount(user);
         user.setStatus(UserStatusEnum.INACTIVE);
         userAdminRepository.save(user);
-        sendUserDeletedEmail(user, reason);
+        adminUserEmailService.sendUserDeletedEmail(user, reason);
 
         return Map.of("message", "Da chuyen nguoi dung sang INACTIVE va xoa khoi cac room dang tham gia");
     }
 
     public AdminUserResponse toggleLockUser(UUID userId, UserStatusEnum status) {
-        UserEntity user = findUserOrThrow(userId);
+        UserEntity user = findUserById(userId);
         user.setStatus(status);
         UserEntity saved = userAdminRepository.save(user);
 
         if (status == UserStatusEnum.BANNED) {
             this.inactiveUserAccount(user);
 
-            String targetName = saved.getDisplayName() != null && !saved.getDisplayName().isBlank()
-                    ? saved.getDisplayName()
-                    : saved.getUsername();
-
-            emailService.sendLockEmail(saved.getEmail(), targetName, "tài khoản của bạn");
+            adminUserEmailService.sendUserLockedEmail(saved);
         } else if (status == UserStatusEnum.ACTIVE) {
             roomMemberRepository.updateStatusByUserId(user.getId(), MemberStatusEnum.ACTIVE);
         }
@@ -170,26 +174,14 @@ public class AdminUserService {
     }
 
     public AdminUserResponse warnUser(UUID userId) {
-        UserEntity user = findUserOrThrow(userId);
+        UserEntity user = this.findUserById(userId);
 
         user.setWarning(user.getWarning() + 1);
 
         UserEntity saved = userAdminRepository.save(user);
-        String targetName = saved.getDisplayName() != null && !saved.getDisplayName().isBlank()
-                ? saved.getDisplayName()
-                : saved.getUsername();
-        emailService.sendWarningEmail(saved.getEmail(), targetName, "tài khoản của bạn", saved.getWarning());
+        adminUserEmailService.sendUserWarningEmail(saved);
 
         return AdminUserResponse.from(saved);
-    }
-
-    private UserEntity findUserOrThrow(UUID id) {
-        UserEntity user = userAdminRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay user: " + id));
-        if (user.getRole() != RoleEnum.USER) {
-            throw new IllegalArgumentException("Tai khoan khong thuoc nhom user");
-        }
-        return user;
     }
 
     private void requireAdmin() {
@@ -199,16 +191,6 @@ public class AdminUserService {
         if (!isAdmin) {
             throw new AccessDeniedException("Chi admin moi duoc thay doi vai tro tai khoan");
         }
-    }
-
-    private void sendWelcomeEmail(String email, String username, String tempPassword) {
-        String body = plainTextEmailBody(String.format(
-                "Xin chao %s,\n\nMat khau tam thoi: %s\n\n"
-                        + "Vui long doi mat khau sau khi dang nhap.",
-                username,
-                tempPassword
-        ));
-        emailService.send(email, "[Synkork] Tai khoan cua ban da duoc tao", body);
     }
 
     private void inactiveUserAccount(UserEntity user) {
@@ -227,78 +209,6 @@ public class AdminUserService {
         }
     }
 
-    private void sendUserUpdatedEmail(
-            UserEntity user,
-            String oldDisplayName,
-            String oldEmail,
-            PlanEnum oldPlan,
-            UserStatusEnum oldStatus,
-            RoleEnum oldRole
-    ) {
-        String body = plainTextEmailBody(String.format(
-                "Xin chao %s,\n\nTai khoan Synkork cua ban da duoc cap nhat.\n\n"
-                        + "Thong tin truoc do:\n"
-                        + "- Ten hien thi: %s\n"
-                        + "- Email: %s\n"
-                        + "- Goi: %s\n"
-                        + "- Trang thai: %s\n"
-                        + "- Vai tro: %s\n\n"
-                        + "Thong tin hien tai:\n"
-                        + "- Ten hien thi: %s\n"
-                        + "- Email: %s\n"
-                        + "- Goi: %s\n"
-                        + "- Trang thai: %s\n"
-                        + "- Vai tro: %s\n\n"
-                        + "Neu ban khong yeu cau thay doi nay, vui long lien he quan tri vien.",
-                user.getUsername(),
-                valueOrDash(oldDisplayName),
-                valueOrDash(oldEmail),
-                valueOrDash(oldPlan),
-                valueOrDash(oldStatus),
-                valueOrDash(oldRole),
-                valueOrDash(user.getDisplayName()),
-                valueOrDash(user.getEmail()),
-                valueOrDash(user.getCurrentPlan()),
-                valueOrDash(user.getStatus()),
-                valueOrDash(user.getRole())
-        ));
-        emailService.send(user.getEmail(), "[Synkork] Tai khoan cua ban da duoc cap nhat", body);
-    }
-
-    private void sendUserDeletedEmail(UserEntity user, String reason) {
-        String body = plainTextEmailBody(String.format(
-                "Xin chao %s,\n\nTai khoan Synkork cua ban da duoc chuyen sang trang thai INACTIVE.\n\n"
-                        + "Ly do: %s\n\n"
-                        + "Ban da duoc xoa khoi tat ca room dang tham gia. "
-                        + "Neu can ho tro them, vui long lien he quan tri vien.",
-                user.getUsername(),
-                reason
-        ));
-        emailService.send(user.getEmail(), "[Synkork] Tai khoan cua ban da bi khoa", body);
-    }
-
-    private String valueOrDash(Object value) {
-        return value == null ? "-" : value.toString();
-    }
-
-    private String plainTextEmailBody(String text) {
-        return "<div style=\"font-family: Arial, sans-serif; white-space: pre-line;\">"
-                + escapeHtml(text)
-                + "</div>";
-    }
-
-    private String escapeHtml(String text) {
-        if (text == null) {
-            return "";
-        }
-        return text
-                .replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&#39;");
-    }
-
     // public AdminUserResponse lockUser(UUID userId, UserStatusEnum status) {
     //     UserEntity user = userAdminRepository.findById(userId)
     //         .orElseThrow(() -> new RuntimeException("Không tìm thấy user!"));
@@ -312,3 +222,4 @@ public class AdminUserService {
         
     // }
 }
+
