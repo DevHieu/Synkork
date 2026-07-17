@@ -47,21 +47,25 @@ public class ExpiredSubscriptionService {
         for (UserEntity user : users) {
             long daysRemaining = ChronoUnit.DAYS.between(LocalDateTime.now(), user.getPlanExpiresAt());
 
-            List<String> pendingRoomNames = List.of(); // rooms sẽ bị xóa
-            Map<String, List<String>> pendingSpaceNames = new LinkedHashMap<>(); // room name -> space names sẽ bị xóa
+            // reset toàn bộ PENDING_REMOVAL của user này về OPEN
+            // để tính lại từ đầu, tránh giữ trạng thái stale từ lần chạy trước
+            roomRepository.updatePendingRoomStatusByOwnerId(RoomStatusEnum.OPEN, user.getId());
+            spaceRepository.updatePendingSpaceStatusByRoom_OwnerId(SpaceStatusEnum.OPEN, user.getId());
 
+            List<String> pendingRoomNames = List.of();
+            Map<String, List<String>> pendingSpaceNames = new LinkedHashMap<>();
+
+            // giờ chỉ cần lấy OPEN, vì PENDING_REMOVAL vừa bị reset hết rồi
             List<RoomEntity> allRooms = roomRepository.findByOwnerIdAndTypeAndStatusInOrderByCreatedAtDesc(
                     user.getId(), RoomTypeEnum.GROUP,
-                    List.of(RoomStatusEnum.OPEN, RoomStatusEnum.PENDING_REMOVAL)
+                    List.of(RoomStatusEnum.OPEN)
             );
 
             List<UUID> ids = allRooms.stream().map(RoomEntity::getId).toList();
 
-            // Tính số lượng dư
             long roomExcess = ids.size() - 5;
 
             if (roomExcess > 0) {
-                // Chỉnh status của các room tạo gần đây nhất
                 pendingRoomNames = allRooms.subList(0, (int) roomExcess)
                         .stream().map(RoomEntity::getName).toList();
 
@@ -70,7 +74,6 @@ public class ExpiredSubscriptionService {
                 roomRepository.updateStatusByIds(RoomStatusEnum.PENDING_REMOVAL, pendingIds);
             }
 
-            // Space bị xóa trong room giữ lại
             for (int i = 0; i < ids.size(); i++) {
                 UUID roomId = ids.get(i);
                 String roomName = allRooms.get((int) (roomExcess > 0 ? roomExcess : 0) + i).getName();
@@ -80,7 +83,9 @@ public class ExpiredSubscriptionService {
                     SpaceTypeEnum type = entry.getKey();
                     int limit = entry.getValue();
 
-                    List<SpaceEntity> spaces = spaceRepository.findByRoomIdAndTypeOrderByCreatedAtDesc(roomId, type);
+                    // cũng chỉ cần OPEN vì đã reset PENDING_REMOVAL
+                    List<SpaceEntity> spaces = spaceRepository.findByRoomIdAndTypeAndStatusInOrderByCreatedAtDesc(
+                            roomId, type, List.of(SpaceStatusEnum.OPEN));
                     List<UUID> spaceIds = spaces.stream().map(SpaceEntity::getId).toList();
                     long spaceExcess = spaceIds.size() - limit;
 

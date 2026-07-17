@@ -47,4 +47,8 @@ public interface RoomRepository extends JpaRepository<RoomEntity, UUID> {
     @Modifying
     @Query("UPDATE RoomEntity r SET r.status = :newStatus WHERE r.owner.id = :ownerId AND r.status = 'PENDING_REMOVAL'")
     void updatePendingRoomStatusByOwnerId(@Param("newStatus") RoomStatusEnum status, @Param("ownerId") UUID ownerId);
+
+    @Modifying
+    @Query("UPDATE RoomEntity r SET r.status = :newStatus WHERE r.status = :oldStatus")
+    void updateStatusByStatus(@Param("oldStatus") RoomStatusEnum oldStatus, @Param("newStatus") RoomStatusEnum newStatus);
 }

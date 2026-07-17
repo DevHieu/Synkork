@@ -1,11 +1,13 @@
 package com.synkork.backend.modules.admin.users;
 
+import com.google.common.collect.Lists;
 import com.synkork.backend.modules.admin.users.dtos.AdminUserResponse;
 import com.synkork.backend.modules.admin.users.dtos.CreateUserRequest;
 import com.synkork.backend.modules.admin.users.dtos.DeleteUserRequest;
 import com.synkork.backend.modules.admin.users.dtos.UpdateUserRequest;
 import com.synkork.backend.modules.admin.users.dtos.UserFilterRequest;
 import com.synkork.backend.modules.admin.users.email.AdminUserEmailService;
+import com.synkork.backend.modules.payment.ExpiredSubscriptionService;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.RoomRepository;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
@@ -56,6 +58,8 @@ public class AdminUserService {
     private AdminUserEmailService adminUserEmailService;
     @Autowired
     private RoomMemberService roomMemberService;
+    @Autowired
+    private ExpiredSubscriptionService expiredSubscriptionService;
 
     private UserEntity findUserById(UUID id) {
         UserEntity user = userAdminRepository.findById(id)
@@ -123,8 +127,14 @@ public class AdminUserService {
             user.setEmail(req.email());
         }
 
+
         if (req.plan() != null) {
-            user.setCurrentPlan(PlanEnum.valueOf(req.plan().toUpperCase()));
+            PlanEnum plan = PlanEnum.valueOf(req.plan().toUpperCase());
+
+            if (plan != oldPlan) {
+                expiredSubscriptionService.pinPendingRemovalRoomAndSpace(List.of(user));
+                user.setCurrentPlan(plan);
+            }
         }
 
         if (req.status() != null) {
@@ -208,18 +218,5 @@ public class AdminUserService {
             roomMemberService.transferOwnerBeforeRemoving(room, remainingMembers);
         }
     }
-
-    // public AdminUserResponse lockUser(UUID userId, UserStatusEnum status) {
-    //     UserEntity user = userAdminRepository.findById(userId)
-    //         .orElseThrow(() -> new RuntimeException("Không tìm thấy user!"));
-            
-    //     if(user.getStatus() == UserStatusEnum.BANNED){
-    //         throw new RuntimeException("User này đã bị khóa!");
-    //     }
-
-    //     user.setStatus(status);
-    //     return AdminUserResponse.from(userAdminRepository.save(user));
-        
-    // }
 }
 
