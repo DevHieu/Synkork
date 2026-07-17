@@ -5,5 +5,5 @@ public record VoiceSummaryResponse(
         String fileUrl,
         String publicId,
         String transcript,
-        String analysis
+        String summaryJson
 ) {}

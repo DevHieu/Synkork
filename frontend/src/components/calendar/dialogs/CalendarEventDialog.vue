@@ -25,6 +25,8 @@ import EventTimeSection from "../sub-components/EventTimeSection.vue";
 import EventRecurrenceSection from "../sub-components/EventRecurrenceSection.vue";
 import EventAttendeesSection from "../sub-components/EventAttendeesSection.vue";
 import EventAttachmentsSection from "../sub-components/EventAttachmentsSection.vue";
+import EventTaskSection from "../sub-components/EventTaskSection.vue";
+import EventNoteSection from "../sub-components/EventNoteSection.vue";
 import { useEventForm, type EventFormData } from "../composables/useEventForm";
 import type { Member } from "@/types/Member";
 import { useSpaceStore } from "@/stores/spaceStore";
@@ -79,6 +81,16 @@ const onAttendeesChange = (list: string[]) => {
 
 const onAttachmentsChange = (list: any[]) => {
   formData.value.attachments = list;
+};
+
+const onTaskChange = (data: { spaceId?: string; taskId?: string }) => {
+  formData.value.taskSpaceId = data.spaceId;
+  formData.value.taskId = data.taskId;
+};
+
+const onNoteChange = (data: { spaceId?: string; noteId?: string }) => {
+  formData.value.noteSpaceId = data.spaceId;
+  formData.value.noteId = data.noteId;
 };
 
 // Luôn reset form theo initialData mới nhất trước khi người dùng thao tác.
@@ -192,6 +204,22 @@ const handleSubmit = (): void => {
                 </Select>
               </div>
             </div>
+
+            <!-- Liên kết Task -->
+            <EventTaskSection
+              :show="show"
+              :initial-space-id="initialData.taskSpaceId"
+              :initial-task-id="initialData.taskId"
+              @change="onTaskChange"
+            />
+
+            <!-- Liên kết Note -->
+            <EventNoteSection
+              :show="show"
+              :initial-space-id="initialData.noteSpaceId"
+              :initial-note-id="initialData.noteId"
+              @change="onNoteChange"
+            />
 
             <!-- Người tham gia Section -->
             <div class="space-y-1.5">

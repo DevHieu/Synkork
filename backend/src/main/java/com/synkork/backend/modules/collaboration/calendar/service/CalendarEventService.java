@@ -13,6 +13,10 @@ import com.synkork.backend.modules.space.SpaceRepository;
 import com.synkork.backend.modules.space.SpaceService;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
+import com.synkork.backend.modules.collaboration.task.card.CardRepository;
+import com.synkork.backend.modules.collaboration.task.card.CardEntity;
+import com.synkork.backend.modules.collaboration.note.NoteRepository;
+import com.synkork.backend.modules.collaboration.note.NoteEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -35,6 +39,12 @@ public class CalendarEventService {
 
     @Autowired
     private CalendarEventRepository calendarEventRepository;
+
+    @Autowired
+    private CardRepository cardRepository;
+
+    @Autowired
+    private NoteRepository noteRepository;
 
     @Autowired
     private SpaceRepository spaceRepository;
@@ -227,6 +237,22 @@ public class CalendarEventService {
         } else {
             calendarEvent.setCallRoomSpace(null);
         }
+        if (eventRequest.getTaskId() != null && !eventRequest.getTaskId().isEmpty()) {
+            UUID taskId = UUID.fromString(eventRequest.getTaskId());
+            CardEntity task = cardRepository.findById(taskId)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy task với ID: " + taskId));
+            calendarEvent.setTask(task);
+        } else {
+            calendarEvent.setTask(null);
+        }
+        if (eventRequest.getNoteId() != null && !eventRequest.getNoteId().isEmpty()) {
+            UUID noteId = UUID.fromString(eventRequest.getNoteId());
+            NoteEntity note = noteRepository.findById(noteId)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy note với ID: " + noteId));
+            calendarEvent.setNote(note);
+        } else {
+            calendarEvent.setNote(null);
+        }
         syncEventRelations(calendarEvent, eventRequest, creator);
 
         CalendarEventEntity savedEvent = calendarEventRepository.save(Objects.requireNonNull(calendarEvent));
@@ -255,6 +281,22 @@ public class CalendarEventService {
             calendarEvent.setCallRoomSpace(callRoomSpace);
         } else {
             calendarEvent.setCallRoomSpace(null);
+        }
+        if (eventRequest.getTaskId() != null && !eventRequest.getTaskId().isEmpty()) {
+            UUID taskId = UUID.fromString(eventRequest.getTaskId());
+            CardEntity task = cardRepository.findById(taskId)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy task với ID: " + taskId));
+            calendarEvent.setTask(task);
+        } else {
+            calendarEvent.setTask(null);
+        }
+        if (eventRequest.getNoteId() != null && !eventRequest.getNoteId().isEmpty()) {
+            UUID noteId = UUID.fromString(eventRequest.getNoteId());
+            NoteEntity note = noteRepository.findById(noteId)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy note với ID: " + noteId));
+            calendarEvent.setNote(note);
+        } else {
+            calendarEvent.setNote(null);
         }
         UserEntity actor = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng với ID: " + userId));

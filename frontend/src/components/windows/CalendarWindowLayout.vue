@@ -91,6 +91,10 @@ const createInitialFormData = (overrides: Partial<EventFormData> = {}): EventFor
   attendees: [],
   attachments: [],
   callRoomSpaceId: undefined,
+  taskSpaceId: undefined,
+  taskId: undefined,
+  noteSpaceId: undefined,
+  noteId: undefined,
   ...overrides,
 });
 
@@ -109,6 +113,10 @@ const createFormDataFromEvent = (event: CalendarEvent): EventFormData => createI
   attendees: event.attendees || [],
   attachments: event.attachments || [],
   callRoomSpaceId: event.callRoomSpaceId,
+  taskSpaceId: event.taskSpaceId,
+  taskId: event.taskId,
+  noteSpaceId: event.noteSpaceId,
+  noteId: event.noteId,
 });
 
 // Điều hướng bằng bàn phím

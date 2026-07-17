@@ -30,7 +30,6 @@ public class VoiceSummaryController {
             "audio/x-wav", "audio/ogg", "audio/x-m4a"
     );
 
-    // Controller này chỉ nối luồng upload -> chuyển giọng nói thành văn bản -> tóm tắt.
     private final MeetingLlmService meetingService;
     private final FileService fileService;
     private final RoomMemberRepository roomMemberRepository;
