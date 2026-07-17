@@ -176,7 +176,7 @@ const getContinuationLabel = (event: CalendarEvent) => {
               {{ selectedDate.format("DD/MM/YYYY") }}
             </h3>
             <p class="text-[10px] font-sans font-medium opacity-80 mt-1 uppercase tracking-wider text-muted-foreground">
-              [{{ selectedDateEvents.length }} SỰ KIỆN]
+              {{ selectedDateEvents.length }} SỰ KIỆN
             </p>
           </div>
         </div>
