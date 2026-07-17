@@ -1,5 +1,7 @@
 package com.synkork.backend.modules.collaboration.calendar.entity;
 
+import com.synkork.backend.modules.collaboration.task.card.CardEntity;
+import com.synkork.backend.modules.collaboration.note.NoteEntity;
 import com.synkork.backend.common.base.BaseEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.space.SpaceEntity;
@@ -28,6 +30,14 @@ public class CalendarEventEntity extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "call_room_space_id", columnDefinition = "BINARY(16)", nullable = true)
     private SpaceEntity callRoomSpace;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "task_id", columnDefinition = "BINARY(16)", nullable = true)
+    private CardEntity task;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "note_id", columnDefinition = "BINARY(16)", nullable = true)
+    private NoteEntity note;
 
     @Column(nullable = false)
     private String title;
