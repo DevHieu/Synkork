@@ -1,3 +1,5 @@
+import type { TimeRangeType } from '@/types/Date'
+
 import axiosClient from '@/lib/axiosClient'
 
 export const dashboardService = {
@@ -6,11 +8,9 @@ export const dashboardService = {
     return res.data
   },
 
-  async getOverviewChartData(period: 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY') {
+  async getOverviewChartData(period: TimeRangeType) {
     const res = await axiosClient.get(`/api/manage/dashboard/overview/chart?period=${period}`)
-      console.log(res);
 
-    
     return res.data
   },
 
@@ -25,10 +25,10 @@ export const dashboardService = {
   },
 
   async getRoomChartData(
-    period: 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY'
+    period: TimeRangeType,
   ) {
     const res = await axiosClient.get(
-      `/api/manage/dashboard/rooms/chart?period=${period}`
+      `/api/manage/dashboard/rooms/chart?period=${period}`,
     )
     return res.data.data
   },
@@ -42,8 +42,8 @@ export const dashboardService = {
     const res = await axiosClient.get(`/api/manage/dashboard/reports/stats`)
     return res.data
   },
- 
-  async getReportChartData(period: 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY') {
+
+  async getReportChartData(period: TimeRangeType) {
     const res = await axiosClient.get(`/api/manage/dashboard/reports/chart?period=${period}`)
     return res.data
   },
@@ -53,4 +53,3 @@ export const dashboardService = {
     return res.data
   },
 }
-

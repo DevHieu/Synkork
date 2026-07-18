@@ -1,14 +1,25 @@
 package com.synkork.backend.modules.admin.rooms;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.common.utils.PlanLimitUtils;
+import com.synkork.backend.modules.admin.auditLog.AuditLogService;
+import com.synkork.backend.modules.admin.auditLog.dtos.BuildLog;
+import com.synkork.backend.modules.admin.auditLog.enums.LogActionEnum;
+import com.synkork.backend.modules.admin.auditLog.enums.LogEntityTypeEnum;
 import com.synkork.backend.modules.admin.rooms.dtos.*;
 import com.synkork.backend.modules.room.RoomService;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
 import com.synkork.backend.modules.roomMember.RoomMemberService;
+import com.synkork.backend.modules.roomMember.enums.MemberStatusEnum;
+import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
 import com.synkork.backend.modules.space.SpaceEntity;
 import com.synkork.backend.modules.space.SpaceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +56,10 @@ public class AdminRoomService {
     private AdminRoomEmailService adminRoomEmailService;
     @Autowired
     private RoomMemberService roomMemberService;
+    @Autowired
+    private AuditLogService auditLogService;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     public Page<RoomEntity> getRooms(RoomFilterRequest request) {
         request.validate();
@@ -122,12 +137,21 @@ public class AdminRoomService {
 
         RoomEntity saved = adminRoomRepository.save(room);
         adminRoomEmailService.sendRoomCreatedEmail(saved, owner);
+        createLog(saved, LogActionEnum.CREATE_ROOM, null, Map.of(
+                "ownerId", owner.getId().toString(),
+                "ownerEmail", owner.getEmail(),
+                "status", saved.getStatus().name()
+        ));
 
         return new AdminRoomResponse(saved);
     }
 
     public AdminRoomResponse updateRoom(String roomId, AdminRoomRequest request) {
         RoomEntity room = findRoomOrThrow(roomId);
+        String oldName = room.getName();
+        String oldDescription = room.getDescription();
+        RoomStatusEnum oldStatus = room.getStatus();
+        UserEntity oldOwner = room.getOwner();
 
         if (request.status() == RoomStatusEnum.PENDING_REMOVAL) {
             throw new IllegalArgumentException("Không thể đặt trạng thái Pending Removal thủ công");
@@ -142,6 +166,10 @@ public class AdminRoomService {
             if (saved.getOwner() != null) {
                 adminRoomEmailService.sendRoomUpdatedEmail(saved, saved.getOwner());
             }
+            createLog(saved, LogActionEnum.UPDATE_ROOM, null, metadata(
+                    "oldStatus", oldStatus.name(),
+                    "newStatus", saved.getStatus().name()
+            ));
             return new AdminRoomResponse(saved);
         }
 
@@ -159,7 +187,6 @@ public class AdminRoomService {
             room.setStatus(request.status());
         }
 
-        UserEntity oldOwner = room.getOwner();
         UserEntity newOwner = null;
         boolean ownerChanged = false;
 
@@ -175,6 +202,7 @@ public class AdminRoomService {
             }
 
             room.setOwner(newOwner);
+            ensureOwnerMember(room, newOwner);
             ownerChanged = true;
         }
 
@@ -196,14 +224,25 @@ public class AdminRoomService {
                     newOwner.getEmail(),
                     newOwner.getUsername(),
                     room.getName(),
-                    oldOwner.getUsername(),
-                    oldOwner.getEmail()
+                    oldOwner != null ? oldOwner.getUsername() : "Không có",
+                    oldOwner != null ? oldOwner.getEmail() : ""
             );
         } else {
             if (saved.getOwner() != null) {
                 adminRoomEmailService.sendRoomUpdatedEmail(saved, saved.getOwner());
             }
         }
+
+        createLog(saved, ownerChanged ? LogActionEnum.TRANSFER_ROOM_OWNER : LogActionEnum.UPDATE_ROOM, null, metadata(
+                "oldName", oldName,
+                "newName", saved.getName(),
+                "oldDescription", oldDescription,
+                "newDescription", saved.getDescription(),
+                "oldStatus", oldStatus.name(),
+                "newStatus", saved.getStatus().name(),
+                "oldOwnerId", oldOwner != null ? oldOwner.getId().toString() : null,
+                "newOwnerId", saved.getOwner() != null ? saved.getOwner().getId().toString() : null
+        ));
 
         return new AdminRoomResponse(saved);
     }
@@ -218,6 +257,9 @@ public class AdminRoomService {
         if (owner != null) {
             adminRoomEmailService.sendRoomWarningEmail(saved, owner, saved.getWarning());
         }
+        createLog(saved, LogActionEnum.WARN_ROOM, null, Map.of(
+                "warning", saved.getWarning()
+        ));
 
         return new AdminRoomResponse(saved);
     }
@@ -252,6 +294,7 @@ public class AdminRoomService {
             return null;
         }
 
+        RoomStatusEnum oldStatus = room.getStatus();
         room.setStatus(request.status());
         RoomEntity saved = adminRoomRepository.save(room);
 
@@ -263,7 +306,63 @@ public class AdminRoomService {
             }
         }
 
+        createLog(saved, request.status() == RoomStatusEnum.LOCKED ? LogActionEnum.LOCK_ROOM : LogActionEnum.UNLOCK_ROOM, request.reason(), Map.of(
+                "oldStatus", oldStatus.name(),
+                "newStatus", saved.getStatus().name()
+        ));
+
         return new AdminRoomResponse(saved);
+    }
+
+    private void ensureOwnerMember(RoomEntity room, UserEntity owner) {
+        roomMemberRepository.findByRoom_IdAndUser_Id(room.getId(), owner.getId())
+                .ifPresentOrElse(member -> {
+                    member.setStatus(MemberStatusEnum.ACTIVE);
+                    member.setRole(RoomMemberRoleEnum.OWNER);
+                    member.setInactiveByAdminLock(false);
+                    roomMemberRepository.save(member);
+                }, () -> roomMemberService.addRoomMembers(
+                        owner.getId().toString(),
+                        room.getId().toString(),
+                        RoomMemberRoleEnum.OWNER.name()
+                ));
+    }
+
+    private Map<String, Object> metadata(Object... keyValues) {
+        Map<String, Object> result = new HashMap<>();
+        for (int i = 0; i + 1 < keyValues.length; i += 2) {
+            result.put(String.valueOf(keyValues[i]), keyValues[i + 1]);
+        }
+        return result;
+    }
+
+    private void createLog(RoomEntity room, LogActionEnum action, String reason, Map<String, Object> metadata) {
+        BuildLog log = BuildLog.builder()
+                .action(action)
+                .entityType(LogEntityTypeEnum.ROOM)
+                .entityId(room.getId().toString())
+                .entityName(room.getName())
+                .description(AuthUtils.getCurrentUsername() + " performed " + action.name() + " for room " + room.getName())
+                .metadata(writeMetadata(metadataWithReason(metadata, reason)))
+                .build();
+
+        auditLogService.log(log);
+    }
+
+    private Map<String, Object> metadataWithReason(Map<String, Object> metadata, String reason) {
+        Map<String, Object> result = new HashMap<>(metadata);
+        if (reason != null && !reason.isBlank()) {
+            result.put("reason", reason);
+        }
+        return result;
+    }
+
+    private String writeMetadata(Map<String, Object> metadata) {
+        try {
+            return objectMapper.writeValueAsString(metadata);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize audit metadata", e);
+        }
     }
 
     private RoomEntity findRoomOrThrow(String roomId) {

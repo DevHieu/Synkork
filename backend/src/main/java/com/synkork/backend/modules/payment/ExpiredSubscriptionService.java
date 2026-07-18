@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.payment;
 
 import com.synkork.backend.common.utils.EmailService;
+import com.synkork.backend.common.utils.PlanLimitUtils;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.RoomRepository;
 import com.synkork.backend.modules.room.enums.RoomStatusEnum;
@@ -11,6 +12,7 @@ import com.synkork.backend.modules.space.enums.SpaceStatusEnum;
 import com.synkork.backend.modules.space.enums.SpaceTypeEnum;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
+import com.synkork.backend.modules.user.enums.PlanEnum;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -34,18 +36,19 @@ public class ExpiredSubscriptionService {
     @Autowired
     private SpaceRepository spaceRepository;
 
-    Map<SpaceTypeEnum, Integer> freeLimits = Map.of(
-            SpaceTypeEnum.CHAT, 3,
-            SpaceTypeEnum.VOICE, 2,
-            SpaceTypeEnum.CALENDAR, 1,
-            SpaceTypeEnum.NOTE, 1,
-            SpaceTypeEnum.TASK, 1
-    );
-
     @Transactional
     public void pinPendingRemovalRoomAndSpace(List<UserEntity> users) {
+        pinPendingRemovalRoomAndSpace(users, null);
+    }
+
+    @Transactional
+    public void pinPendingRemovalRoomAndSpace(List<UserEntity> users, PlanEnum targetPlan) {
         for (UserEntity user : users) {
-            long daysRemaining = ChronoUnit.DAYS.between(LocalDateTime.now(), user.getPlanExpiresAt());
+            PlanEnum effectivePlan = targetPlan != null ? targetPlan : user.getCurrentPlan();
+            Map<SpaceTypeEnum, Integer> limits = limitsForPlan(effectivePlan);
+            long daysRemaining = user.getPlanExpiresAt() != null
+                    ? ChronoUnit.DAYS.between(LocalDateTime.now(), user.getPlanExpiresAt())
+                    : 0;
 
             // reset toàn bộ PENDING_REMOVAL của user này về OPEN
             // để tính lại từ đầu, tránh giữ trạng thái stale từ lần chạy trước
@@ -63,7 +66,7 @@ public class ExpiredSubscriptionService {
 
             List<UUID> ids = allRooms.stream().map(RoomEntity::getId).toList();
 
-            long roomExcess = ids.size() - 5;
+            long roomExcess = ids.size() - PlanLimitUtils.maxRooms(effectivePlan);
 
             if (roomExcess > 0) {
                 pendingRoomNames = allRooms.subList(0, (int) roomExcess)
@@ -79,7 +82,7 @@ public class ExpiredSubscriptionService {
                 String roomName = allRooms.get((int) (roomExcess > 0 ? roomExcess : 0) + i).getName();
                 List<String> spacesToDelete = new ArrayList<>();
 
-                for (Map.Entry<SpaceTypeEnum, Integer> entry : freeLimits.entrySet()) {
+                for (Map.Entry<SpaceTypeEnum, Integer> entry : limits.entrySet()) {
                     SpaceTypeEnum type = entry.getKey();
                     int limit = entry.getValue();
 
@@ -104,10 +107,20 @@ public class ExpiredSubscriptionService {
             }
 
             emailService.sendRemindUserRenewSubscription(
-                    user.getEmail(), user.getCurrentPlan(), daysRemaining,
+                    user.getEmail(), effectivePlan, daysRemaining,
                     pendingRoomNames, pendingSpaceNames
             );
         }
+    }
+
+    private Map<SpaceTypeEnum, Integer> limitsForPlan(PlanEnum plan) {
+        return Map.of(
+                SpaceTypeEnum.CHAT, PlanLimitUtils.maxChatSpaces(plan),
+                SpaceTypeEnum.VOICE, PlanLimitUtils.maxVoiceSpaces(plan),
+                SpaceTypeEnum.CALENDAR, PlanLimitUtils.maxCollaborationSpaces(plan),
+                SpaceTypeEnum.NOTE, PlanLimitUtils.maxCollaborationSpaces(plan),
+                SpaceTypeEnum.TASK, PlanLimitUtils.maxCollaborationSpaces(plan)
+        );
     }
 
     @Transactional

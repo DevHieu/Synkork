@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { ref, onMounted, h } from 'vue'
-import { User, LayoutGrid, Clock, Eye, CheckCircle2, XCircle, ShieldAlert } from '@lucide/vue'
+import { CheckCircle2, Clock, Eye, LayoutGrid, ShieldAlert, User, XCircle } from '@lucide/vue'
+import { onMounted, ref } from 'vue'
+
+import type { Report, ReportFilterParams, ReportStatus } from '@/pages/report/types/Reports'
+
 import { Badge } from '@/components/ui/badge'
 import { Button as UiButton } from '@/components/ui/button'
-
-import type { Report, ReportStatus, ReportFilterParams } from '@/pages/report/types/Reports'
 import ReportDetail from '@/pages/report/components/ReportDetail.vue'
 import { getReports, updateReportStatus } from '@/pages/report/service/reportService'
-import { userService } from '@/pages/users/services/userService'
 import { roomService } from '@/pages/rooms/service/roomService'
+import { userService } from '@/pages/users/services/userService'
 import { formatTimestamp } from '@/utils/date.utils'
 
 const loading = ref(false)
@@ -46,9 +47,11 @@ async function fetchRecentReports() {
     }
     const res = await getReports({ params })
     reports.value = res.data
-  } catch (error) {
+  }
+  catch (error) {
     console.error('Lỗi tải reports:', error)
-  } finally {
+  }
+  finally {
     loading.value = false
   }
 }
@@ -58,30 +61,34 @@ function handleViewDetail(report: Report) {
   isDetailOpen.value = true
 }
 
-async function handleUpdateReportStatus({ id, status, note }: { id: string; status: ReportStatus; note?: string }) {
+async function handleUpdateReportStatus({ id, status, note }: { id: string, status: ReportStatus, note?: string }) {
   try {
     await updateReportStatus(id, status, note)
     reports.value = reports.value.filter(r => r.id !== id)
     isDetailOpen.value = false
-  } catch (error) {
+  }
+  catch (error) {
     console.error('Lỗi cập nhật report:', error)
   }
 }
 
-async function handleLockTarget({ reportType, targetId }: { reportType: 'USER' | 'ROOM'; targetId: string }) {
+async function handleLockTarget({ reportType, targetId }: { reportType: 'USER' | 'ROOM', targetId: string }) {
   const confirmMsg = reportType === 'USER'
     ? 'Bạn có chắc muốn khoá user này?'
     : 'Bạn có chắc muốn khoá room này?'
 
-  if (!confirm(confirmMsg)) return
+  if (!confirm(confirmMsg))
+    return
 
   try {
     if (reportType === 'USER') {
       await userService.updateStatus(targetId, 'BANNED')
-    } else {
+    }
+    else {
       await roomService.changeRoomStatus(targetId, 'LOCKED')
     }
-  } catch (error) {
+  }
+  catch (error) {
     console.error('Lỗi khoá đối tượng:', error)
   }
 }
@@ -106,7 +113,9 @@ onMounted(fetchRecentReports)
       class="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2"
     >
       <ShieldAlert class="h-8 w-8 opacity-40" />
-      <p class="text-sm">Không có report nào đang chờ xử lý.</p>
+      <p class="text-sm">
+        Không có report nào đang chờ xử lý.
+      </p>
     </div>
 
     <div v-else class="space-y-1">
@@ -140,7 +149,9 @@ onMounted(fetchRecentReports)
 
     <div class="pt-2 text-center">
       <UiButton variant="link" size="sm" as-child>
-        <RouterLink to="/report">Xem tất cả reports</RouterLink>
+        <RouterLink to="/report">
+          Xem tất cả reports
+        </RouterLink>
       </UiButton>
     </div>
   </div>

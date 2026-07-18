@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
 import { LayoutGrid, Lock, Users } from '@lucide/vue'
+import { onMounted, ref } from 'vue'
+
+import type { Room } from '@/pages/rooms/types/RoomTypes'
+
 import { Badge } from '@/components/ui/badge'
 import { roomService } from '@/pages/rooms/service/roomService'
-import type { Room } from '@/pages/rooms/types/RoomTypes'
 
 const rooms = ref<Room[]>([])
 const loading = ref(false)
@@ -17,9 +19,11 @@ async function fetchTopRooms() {
     // Sort by memberCount descending
     const data: Room[] = res.data ?? []
     rooms.value = data.sort((a, b) => b.memberCount - a.memberCount).slice(0, 5)
-  } catch (err) {
+  }
+  catch (err) {
     console.error('Failed to fetch top rooms:', err)
-  } finally {
+  }
+  finally {
     loading.value = false
   }
 }
@@ -47,7 +51,9 @@ onMounted(fetchTopRooms)
       class="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2"
     >
       <LayoutGrid class="h-8 w-8 opacity-40" />
-      <p class="text-sm">Không có dữ liệu room.</p>
+      <p class="text-sm">
+        Không có dữ liệu room.
+      </p>
     </div>
 
     <!-- List -->
@@ -64,13 +70,15 @@ onMounted(fetchTopRooms)
 
         <!-- Avatar -->
         <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted overflow-hidden">
-          <img v-if="room.avatarUrl" :src="room.avatarUrl" :alt="room.name" class="h-full w-full object-cover" />
+          <img v-if="room.avatarUrl" :src="room.avatarUrl" :alt="room.name" class="h-full w-full object-cover">
           <LayoutGrid v-else class="h-4 w-4 text-muted-foreground" />
         </div>
 
         <!-- Info -->
         <div class="flex-1 min-w-0 space-y-0.5">
-          <p class="text-sm font-medium leading-tight truncate">{{ room.name }}</p>
+          <p class="text-sm font-medium leading-tight truncate">
+            {{ room.name }}
+          </p>
           <p class="text-xs text-muted-foreground leading-tight truncate">
             {{ room.ownerUsername ?? 'Unknown' }}
           </p>

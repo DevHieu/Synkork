@@ -7,6 +7,7 @@ import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.user.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -59,4 +60,12 @@ public interface ReportRepository extends JpaRepository<ReportEntity, UUID>, Jpa
         ORDER BY COUNT(r) DESC
     """)
     List<ReportReasonStatsResponse> findReasonCountsGroupedByType();
+
+    @Modifying
+    @Query("""
+        UPDATE ReportEntity r
+        SET r.targetRoom = null
+        WHERE r.targetRoom.id = :roomId
+    """)
+    int clearTargetRoom(@Param("roomId") UUID roomId);
 }

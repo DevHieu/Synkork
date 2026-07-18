@@ -1,13 +1,21 @@
 package com.synkork.backend.modules.admin.users;
 
-import com.google.common.collect.Lists;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.synkork.backend.common.utils.AuthUtils;
+import com.synkork.backend.modules.admin.auditLog.AuditLogService;
+import com.synkork.backend.modules.admin.auditLog.dtos.BuildLog;
+import com.synkork.backend.modules.admin.auditLog.enums.LogActionEnum;
+import com.synkork.backend.modules.admin.auditLog.enums.LogEntityTypeEnum;
 import com.synkork.backend.modules.admin.users.dtos.AdminUserResponse;
 import com.synkork.backend.modules.admin.users.dtos.CreateUserRequest;
 import com.synkork.backend.modules.admin.users.dtos.DeleteUserRequest;
 import com.synkork.backend.modules.admin.users.dtos.UpdateUserRequest;
 import com.synkork.backend.modules.admin.users.dtos.UserFilterRequest;
 import com.synkork.backend.modules.admin.users.email.AdminUserEmailService;
+import com.synkork.backend.modules.collaboration.calendar.repository.CalendarEventRepository;
 import com.synkork.backend.modules.payment.ExpiredSubscriptionService;
+import com.synkork.backend.modules.report.ReportRepository;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.RoomRepository;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
@@ -24,13 +32,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import jakarta.persistence.EntityManager;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -52,7 +60,9 @@ public class AdminUserService {
     private RoomRepository roomRepository;
 
     @Autowired
-    private EntityManager entityManager;
+    private ReportRepository reportRepository;
+    @Autowired
+    private CalendarEventRepository calendarEventRepository;
 
     @Autowired
     private AdminUserEmailService adminUserEmailService;
@@ -60,6 +70,10 @@ public class AdminUserService {
     private RoomMemberService roomMemberService;
     @Autowired
     private ExpiredSubscriptionService expiredSubscriptionService;
+    @Autowired
+    private AuditLogService auditLogService;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     private UserEntity findUserById(UUID id) {
         UserEntity user = userAdminRepository.findById(id)
@@ -102,12 +116,20 @@ public class AdminUserService {
         user.setPassword(passwordEncoder.encode(tempPassword));
         user.setRole(RoleEnum.USER);
         user.setStatus(UserStatusEnum.valueOf(req.status().toUpperCase()));
+        user.setCurrentPlan(req.plan() != null
+                ? PlanEnum.valueOf(req.plan().toUpperCase())
+                : PlanEnum.FREE);
 
         UserEntity saved = userAdminRepository.save(user);
         adminUserEmailService.sendWelcomeEmail(saved.getEmail(), saved.getUsername(), tempPassword);
+        createLog(saved, LogActionEnum.CREATE_USER, null, Map.of(
+                "status", saved.getStatus().name(),
+                "plan", saved.getCurrentPlan().name()
+        ));
         return AdminUserResponse.from(saved);
     }
 
+    @Transactional
     public AdminUserResponse updateUser(UUID id, UpdateUserRequest req) {
         UserEntity user = findUserById(id);
         String oldDisplayName = user.getDisplayName();
@@ -132,13 +154,21 @@ public class AdminUserService {
             PlanEnum plan = PlanEnum.valueOf(req.plan().toUpperCase());
 
             if (plan != oldPlan) {
-                expiredSubscriptionService.pinPendingRemovalRoomAndSpace(List.of(user));
                 user.setCurrentPlan(plan);
+                if (isPlanDowngrade(oldPlan, plan)) {
+                    expiredSubscriptionService.pinPendingRemovalRoomAndSpace(List.of(user), plan);
+                } else {
+                    expiredSubscriptionService.changePendingRoomAndSpace(user.getId());
+                }
             }
         }
 
         if (req.status() != null) {
-            user.setStatus(UserStatusEnum.valueOf(req.status().toUpperCase()));
+            UserStatusEnum newStatus = UserStatusEnum.valueOf(req.status().toUpperCase());
+            if (newStatus != oldStatus) {
+                applyStatusSideEffects(user, newStatus);
+                user.setStatus(newStatus);
+            }
         }
 
         if (req.role() != null) {
@@ -148,6 +178,18 @@ public class AdminUserService {
 
         UserEntity saved = userAdminRepository.save(user);
         adminUserEmailService.sendUserUpdatedEmail(saved, oldDisplayName, oldEmail, oldPlan, oldStatus, oldRole);
+        createLog(saved, LogActionEnum.UPDATE_USER, null, metadata(
+                "oldDisplayName", oldDisplayName,
+                "newDisplayName", saved.getDisplayName(),
+                "oldEmail", oldEmail,
+                "newEmail", saved.getEmail(),
+                "oldPlan", oldPlan != null ? oldPlan.name() : null,
+                "newPlan", saved.getCurrentPlan() != null ? saved.getCurrentPlan().name() : null,
+                "oldStatus", oldStatus != null ? oldStatus.name() : null,
+                "newStatus", saved.getStatus() != null ? saved.getStatus().name() : null,
+                "oldRole", oldRole != null ? oldRole.name() : null,
+                "newRole", saved.getRole() != null ? saved.getRole().name() : null
+        ));
         return AdminUserResponse.from(saved);
     }
 
@@ -163,24 +205,39 @@ public class AdminUserService {
         user.setStatus(UserStatusEnum.INACTIVE);
         userAdminRepository.save(user);
         adminUserEmailService.sendUserDeletedEmail(user, reason);
+        createLog(user, LogActionEnum.DELETE_USER, reason, Map.of(
+                "newStatus", UserStatusEnum.INACTIVE.name()
+        ));
 
         return Map.of("message", "Da chuyen nguoi dung sang INACTIVE va xoa khoi cac room dang tham gia");
     }
 
+    @Transactional
     public AdminUserResponse toggleLockUser(UUID userId, UserStatusEnum status) {
         UserEntity user = findUserById(userId);
+        UserStatusEnum oldStatus = user.getStatus();
+        applyStatusSideEffects(user, status);
         user.setStatus(status);
         UserEntity saved = userAdminRepository.save(user);
-
         if (status == UserStatusEnum.BANNED) {
-            this.inactiveUserAccount(user);
-
             adminUserEmailService.sendUserLockedEmail(saved);
-        } else if (status == UserStatusEnum.ACTIVE) {
-            roomMemberRepository.updateStatusByUserId(user.getId(), MemberStatusEnum.ACTIVE);
         }
 
+        createLog(saved, status == UserStatusEnum.ACTIVE ? LogActionEnum.UNBAN_USER : LogActionEnum.BAN_USER, null, Map.of(
+                "oldStatus", oldStatus.name(),
+                "newStatus", saved.getStatus().name()
+        ));
+
         return AdminUserResponse.from(saved);
+    }
+
+    private void applyStatusSideEffects(UserEntity user, UserStatusEnum newStatus) {
+        if (newStatus == UserStatusEnum.ACTIVE) {
+            roomMemberRepository.restoreMembersInactiveByAdminLock(user.getId());
+            return;
+        }
+
+        inactiveUserAccount(user);
     }
 
     public AdminUserResponse warnUser(UUID userId) {
@@ -190,6 +247,9 @@ public class AdminUserService {
 
         UserEntity saved = userAdminRepository.save(user);
         adminUserEmailService.sendUserWarningEmail(saved);
+        createLog(saved, LogActionEnum.WARN_USER, null, Map.of(
+                "warning", saved.getWarning()
+        ));
 
         return AdminUserResponse.from(saved);
     }
@@ -204,8 +264,8 @@ public class AdminUserService {
     }
 
     private void inactiveUserAccount(UserEntity user) {
-        roomMemberRepository.updateStatusByUserId(user.getId(), MemberStatusEnum.INACTIVE);
-        roomMemberRepository.updateRoleByUserId(user.getId(), RoomMemberRoleEnum.MEMBER);
+        roomMemberRepository.inactiveActiveMembersByAdminLock(user.getId());
+        roomMemberRepository.updateRoleByUserIdAndAdminLock(user.getId(), RoomMemberRoleEnum.MEMBER);
 
         List<RoomEntity> ownedRooms = roomRepository.findAllByOwnerId(user.getId());
         for (RoomEntity room : ownedRooms) {
@@ -213,10 +273,85 @@ public class AdminUserService {
                     roomMemberRepository.findByRoom_Id(room.getId())
                             .stream()
                             .filter(member -> !member.getUser().getId().equals(user.getId()))
+                            .filter(member -> member.getStatus() == MemberStatusEnum.ACTIVE)
                             .toList();
 
-            roomMemberService.transferOwnerBeforeRemoving(room, remainingMembers);
+            if (remainingMembers.isEmpty()) {
+                calendarEventRepository.clearCallRoomSpaceByRoomId(room.getId());
+                reportRepository.clearTargetRoom(room.getId());
+                createRoomLog(room, LogActionEnum.DELETE_ROOM, "Room was deleted because owner was locked and no active members remained", Map.of(
+                        "roomId", room.getId().toString(),
+                        "roomName", room.getName()
+                ));
+                roomRepository.delete(room);
+            } else {
+                roomMemberService.transferOwnerBeforeRemoving(room, remainingMembers);
+            }
+        }
+    }
+
+    private boolean isPlanDowngrade(PlanEnum oldPlan, PlanEnum newPlan) {
+        return planRank(newPlan) < planRank(oldPlan);
+    }
+
+    private int planRank(PlanEnum plan) {
+        if (plan == null) {
+            return 1;
+        }
+        return switch (plan) {
+            case FREE -> 1;
+            case TEAM -> 2;
+            case BUSINESS -> 3;
+        };
+    }
+
+    private Map<String, Object> metadata(Object... keyValues) {
+        Map<String, Object> result = new HashMap<>();
+        for (int i = 0; i + 1 < keyValues.length; i += 2) {
+            result.put(String.valueOf(keyValues[i]), keyValues[i + 1]);
+        }
+        return result;
+    }
+
+    private void createLog(UserEntity user, LogActionEnum action, String reason, Map<String, Object> metadata) {
+        BuildLog log = BuildLog.builder()
+                .action(action)
+                .entityType(LogEntityTypeEnum.USER)
+                .entityId(user.getId().toString())
+                .entityName(user.getEmail())
+                .description(AuthUtils.getCurrentUsername() + " performed " + action.name() + " for user " + user.getEmail())
+                .metadata(writeMetadata(metadataWithReason(metadata, reason)))
+                .build();
+
+        auditLogService.log(log);
+    }
+
+    private void createRoomLog(RoomEntity room, LogActionEnum action, String reason, Map<String, Object> metadata) {
+        BuildLog log = BuildLog.builder()
+                .action(action)
+                .entityType(LogEntityTypeEnum.ROOM)
+                .entityId(room.getId().toString())
+                .entityName(room.getName())
+                .description(AuthUtils.getCurrentUsername() + " performed " + action.name() + " for room " + room.getName())
+                .metadata(writeMetadata(metadataWithReason(metadata, reason)))
+                .build();
+
+        auditLogService.log(log);
+    }
+
+    private Map<String, Object> metadataWithReason(Map<String, Object> metadata, String reason) {
+        Map<String, Object> result = new HashMap<>(metadata);
+        if (reason != null && !reason.isBlank()) {
+            result.put("reason", reason);
+        }
+        return result;
+    }
+
+    private String writeMetadata(Map<String, Object> metadata) {
+        try {
+            return objectMapper.writeValueAsString(metadata);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize audit metadata", e);
         }
     }
 }
-

@@ -118,6 +118,7 @@ public class RoomMemberService {
         }
 
         target.setStatus(MemberStatusEnum.INACTIVE);
+        target.setInactiveByAdminLock(false);
         roomMemberRepository.save(target);
 
 //        roomMemberRepository.removeFromCardAssignees(memberUUID);
@@ -225,6 +226,7 @@ public class RoomMemberService {
     public void leaveRoom(UUID roomUUID, UUID requesterId) {
         RoomMemberEntity member = this.getRoomMemberByRoomIdAndUserId(roomUUID, requesterId);
         member.setStatus(MemberStatusEnum.INACTIVE);
+        member.setInactiveByAdminLock(false);
         roomMemberRepository.save(member);
 
 //        roomMemberRepository.removeFromCardAssignees(member.getId());
@@ -235,6 +237,7 @@ public class RoomMemberService {
     public void deleteMember(UUID userId, UUID roomId) {
         RoomMemberEntity member = this.getRoomMemberByRoomIdAndUserId(roomId, userId);
         member.setStatus(MemberStatusEnum.INACTIVE);
+        member.setInactiveByAdminLock(false);
         roomMemberRepository.save(member);
     }
 
@@ -256,6 +259,8 @@ public class RoomMemberService {
 
         RoomMemberEntity ownerMember = newOwner.get();
         ownerMember.setRole(RoomMemberRoleEnum.OWNER);
+        ownerMember.setStatus(MemberStatusEnum.ACTIVE);
+        ownerMember.setInactiveByAdminLock(false);
         room.setOwner(ownerMember.getUser());
         roomMemberRepository.save(ownerMember);
         roomRepository.save(room);

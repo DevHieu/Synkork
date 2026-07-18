@@ -112,13 +112,6 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
-    '/dashboard/tabs/message-overview': RouteRecordInfo<
-      '/dashboard/tabs/message-overview',
-      '/dashboard/tabs/message-overview',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
     '/dashboard/tabs/overview-content': RouteRecordInfo<
       '/dashboard/tabs/overview-content',
       '/dashboard/tabs/overview-content',
@@ -407,14 +400,6 @@ declare module 'vue-router/auto-routes' {
     'src/pages/dashboard/index.vue': {
       routes:
         | '/dashboard/'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
-    'src/pages/dashboard/tabs/message-overview.vue': {
-      routes:
-        | '/dashboard/tabs/message-overview'
       views:
         | never
       pathParamNames:

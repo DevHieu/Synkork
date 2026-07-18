@@ -1,11 +1,6 @@
 <script setup lang="ts">
+import { DoorOpen, LayoutGrid, LockKeyhole, MessageSquare } from '@lucide/vue'
 import { onMounted, ref } from 'vue'
-import { LayoutGrid, LockKeyhole, DoorOpen, MessageSquare } from '@lucide/vue'
-
-import DataCard from '../components/data-card.vue'
-import RoomChart from '../tabs/room/room-card.vue'
-import TopRooms from '../tabs/room/top-room.vue'
-import { dashboardService } from '../services/dashboardService'
 
 import {
   Card,
@@ -15,12 +10,18 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 
+import DataCard from '../components/overview/data-card.vue'
+import RoomChart from '../components/room/room-card.vue'
+import TopRooms from '../components/room/top-room.vue'
+import { dashboardService } from '../services/dashboardService'
+
 const stats = ref<any>(null)
 
 onMounted(async () => {
   try {
     stats.value = await dashboardService.getRoomStatsData()
-  } catch (err) {
+  }
+  catch (err) {
     console.error('Failed to load room stats:', err)
   }
 })

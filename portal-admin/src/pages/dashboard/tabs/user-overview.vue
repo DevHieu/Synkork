@@ -9,7 +9,7 @@ import {
   Users,
 } from '@lucide/vue'
 
-import DataCard from '../components/data-card.vue'
+import DataCard from '../components/overview/data-card.vue/index.js'
 import { dashboardService } from '../services/dashboardService'
 
 interface UserStats {

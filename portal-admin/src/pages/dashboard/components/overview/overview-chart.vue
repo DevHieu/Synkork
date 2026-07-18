@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { VisArea, VisAxis, VisLine, VisXYContainer } from '@unovis/vue'
+import { storeToRefs } from 'pinia'
 import { onMounted, ref } from 'vue'
 
 import type { ChartConfig } from '@/components/ui/chart'
@@ -27,11 +28,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useTimeRangeStore } from '@/stores/time-range'
 
-import { dashboardService } from '../services/dashboardService'
+import { dashboardService } from '../../services/dashboardService'
 
+const timeRangeStore = useTimeRangeStore()
+const { timeRange } = storeToRefs(timeRangeStore)
 const rawData = ref<any[]>([])
-const timeRange = ref<'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY'>('WEEKLY')
 
 async function fetchData() {
   try {

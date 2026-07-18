@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { VisArea, VisAxis, VisLine, VisXYContainer } from '@unovis/vue'
+import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
 
 import type { ChartConfig } from '@/components/ui/chart'
+
 import {
   Card,
   CardContent,
@@ -25,6 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useTimeRangeStore } from '@/stores/time-range'
+
 import { dashboardService } from '../../services/dashboardService'
 
 interface ChartPoint {
@@ -34,14 +38,16 @@ interface ChartPoint {
   locked: number
 }
 
+const timeRangeStore = useTimeRangeStore()
+const { timeRange } = storeToRefs(timeRangeStore)
 const rawData = ref<any[]>([])
-const timeRange = ref<'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY'>('WEEKLY')
 
 async function fetchData() {
   try {
     const data = await dashboardService.getRoomChartData(timeRange.value)
     rawData.value = Array.isArray(data) ? data : []
-  } catch (err) {
+  }
+  catch (err) {
     console.error('Failed to fetch room chart:', err)
     rawData.value = []
   }
@@ -97,7 +103,8 @@ const svgDefs = `
 `
 
 const yMax = computed(() => {
-  if (!chartData.value.length) return 10
+  if (!chartData.value.length)
+    return 10
 
   const max = Math.max(
     ...chartData.value.flatMap(d => [
@@ -145,19 +152,16 @@ const periodLabel = computed(() => {
 
         <SelectContent class="rounded-xl">
           <SelectItem value="WEEKLY" class="rounded-lg">
-            Weekly
+            Tuần
           </SelectItem>
-
           <SelectItem value="MONTHLY" class="rounded-lg">
-            Monthly
+            Tháng
           </SelectItem>
-
           <SelectItem value="QUARTERLY" class="rounded-lg">
-            Quarterly
+            Quý
           </SelectItem>
-
           <SelectItem value="YEARLY" class="rounded-lg">
-            Yearly
+            Năm
           </SelectItem>
         </SelectContent>
       </Select>
@@ -255,7 +259,7 @@ const periodLabel = computed(() => {
                       month: 'short',
                       day: 'numeric',
                     }),
-                }
+                },
               )
             "
             :color="

@@ -77,10 +77,45 @@ public interface RoomMemberRepository extends JpaRepository<RoomMemberEntity, UU
     @Transactional
     @Query("""
         UPDATE RoomMemberEntity rm
+        SET rm.status = 'INACTIVE',
+            rm.inactiveByAdminLock = true
+        WHERE rm.user.id = :userId
+          AND rm.status = 'ACTIVE'
+    """)
+    int inactiveActiveMembersByAdminLock(@Param("userId") UUID userId);
+
+    @Modifying
+    @Transactional
+    @Query("""
+        UPDATE RoomMemberEntity rm
+        SET rm.status = 'ACTIVE',
+            rm.inactiveByAdminLock = false
+        WHERE rm.user.id = :userId
+          AND rm.inactiveByAdminLock = true
+    """)
+    int restoreMembersInactiveByAdminLock(@Param("userId") UUID userId);
+
+    @Modifying
+    @Transactional
+    @Query("""
+        UPDATE RoomMemberEntity rm
         SET rm.role = :role
         WHERE rm.user.id = :userId
     """)
     int updateRoleByUserId(
+            @Param("userId") UUID userId,
+            @Param("role") RoomMemberRoleEnum role
+    );
+
+    @Modifying
+    @Transactional
+    @Query("""
+        UPDATE RoomMemberEntity rm
+        SET rm.role = :role
+        WHERE rm.user.id = :userId
+          AND rm.inactiveByAdminLock = true
+    """)
+    int updateRoleByUserIdAndAdminLock(
             @Param("userId") UUID userId,
             @Param("role") RoomMemberRoleEnum role
     );

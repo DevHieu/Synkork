@@ -6,7 +6,7 @@ import { onMounted, ref } from 'vue'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
-import DataCard from '../components/data-card.vue'
+import DataCard from '../components/overview/data-card.vue/index.js'
 import { dashboardService } from '../services/dashboardService'
 
 const loading = ref(false)
