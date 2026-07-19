@@ -1,5 +1,6 @@
-package com.synkork.backend.modules.payment;
+package com.synkork.backend.modules.payment.repository;
 
+import com.synkork.backend.modules.payment.entity.InvoiceEntity;
 import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -27,3 +28,4 @@ public interface InvoiceRepository extends JpaRepository<InvoiceEntity, UUID>, J
     @Query("SELECT COALESCE(SUM(i.amount), 0) FROM InvoiceEntity i WHERE i.status = :status AND i.paidAt >= :start")
     BigDecimal sumAmountByStatusAndPaidAtAfter(@Param("status") InvoiceStatusEnum status, @Param("start") LocalDateTime start);
 }
+ 

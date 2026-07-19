@@ -1,12 +1,12 @@
     package com.synkork.backend.modules.admin.subscriptions;
 
-    import com.synkork.backend.modules.admin.subscriptions.dtos.InvoiceFilterRequest;
-    import com.synkork.backend.modules.payment.InvoiceEntity;
-    import com.synkork.backend.modules.user.UserEntity;
-    import jakarta.persistence.criteria.Join;
-    import jakarta.persistence.criteria.JoinType;
-    import jakarta.persistence.criteria.Predicate;
-    import org.springframework.data.jpa.domain.Specification;
+import com.synkork.backend.modules.admin.subscriptions.dtos.InvoiceFilterRequest;
+import com.synkork.backend.modules.payment.entity.InvoiceEntity;
+import com.synkork.backend.modules.user.UserEntity;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
+import org.springframework.data.jpa.domain.Specification;
 
     import java.util.ArrayList;
     import java.util.List;
