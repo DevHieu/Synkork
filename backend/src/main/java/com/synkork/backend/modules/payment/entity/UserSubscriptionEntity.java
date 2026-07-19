@@ -46,9 +46,7 @@ public class UserSubscriptionEntity extends BaseEntity {
     @JoinColumn(name = "invoice_id", columnDefinition = "BINARY(16)")
     private InvoiceEntity invoice;
 
-    // Đánh dấu đây có phải gói đang active của user hay không
-    // (để tránh phải query "ORDER BY startedAt DESC LIMIT 1" liên tục)
-    @Column(nullable = false)
+    @Column(name = "is_current", nullable = false)
     @Builder.Default
     private boolean current = false;
 }

@@ -14,4 +14,8 @@ public interface PlanPricingRepository extends JpaRepository<PlanPricingEntity, 
     Optional<PlanPricingEntity> findByPlanAndBillingCycleAndActiveTrue(PlanEnum plan, BillingCycleEnum billingCycle);
 
     List<PlanPricingEntity> findByActiveTrue();
+
+    List<PlanPricingEntity> findByPlanAndBillingCycleOrderByCreatedAtDesc(PlanEnum plan, BillingCycleEnum billingCycle);
+
 }
+   

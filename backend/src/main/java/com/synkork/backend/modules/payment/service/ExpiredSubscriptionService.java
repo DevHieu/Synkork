@@ -104,10 +104,11 @@ public class ExpiredSubscriptionService {
             );
         }
     }
-
+ 
     @Transactional
     public void changePendingRoomAndSpace(UUID userId) {
         roomRepository.updatePendingRoomStatusByOwnerId(RoomStatusEnum.OPEN, userId);
         spaceRepository.updatePendingSpaceStatusByRoom_OwnerId(SpaceStatusEnum.OPEN, userId);
     }
 }
+  

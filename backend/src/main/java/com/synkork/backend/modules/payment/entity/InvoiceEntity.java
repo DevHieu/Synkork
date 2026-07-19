@@ -31,6 +31,7 @@ public class InvoiceEntity {
     @JoinColumn(name = "user_id", nullable = false, columnDefinition = "BINARY(16)")
     private UserEntity user;
 
+    // Số tiền THỰC THU (đã áp khuyến mãi nếu có)
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
 
@@ -48,6 +49,15 @@ public class InvoiceEntity {
     private String transactionId;
 
     private LocalDateTime paidAt;
+
+    // Mã khuyến mãi đã áp dụng cho hoá đơn này (nếu có), để đối soát/báo cáo sau này
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "promotion_id", columnDefinition = "BINARY(16)")
+    private PromotionEntity promotion;
+
+    // Số tiền đã được giảm nhờ khuyến mãi (0 nếu không dùng mã nào)
+    @Column(name = "discount_amount", precision = 10, scale = 2)
+    private BigDecimal discountAmount;
 
     @CreationTimestamp
     @Column(updatable = false)

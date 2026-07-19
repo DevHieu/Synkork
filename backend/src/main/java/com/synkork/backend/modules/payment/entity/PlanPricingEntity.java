@@ -9,10 +9,7 @@ import lombok.*;
 import java.math.BigDecimal;
 
 @Entity
-@Table(
-    name = "plan_pricings",
-    uniqueConstraints = @UniqueConstraint(columnNames = {"plan", "billing_cycle"})
-)
+@Table(name = "plan_pricings")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -30,15 +27,12 @@ public class PlanPricingEntity extends BaseEntity {
     @Column(name = "billing_cycle", nullable = false, length = 20)
     private BillingCycleEnum billingCycle;
 
-    // Giá tiền VNĐ (đơn vị đồng, không phải xu)
+    // Giá niêm yết (chưa áp khuyến mãi), đơn vị VNĐ (đồng, không phải xu)
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal amount;
 
-    // Cho phép ẩn/tắt 1 gói mà không cần xóa record (giữ lịch sử giá cũ)
+    // true = giá đang áp dụng hiện tại; false = giá cũ, giữ lại để xem lịch sử
     @Column(nullable = false)
     @Builder.Default
     private boolean active = true;
-
-    // Ghi chú, vd "Giảm giá black friday 2026"
-    private String note;
 }
