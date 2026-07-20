@@ -1,7 +1,17 @@
-package com.synkork.backend.modules.payment;
+package com.synkork.backend.modules.payment.service;
+
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import com.synkork.backend.common.utils.EmailService;
-import com.synkork.backend.common.utils.PlanLimitUtils;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.RoomRepository;
 import com.synkork.backend.modules.room.enums.RoomStatusEnum;
@@ -13,13 +23,8 @@ import com.synkork.backend.modules.space.enums.SpaceTypeEnum;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
 import com.synkork.backend.modules.user.enums.PlanEnum;
-import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
+import jakarta.transaction.Transactional;
 
 @Service
 public class ExpiredSubscriptionService {

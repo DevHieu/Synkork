@@ -49,13 +49,7 @@ public class UserEntity extends BaseEntity {
     @Builder.Default
     private UserStatusEnum status = UserStatusEnum.ACTIVE;
 
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private PlanEnum currentPlan = PlanEnum.FREE;
-
-    private LocalDateTime planExpiresAt;
-
-    @Column(unique = true)
+    @Unique
     private UUID personalNoteId;
 
     @Column(unique = true)
@@ -72,4 +66,11 @@ public class UserEntity extends BaseEntity {
     @Column(nullable = false)
     @Builder.Default
     private int warning = 0;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private PlanEnum currentPlan = PlanEnum.FREE;
+
+    private LocalDateTime planExpiresAt;
 }
