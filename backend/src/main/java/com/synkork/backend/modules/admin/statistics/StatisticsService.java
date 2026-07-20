@@ -1,31 +1,38 @@
 package com.synkork.backend.modules.admin.statistics;
 
-import com.synkork.backend.config.WebSocketEventListener;
-import com.synkork.backend.modules.admin.statistics.dtos.UserStatsResponse;
-import com.synkork.backend.modules.message.MessageRepository;
-import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
-import com.synkork.backend.modules.payment.repository.InvoiceRepository;
-import com.synkork.backend.modules.room.RoomRepository;
-import com.synkork.backend.modules.room.enums.RoomTypeEnum;
-import com.synkork.backend.modules.admin.statistics.dtos.OverviewChartResponse;
-import com.synkork.backend.modules.admin.statistics.dtos.OverviewStatsResponse;
-import com.synkork.backend.modules.admin.statistics.dtos.SubscriptionDashboardResponse;
-import com.synkork.backend.modules.admin.statistics.enums.PeriodEnum;
-import com.synkork.backend.modules.user.UserRepository;
-import com.synkork.backend.modules.user.enums.PlanEnum;
-import com.synkork.backend.modules.user.enums.RoleEnum;
-import com.synkork.backend.modules.admin.subscriptions.dtos.AdminInvoiceResponse;
-import com.synkork.backend.modules.user.enums.UserStatusEnum;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.List;
+import com.synkork.backend.config.WebSocketEventListener;
+import com.synkork.backend.modules.admin.statistics.dtos.OverviewChartResponse;
+import com.synkork.backend.modules.admin.statistics.dtos.OverviewStatsResponse;
+import com.synkork.backend.modules.admin.statistics.dtos.ReportChartResponse;
+import com.synkork.backend.modules.admin.statistics.dtos.ReportReasonStatsResponse;
+import com.synkork.backend.modules.admin.statistics.dtos.ReportStatsResponse;
+import com.synkork.backend.modules.admin.statistics.dtos.SubscriptionDashboardResponse;
+import com.synkork.backend.modules.admin.statistics.dtos.UserStatsResponse;
+import com.synkork.backend.modules.admin.statistics.enums.PeriodEnum;
+import com.synkork.backend.modules.admin.subscriptions.dtos.AdminInvoiceResponse;
+import com.synkork.backend.modules.message.MessageRepository;
+import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
+import com.synkork.backend.modules.payment.repository.InvoiceRepository;
+import com.synkork.backend.modules.report.ReportRepository;
+import com.synkork.backend.modules.report.enums.ReportStatusEnums;
+import com.synkork.backend.modules.report.enums.ReportTypeEnums;
+import com.synkork.backend.modules.room.RoomRepository;
+import com.synkork.backend.modules.room.enums.RoomTypeEnum;
+import com.synkork.backend.modules.user.UserRepository;
+import com.synkork.backend.modules.user.enums.PlanEnum;
+import com.synkork.backend.modules.user.enums.RoleEnum;
+import com.synkork.backend.modules.user.enums.UserStatusEnum;
 
 @Service
 public class StatisticsService {
@@ -45,6 +52,9 @@ public class StatisticsService {
     @Autowired
     private InvoiceRepository invoiceRepository;
 
+    @Autowired
+    private ReportRepository reportRepository;
+
     private LocalDateTime getStart(PeriodEnum period) {
 
         return switch (period) {
@@ -57,7 +67,8 @@ public class StatisticsService {
 
     private double calcGrowth(long current, long previous) {
         System.out.println("current: " + current + " previous: " + previous);
-        if (previous == 0) return 100.0;
+        if (previous == 0)
+            return 100.0;
         return Math.round(((double) (current - previous) / previous) * 1000.0) / 10.0;
     }
 
@@ -100,8 +111,7 @@ public class StatisticsService {
                         s.getCreatedAt().toLocalDate(),
                         s.getTotalUsers(),
                         s.getTotalRooms(),
-                        s.getTotalSubscriptions()
-                ))
+                        s.getTotalSubscriptions()))
                 .toList();
     }
 
@@ -153,8 +163,7 @@ public class StatisticsService {
                 onlineDayGrowth,
                 userMonthGrowth,
                 roomMonthGrowth,
-                subscriptionMonthGrowth
-        );
+                subscriptionMonthGrowth);
     }
 
     public UserStatsResponse getUserStatsData() {
@@ -174,15 +183,15 @@ public class StatisticsService {
                 userRepository.countByRoleAndStatus(userRole, UserStatusEnum.BANNED),
                 userRepository.countByRoleAndCurrentPlan(userRole, PlanEnum.FREE),
                 userRepository.countByRoleAndCurrentPlan(userRole, PlanEnum.TEAM),
-                userRepository.countByRoleAndCurrentPlan(userRole, PlanEnum.BUSINESS)
-        );
+                userRepository.countByRoleAndCurrentPlan(userRole, PlanEnum.BUSINESS));
     }
 
     public SubscriptionDashboardResponse getSubscriptionDashboardData() {
         LocalDateTime startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
 
         BigDecimal totalRevenue = invoiceRepository.sumAmountByStatus(InvoiceStatusEnum.PAID);
-        BigDecimal revenueThisMonth = invoiceRepository.sumAmountByStatusAndPaidAtAfter(InvoiceStatusEnum.PAID, startOfMonth);
+        BigDecimal revenueThisMonth = invoiceRepository.sumAmountByStatusAndPaidAtAfter(InvoiceStatusEnum.PAID,
+                startOfMonth);
 
         long activeSubscriptions = userRepository.countActiveSubscriptions(PlanEnum.FREE, LocalDateTime.now());
         long pendingInvoices = invoiceRepository.countByStatus(InvoiceStatusEnum.PENDING);
@@ -205,5 +214,31 @@ public class StatisticsService {
                 .recentTransactions(recentTransactions)
                 .build();
     }
-}
 
+    public ReportStatsResponse getReportStatsData() {
+        long total = reportRepository.count();
+        long pending = reportRepository.countByStatus(ReportStatusEnums.PENDING);
+        long resolved = reportRepository.countByStatus(ReportStatusEnums.RESOLVED);
+        long dismissed = reportRepository.countByStatus(ReportStatusEnums.DISMISSED);
+        long userReports = reportRepository.countByReportType(ReportTypeEnums.USER);
+        long roomReports = reportRepository.countByReportType(ReportTypeEnums.ROOM);
+
+        return new ReportStatsResponse(total, pending, resolved, dismissed, userReports, roomReports);
+    }
+
+    public List<ReportChartResponse> getReportChart(PeriodEnum period) {
+        LocalDateTime from = getStart(period);
+
+        return reportRepository.findDailyReportCounts(from)
+                .stream()
+                .map(row -> new ReportChartResponse(
+                        (LocalDate) row[0],
+                        ((Number) row[1]).longValue(),
+                        ((Number) row[2]).longValue()))
+                .toList();
+    }
+
+    public List<ReportReasonStatsResponse> getReportReasonStats() {
+        return reportRepository.findReasonCountsGroupedByType();
+    }
+}

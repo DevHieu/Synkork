@@ -1,18 +1,19 @@
 package com.synkork.backend.modules.roomMember;
 
-import com.synkork.backend.common.utils.AuthUtils;
-import com.synkork.backend.modules.roomMember.dto.ChangeAuthorityDTO;
-import com.synkork.backend.modules.roomMember.dto.MuteRequest;
-import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
-import com.synkork.backend.security.UserPrinciple;
+import java.util.List;
+import java.util.UUID;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.UUID;
+import com.synkork.backend.common.utils.AuthUtils;
+import com.synkork.backend.modules.roomMember.dto.ChangeAuthorityDTO;
+import com.synkork.backend.modules.roomMember.dto.ChatDisableRequest;
+import com.synkork.backend.modules.roomMember.dto.MuteRequest;
+import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
+import com.synkork.backend.modules.roomMember.enums.ChatDisableTime;
 
 @RestController
 @RequestMapping("/rooms/{roomId}/members")
@@ -68,13 +69,34 @@ public class RoomMemberController {
         return  ResponseEntity.ok().build();
     }
 
+    @PatchMapping("/{memberId}/chat-mute")
+    public ResponseEntity<RoomMemberDto> chatDisableMember(@PathVariable String roomId, @PathVariable String memberId, @RequestParam ChatDisableTime time) {
+        UUID memberUUID = UUID.fromString(memberId);
+        UUID roomUUID = UUID.fromString(roomId);
+        UUID requesterId = AuthUtils.getCurrentUserId();
+
+        RoomMemberEntity member = roomMemberService.setChatMuteMember(memberUUID, roomUUID, requesterId, time);
+        RoomMemberDto resp = new RoomMemberDto(member);
+
+        messagingTemplate.convertAndSend(
+                "/topic/room/" + roomId + "/members/changeAuthority", resp
+        );
+
+        return ResponseEntity.ok(resp);
+    }
+
     @PatchMapping("/{memberId}/mute")
     public ResponseEntity<Void> muteRoomMembers(@PathVariable String roomId, @PathVariable String memberId, @RequestBody MuteRequest muteRequest) {
         UUID roomUUID =  UUID.fromString(roomId);
         UUID memberUUID = UUID.fromString(memberId);
         UUID requesterId = AuthUtils.getCurrentUserId();
 
-        roomMemberService.toggleMuteMembers(roomUUID, memberUUID, requesterId, muteRequest);
+        RoomMemberEntity member = roomMemberService.toggleMuteMembers(roomUUID, memberUUID, requesterId, muteRequest);
+        RoomMemberDto dto = new RoomMemberDto(member);
+
+        messagingTemplate.convertAndSend(
+                "/topic/room/" + roomId + "/members/updated", dto
+        );
 
         return ResponseEntity.ok().build();
     }

@@ -1,14 +1,16 @@
-import { ref, watch, unref } from "vue";
+import { ref, watch } from "vue";
 import {
   getEventsByDateRange,
   createEvent as apiCreateEvent,
   updateEvent as apiUpdateEvent,
+  uploadEventAttachments as apiUploadEventAttachments,
   deleteEvent as apiDeleteEvent,
   checkConflicts as apiCheckConflicts,
 } from "@/services/calendarService";
 import type { CalendarEvent } from "@/types/CalendarEvent";
 import type { Ref } from "vue";
 import type dayjs from "dayjs";
+import { calculateDateRange, formatPayload, extractNewFiles } from "./calendarUtils";
 
 // Quản lý fetch và thay đổi event qua API
 export function useCalendarEvents(
@@ -37,89 +39,34 @@ export function useCalendarEvents(
     }
   };
 
-  // Tính range lấy dữ liệu theo chế độ xem
-  const calculateDateRange = (date: dayjs.Dayjs, mode: string) => {
-    if (mode === "week") {
-      return {
-        start: date.startOf("week").format("YYYY-MM-DD"),
-        end: date.endOf("week").format("YYYY-MM-DD")
-      };
-    }
-    
-    if (mode === "year") {
-      return {
-        start: date.startOf("year").format("YYYY-MM-DD"),
-        end: date.endOf("year").format("YYYY-MM-DD")
-      };
-    }
-
-    // View month default (đệm 7 ngày)
-    return {
-      start: date.startOf("month").subtract(7, "day").format("YYYY-MM-DD"),
-      end: date.endOf("month").add(7, "day").format("YYYY-MM-DD")
-    };
-  };
-
-  // Chuẩn hóa payload
-  const formatPayload = (data: any, id?: string) => {
-    const normalizedAttendees = Array.isArray(data.attendees)
-      ? data.attendees
-          .map((email: string) => email?.trim())
-          .filter((email: string) => Boolean(email))
-      : [];
-
-    const normalizedAttachments = Array.isArray(data.attachments)
-      ? data.attachments
-          .filter((attachment: any) => attachment?.name)
-          .map((attachment: any) => ({
-            name: attachment.name,
-            size: attachment.size
-              ? attachment.file
-                ? Math.max(1, Math.ceil(attachment.size / 1024))
-                : attachment.size
-              : 0,
-            fileUrl: attachment.fileUrl ?? "",
-            type: attachment.type,
-          }))
-      : [];
-
-    const payload = {
-      ...data,
-      startTime: data.startTime.length === 5 ? `${data.startTime}:00` : data.startTime,
-      endTime: data.endTime.length === 5 ? `${data.endTime}:00` : data.endTime,
-      spaceId: spaceIdRef.value,
-      createdById: unref(currentUserId),
-      attendees: normalizedAttendees,
-      attachments: normalizedAttachments,
-    };
-    if (id) payload.id = id;
-    // Xóa recurrenceEndDate khi không áp dụng
-    if (payload.recurrenceType === 'NONE' || !payload.recurrenceEndDate) {
-      delete payload.recurrenceEndDate;
-    }
-    return payload;
-  };
-
   const createEvent = async (data: any) => {
-    await apiCreateEvent(formatPayload(data));
+    const response = await apiCreateEvent(formatPayload(data, spaceIdRef, currentUserId));
+    const files = extractNewFiles(data);
+    if (files.length > 0) {
+      await apiUploadEventAttachments(response.data.id, files);
+    }
     await fetchEvents();
   };
 
   const updateEvent = async (id: string, data: any) => {
-    await apiUpdateEvent(id, formatPayload(data, id));
+    await apiUpdateEvent(id, formatPayload(data, spaceIdRef, currentUserId, id));
+    const files = extractNewFiles(data);
+    if (files.length > 0) {
+      await apiUploadEventAttachments(id, files);
+    }
     await fetchEvents();
   };
 
   const deleteEvent = async (id: string) => {
-    await apiDeleteEvent(id, unref(currentUserId));
+    await apiDeleteEvent(id);
     await fetchEvents();
   };
 
   // Check event trùng lịch
-  const checkConflicts = async (date: string, start: string, end: string, excludeId?: string) => {
+  const checkConflicts = async (date: string, endDate: string, start: string, end: string, excludeId?: string) => {
     if (!spaceIdRef.value) return [];
     try {
-      const res = await apiCheckConflicts(spaceIdRef.value, date, start, end, excludeId);
+      const res = await apiCheckConflicts(spaceIdRef.value, date, endDate, start, end, excludeId);
       return res.data;
     } catch {
       return [];

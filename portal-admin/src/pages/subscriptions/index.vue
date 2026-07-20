@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import type { Component } from 'vue'
-
 import { LoaderIcon, Search, X } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
 import { computed, h, onMounted, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 
 import type { TableColumn } from '@/components/base-table.vue'
 
@@ -22,6 +21,11 @@ import { defaultDateRange, formatTimestamp, formatToISODateTime } from '@/utils/
 import type { Invoice, InvoiceSearchParams } from './types/invoiceTypes'
 
 import { subscriptionService } from './service/subscriptionService'
+
+const route = useRoute()
+const keywordParam = (route.query.keyword as string) ?? ''
+
+const { t } = useI18n()
 
 const loading = ref(false)
 const currentPage = ref(1)
@@ -42,66 +46,70 @@ const selectedInvoice = ref<Invoice | null>(null)
 const isOpen = ref(false)
 const showComponent = shallowRef<Component | null>(null)
 
-const { t } = useI18n()
+const statusOptions = [
+  { value: 'ALL', label: 'Tất cả trạng thái' },
+  { value: 'PENDING', label: 'Pending' },
+  { value: 'PAID', label: 'Paid' },
+  { value: 'FAILED', label: 'Failed' },
+]
 
-const statusOptions = computed(() => [
-  { value: 'ALL', label: t('subscriptions.allStatuses') },
-  { value: 'PENDING', label: t('subscriptions.statusPending') },
-  { value: 'PAID', label: t('subscriptions.statusPaid') },
-  { value: 'FAILED', label: t('subscriptions.statusFailed') },
-  { value: 'CANCELLED', label: t('subscriptions.statusCancelled') },
-])
+const planOptions = [
+  { value: 'ALL', label: 'Tất cả gói' },
+  { value: 'FREE', label: 'Free' },
+  { value: 'TEAM', label: 'Team' },
+  { value: 'BUSINESS', label: 'Business' },
+]
 
-const planOptions = computed(() => [
-  { value: 'ALL', label: t('subscriptions.allPlans') },
-  { value: 'FREE', label: t('subscriptions.planFree') },
-  { value: 'TEAM', label: t('subscriptions.planTeam') },
-  { value: 'BUSINESS', label: t('subscriptions.planBusiness') },
-])
-
-const paymentMethodOptions = computed(() => [
-  { value: 'ALL', label: t('subscriptions.allMethods') },
-  { value: 'MOMO', label: t('subscriptions.methodMomo') },
-  { value: 'VNPAY', label: t('subscriptions.methodVnpay') },
-  { value: 'BANK_TRANSFER', label: t('subscriptions.methodBankTransfer') },
-])
-
-function statusMeta(status?: string | null) {
-  const normalized = (status || 'PENDING').toUpperCase()
-  if (normalized === 'PAID')
-    return { label: t('subscriptions.statusPaid'), tone: 'green' }
-  if (normalized === 'FAILED')
-    return { label: t('subscriptions.statusFailed'), tone: 'red' }
-  if (normalized === 'CANCELLED')
-    return { label: t('subscriptions.statusCancelled'), tone: 'gray' }
-  return { label: t('subscriptions.statusPending'), tone: 'orange' }
-}
-
-function planLabel(plan?: string | null) {
-  const normalized = (plan || '').toUpperCase()
-  if (normalized === 'FREE')
-    return t('subscriptions.planFree')
-  if (normalized === 'TEAM')
-    return t('subscriptions.planTeam')
-  if (normalized === 'BUSINESS')
-    return t('subscriptions.planBusiness')
-  return plan || 'N/A'
-}
-
-function paymentMethodLabel(method?: string | null) {
-  const normalized = (method || '').toUpperCase()
-  if (normalized === 'MOMO')
-    return t('subscriptions.methodMomo')
-  if (normalized === 'VNPAY')
-    return t('subscriptions.methodVnpay')
-  if (normalized === 'BANK_TRANSFER')
-    return t('subscriptions.methodBankTransfer')
-  return method || 'N/A'
-}
+const paymentMethodOptions = [
+  { value: 'ALL', label: 'Tất cả phương thức' },
+  { value: 'MOMO', label: 'MoMo' },
+  { value: 'VNPAY', label: 'VNPay' },
+]
 
 function formatMoney(amount?: number | string | null) {
   const value = typeof amount === 'string' ? Number(amount) : amount ?? 0
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(value)
+}
+
+function renderPlan(plan: string) {
+  let badgeClass = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold '
+  if (plan === 'BUSINESS')
+    badgeClass += 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+  else if (plan === 'TEAM')
+    badgeClass += 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+  else
+    badgeClass += 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+
+  return h('span', { class: `${badgeClass}` }, plan)
+}
+
+function renderStatus(status: string) {
+  const config = {
+    PENDING: {
+      label: 'Chờ xử lý',
+      class:
+        'border-amber-300 bg-amber-50 px-3 text-amber-700 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300',
+    },
+    PAID: {
+      label: 'Đã giải quyết',
+      class:
+        'border-emerald-300 bg-emerald-50 px-3 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
+    },
+    FAILED: {
+      label: 'Đã bác bỏ',
+      class:
+        'border-red-300 bg-red-50 px-3 text-red-700 dark:border-red-700 dark:bg-red-950 dark:text-red-300',
+    },
+  }[status]
+
+  return h(
+    Badge,
+    {
+      variant: 'outline',
+      class: config?.class,
+    },
+    () => config?.label ?? status,
+  )
 }
 
 function buildParams(): InvoiceSearchParams {
@@ -141,7 +149,7 @@ async function fetchInvoices() {
     totalPages.value = res.meta.totalPages || 0
   }
   catch (err) {
-    console.error('Error loading invoice list:', err)
+    console.error('Lỗi khi tải danh sách invoice:', err)
     invoicesData.value = []
     totalElement.value = 0
   }
@@ -188,6 +196,9 @@ watch(currentPage, () => {
 })
 
 onMounted(() => {
+  if (keywordParam !== '') {
+    return searchKeyword.value = keywordParam
+  }
   fetchInvoices()
 })
 
@@ -205,7 +216,7 @@ const columns = computed<TableColumn<Invoice>[]>(() => [
   {
     header: t('subscriptions.plan'),
     minWidth: 130,
-    render: row => planLabel(row.plan),
+    render: row => renderPlan(row.plan),
   },
   {
     header: t('subscriptions.planExpiry'),
@@ -221,18 +232,13 @@ const columns = computed<TableColumn<Invoice>[]>(() => [
     header: t('subscriptions.status'),
     minWidth: 150,
     render: (row) => {
-      const meta = statusMeta(row.status)
-      return h(Badge, {
-        class: 'flex max-w-[120px] items-center',
-        style: { color: meta.tone },
-        variant: 'secondary',
-      }, () => meta.label)
+      return renderStatus(row.status)
     },
   },
   {
     header: t('subscriptions.payment'),
     minWidth: 140,
-    render: row => paymentMethodLabel(row.paymentMethod),
+    render: row => row.paymentMethod,
   },
   {
     header: t('subscriptions.paidAt'),
@@ -259,19 +265,19 @@ const columns = computed<TableColumn<Invoice>[]>(() => [
 
 <template>
   <BasicPage
-    :title="t('subscriptions.title')"
-    :description="t('subscriptions.description')"
+    title="Gói đăng ký"
+    description="Quản lý hóa đơn và lịch sử thanh toán theo kiểu bảng vận hành."
     sticky
   >
     <div class="mb-4 flex flex-wrap items-center gap-3">
       <div class="relative w-full max-w-sm">
         <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <UiInput v-model="searchKeyword" :placeholder="t('subscriptions.searchPlaceholder')" class="h-9 pl-8" />
+        <UiInput v-model="searchKeyword" placeholder="Tìm theo id hoặc email..." class="h-9 pl-8" />
       </div>
       <div class="w-[180px]">
         <UiSelect v-model="selectedStatus">
           <SelectTrigger class="h-9 w-full">
-            <SelectValue :placeholder="t('subscriptions.status')" />
+            <SelectValue placeholder="Trạng thái" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem v-for="item in statusOptions" :key="item.value" :value="item.value">
@@ -283,7 +289,7 @@ const columns = computed<TableColumn<Invoice>[]>(() => [
       <div class="w-[160px]">
         <UiSelect v-model="selectedPlan">
           <SelectTrigger class="h-9 w-full">
-            <SelectValue :placeholder="t('subscriptions.plan')" />
+            <SelectValue placeholder="Gói" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem v-for="item in planOptions" :key="item.value" :value="item.value">
@@ -295,7 +301,7 @@ const columns = computed<TableColumn<Invoice>[]>(() => [
       <div class="w-[180px]">
         <UiSelect v-model="selectedPaymentMethod">
           <SelectTrigger class="h-9 w-full">
-            <SelectValue :placeholder="t('subscriptions.method')" />
+            <SelectValue placeholder="Phương thức" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem v-for="item in paymentMethodOptions" :key="item.value" :value="item.value">
@@ -316,7 +322,7 @@ const columns = computed<TableColumn<Invoice>[]>(() => [
         @click="clearFilters"
       >
         <X class="h-3.5 w-3.5" />
-        {{ t('subscriptions.clearFilters') }}
+        Clear filters
       </UiButton>
     </div>
 

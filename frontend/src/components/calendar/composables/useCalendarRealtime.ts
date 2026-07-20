@@ -7,7 +7,8 @@ import type { Ref } from "vue";
 // Đồng bộ event realtime socket
 export function useCalendarRealtime(
   spaceIdRef: Ref<string | undefined>,
-  events: Ref<CalendarEvent[]>
+  events: Ref<CalendarEvent[]>,
+  fetchEvents?: () => Promise<void>
 ) {
   const isSocketReady = ref(false);
   let sub: { unsubscribe: () => void } | null = null;
@@ -49,9 +50,17 @@ export function useCalendarRealtime(
 
       const handlers: Record<string, (ev: CalendarEvent) => void> = {
         CREATED: (ev) => {
+          if (fetchEvents) {
+            fetchEvents();
+            return;
+          }
           if (!events.value.find((e) => e.id === ev.id)) events.value.push(ev);
         },
         UPDATED: (ev) => {
+          if (fetchEvents) {
+            fetchEvents();
+            return;
+          }
           const idx = events.value.findIndex((e) => e.id === ev.id);
           if (idx !== -1) events.value[idx] = ev; else events.value.push(ev);
         },

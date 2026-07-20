@@ -1,6 +1,8 @@
 package com.synkork.backend.modules.admin.report.dtos;
 
 import com.synkork.backend.modules.report.ReportEntity;
+import com.synkork.backend.modules.report.enums.ReportReasonEnums;
+import com.synkork.backend.modules.report.enums.ReportSeverityEnums;
 import com.synkork.backend.modules.report.enums.ReportStatusEnums;
 import com.synkork.backend.modules.report.enums.ReportTypeEnums;
 
@@ -16,11 +18,14 @@ public record ReportResponse(
         UUID targetRoomId,
         String targetName,
         String targetEmail,
-        String reason,
+        ReportReasonEnums reason,
+        String description,
         ReportTypeEnums reportType,
         ReportStatusEnums status,
-        LocalDateTime createdAt
-) {
+        ReportSeverityEnums severity,
+        LocalDateTime createdAt,
+        String evidenceUrl
+        ) {
     public ReportResponse(ReportEntity e) {
         this(
                 e.getId(),
@@ -31,14 +36,19 @@ public record ReportResponse(
                 e.getReporter().getEmail(),
                 e.getTargetUser() != null ? e.getTargetUser().getId() : null,
                 e.getTargetRoom() != null ? e.getTargetRoom().getId() : null,
-                e.getTargetUser() != null ? e.getTargetUser().getUsername() : e.getTargetRoom().getName(),
+                e.getTargetUser() != null ? e.getTargetUser().getUsername()
+                        : e.getTargetRoom().getName(),
                 e.getTargetUser() != null
                         ? e.getTargetUser().getEmail()
-                        : e.getTargetRoom().getOwner() != null ? e.getTargetRoom().getOwner().getEmail() : null,
+                        : e.getTargetRoom().getOwner() != null
+                        ? e.getTargetRoom().getOwner().getEmail()
+                        : null,
                 e.getReason(),
+                e.getDescription(),
                 e.getReportType(),
                 e.getStatus(),
-                e.getCreatedAt()
-        );
+                e.getSeverity(),
+                e.getCreatedAt(),
+                e.getEvidenceUrl());
     }
 }

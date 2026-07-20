@@ -34,14 +34,16 @@ public class FileService {
         }
     }
 
-    public FileUploaded uploadFile(MultipartFile file, String folderName, PlanEnum plan) {
+    public FileUploaded uploadFile(MultipartFile file, String folderName, PlanEnum plan, boolean needSizeCheck) {
         try {
-            long maxSize = PlanLimitUtils.maxFileSizeBytes(plan);
-            if (file.getSize() > maxSize) {
-                long maxMB = maxSize / (1024 * 1024);
-                throw new RuntimeException(
-                    "File vượt quá giới hạn " + maxMB + "MB của gói " + plan + ". Vui lòng nâng cấp gói."
-                );
+            if (needSizeCheck) {
+                long maxSize = PlanLimitUtils.maxFileSizeBytes(plan);
+                if (file.getSize() > maxSize) {
+                    long maxMB = maxSize / (1024 * 1024);
+                    throw new RuntimeException(
+                            "File vượt quá giới hạn " + maxMB + "MB của gói " + plan + ". Vui lòng nâng cấp gói."
+                    );
+                }
             }
 
             Map options = ObjectUtils.asMap(
@@ -57,8 +59,13 @@ public class FileService {
             throw new RuntimeException("Upload file failed", e);
         }
     }
+
+    public FileUploaded uploadFile(MultipartFile file, String folderName, boolean needSizeCheck) {
+        return uploadFile(file, folderName, PlanEnum.FREE, needSizeCheck);
+    }
+
     public FileUploaded uploadFile(MultipartFile file, String folderName) {
-        return uploadFile(file, folderName, PlanEnum.FREE);
+        return uploadFile(file, folderName, PlanEnum.FREE, true);
     }
 
     public boolean deleteFile(String publicId, String resourceType) {

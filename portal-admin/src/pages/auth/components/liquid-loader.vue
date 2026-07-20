@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import image from '@/assets/icons/logo.png'
+import image from '@/assets/icons/synkork-logo.png'
 </script>
 
 <template>

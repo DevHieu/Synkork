@@ -15,7 +15,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import com.synkork.backend.modules.report.ReportService;
-import com.synkork.backend.modules.admin.report.dtos.ReportDTO;
 import com.synkork.backend.modules.admin.report.dtos.ReportFilterRequest;
 import com.synkork.backend.modules.admin.report.dtos.ReportUpdateStatusRequest;
 
@@ -37,23 +36,24 @@ public class AdminReportController {
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<ReportDTO> getReportById(@PathVariable UUID id) {
-        return ApiResponse.success("Get report detail successfully", adminReportService.getReportById(id));
+    public ApiResponse<ReportResponse> getReportById(@PathVariable UUID id) {
+        ReportResponse entity = adminReportService.getReportById(id);
+        return ApiResponse.success("Get report detail successfully", entity);
     }
 
-    @PostMapping("/users")
-    @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<ReportResponse> createUserReport(@RequestBody ReportRequestDto request) {
-        ReportEntity entity = reportService.createReport(request, ReportTypeEnums.USER);
-        return ApiResponse.success("User report created successfully", new ReportResponse(entity));
-    }
-
-    @PostMapping("/rooms")
-    @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<ReportResponse> createRoomReport(@RequestBody ReportRequestDto request) {
-        ReportEntity entity = reportService.createReport(request, ReportTypeEnums.ROOM);
-        return ApiResponse.success("Room report created successfully", new ReportResponse(entity));
-    }
+//    @PostMapping("/users")
+//    @ResponseStatus(HttpStatus.CREATED)
+//    public ApiResponse<ReportResponse> createUserReport(@RequestBody ReportRequestDto request) {
+//        ReportEntity entity = reportService.createReport(request, ReportTypeEnums.USER);
+//        return ApiResponse.success("User report created successfully", new ReportResponse(entity));
+//    }
+//
+//    @PostMapping("/rooms")
+//    @ResponseStatus(HttpStatus.CREATED)
+//    public ApiResponse<ReportResponse> createRoomReport(@RequestBody ReportRequestDto request) {
+//        ReportEntity entity = reportService.createReport(request, ReportTypeEnums.ROOM);
+//        return ApiResponse.success("Room report created successfully", new ReportResponse(entity));
+//    }
 
     @PatchMapping("/{id}/status")
     public ApiResponse<ReportResponse> updateStatus(@PathVariable UUID id, @Valid @RequestBody ReportUpdateStatusRequest request) {

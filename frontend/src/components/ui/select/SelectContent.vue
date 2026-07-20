@@ -16,20 +16,21 @@ defineOptions({
 })
 
 const props = withDefaults(
-  defineProps<SelectContentProps & { class?: HTMLAttributes["class"] }>(),
+  defineProps<SelectContentProps & { class?: HTMLAttributes["class"], disablePortal?: boolean }>(),
   {
     position: "popper",
+    disablePortal: false,
   },
 )
 const emits = defineEmits<SelectContentEmits>()
 
-const delegatedProps = reactiveOmit(props, "class")
+const delegatedProps = reactiveOmit(props, "class", "disablePortal")
 
 const forwarded = useForwardPropsEmits(delegatedProps, emits)
 </script>
 
 <template>
-  <SelectPortal>
+  <SelectPortal :disabled="disablePortal">
     <SelectContent
       data-slot="select-content"
       v-bind="{ ...$attrs, ...forwarded }"

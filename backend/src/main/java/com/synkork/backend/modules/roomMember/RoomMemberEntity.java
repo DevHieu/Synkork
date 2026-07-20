@@ -1,16 +1,17 @@
 package com.synkork.backend.modules.roomMember;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
 import com.synkork.backend.common.utils.uuid.UuidV7Annotation;
 import com.synkork.backend.modules.message.MessageEntity;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
 import com.synkork.backend.modules.user.UserEntity;
+
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
 
 @Entity
 @Table(
@@ -53,4 +54,6 @@ public class RoomMemberEntity {
     @Builder.Default
     private boolean deafen = false;
 
+    @Column(nullable = true)
+    private LocalDateTime chatDisableUntil;
 }

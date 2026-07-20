@@ -3,6 +3,7 @@ package com.synkork.backend.modules.admin.subscriptions;
 import com.synkork.backend.common.response.ApiResponse;
 import com.synkork.backend.common.response.PageMeta;
 import com.synkork.backend.modules.admin.subscriptions.dtos.AdminInvoiceRequest;
+import com.synkork.backend.modules.admin.subscriptions.dtos.AdminInvoiceUpdateRequest;
 import com.synkork.backend.modules.admin.subscriptions.dtos.AdminInvoiceResponse;
 import com.synkork.backend.modules.admin.subscriptions.dtos.InvoiceFilterRequest;
 import com.synkork.backend.modules.payment.entity.InvoiceEntity;
@@ -19,10 +20,10 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/manage/invoices")
+@RequiredArgsConstructor
 public class AdminInvoiceController {
 
-    @Autowired
-    private AdminInvoiceService adminInvoiceService;
+    private final AdminInvoiceService adminInvoiceService;
 
     @GetMapping
     public ApiResponse<List<AdminInvoiceResponse>> getInvoices(@Valid @ModelAttribute InvoiceFilterRequest request) {
@@ -52,7 +53,7 @@ public class AdminInvoiceController {
     @PatchMapping("/{id}")
     public ApiResponse<AdminInvoiceResponse> updateInvoice(
             @PathVariable UUID id,
-            @Valid @RequestBody AdminInvoiceRequest request
+            @Valid @RequestBody AdminInvoiceUpdateRequest request
     ) {
         return ApiResponse.success(
                 "Update invoice successfully",

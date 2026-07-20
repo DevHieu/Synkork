@@ -8,6 +8,7 @@ import com.synkork.backend.modules.admin.auditLog.dtos.BuildLog;
 import com.synkork.backend.modules.admin.auditLog.enums.LogActionEnum;
 import com.synkork.backend.modules.admin.auditLog.enums.LogEntityTypeEnum;
 import com.synkork.backend.modules.admin.subscriptions.dtos.AdminInvoiceRequest;
+import com.synkork.backend.modules.admin.subscriptions.dtos.AdminInvoiceUpdateRequest;
 import com.synkork.backend.modules.admin.subscriptions.dtos.AdminInvoiceResponse;
 import com.synkork.backend.modules.admin.subscriptions.dtos.InvoiceFilterRequest;
 import com.synkork.backend.modules.payment.entity.InvoiceEntity;
@@ -20,7 +21,6 @@ import com.synkork.backend.modules.user.UserRepository;
 import com.synkork.backend.modules.user.enums.PlanEnum;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -38,7 +38,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 public class AdminInvoiceService {
-
     private final InvoiceRepository invoiceRepository;
     private final UserRepository userRepository;
     private final ExpiredSubscriptionService expiredSubscriptionService;
@@ -91,7 +90,7 @@ public class AdminInvoiceService {
     }
 
     @Transactional
-    public AdminInvoiceResponse updateInvoice(UUID id, AdminInvoiceRequest request) {
+    public AdminInvoiceResponse updateInvoice(UUID id, AdminInvoiceUpdateRequest request) {
         InvoiceEntity invoice = findOrThrow(id);
         InvoiceStatusEnum previousStatus = invoice.getStatus();
 

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import image from '@/assets/images/syn-business.png'
-
 import AuthTitle from './components/auth-title.vue'
 import LiquidLoader from './components/liquid-loader.vue'
 import LoginForm from './components/login-form.vue'

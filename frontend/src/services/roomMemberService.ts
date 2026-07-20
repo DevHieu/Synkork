@@ -1,4 +1,5 @@
 import axiosClient from "@/lib/axiosClient";
+import type { ChatDisableTime } from "@/types/Member";
 
 export const getRoomMembers = async (roomId: string) => {
   const res = await axiosClient.get(`/api/rooms/${roomId}/members`);
@@ -37,12 +38,24 @@ export const muteAudio = async (
   memberId: string,
   payload: { muted: boolean | null; deafen: boolean | null },
 ) => {
-  console.log("Service");
-
   const res = await axiosClient.patch(
     `/api/rooms/${roomId}/members/${memberId}/mute`,
     payload,
   );
 
   return res;
+};
+
+export const muteChatMember = async (
+  roomId: string,
+  memberId: string,
+  time: ChatDisableTime,
+) => {
+  const res = await axiosClient.patch(
+    `/api/rooms/${roomId}/members/${memberId}/chat-mute`,
+    null,
+    { params: { time } },
+  );
+
+  return res.data;
 };

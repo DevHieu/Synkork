@@ -45,7 +45,16 @@ public class CalendarEventDTO {
     private String createdByUsername;
     private String createdByDisplayName;
     private String createdByAvatarUrl;
-    private List<String> attendees = new ArrayList<>();
+    private String callRoomSpaceId;
+    private String callRoomSpaceName;
+    private String taskSpaceId;
+    private String taskId;
+    private String taskName;
+    private String noteSpaceId;
+    private String noteId;
+    private String noteTitle;
+    private List<String> attendeeIds = new ArrayList<>();
+    private List<CalendarEventAttendeeDTO> attendees = new ArrayList<>();
     private List<CalendarEventAttachmentDTO> attachments = new ArrayList<>();
 
     private LocalDateTime createdAt;
@@ -68,9 +77,28 @@ public class CalendarEventDTO {
         this.createdByUsername = entity.getCreatedBy().getUsername();
         this.createdByDisplayName = entity.getCreatedBy().getDisplayName();
         this.createdByAvatarUrl = entity.getCreatedBy().getAvatarUrl();
+        if (entity.getCallRoomSpace() != null) {
+            this.callRoomSpaceId = entity.getCallRoomSpace().getId().toString();
+            this.callRoomSpaceName = entity.getCallRoomSpace().getName();
+        }
+        if (entity.getTask() != null) {
+            this.taskId = entity.getTask().getId().toString();
+            this.taskName = entity.getTask().getTitle();
+            if (entity.getTask().getColumn() != null && entity.getTask().getColumn().getSpace() != null) {
+                this.taskSpaceId = entity.getTask().getColumn().getSpace().getId().toString();
+            }
+        }
+        if (entity.getNote() != null) {
+            this.noteId = entity.getNote().getId().toString();
+            this.noteTitle = entity.getNote().getTitle();
+            if (entity.getNote().getSpace() != null) {
+                this.noteSpaceId = entity.getNote().getSpace().getId().toString();
+            }
+        }
         if (entity.getAttendees() != null) {
-            for (var attendee : entity.getAttendees()) {
-                this.attendees.add(attendee.getUser().getEmail());
+            for (var member : entity.getAttendees()) {
+                this.attendeeIds.add(member.getId().toString());
+                this.attendees.add(new CalendarEventAttendeeDTO(member));
             }
         }
         if (entity.getAttachments() != null) {

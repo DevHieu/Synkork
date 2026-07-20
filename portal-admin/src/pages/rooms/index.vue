@@ -1,23 +1,16 @@
 <script lang="ts" setup>
-import { Eye, Lock, LoaderIcon, Pencil, PlusIcon, RefreshCwIcon, Search, Unlock } from '@lucide/vue'
+import { Eye, LoaderIcon, Lock, PlusIcon, RefreshCwIcon, Search, Unlock, X } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
 import { computed, h, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import type { TableColumn } from '@/components/base-table.vue'
 
 import BaseTable from '@/components/base-table.vue'
+import ConfirmDialog from '@/components/confirm-dialog.vue'
 import { BasicPage } from '@/components/global-layout'
 import Pagination from '@/components/pagination.vue'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+import { Badge } from '@/components/ui/badge'
 import { Button as UiButton } from '@/components/ui/button'
 import {
   Dialog,
@@ -39,7 +32,6 @@ import { Textarea as UiTextarea } from '@/components/ui/textarea'
 
 import type {
   Room,
-  RoomDetail,
   RoomFormPayload,
   RoomParams,
   UserOption,
@@ -48,7 +40,9 @@ import type {
 import RoomDetailDialog from './components/RoomDetailDialog.vue'
 import { roomService } from './service/roomService'
 
-// ===================== Table & filters =====================
+const route = useRoute()
+const keywordParam = (route.query.keyword as string) ?? ''
+
 const selectedRoom = ref<Room | null>(null)
 const isDetailOpen = ref(false)
 
@@ -65,18 +59,23 @@ const selectedStatus = ref<string>('ALL')
 const debounceSearchKeyword = refDebounced(searchKeyword, 500)
 
 const totalPage = computed(() => Math.ceil(totalCount.value / pageSize))
+const hasActiveFilter = computed(() =>
+  !!searchKeyword.value
+  || selectedStatus.value !== 'ALL',
+)
 
 function handleViewDetail(room: Room) {
   selectedRoom.value = room
   isDetailOpen.value = true
 }
 
-// ===================== Form (create/edit) =====================
-const isFormOpen = ref(false)
-const editingRoom = ref<Room | RoomDetail | null>(null)
-const isEdit = computed(() => !!editingRoom.value)
-const isDmRoom = computed(() => editingRoom.value?.type === 'DM')
-const isPendingRemoval = computed(() => editingRoom.value?.status === 'PENDING_REMOVAL')
+function clearFilters() {
+  searchKeyword.value = ''
+  selectedStatus.value = 'ALL'
+}
+
+// ===================== Create form =====================
+const isCreateOpen = ref(false)
 
 const form = ref<RoomFormPayload>({
   name: '',
@@ -110,31 +109,8 @@ function resetForm() {
 }
 
 function handleCreate() {
-  editingRoom.value = null
   resetForm()
-  isFormOpen.value = true
-}
-
-function handleEdit(room: Room | RoomDetail) {
-  editingRoom.value = room
-  resetForm()
-
-  form.value = {
-    name: room.name,
-    description: room.description || '',
-    status: room.status === 'PENDING_REMOVAL' ? 'OPEN' : room.status,
-    ownerId: room.ownerId,
-  }
-
-  selectedOwner.value = room.ownerId
-    ? {
-        id: room.ownerId,
-        username: room.ownerUsername || (('owner' in room && room.owner?.username) || ''),
-        email: ('owner' in room && room.owner?.email) || '',
-      }
-    : null
-
-  isFormOpen.value = true
+  isCreateOpen.value = true
 }
 
 watch(debouncedOwnerKeyword, async (keyword) => {
@@ -165,15 +141,15 @@ function clearOwner() {
   form.value.ownerId = undefined
 }
 
-async function handleSubmitForm() {
+async function handleSubmitCreate() {
   formError.value = ''
 
-  if (!isDmRoom.value && !form.value.name.trim()) {
+  if (!form.value.name.trim()) {
     formError.value = 'Tên room không được để trống'
     return
   }
 
-  if (!isEdit.value && !form.value.ownerId) {
+  if (!form.value.ownerId) {
     formError.value = 'Vui lòng chọn owner cho room'
     return
   }
@@ -181,18 +157,8 @@ async function handleSubmitForm() {
   isSubmitting.value = true
 
   try {
-    if (isEdit.value && editingRoom.value) {
-      // Room đang Chờ xóa: không cho phép đổi status qua API, dù field đã bị disable ở UI
-      const payload = isPendingRemoval.value
-        ? { ...form.value, status: undefined as any }
-        : form.value
-      await roomService.updateRoom(editingRoom.value.id, payload)
-    }
-    else {
-      await roomService.createRoom(form.value)
-    }
-
-    isFormOpen.value = false
+    await roomService.createRoom(form.value)
+    isCreateOpen.value = false
     fetchRooms()
   }
   catch (error: any) {
@@ -203,19 +169,21 @@ async function handleSubmitForm() {
   }
 }
 
-// ===================== Lock / Unlock =====================
 const isLockConfirmOpen = ref(false)
 const lockTargetRoom = ref<Room | null>(null)
 const isLocking = ref(false)
 const lockError = ref('')
+const lockReason = ref('')
+const isLockAction = computed(() => lockTargetRoom.value?.status !== 'LOCKED')
 
 function handleToggleLock(room: Room) {
   lockTargetRoom.value = room
   lockError.value = ''
+  lockReason.value = ''
   isLockConfirmOpen.value = true
 }
 
-async function confirmToggleLock() {
+async function confirmToggleLock(reason: string) {
   if (!lockTargetRoom.value)
     return
 
@@ -225,7 +193,7 @@ async function confirmToggleLock() {
   const nextStatus = lockTargetRoom.value.status === 'LOCKED' ? 'OPEN' : 'LOCKED'
 
   try {
-    await roomService.lockRoom(lockTargetRoom.value.id, nextStatus)
+    await roomService.changeRoomStatus(lockTargetRoom.value.id, nextStatus, reason)
     isLockConfirmOpen.value = false
     fetchRooms()
   }
@@ -235,6 +203,28 @@ async function confirmToggleLock() {
   finally {
     isLocking.value = false
   }
+}
+
+function renderRoomStatus(status: string) {
+  const config = {
+    OPEN: {
+      label: 'Đang mở',
+      class: 'border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+    },
+    LOCKED: {
+      label: 'Đã khóa',
+      class: 'border-rose-200 bg-rose-100 text-rose-800 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
+    },
+    PENDING_REMOVAL: {
+      label: 'Chờ xóa',
+      class: 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300',
+    },
+  }[status]
+
+  return h(Badge, {
+    variant: 'outline',
+    class: `text-xs font-semibold ${config?.class ?? ''}`,
+  }, () => config?.label ?? status)
 }
 
 // ===================== Columns =====================
@@ -260,7 +250,8 @@ const columns = computed<TableColumn<any>[]>(() => [
   {
     header: 'Trạng thái',
     accessor: 'status',
-    minWidth: 100,
+    minWidth: 130,
+    render: row => renderRoomStatus(row.status),
   },
   {
     header: 'Thành viên',
@@ -282,29 +273,19 @@ const columns = computed<TableColumn<any>[]>(() => [
           },
           () => [h(Eye, { class: 'h-3.5 w-3.5' }), 'Chi tiết'],
         ),
-        h(
-          UiButton,
-          {
-            variant: 'outline',
-            size: 'sm',
-            class: 'h-8 gap-1 px-2 text-xs',
-            onClick: () => handleEdit(row),
-          },
-          () => [h(Pencil, { class: 'h-3.5 w-3.5' }), 'Sửa'],
-        ),
-        h(
-          UiButton,
-          {
-            variant: 'outline',
-            size: 'sm',
-            disabled: row.status === 'PENDING_REMOVAL',
-            class: row.status === 'LOCKED'
-              ? 'h-8 gap-1 px-2 text-xs text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700'
-              : 'h-8 gap-1 px-2 text-xs text-red-500 hover:bg-red-50 hover:text-red-600',
-            onClick: () => handleToggleLock(row),
-          },
-          () => [h(row.status === 'LOCKED' ? Unlock : Lock, { class: 'h-3.5 w-3.5' })],
-        ),
+        row.status === 'LOCKED'
+          ? h(UiButton, {
+              variant: 'outline',
+              size: 'sm',
+              class: 'h-8 gap-1 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 hover:border-destructive/30',
+              onClick: () => handleToggleLock(row),
+            }, () => [h(Lock, { class: 'h-3.5 w-3.5' }), 'Khóa'])
+          : h(UiButton, {
+              variant: 'outline',
+              size: 'sm',
+              class: 'h-8 gap-1 px-2 text-xs text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-900/20',
+              onClick: () => handleToggleLock(row),
+            }, () => [h(Unlock, { class: 'h-3.5 w-3.5' }), 'Mở']),
       ]),
   },
 ])
@@ -324,7 +305,6 @@ async function fetchRooms() {
 
     if (selectedStatus.value !== 'ALL')
       queryParams.status = selectedStatus.value
-
 
     const response = await roomService.getRooms(queryParams)
 
@@ -352,6 +332,9 @@ watch(currentPage, () => {
 })
 
 onMounted(() => {
+  if (keywordParam !== '') {
+    return searchKeyword.value = keywordParam
+  }
   fetchRooms()
 })
 </script>
@@ -409,6 +392,17 @@ onMounted(() => {
           </SelectContent>
         </Select>
       </div>
+
+      <UiButton
+        v-if="hasActiveFilter"
+        variant="ghost"
+        size="sm"
+        class="h-9 gap-1.5 text-sm text-muted-foreground"
+        @click="clearFilters"
+      >
+        <X class="h-3.5 w-3.5" />
+        Xóa bộ lọc
+      </UiButton>
     </div>
 
     <!-- table -->
@@ -433,37 +427,29 @@ onMounted(() => {
     </div>
   </BasicPage>
 
-  <!-- Detail dialog -->
+  <!-- Detail + Edit dialog (gộp làm 1) -->
   <RoomDetailDialog
     v-if="selectedRoom"
     v-model:open="isDetailOpen"
     :room-id="selectedRoom.id"
-    @edit="handleEdit"
+    @updated="fetchRooms"
   />
 
-  <!-- Create / Edit dialog -->
-  <Dialog v-model:open="isFormOpen">
+  <!-- Create dialog -->
+  <Dialog v-model:open="isCreateOpen">
     <DialogContent class="max-w-[520px]">
       <DialogHeader>
         <DialogTitle>
-          {{ isEdit ? 'Chỉnh sửa Room' : 'Tạo Room mới' }}
+          Tạo Room mới
         </DialogTitle>
         <DialogDescription class="sr-only">
-          {{ isEdit ? 'Form chỉnh sửa thông tin room' : 'Form tạo room mới' }}
+          Form tạo room mới
         </DialogDescription>
       </DialogHeader>
 
       <div class="flex flex-col gap-4 py-2">
-        <p
-          v-if="isDmRoom"
-          class="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-[12px] text-amber-700"
-        >
-          Đây là room DM (do hệ thống tự tạo giữa 2 user). Admin chỉ có thể
-          thay đổi trạng thái của room này.
-        </p>
-
         <!-- Name -->
-        <div v-if="!isDmRoom" class="flex flex-col gap-1.5">
+        <div class="flex flex-col gap-1.5">
           <label class="text-[12px] font-medium text-muted-foreground">
             Tên Room <span class="text-red-500">*</span>
           </label>
@@ -474,7 +460,7 @@ onMounted(() => {
         </div>
 
         <!-- Description -->
-        <div v-if="!isDmRoom" class="flex flex-col gap-1.5">
+        <div class="flex flex-col gap-1.5">
           <label class="text-[12px] font-medium text-muted-foreground">
             Description
           </label>
@@ -486,9 +472,9 @@ onMounted(() => {
         </div>
 
         <!-- Owner -->
-        <div v-if="!isDmRoom" class="flex flex-col gap-1.5">
+        <div class="flex flex-col gap-1.5">
           <label class="text-[12px] font-medium text-muted-foreground">
-            Owner <span v-if="!isEdit" class="text-red-500">*</span>
+            Owner <span class="text-red-500">*</span>
           </label>
 
           <div
@@ -542,7 +528,7 @@ onMounted(() => {
           <label class="text-[12px] font-medium text-muted-foreground">
             Trạng thái
           </label>
-          <Select v-model="form.status" :disabled="isPendingRemoval">
+          <Select v-model="form.status">
             <SelectTrigger class="h-9 w-full">
               <SelectValue placeholder="Trạng thái" />
             </SelectTrigger>
@@ -555,10 +541,6 @@ onMounted(() => {
               </SelectItem>
             </SelectContent>
           </Select>
-          <p v-if="isPendingRemoval" class="text-[11px] text-amber-600">
-            Room đang ở trạng thái Chờ xóa do tài khoản chủ phòng hết hạn gói —
-            admin không thể thay đổi trạng thái này.
-          </p>
         </div>
 
         <p v-if="formError" class="text-[12px] text-red-500">
@@ -567,43 +549,47 @@ onMounted(() => {
       </div>
 
       <DialogFooter>
-        <UiButton variant="outline" :disabled="isSubmitting" @click="isFormOpen = false">
+        <UiButton variant="outline" :disabled="isSubmitting" @click="isCreateOpen = false">
           Hủy
         </UiButton>
-        <UiButton :disabled="isSubmitting" @click="handleSubmitForm">
+        <UiButton :disabled="isSubmitting" @click="handleSubmitCreate">
           {{ isSubmitting ? 'Đang lưu...' : 'Lưu' }}
         </UiButton>
       </DialogFooter>
     </DialogContent>
   </Dialog>
 
-  <!-- Lock / Unlock confirm -->
-  <AlertDialog v-model:open="isLockConfirmOpen">
-    <AlertDialogContent>
-      <AlertDialogHeader>
-        <AlertDialogTitle>
-          {{ lockTargetRoom?.status === 'LOCKED' ? 'Mở khóa room này?' : 'Khóa room này?' }}
-        </AlertDialogTitle>
-        <AlertDialogDescription>
-          Room <strong>{{ lockTargetRoom?.name }}</strong>
-          {{ lockTargetRoom?.status === 'LOCKED'
-            ? ' sẽ được mở khóa và hoạt động trở lại bình thường.'
-            : ' sẽ bị khóa, thành viên sẽ không thể tương tác trong room này.' }}
-        </AlertDialogDescription>
-      </AlertDialogHeader>
+  <ConfirmDialog
+    v-model:open="isLockConfirmOpen"
+    v-model:reason="lockReason"
+    :destructive="isLockAction"
+    :require-reason="isLockAction"
+    :close-on-confirm="false"
+    cancel-button-text="Hủy"
+    :confirm-button-text="isLockAction ? 'Khóa' : 'Mở khóa'"
+    reason-label="Nội dung thông báo"
+    reason-placeholder="Nhập nội dung/lý do khóa room"
+    reason-error="Vui lòng nhập nội dung khóa room"
+    :is-loading="isLocking"
+    @confirm="confirmToggleLock"
+  >
+    <template #title>
+      {{ isLockAction ? 'Khóa room này?' : 'Mở khóa room này?' }}
+    </template>
 
-      <p v-if="lockError" class="text-[12px] text-red-500">
-        {{ lockError }}
+    <template #description>
+      <p>
+        Room <strong>{{ lockTargetRoom?.name }}</strong>
+        {{
+          isLockAction
+            ? ' sẽ bị khóa, thành viên sẽ không thể tương tác trong room này.'
+            : ' sẽ được mở khóa và hoạt động trở lại bình thường.'
+        }}
       </p>
+    </template>
 
-      <AlertDialogFooter>
-        <AlertDialogCancel :disabled="isLocking">
-          Hủy
-        </AlertDialogCancel>
-        <AlertDialogAction :disabled="isLocking" @click.prevent="confirmToggleLock">
-          {{ isLocking ? 'Đang xử lý...' : (lockTargetRoom?.status === 'LOCKED' ? 'Mở khóa' : 'Khóa') }}
-        </AlertDialogAction>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
+    <p v-if="lockError" class="text-[12px] text-red-500">
+      {{ lockError }}
+    </p>
+  </ConfirmDialog>
 </template>

@@ -4,13 +4,12 @@ export interface Invoice {
   paidAt?: string | null
   createdAt: string
   updatedAt?: string | null
-  plan?: string | null
+  plan: string
   status: string
   transactionId?: string | null
   paymentMethod?: string | null
   userEmail?: string | null
   username?: string | null
-  planExpiresAt?: string | null
 }
 
 export interface InvoiceRequest {

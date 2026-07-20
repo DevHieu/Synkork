@@ -36,11 +36,17 @@ export const updateEvent = async (eventId: string, data: any) => {
   return res;
 };
 
-// Xóa event
-export const deleteEvent = async (eventId: string, userId: string) => {
-  const res = await axiosClient.delete(
-    `/api/calendar-events/${eventId}?userId=${userId}`
-  );
+export const uploadEventAttachments = async (eventId: string, files: File[]) => {
+  const formData = new FormData();
+  files.forEach((file) => formData.append("files", file));
+  const res = await axiosClient.post(`/api/calendar-events/${eventId}/attachments`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res;
+};
+
+export const deleteEvent = async (eventId: string) => {
+  const res = await axiosClient.delete(`/api/calendar-events/${eventId}`);
   return res;
 };
 
@@ -48,11 +54,12 @@ export const deleteEvent = async (eventId: string, userId: string) => {
 export const checkConflicts = async (
   spaceId: string,
   date: string,
+  endDate: string,
   startTime: string,
   endTime: string,
   excludeId?: string
 ) => {
-  let url = `/api/calendar-events/${spaceId}/conflicts?date=${date}&startTime=${startTime}&endTime=${endTime}`;
+  let url = `/api/calendar-events/${spaceId}/conflicts?date=${date}&endDate=${endDate}&startTime=${startTime}&endTime=${endTime}`;
   if (excludeId) url += `&excludeId=${excludeId}`;
   const res = await axiosClient.get(url);
   return res;
