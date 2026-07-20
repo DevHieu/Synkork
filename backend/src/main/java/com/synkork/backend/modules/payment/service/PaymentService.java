@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.synkork.backend.common.utils.EmailService;
 import com.synkork.backend.modules.payment.entity.InvoiceEntity;
 import com.synkork.backend.modules.payment.entity.PlanPricingEntity;
-import com.synkork.backend.modules.payment.entity.PromotionEntity;
 import com.synkork.backend.modules.payment.entity.UserSubscriptionEntity;
 import com.synkork.backend.modules.payment.enums.BillingCycleEnum;
 import com.synkork.backend.modules.payment.enums.DiscountTypeEnum;
@@ -14,7 +13,6 @@ import com.synkork.backend.modules.payment.enums.PaymentMethodEnum;
 import com.synkork.backend.modules.payment.enums.SubscriptionStatusEnum;
 import com.synkork.backend.modules.payment.repository.InvoiceRepository;
 import com.synkork.backend.modules.payment.repository.PlanPricingRepository;
-import com.synkork.backend.modules.payment.repository.PromotionRepository;
 import com.synkork.backend.modules.payment.repository.UserSubscriptionRepository;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserService;
@@ -61,9 +59,6 @@ public class PaymentService {
     @Autowired
     private PlanPricingRepository planPricingRepository;
 
-    @Autowired
-    private PromotionRepository promotionRepository;
-
     @Value("${momo.partner-code:}")
     private String partnerCode;
 
@@ -83,11 +78,10 @@ public class PaymentService {
     private String ipnUrl;
 
     /**
-     * Tạo thanh toán MoMo.
-     * promoCode có thể null/blank nếu user không dùng mã khuyến mãi.
+     * Tạo thanh toán MoMo - Đã tích hợp giảm giá từ PlanPricingEntity
      */
     @Transactional
-    public Map<String, Object> createMomoPayment(String plan, String billingCycle, String userEmail, String promoCode) {
+    public Map<String, Object> createMomoPayment(String plan, String billingCycle, String userEmail) {
         try {
             PlanEnum planEnum = PlanEnum.valueOf(plan.toUpperCase());
             BillingCycleEnum cycleEnum = BillingCycleEnum.valueOf(billingCycle.toUpperCase());
@@ -96,10 +90,11 @@ public class PaymentService {
                     .findByPlanAndBillingCycleAndActiveTrue(planEnum, cycleEnum)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy giá cho gói này"));
 
-            PromotionEntity promotion = resolvePromotion(promoCode, planEnum);
-            BigDecimal baseAmount = pricing.getAmount();
-            BigDecimal discountAmount = calculateDiscountAmount(baseAmount, promotion);
-            BigDecimal finalAmount = baseAmount.subtract(discountAmount).max(BigDecimal.ZERO);
+            // Tính giá sau giảm
+            BigDecimal finalAmount = calculateFinalAmount(pricing);
+            BigDecimal discountAmount = pricing.getDiscountAmount() != null 
+                    ? pricing.getDiscountAmount() 
+                    : BigDecimal.ZERO;
 
             String requestId = UUID.randomUUID().toString();
             String extraData = Base64.getEncoder().encodeToString(
@@ -113,24 +108,16 @@ public class PaymentService {
                     .amount(finalAmount)
                     .status(InvoiceStatusEnum.PENDING)
                     .paymentMethod(PaymentMethodEnum.MOMO)
-                    .promotion(promotion)
-                    .discountAmount(discountAmount)
+                    .discountAmount(discountAmount)   // lưu số tiền giảm
                     .build();
-            invoiceRepository.save(invoice);
 
-            // Nếu có dùng mã khuyến mãi, tăng lượt dùng ngay lúc tạo invoice (atomic).
-            // Lưu ý: nếu sau này thanh toán thất bại (FAILED), lượt dùng này KHÔNG được hoàn lại
-            // theo thiết kế hiện tại — cân nhắc bổ sung logic hoàn lượt nếu cần chặt chẽ hơn.
-            if (promotion != null) {
-                int updated = promotionRepository.incrementUsage(promotion.getId());
-                if (updated == 0) {
-                    throw new RuntimeException("Mã khuyến mãi vừa hết lượt sử dụng, vui lòng thử lại");
-                }
-            }
+            invoice = invoiceRepository.save(invoice);
 
             long amountLong = finalAmount.longValue();
-            String orderId = invoice.getId().toString(); // dùng invoice id làm orderId
+            String orderId = invoice.getId().toString();
+
             String signature = buildRequestSignature(orderId, amountLong, extraData, requestId);
+
             Map<String, Object> body = buildMomoRequestBody(orderId, amountLong, requestId, extraData, signature);
 
             ObjectMapper mapper = new ObjectMapper();
@@ -151,35 +138,33 @@ public class PaymentService {
         }
     }
 
-    private PromotionEntity resolvePromotion(String promoCode, PlanEnum plan) {
-        if (promoCode == null || promoCode.isBlank()) {
-            return null;
+    /**
+     * Tính giá cuối cùng sau khi áp dụng giảm giá
+     */
+    private BigDecimal calculateFinalAmount(PlanPricingEntity pricing) {
+        BigDecimal baseAmount = pricing.getAmount();
+        BigDecimal discountAmount = BigDecimal.ZERO;
+
+        if (pricing.getDiscountType() != null && pricing.getDiscountValue() != null) {
+            if (pricing.getDiscountType() == DiscountTypeEnum.PERCENTAGE) {
+                discountAmount = baseAmount
+                        .multiply(pricing.getDiscountValue())
+                        .divide(BigDecimal.valueOf(100), 0, BigDecimal.ROUND_HALF_UP);
+            } else if (pricing.getDiscountType() == DiscountTypeEnum.FIXED) {
+                discountAmount = pricing.getDiscountValue();
+            }
+
+            // Không cho giảm vượt quá giá gốc
+            discountAmount = discountAmount.min(baseAmount);
         }
 
-        PromotionEntity promotion = promotionRepository.findByCodeAndActiveTrue(promoCode)
-                .orElseThrow(() -> new RuntimeException("Mã khuyến mãi không hợp lệ"));
-
-        if (!promotion.isValidAt(LocalDateTime.now())) {
-            throw new RuntimeException("Mã khuyến mãi đã hết hạn hoặc hết lượt dùng");
-        }
-        if (promotion.getApplicablePlan() != null && promotion.getApplicablePlan() != plan) {
-            throw new RuntimeException("Mã khuyến mãi không áp dụng cho gói này");
+        // Cập nhật lại discountAmount vào entity (nếu cần)
+        if (pricing.getDiscountAmount() == null || !pricing.getDiscountAmount().equals(discountAmount)) {
+            pricing.setDiscountAmount(discountAmount);
+            // Không save ở đây vì chỉ là tính toán tạm
         }
 
-        return promotion;
-    }
-
-    private BigDecimal calculateDiscountAmount(BigDecimal baseAmount, PromotionEntity promotion) {
-        if (promotion == null) {
-            return BigDecimal.ZERO;
-        }
-
-        BigDecimal discount = promotion.getDiscountType() == DiscountTypeEnum.PERCENTAGE
-                ? baseAmount.multiply(promotion.getDiscountValue()).divide(BigDecimal.valueOf(100))
-                : promotion.getDiscountValue();
-
-        // không cho giảm nhiều hơn giá gốc
-        return discount.min(baseAmount);
+        return baseAmount.subtract(discountAmount).max(BigDecimal.ZERO);
     }
 
     private String buildRequestSignature(String orderId, long amount, String extraData, String requestId) {
@@ -199,7 +184,7 @@ public class PaymentService {
     }
 
     private Map<String, Object> buildMomoRequestBody(String orderId, long amount, String requestId,
-                                                       String extraData, String signature) {
+                                                     String extraData, String signature) {
         Map<String, Object> body = new HashMap<>();
         body.put("partnerCode", partnerCode);
         body.put("partnerName", "Synkork");
@@ -244,7 +229,7 @@ public class PaymentService {
 
             LocalDateTime now = LocalDateTime.now();
             LocalDateTime expiresAt = resolveExpiresAt(now, billing);
-            LocalDateTime expireDate = expiresAt.plusDays(3); // buffer 3 ngày cho gia hạn
+            LocalDateTime expireDate = expiresAt.plusDays(3); // buffer 3 ngày
 
             markInvoicePaid(invoice, payload, now);
 
@@ -261,7 +246,7 @@ public class PaymentService {
             log.error("Lỗi xử lý MoMo callback, orderId={}", payload.get("orderId"), e);
         }
     }
-
+    
     private boolean isValidSignature(Map<String, Object> payload) {
         String rawHash =
                 "accessKey=" + accessKey +
@@ -285,22 +270,20 @@ public class PaymentService {
 
     private void markInvoiceFailed(InvoiceEntity invoice, Map<String, Object> payload) {
         invoice.setStatus(InvoiceStatusEnum.FAILED);
-        invoice.setTransactionId(payload.get("transId").toString());
+        invoice.setTransactionId(payload.get("transId") != null ? payload.get("transId").toString() : null);
         invoiceRepository.save(invoice);
-        // LƯU Ý: nếu invoice này có dùng promotion, usedCount đã tăng lúc tạo invoice
-        // và KHÔNG được hoàn lại ở đây. Cân nhắc gọi promotionRepository để giảm lại
-        // usedCount nếu muốn logic hoàn lượt khi thanh toán thất bại.
     }
 
     private void markInvoicePaid(InvoiceEntity invoice, Map<String, Object> payload, LocalDateTime now) {
         invoice.setStatus(InvoiceStatusEnum.PAID);
-        invoice.setTransactionId(payload.get("transId").toString());
+        invoice.setTransactionId(payload.get("transId") != null ? payload.get("transId").toString() : null);
         invoice.setPaidAt(now);
         invoiceRepository.save(invoice);
     }
 
     private String[] decodeExtraData(Map<String, Object> payload) {
-        String decoded = new String(Base64.getDecoder().decode(payload.get("extraData").toString()));
+        String extraData = payload.get("extraData").toString();
+        String decoded = new String(Base64.getDecoder().decode(extraData));
         return decoded.split("\\|", 3);
     }
 
@@ -319,7 +302,7 @@ public class PaymentService {
     }
 
     private void createNewSubscription(UserEntity user, String plan, InvoiceEntity invoice,
-                                        LocalDateTime now, LocalDateTime expireDate) {
+                                       LocalDateTime now, LocalDateTime expireDate) {
         UserSubscriptionEntity subscription = UserSubscriptionEntity.builder()
                 .user(user)
                 .plan(PlanEnum.valueOf(plan.toUpperCase()))

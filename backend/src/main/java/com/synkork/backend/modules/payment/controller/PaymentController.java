@@ -30,8 +30,7 @@ public class PaymentController {
         Map<String, Object> result = paymentService.createMomoPayment(
                 request.getPlan(),
                 request.getBillingCycle(),
-                email,
-                request.getPromoCode()
+                email
         );
         return ResponseEntity.ok(result);
     }
