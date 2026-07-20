@@ -1,4 +1,4 @@
-package com.synkork.backend.modules.payment;
+package com.synkork.backend.modules.payment.service;
 
 import com.synkork.backend.common.utils.EmailService;
 import com.synkork.backend.modules.room.RoomEntity;
@@ -104,10 +104,11 @@ public class ExpiredSubscriptionService {
             );
         }
     }
-
+ 
     @Transactional
     public void changePendingRoomAndSpace(UUID userId) {
         roomRepository.updatePendingRoomStatusByOwnerId(RoomStatusEnum.OPEN, userId);
         spaceRepository.updatePendingSpaceStatusByRoom_OwnerId(SpaceStatusEnum.OPEN, userId);
     }
 }
+  

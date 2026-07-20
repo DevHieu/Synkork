@@ -1,7 +1,9 @@
-package com.synkork.backend.modules.payment;
+package com.synkork.backend.modules.payment.controller;
 
 import com.synkork.backend.modules.payment.dto.PaymentRequest;
 import com.synkork.backend.modules.payment.dto.PaymentResponse;
+import com.synkork.backend.modules.payment.service.PaymentService;
+
 import lombok.RequiredArgsConstructor;
 
 import java.util.Base64;
@@ -15,7 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-@RestController
+@RestController 
 @RequestMapping("/payment")
 public class PaymentController {
 
@@ -25,7 +27,12 @@ public class PaymentController {
     @PostMapping("/momo")
     public ResponseEntity<Map<String, Object>> createMomoPayment(@RequestBody PaymentRequest request) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        Map<String, Object> result = paymentService.createMomoPayment(request.getPlan(), request.getBillingCycle(), email);
+        Map<String, Object> result = paymentService.createMomoPayment(
+                request.getPlan(),
+                request.getBillingCycle(),
+                email,
+                request.getPromoCode()
+        );
         return ResponseEntity.ok(result);
     }
 
