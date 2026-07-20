@@ -8,7 +8,7 @@ import SubscriptionOrdersTab from './tabs/subscription-orders-tab.vue'
 import SubscriptionPricingTab from './tabs/subscription-pricing-tab.vue'
 import UserSubscriptionsTab from './tabs/user-subscriptions-tab.vue'
 
-const activeTab = ref('orders')
+const activeTab = ref('user-subscriptions')
 const invoiceKeyword = ref('')
 
 function handleViewInvoice(invoiceId: string) {

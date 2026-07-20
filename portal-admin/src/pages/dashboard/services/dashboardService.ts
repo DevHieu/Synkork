@@ -33,8 +33,13 @@ export const dashboardService = {
     return res.data.data
   },
 
-  async getSubscriptionDashboardData() {
-    const res = await axiosClient.get('/api/manage/dashboard/subscriptions/stats')
+  async getSubscriptionStatData(params?: { dateFrom?: string, dateTo?: string }) {
+    const res = await axiosClient.get('/api/manage/dashboard/subscriptions/stats', { params })
+    return res.data
+  },
+
+  async getSubscriptionChartData(params?: { dateFrom?: string, dateTo?: string }) {
+    const res = await axiosClient.get('/api/manage/dashboard/subscriptions/chart', { params })
     return res.data
   },
 

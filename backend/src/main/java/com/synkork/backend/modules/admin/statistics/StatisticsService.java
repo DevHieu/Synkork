@@ -4,7 +4,11 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
+import com.synkork.backend.modules.admin.statistics.dtos.*;
+import com.synkork.backend.modules.admin.subscriptions.dtos.SubscriptionDashboardChart;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -12,18 +16,12 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import com.synkork.backend.config.WebSocketEventListener;
-import com.synkork.backend.modules.admin.statistics.dtos.OverviewChartResponse;
-import com.synkork.backend.modules.admin.statistics.dtos.OverviewStatsResponse;
-import com.synkork.backend.modules.admin.statistics.dtos.ReportChartResponse;
-import com.synkork.backend.modules.admin.statistics.dtos.ReportReasonStatsResponse;
-import com.synkork.backend.modules.admin.statistics.dtos.ReportStatsResponse;
-import com.synkork.backend.modules.admin.statistics.dtos.SubscriptionDashboardResponse;
-import com.synkork.backend.modules.admin.statistics.dtos.UserStatsResponse;
 import com.synkork.backend.modules.admin.statistics.enums.PeriodEnum;
 import com.synkork.backend.modules.admin.subscriptions.dtos.AdminInvoiceResponse;
 import com.synkork.backend.modules.message.MessageRepository;
 import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
 import com.synkork.backend.modules.payment.repository.InvoiceRepository;
+import com.synkork.backend.modules.payment.repository.UserSubscriptionRepository;
 import com.synkork.backend.modules.report.ReportRepository;
 import com.synkork.backend.modules.report.enums.ReportStatusEnums;
 import com.synkork.backend.modules.report.enums.ReportTypeEnums;
@@ -36,6 +34,8 @@ import com.synkork.backend.modules.user.enums.UserStatusEnum;
 
 @Service
 public class StatisticsService {
+
+    private static final List<PlanEnum> PAID_PLANS = List.of(PlanEnum.TEAM, PlanEnum.BUSINESS);
 
     @Autowired
     private UserRepository userRepository;
@@ -51,6 +51,9 @@ public class StatisticsService {
 
     @Autowired
     private InvoiceRepository invoiceRepository;
+
+    @Autowired
+    private UserSubscriptionRepository userSubscriptionRepository;
 
     @Autowired
     private ReportRepository reportRepository;
@@ -70,6 +73,12 @@ public class StatisticsService {
         if (previous == 0)
             return 100.0;
         return Math.round(((double) (current - previous) / previous) * 1000.0) / 10.0;
+    }
+
+    private double calcRate(long current, long total) {
+        if (total == 0)
+            return 0.0;
+        return Math.round(((double) current / total) * 1000.0) / 10.0;
     }
 
     public void createStatistics() {
@@ -186,32 +195,50 @@ public class StatisticsService {
                 userRepository.countByRoleAndCurrentPlan(userRole, PlanEnum.BUSINESS));
     }
 
-    public SubscriptionDashboardResponse getSubscriptionDashboardData() {
-        LocalDateTime startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+    public SubscriptionDashboardResponse getSubscriptionDashboardData(LocalDateTime dateFrom, LocalDateTime dateTo) {
+        boolean hasRange = dateFrom != null && dateTo != null;
 
-        BigDecimal totalRevenue = invoiceRepository.sumAmountByStatus(InvoiceStatusEnum.PAID);
-        BigDecimal revenueThisMonth = invoiceRepository.sumAmountByStatusAndPaidAtAfter(InvoiceStatusEnum.PAID,
-                startOfMonth);
+        BigDecimal totalRevenue = invoiceRepository.sumAmountByStatus(InvoiceStatusEnum.PAID, dateFrom, dateTo);
 
-        long activeSubscriptions = userRepository.countActiveSubscriptions(PlanEnum.FREE, LocalDateTime.now());
-        long pendingInvoices = invoiceRepository.countByStatus(InvoiceStatusEnum.PENDING);
-        long paidInvoices = invoiceRepository.countByStatus(InvoiceStatusEnum.PAID);
-        long failedInvoices = invoiceRepository.countByStatus(InvoiceStatusEnum.FAILED);
+        long newSubscriptions = userSubscriptionRepository.countByPlanIn(PAID_PLANS, dateFrom, dateTo);
+        long renewedSubscriptions = userSubscriptionRepository.countRenewedPaidSubscriptions(PAID_PLANS, dateFrom, dateTo);
+        double renewalRate = calcRate(renewedSubscriptions, newSubscriptions);
 
-        Pageable pageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt"));
-        List<AdminInvoiceResponse> recentTransactions = invoiceRepository.findAll(pageable)
-                .stream()
-                .map(AdminInvoiceResponse::from)
-                .toList();
+        List<InvoiceStatusCount> counts = invoiceRepository.countGroupByStatus(dateFrom, dateTo);
+        Map<InvoiceStatusEnum, Long> statusMap = counts.stream()
+                .collect(Collectors.toMap(InvoiceStatusCount::status, InvoiceStatusCount::count));
+
+        long pendingInvoices = statusMap.getOrDefault(InvoiceStatusEnum.PENDING, 0L);
+        long paidInvoices = statusMap.getOrDefault(InvoiceStatusEnum.PAID, 0L);
+        long failedInvoices = statusMap.getOrDefault(InvoiceStatusEnum.FAILED, 0L);
 
         return SubscriptionDashboardResponse.builder()
                 .totalRevenue(totalRevenue)
-                .revenueThisMonth(revenueThisMonth)
-                .activeSubscriptions(activeSubscriptions)
+                .newSubscriptions(newSubscriptions)
+                .renewalRate(renewalRate)
                 .pendingInvoices(pendingInvoices)
                 .paidInvoices(paidInvoices)
                 .failedInvoices(failedInvoices)
-                .recentTransactions(recentTransactions)
+                .dateFrom(dateFrom)
+                .dateTo(dateTo)
+                .build();
+    }
+
+    public SubscriptionDashboardChart getSubscriptionDashboardChart(LocalDateTime dateFrom, LocalDateTime dateTo) {
+        boolean hasRange = dateFrom != null && dateTo != null;
+
+        long teamSubscriptions = hasRange
+                ? userSubscriptionRepository.countByPlanAndStartedAtBetween(PlanEnum.TEAM, dateFrom, dateTo)
+                : userSubscriptionRepository.countByPlan(PlanEnum.TEAM);
+        long businessSubscriptions = hasRange
+                ? userSubscriptionRepository.countByPlanAndStartedAtBetween(PlanEnum.BUSINESS, dateFrom, dateTo)
+                : userSubscriptionRepository.countByPlan(PlanEnum.BUSINESS);
+
+        return SubscriptionDashboardChart.builder()
+                .teamSubscriptions(teamSubscriptions)
+                .businessSubscriptions(businessSubscriptions)
+                .dateFrom(dateFrom)
+                .dateTo(dateTo)
                 .build();
     }
 

@@ -2,7 +2,9 @@ package com.synkork.backend.modules.admin.statistics;
 
 import com.synkork.backend.modules.admin.statistics.dtos.*;
 import com.synkork.backend.modules.admin.statistics.enums.PeriodEnum;
+import com.synkork.backend.modules.admin.subscriptions.dtos.SubscriptionDashboardChart;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/manage")
@@ -36,8 +39,27 @@ public class StatisticsController {
     }
 
     @GetMapping("/dashboard/subscriptions/stats")
-    public ResponseEntity<SubscriptionDashboardResponse> getSubscriptionStats() {
-        return ResponseEntity.ok(statisticsService.getSubscriptionDashboardData());
+    public ResponseEntity<SubscriptionDashboardResponse> getSubscriptionStats(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime dateFrom,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime dateTo
+    ) {
+        return ResponseEntity.ok(statisticsService.getSubscriptionDashboardData(dateFrom, dateTo));
+    }
+
+    @GetMapping("/dashboard/subscriptions/chart")
+    public ResponseEntity<SubscriptionDashboardChart> getSubscriptionChart(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime dateFrom,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime dateTo
+    ) {
+        return ResponseEntity.ok(statisticsService.getSubscriptionDashboardChart(dateFrom, dateTo));
     }
 
     @GetMapping("/dashboard/reports/stats")
@@ -58,4 +80,3 @@ public class StatisticsController {
         return ResponseEntity.ok(statisticsService.getReportReasonStats());
     }
 }
-
