@@ -1,4 +1,4 @@
-package com.synkork.backend.modules.admin.subscriptions;
+package com.synkork.backend.modules.admin.subscriptions.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -7,15 +7,19 @@ import com.synkork.backend.modules.admin.auditLog.AuditLogService;
 import com.synkork.backend.modules.admin.auditLog.dtos.BuildLog;
 import com.synkork.backend.modules.admin.auditLog.enums.LogActionEnum;
 import com.synkork.backend.modules.admin.auditLog.enums.LogEntityTypeEnum;
+import com.synkork.backend.modules.admin.subscriptions.specification.InvoiceSpecification;
 import com.synkork.backend.modules.admin.subscriptions.dtos.AdminInvoiceRequest;
 import com.synkork.backend.modules.admin.subscriptions.dtos.AdminInvoiceUpdateRequest;
 import com.synkork.backend.modules.admin.subscriptions.dtos.AdminInvoiceResponse;
 import com.synkork.backend.modules.admin.subscriptions.dtos.InvoiceFilterRequest;
 import com.synkork.backend.modules.payment.entity.InvoiceEntity;
+import com.synkork.backend.modules.payment.entity.UserSubscriptionEntity;
+import com.synkork.backend.modules.payment.enums.BillingCycleEnum;
 import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
 import com.synkork.backend.modules.payment.repository.InvoiceRepository;
+import com.synkork.backend.modules.payment.repository.UserSubscriptionRepository;
 import com.synkork.backend.modules.payment.service.ExpiredSubscriptionService;
-import com.synkork.backend.modules.report.enums.ReportStatusEnums;
+import com.synkork.backend.modules.payment.enums.SubscriptionStatusEnum;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
 import com.synkork.backend.modules.user.enums.PlanEnum;
@@ -39,12 +43,13 @@ import java.util.UUID;
 @Slf4j
 public class AdminInvoiceService {
     private final InvoiceRepository invoiceRepository;
+    private final UserSubscriptionRepository userSubscriptionRepository;
     private final UserRepository userRepository;
     private final ExpiredSubscriptionService expiredSubscriptionService;
     private final AuditLogService auditLogService;
     private final ObjectMapper objectMapper;
 
-    public Page<InvoiceEntity> getInvoices(InvoiceFilterRequest request) {
+    public Page<AdminInvoiceResponse> getInvoices(InvoiceFilterRequest request) {
         request.validate();
 
         Pageable pageable = PageRequest.of(
@@ -55,7 +60,8 @@ public class AdminInvoiceService {
 
         Specification<InvoiceEntity> specification = InvoiceSpecification.filter(request);
 
-        return invoiceRepository.findAll(specification, pageable);
+        return invoiceRepository.findAll(specification, pageable)
+                .map(AdminInvoiceResponse::from);
     }
 
     public AdminInvoiceResponse getInvoiceById(UUID id) {
@@ -72,6 +78,8 @@ public class AdminInvoiceService {
         InvoiceEntity invoice = InvoiceEntity.builder()
                 .user(user)
                 .amount(request.amount())
+                .plan(targetPlan)
+                .billingCycle(resolveBillingCycle(request.billingCycle()))
                 .status(request.status() != null ? request.status() : InvoiceStatusEnum.PENDING)
                 .paymentMethod(request.paymentMethod())
                 .transactionId(request.orderId())
@@ -81,7 +89,7 @@ public class AdminInvoiceService {
         InvoiceEntity saved = invoiceRepository.save(invoice);
 
         if (request.status() == InvoiceStatusEnum.PAID) {
-            updateUserPlan(user, targetPlan);
+            activateSubscriptionFromInvoice(user, saved, targetPlan, resolveBillingCycle(request.billingCycle()));
         }
 
         createLog(saved, LogActionEnum.CREATE_INVOICE, null);
@@ -104,12 +112,20 @@ public class AdminInvoiceService {
             invoice.setAmount(request.amount());
         }
 
+        if (request.plan() != null) {
+            invoice.setPlan(request.plan());
+        }
+
+        if (request.billingCycle() != null) {
+            invoice.setBillingCycle(request.billingCycle());
+        }
+
         if (request.status() != null) {
             InvoiceStatusEnum newStatus = request.status();
             if (newStatus == InvoiceStatusEnum.PAID && invoice.getStatus() != InvoiceStatusEnum.PAID) {
                 invoice.setPaidAt(LocalDateTime.now());
                 PlanEnum targetPlan = request.plan() != null ? request.plan() : invoice.getUser().getCurrentPlan();
-                updateUserPlan(invoice.getUser(), targetPlan);
+                invoice.setPlan(targetPlan);
             }
             invoice.setStatus(newStatus);
         }
@@ -123,6 +139,10 @@ public class AdminInvoiceService {
         }
 
         InvoiceEntity saved = invoiceRepository.save(invoice);
+        if (saved.getStatus() == InvoiceStatusEnum.PAID) {
+            PlanEnum targetPlan = saved.getPlan() != null ? saved.getPlan() : saved.getUser().getCurrentPlan();
+            activateSubscriptionFromInvoice(saved.getUser(), saved, targetPlan, resolveBillingCycle(saved.getBillingCycle()));
+        }
         createLog(saved, LogActionEnum.UPDATE_INVOICE, previousStatus);
         return AdminInvoiceResponse.from(saved);
     }
@@ -139,9 +159,61 @@ public class AdminInvoiceService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hóa đơn: " + id));
     }
 
-    private void updateUserPlan(UserEntity user, PlanEnum plan) {
+    private BillingCycleEnum resolveBillingCycle(BillingCycleEnum billingCycle) {
+        return billingCycle != null ? billingCycle : BillingCycleEnum.MONTHLY;
+    }
+
+    private LocalDateTime resolveExpiresAt(LocalDateTime start, PlanEnum plan, BillingCycleEnum billingCycle) {
+        if (plan == PlanEnum.FREE) {
+            return null;
+        }
+        LocalDateTime expiresAt = billingCycle == BillingCycleEnum.YEARLY ? start.plusYears(1) : start.plusMonths(1);
+        return expiresAt.plusDays(3);
+    }
+
+    private void deactivateCurrentSubscription(UserEntity user, UUID exceptSubscriptionId) {
+        userSubscriptionRepository.findByUserIdAndCurrentTrue(user.getId())
+                .filter(subscription -> exceptSubscriptionId == null || !subscription.getId().equals(exceptSubscriptionId))
+                .ifPresent(subscription -> {
+                    subscription.setCurrent(false);
+                    subscription.setStatus(SubscriptionStatusEnum.EXPIRED);
+                    userSubscriptionRepository.save(subscription);
+                });
+    }
+
+    private void activateSubscriptionFromInvoice(
+            UserEntity user,
+            InvoiceEntity invoice,
+            PlanEnum plan,
+            BillingCycleEnum billingCycle
+    ) {
+        LocalDateTime startedAt = invoice.getPaidAt() != null ? invoice.getPaidAt() : LocalDateTime.now();
+        LocalDateTime expiresAt = resolveExpiresAt(startedAt, plan, billingCycle);
+
+        UserSubscriptionEntity subscription = userSubscriptionRepository.findByInvoiceId(invoice.getId())
+                .orElseGet(() -> UserSubscriptionEntity.builder()
+                        .user(user)
+                        .invoice(invoice)
+                        .autoRenew(false)
+                        .build());
+
+        deactivateCurrentSubscription(user, subscription.getId());
+
+        subscription.setUser(user);
+        subscription.setInvoice(invoice);
+        subscription.setPlan(plan);
+        subscription.setStatus(plan == PlanEnum.FREE ? SubscriptionStatusEnum.EXPIRED : SubscriptionStatusEnum.ACTIVE);
+        subscription.setStartedAt(startedAt);
+        subscription.setExpiresAt(expiresAt);
+        subscription.setCurrent(plan != PlanEnum.FREE);
+        userSubscriptionRepository.save(subscription);
+
+        updateUserPlan(user, plan, expiresAt);
+    }
+
+    private void updateUserPlan(UserEntity user, PlanEnum plan, LocalDateTime expiresAt) {
         user.setCurrentPlan(plan);
-        user.setPlanExpiresAt(plan == PlanEnum.FREE ? null : LocalDateTime.now().plusMonths(1).plusDays(3));
+        user.setPlanExpiresAt(expiresAt);
         userRepository.save(user);
         try {
             expiredSubscriptionService.changePendingRoomAndSpace(user.getId());

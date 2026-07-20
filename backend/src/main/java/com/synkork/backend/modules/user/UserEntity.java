@@ -49,7 +49,7 @@ public class UserEntity extends BaseEntity {
     @Builder.Default
     private UserStatusEnum status = UserStatusEnum.ACTIVE;
 
-    @Unique
+    @Column(unique = true)
     private UUID personalNoteId;
 
     @Column(unique = true)

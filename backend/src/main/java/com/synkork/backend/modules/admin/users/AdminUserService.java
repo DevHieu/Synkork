@@ -14,7 +14,7 @@ import com.synkork.backend.modules.admin.users.dtos.UpdateUserRequest;
 import com.synkork.backend.modules.admin.users.dtos.UserFilterRequest;
 import com.synkork.backend.modules.admin.users.email.AdminUserEmailService;
 import com.synkork.backend.modules.collaboration.calendar.repository.CalendarEventRepository;
-import com.synkork.backend.modules.payment.ExpiredSubscriptionService;
+import com.synkork.backend.modules.payment.service.ExpiredSubscriptionService;
 import com.synkork.backend.modules.report.ReportRepository;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.RoomRepository;

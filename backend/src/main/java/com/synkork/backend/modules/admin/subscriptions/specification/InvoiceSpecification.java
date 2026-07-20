@@ -1,4 +1,4 @@
-package com.synkork.backend.modules.admin.subscriptions;
+package com.synkork.backend.modules.admin.subscriptions.specification;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +26,7 @@ public class InvoiceSpecification {
             List<Predicate> predicates = new ArrayList<>();
             Join<InvoiceEntity, UserEntity> userJoin = null;
 
-            if (hasText(filter.search()) || filter.plan() != null) {
+            if (hasText(filter.search())) {
                 userJoin = root.join("user", JoinType.LEFT);
             }
 
@@ -53,7 +53,11 @@ public class InvoiceSpecification {
             }
 
             if (filter.plan() != null) {
-                predicates.add(cb.equal(userJoin.get("currentPlan"), filter.plan()));
+                predicates.add(cb.equal(root.get("plan"), filter.plan()));
+            }
+
+            if (filter.billingCycle() != null) {
+                predicates.add(cb.equal(root.get("billingCycle"), filter.billingCycle()));
             }
 
             if (filter.paymentMethod() != null) {

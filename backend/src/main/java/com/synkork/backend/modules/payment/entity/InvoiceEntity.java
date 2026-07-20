@@ -1,8 +1,10 @@
 package com.synkork.backend.modules.payment.entity;
 
 import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
+import com.synkork.backend.modules.payment.enums.BillingCycleEnum;
 import com.synkork.backend.modules.payment.enums.PaymentMethodEnum;
 import com.synkork.backend.modules.user.UserEntity;
+import com.synkork.backend.modules.user.enums.PlanEnum;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -34,6 +36,14 @@ public class InvoiceEntity {
     // Số tiền THỰC THU (đã áp khuyến mãi nếu có)
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private PlanEnum plan;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "billing_cycle", length = 20)
+    private BillingCycleEnum billingCycle;
 
     // PENDING | PAID | FAILED | REFUNDED
     @Enumerated(EnumType.STRING)

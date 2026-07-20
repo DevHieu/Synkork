@@ -111,6 +111,8 @@ public class PaymentService {
             InvoiceEntity invoice = InvoiceEntity.builder()
                     .user(user)
                     .amount(finalAmount)
+                    .plan(planEnum)
+                    .billingCycle(cycleEnum)
                     .status(InvoiceStatusEnum.PENDING)
                     .paymentMethod(PaymentMethodEnum.MOMO)
                     .promotion(promotion)

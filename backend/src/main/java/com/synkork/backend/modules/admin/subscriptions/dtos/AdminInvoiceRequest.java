@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.admin.subscriptions.dtos;
 
 import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
+import com.synkork.backend.modules.payment.enums.BillingCycleEnum;
 import com.synkork.backend.modules.payment.enums.PaymentMethodEnum;
 import com.synkork.backend.modules.user.enums.PlanEnum;
 import jakarta.validation.constraints.Email;
@@ -18,6 +19,7 @@ public record AdminInvoiceRequest(
         BigDecimal amount,
 
         PlanEnum plan,
+        BillingCycleEnum billingCycle,
         InvoiceStatusEnum status,
         PaymentMethodEnum paymentMethod,
         String orderId

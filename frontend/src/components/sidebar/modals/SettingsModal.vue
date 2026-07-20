@@ -37,10 +37,6 @@ const settingsTabs = [
       { id: "audio", label: "Âm Thanh & Giọng Nói", icon: "Volume2" },
     ],
   },
-  {
-    group: "Cài Đặt Thanh Toán",
-    items: [{ id: "billing", label: "Nitro / Pro", icon: "Sparkles" }],
-  },
 ]
 
 const navIcons: Record<string, any> = { User, Palette, Volume2, Sparkles }
@@ -256,7 +252,7 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
               <h2 class="text-base font-bold text-foreground">
                 <template v-if="activeTab === 'account'">Tài Khoản Của Tôi</template>
                 <template v-else>{{settingsTabs.flatMap(g => g.items).find(i => i.id === activeTab)?.label
-                  }}</template>
+                }}</template>
               </h2>
               <Button variant="ghost" size="sm" class="gap-1.5 text-muted-foreground text-[11px]"
                 @click="emit('close')">

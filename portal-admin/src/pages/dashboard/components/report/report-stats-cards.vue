@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { CheckCircle2, Clock3, Flag, XCircle } from '@lucide/vue'
 
-import DataCard from '../../../components/data-card.vue'
-
 import type { ReportStats } from '../../types/report-overview.types.ts'
+
+import DataCard from '../overview/data-card.vue'
 
 defineProps<{
   stats: ReportStats | null

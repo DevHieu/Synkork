@@ -1,16 +1,14 @@
-package com.synkork.backend.modules.admin.subscriptions;
+package com.synkork.backend.modules.admin.subscriptions.controller;
 
 import com.synkork.backend.common.response.ApiResponse;
 import com.synkork.backend.common.response.PageMeta;
+import com.synkork.backend.modules.admin.subscriptions.service.AdminInvoiceService;
 import com.synkork.backend.modules.admin.subscriptions.dtos.AdminInvoiceRequest;
 import com.synkork.backend.modules.admin.subscriptions.dtos.AdminInvoiceUpdateRequest;
 import com.synkork.backend.modules.admin.subscriptions.dtos.AdminInvoiceResponse;
 import com.synkork.backend.modules.admin.subscriptions.dtos.InvoiceFilterRequest;
-import com.synkork.backend.modules.payment.entity.InvoiceEntity;
-
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -27,7 +25,7 @@ public class AdminInvoiceController {
 
     @GetMapping
     public ApiResponse<List<AdminInvoiceResponse>> getInvoices(@Valid @ModelAttribute InvoiceFilterRequest request) {
-        Page<AdminInvoiceResponse> list = adminInvoiceService.getInvoices(request).map(AdminInvoiceResponse::from);
+        Page<AdminInvoiceResponse> list = adminInvoiceService.getInvoices(request);
 
         return ApiResponse.success(
                 "Get invoice list successfully",

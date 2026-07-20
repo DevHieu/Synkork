@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { VisDonut, VisSingleContainer } from '@unovis/vue'
 import {
   Activity,
   CalendarPlus,
@@ -8,8 +7,9 @@ import {
   UserPlus,
   Users,
 } from '@lucide/vue'
+import { VisDonut, VisSingleContainer } from '@unovis/vue'
 
-import DataCard from '../components/overview/data-card.vue/index.js'
+import DataCard from '../components/overview/data-card.vue'
 import { dashboardService } from '../services/dashboardService'
 
 interface UserStats {

@@ -1,9 +1,7 @@
 package com.synkork.backend.modules.admin.subscriptions.dtos;
 
 import com.synkork.backend.common.dtos.PageableFilter;
-import com.synkork.backend.modules.payment.enums.BillingCycleEnum;
-import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
-import com.synkork.backend.modules.payment.enums.PaymentMethodEnum;
+import com.synkork.backend.modules.payment.enums.SubscriptionStatusEnum;
 import com.synkork.backend.modules.user.enums.PlanEnum;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -11,18 +9,17 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
 
-public record InvoiceFilterRequest(
+public record AdminSubscriptionFilterRequest(
         String search,
-        InvoiceStatusEnum status,
         PlanEnum plan,
-        BillingCycleEnum billingCycle,
-        PaymentMethodEnum paymentMethod,
+        SubscriptionStatusEnum status,
+        Boolean current,
 
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-        LocalDateTime dateFrom,
+        LocalDateTime expiresFrom,
 
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-        LocalDateTime dateTo,
+        LocalDateTime expiresTo,
 
         @Min(value = 0, message = "Page must be >= 0")
         Integer page,
@@ -32,8 +29,8 @@ public record InvoiceFilterRequest(
         Integer size
 ) implements PageableFilter {
     public void validate() {
-        if (dateFrom != null && dateTo != null && dateFrom.isAfter(dateTo)) {
-            throw new IllegalArgumentException("dateFrom must be before or equal to dateTo");
+        if (expiresFrom != null && expiresTo != null && expiresFrom.isAfter(expiresTo)) {
+            throw new IllegalArgumentException("expiresFrom must be before or equal to expiresTo");
         }
     }
 }
