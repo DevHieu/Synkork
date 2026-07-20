@@ -267,7 +267,7 @@ public class PaymentService {
         String receivedSig = payload.get("signature").toString();
         return expectedSig.equals(receivedSig);
     }
-
+    
     private void markInvoiceFailed(InvoiceEntity invoice, Map<String, Object> payload) {
         invoice.setStatus(InvoiceStatusEnum.FAILED);
         invoice.setTransactionId(payload.get("transId") != null ? payload.get("transId").toString() : null);
