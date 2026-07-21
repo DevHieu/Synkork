@@ -1,13 +1,14 @@
 package com.synkork.backend.modules.payment.entity;
 
+import java.math.BigDecimal;
+
 import com.synkork.backend.common.base.BaseEntity;
 import com.synkork.backend.modules.payment.enums.BillingCycleEnum;
 import com.synkork.backend.modules.payment.enums.DiscountTypeEnum;
 import com.synkork.backend.modules.user.enums.PlanEnum;
+
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.math.BigDecimal;
 
 @Entity
 @Table(name = "plan_pricings")

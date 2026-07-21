@@ -1,5 +1,23 @@
 package com.synkork.backend.modules.payment.service;
 
+import java.math.BigDecimal;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.LocalDateTime;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import org.apache.commons.codec.digest.HmacUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.synkork.backend.common.utils.EmailService;
@@ -17,24 +35,8 @@ import com.synkork.backend.modules.payment.repository.UserSubscriptionRepository
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserService;
 import com.synkork.backend.modules.user.enums.PlanEnum;
-import jakarta.transaction.Transactional;
-import org.apache.commons.codec.digest.HmacUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.LocalDateTime;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import jakarta.transaction.Transactional;
 
 @Service
 public class PaymentService {

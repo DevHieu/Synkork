@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import dayjs from "dayjs";
+import { useRouter, useRoute } from "vue-router";
 import {
   CalendarDays,
   Clock3,
@@ -148,6 +149,33 @@ const joinVoiceRoom = () => {
     emit("update:show", false);
   }
 };
+
+const router = useRouter();
+const route = useRoute();
+
+const goToTaskSpace = async () => {
+  if (props.event?.taskSpaceId) {
+    await spaceStore.changeSpaceById(props.event.taskSpaceId, "TASK");
+    const roomId = route.params.roomId;
+    router.replace({
+      path: `/rooms/task/${roomId}/${props.event.taskSpaceId}`,
+      query: { cardId: props.event.taskId }
+    });
+    emit("update:show", false);
+  }
+};
+
+const goToNoteSpace = async () => {
+  if (props.event?.noteSpaceId) {
+    await spaceStore.changeSpaceById(props.event.noteSpaceId, "NOTE");
+    const roomId = route.params.roomId;
+    router.replace({
+      path: `/rooms/note/${roomId}/${props.event.noteSpaceId}`,
+      query: { noteId: props.event.noteId }
+    });
+    emit("update:show", false);
+  }
+};
 </script>
 
 <template>
@@ -225,6 +253,62 @@ const joinVoiceRoom = () => {
                   class="rounded-sm bg-primary font-sans text-[10px] font-bold text-primary-foreground px-3.5 py-1.5 shadow-sm hover:bg-primary/95 shrink-0"
                 >
                   Vào phòng call
+                </Button>
+              </div>
+            </div>
+
+            <!-- Task liên kết -->
+            <div v-if="event?.taskId" 
+              @click="goToTaskSpace"
+              class="rounded-md border border-border/60 bg-card overflow-hidden cursor-pointer hover:bg-muted/10 transition-colors">
+              <div class="flex items-center gap-2 border-b border-border/60 bg-muted/20 px-3.5 py-2">
+                <CheckSquare class="text-primary h-3.5 w-3.5" />
+                <h3 class="font-sans text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Task liên kết
+                </h3>
+              </div>
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3.5">
+                <div class="min-w-0">
+                  <p class="font-sans text-xs font-bold text-foreground truncate">
+                    {{ event?.taskName || 'Xem chi tiết task' }}
+                  </p>
+                  <p class="font-sans text-[9px] text-muted-foreground/80 mt-0.5 uppercase tracking-wider">
+                    Click để chuyển đến kênh task chứa công việc này
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  class="rounded-sm bg-primary font-sans text-[10px] font-bold text-primary-foreground px-3.5 py-1.5 shadow-sm hover:bg-primary/95 shrink-0 animate-none pointer-events-none"
+                >
+                  Mở Task Space
+                </Button>
+              </div>
+            </div>
+
+            <!-- Note liên kết -->
+            <div v-if="event?.noteId" 
+              @click="goToNoteSpace"
+              class="rounded-md border border-border/60 bg-card overflow-hidden cursor-pointer hover:bg-muted/10 transition-colors">
+              <div class="flex items-center gap-2 border-b border-border/60 bg-muted/20 px-3.5 py-2">
+                <FileText class="text-primary h-3.5 w-3.5" />
+                <h3 class="font-sans text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Note liên kết
+                </h3>
+              </div>
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3.5">
+                <div class="min-w-0">
+                  <p class="font-sans text-xs font-bold text-foreground truncate">
+                    {{ event?.noteTitle || 'Xem chi tiết note' }}
+                  </p>
+                  <p class="font-sans text-[9px] text-muted-foreground/80 mt-0.5 uppercase tracking-wider">
+                    Click để chuyển đến kênh note chứa ghi chú này
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  class="rounded-sm bg-primary font-sans text-[10px] font-bold text-primary-foreground px-3.5 py-1.5 shadow-sm hover:bg-primary/95 shrink-0 animate-none pointer-events-none"
+                >
+                  Mở Note Space
                 </Button>
               </div>
             </div>
