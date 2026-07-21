@@ -154,10 +154,11 @@ async function handleSubmitForm() {
 
     room.value = await roomService.getRoomDetail(room.value.id)
     syncFormFromRoom()
+    isOpen.value = false
     emit('updated')
   }
   catch (error: any) {
-    formError.value = error?.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại'
+    formError.value = error?.response?.data || 'Có lỗi xảy ra, vui lòng thử lại'
   }
   finally {
     isSubmitting.value = false
@@ -191,7 +192,6 @@ function showReportDetail(userEmail: string) {
 </script>
 
 <template>
-  <!-- Main dialog -->
   <Dialog v-model:open="isOpen">
     <DialogContent class="max-w-[720px] gap-0 overflow-hidden p-0">
       <DialogHeader class="border-b border-border px-6 py-5">
@@ -215,7 +215,6 @@ function showReportDetail(userEmail: string) {
         </div>
       </DialogHeader>
 
-      <!-- Loading -->
       <div
         v-if="isLoading"
         class="flex flex-col gap-4 px-6 py-5"
@@ -231,7 +230,6 @@ function showReportDetail(userEmail: string) {
         <div class="h-28 animate-pulse rounded-lg bg-muted" />
       </div>
 
-      <!-- Error -->
       <div
         v-else-if="loadError"
         class="px-6 py-10 text-center text-sm text-red-500"
@@ -241,7 +239,6 @@ function showReportDetail(userEmail: string) {
 
       <template v-else-if="room">
         <div class="flex max-h-[70vh] flex-col gap-5 overflow-y-auto px-6 py-5">
-          <!-- Badges -->
           <div class="flex items-center gap-2">
             <span
               class="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary"
@@ -261,14 +258,12 @@ function showReportDetail(userEmail: string) {
             </span>
           </div>
 
-          <!-- Room info (luôn chỉnh sửa được) -->
           <div>
             <p class="mb-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
               Thông tin Room
             </p>
 
             <div class="grid grid-cols-2 gap-2.5">
-              <!-- Tên Room -->
               <div class="col-span-2 rounded-lg border border-border bg-muted/40 px-3 py-2.5">
                 <p class="mb-1 text-[11px] text-muted-foreground">
                   Tên Room
@@ -280,7 +275,6 @@ function showReportDetail(userEmail: string) {
                 />
               </div>
 
-              <!-- Trạng thái -->
               <div class="rounded-lg border border-border bg-muted/40 px-3 py-2.5">
                 <p class="mb-1 text-[11px] text-muted-foreground">
                   Trạng thái
@@ -305,7 +299,7 @@ function showReportDetail(userEmail: string) {
 
               <div class="rounded-lg border border-border bg-muted/40 px-3 py-2.5">
                 <p class="mb-1 text-[11px] text-muted-foreground">
-                  Số lần bị tố cáo
+                  Số lần bị cảnh báo
                 </p>
                 <div class="h-8 text-[13px] font-medium flex items-center justify-between">
                   {{ room.warning }}
@@ -315,7 +309,6 @@ function showReportDetail(userEmail: string) {
                 </div>
               </div>
 
-              <!-- Mô tả -->
               <div class="col-span-2 rounded-lg border border-border bg-muted/40 px-3 py-2.5">
                 <p class="mb-1 text-[11px] text-muted-foreground">
                   Mô tả
@@ -328,7 +321,6 @@ function showReportDetail(userEmail: string) {
                 />
               </div>
 
-              <!-- Mã mời -->
               <div class="col-span-2 rounded-lg border border-border bg-muted/40 px-3 py-2.5">
                 <div class="flex items-center gap-2">
                   <KeyRound class="h-4 w-4 text-muted-foreground" />
@@ -343,7 +335,6 @@ function showReportDetail(userEmail: string) {
 
           <div class="border-t border-border" />
 
-          <!-- Owner (luôn chỉnh sửa được) -->
           <div>
             <p class="mb-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
               Chủ phòng
@@ -400,16 +391,15 @@ function showReportDetail(userEmail: string) {
 
           <div class="border-t border-border" />
 
-          <!-- Members: count + button -->
           <div>
             <div class="mb-2.5 flex items-center justify-between">
               <p class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
                 <Users class="h-3.5 w-3.5" />
-                Thành viên ({{ room.members?.length ?? 0 }})
+                Thành viên ({{ room.memberCount ?? 0 }})
               </p>
 
               <UiButton
-                v-if="room.members?.length"
+                v-if="room.memberCount"
                 variant="outline"
                 size="sm"
                 class="h-7 px-2.5 text-xs"
@@ -420,23 +410,22 @@ function showReportDetail(userEmail: string) {
             </div>
 
             <p
-              v-if="!room.members?.length"
+              v-if="!room.memberCount"
               class="text-sm text-muted-foreground"
             >
               Không có thành viên
             </p>
           </div>
 
-          <!-- Spaces: count + button -->
           <div>
             <div class="mb-2.5 flex items-center justify-between">
               <p class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
                 <Layers class="h-3.5 w-3.5" />
-                Spaces ({{ room.spaces?.length ?? 0 }})
+                Spaces ({{ room.spaceCount ?? 0 }})
               </p>
 
               <UiButton
-                v-if="room.spaces?.length"
+                v-if="room.spaceCount"
                 variant="outline"
                 size="sm"
                 class="h-7 px-2.5 text-xs"
@@ -447,14 +436,13 @@ function showReportDetail(userEmail: string) {
             </div>
 
             <p
-              v-if="!room.spaces?.length"
+              v-if="!room.spaceCount"
               class="text-sm text-muted-foreground"
             >
               Không có spaces
             </p>
           </div>
 
-          <!-- Timestamps -->
           <div class="border-t border-border pt-4">
             <div class="flex items-center gap-5 text-[12px] text-muted-foreground">
               <div class="flex items-center gap-1">
@@ -473,7 +461,6 @@ function showReportDetail(userEmail: string) {
           </p>
         </div>
 
-        <!-- Footer -->
         <div class="flex justify-end gap-2 border-t border-border px-6 py-4">
           <UiButton variant="outline" size="sm" :disabled="isSubmitting" @click="isOpen = false">
             Đóng
@@ -486,14 +473,13 @@ function showReportDetail(userEmail: string) {
     </DialogContent>
   </Dialog>
 
-  <!-- Members sub-dialog -->
   <MemberDialog
     v-model:open="isMembersOpen"
-    :members="room?.members ?? []"
+    :room-id="room?.id ?? ''"
   />
 
   <SpacesDialog
     v-model:open="isSpacesOpen"
-    :spaces="room?.spaces ?? []"
+    :room-id="room?.id ?? ''"
   />
 </template>

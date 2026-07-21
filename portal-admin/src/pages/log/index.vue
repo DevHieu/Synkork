@@ -48,7 +48,7 @@ const hasActiveFilter = computed(() =>
 function renderEntityType(type: string) {
   const config = {
     USER: { label: 'User', class: 'border-blue-200 bg-blue-100 text-blue-800 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300' },
-    WORKSPACE: { label: 'Workspace', class: 'border-purple-200 bg-purple-100 text-purple-800 dark:border-purple-800 dark:bg-purple-900/30 dark:text-purple-300' },
+    ROOM: { label: 'Room', class: 'border-cyan-200 bg-cyan-100 text-cyan-800 dark:border-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300' },
     REPORT: { label: 'Report', class: 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300' },
     SUBSCRIPTION: { label: 'Subscription', class: 'border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300' },
   }[type]
@@ -195,8 +195,8 @@ function clearFilters() {
             <SelectItem value="USER">
               User (Người dùng)
             </SelectItem>
-            <SelectItem value="WORKSPACE">
-              Workspace
+            <SelectItem value="ROOM">
+              Room
             </SelectItem>
             <SelectItem value="REPORT">
               Report (Báo cáo)

@@ -36,10 +36,7 @@ export interface RoomDetail extends Room {
     email: string
     avatarUrl?: string
   }
-
-  members: Member[]
-
-  spaces: Space[]
+  spaceCount: number
 }
 
 export interface RoomParams {
@@ -48,6 +45,10 @@ export interface RoomParams {
   search?: string
   status?: string
   type?: string
+  minMembers?: number
+  maxMembers?: number
+  minWarning?: number
+  maxWarning?: number
 }
 export interface RoomFormPayload {
   name: string

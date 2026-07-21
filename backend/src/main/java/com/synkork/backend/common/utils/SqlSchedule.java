@@ -94,7 +94,7 @@ public class SqlSchedule {
         }
 
         userRepository.resetExpiredUsersToPlan(PlanEnum.FREE, LocalDateTime.now());
-        roomRepository.deleteByStatus(RoomStatusEnum.PENDING_REMOVAL);
-        spaceRepository.deleteByStatus(SpaceStatusEnum.PENDING_REMOVAL);
+        roomRepository.updateStatusByStatus(RoomStatusEnum.PENDING_REMOVAL, RoomStatusEnum.LOCKED);
+        spaceRepository.updateStatusByStatus(SpaceStatusEnum.PENDING_REMOVAL, SpaceStatusEnum.LOCKED);
     }
 }

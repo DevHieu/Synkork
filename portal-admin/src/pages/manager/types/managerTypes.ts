@@ -1,5 +1,6 @@
 export type ManagerStatus = 'active' | 'inactive' | 'banned'
 export type ManagementRole = 'manager' | 'admin'
+export type ManagerPlan = 'FREE' | 'TEAM' | 'BUSINESS'
 
 export interface ManagerAccount {
   id: string
@@ -9,13 +10,14 @@ export interface ManagerAccount {
   avatarUrl: string | null
   role: ManagementRole
   status: ManagerStatus
+  plan?: ManagerPlan | null
   provider: string
   createdAt: string
   updatedAt: string
 }
 
 export interface ManagerParams {
-  keyword?: string
+  search?: string
   status?: ManagerStatus
   role?: ManagementRole
   page?: number
@@ -33,3 +35,6 @@ export interface CreateManagerPayload {
 }
 
 export type UpdateManagerPayload = Partial<Omit<CreateManagerPayload, 'username'>>
+  & {
+    plan?: ManagerPlan
+  }

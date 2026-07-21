@@ -27,6 +27,7 @@ public final class ReportSpecification {
                 root.fetch("reporter", JoinType.LEFT);
                 root.fetch("targetUser", JoinType.LEFT);
                 root.fetch("targetRoom", JoinType.LEFT);
+                query.distinct(true);
             }
             
             List<Predicate> predicates = new ArrayList<>();

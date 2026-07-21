@@ -1,17 +1,21 @@
 package com.synkork.backend.modules.payment.entity;
 
-import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
-import com.synkork.backend.modules.payment.enums.PaymentMethodEnum;
-import com.synkork.backend.modules.user.UserEntity;
-import jakarta.persistence.*;
-import lombok.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.UUID;
+import com.synkork.backend.modules.payment.enums.BillingCycleEnum;
+import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
+import com.synkork.backend.modules.payment.enums.PaymentMethodEnum;
+import com.synkork.backend.modules.user.UserEntity;
+import com.synkork.backend.modules.user.enums.PlanEnum;
+
+import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
 @Table(name = "invoices")
@@ -34,6 +38,14 @@ public class InvoiceEntity {
     // Số tiền THỰC THU (đã áp khuyến mãi nếu có)
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private PlanEnum plan;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "billing_cycle", length = 20)
+    private BillingCycleEnum billingCycle;
 
     // PENDING | PAID | FAILED | REFUNDED
     @Enumerated(EnumType.STRING)
@@ -65,8 +77,4 @@ public class InvoiceEntity {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
-
-    @Column(name = "discount_amount", precision = 10, scale = 2)
-    @Builder.Default
-    private BigDecimal discountAmount = BigDecimal.ZERO;
 }

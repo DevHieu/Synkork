@@ -112,13 +112,6 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
-    '/dashboard/tabs/message-overview': RouteRecordInfo<
-      '/dashboard/tabs/message-overview',
-      '/dashboard/tabs/message-overview',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
     '/dashboard/tabs/overview-content': RouteRecordInfo<
       '/dashboard/tabs/overview-content',
       '/dashboard/tabs/overview-content',
@@ -129,20 +122,6 @@ declare module 'vue-router/auto-routes' {
     '/dashboard/tabs/report-overview': RouteRecordInfo<
       '/dashboard/tabs/report-overview',
       '/dashboard/tabs/report-overview',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
-    '/dashboard/tabs/room/room-card': RouteRecordInfo<
-      '/dashboard/tabs/room/room-card',
-      '/dashboard/tabs/room/room-card',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
-    '/dashboard/tabs/room/top-room': RouteRecordInfo<
-      '/dashboard/tabs/room/top-room',
-      '/dashboard/tabs/room/top-room',
       Record<never, never>,
       Record<never, never>,
       | never
@@ -299,6 +278,27 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/subscriptions/tabs/subscription-orders-tab': RouteRecordInfo<
+      '/subscriptions/tabs/subscription-orders-tab',
+      '/subscriptions/tabs/subscription-orders-tab',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/subscriptions/tabs/subscription-pricing-tab': RouteRecordInfo<
+      '/subscriptions/tabs/subscription-pricing-tab',
+      '/subscriptions/tabs/subscription-pricing-tab',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/subscriptions/tabs/user-subscriptions-tab': RouteRecordInfo<
+      '/subscriptions/tabs/user-subscriptions-tab',
+      '/subscriptions/tabs/user-subscriptions-tab',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/users/': RouteRecordInfo<
       '/users/',
       '/users',
@@ -412,14 +412,6 @@ declare module 'vue-router/auto-routes' {
       pathParamNames:
         | never
     }
-    'src/pages/dashboard/tabs/message-overview.vue': {
-      routes:
-        | '/dashboard/tabs/message-overview'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
     'src/pages/dashboard/tabs/overview-content.vue': {
       routes:
         | '/dashboard/tabs/overview-content'
@@ -431,22 +423,6 @@ declare module 'vue-router/auto-routes' {
     'src/pages/dashboard/tabs/report-overview.vue': {
       routes:
         | '/dashboard/tabs/report-overview'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
-    'src/pages/dashboard/tabs/room/room-card.vue': {
-      routes:
-        | '/dashboard/tabs/room/room-card'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
-    'src/pages/dashboard/tabs/room/top-room.vue': {
-      routes:
-        | '/dashboard/tabs/room/top-room'
       views:
         | never
       pathParamNames:
@@ -621,6 +597,30 @@ declare module 'vue-router/auto-routes' {
     'src/pages/subscriptions/index.vue': {
       routes:
         | '/subscriptions/'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/subscriptions/tabs/subscription-orders-tab.vue': {
+      routes:
+        | '/subscriptions/tabs/subscription-orders-tab'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/subscriptions/tabs/subscription-pricing-tab.vue': {
+      routes:
+        | '/subscriptions/tabs/subscription-pricing-tab'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/subscriptions/tabs/user-subscriptions-tab.vue': {
+      routes:
+        | '/subscriptions/tabs/user-subscriptions-tab'
       views:
         | never
       pathParamNames:

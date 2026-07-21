@@ -1,8 +1,20 @@
 package com.synkork.backend.common.utils;
 
+import com.synkork.backend.modules.roomMember.RoomMemberRepository;
+import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
 import com.synkork.backend.modules.user.enums.PlanEnum;
+import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
+@Component
 public class PlanLimitUtils {
+
+    private static RoomMemberRepository roomMemberRepository;
+
+    public PlanLimitUtils(RoomMemberRepository roomMemberRepository) {
+        PlanLimitUtils.roomMemberRepository = roomMemberRepository;
+    }
 
     public static int maxRooms(PlanEnum plan) {
         return switch (plan) {
@@ -42,5 +54,18 @@ public class PlanLimitUtils {
             case TEAM     -> 10L * 1024 * 1024;
             case BUSINESS -> 50L * 1024 * 1024;
         };
+    }
+
+    public static boolean checkMaxRooms(PlanEnum userPlan, UUID userId) {
+        int maxRooms = maxRooms(userPlan);
+        long currentRooms = roomMemberRepository.countGroupRoomsByUserIdAndRole(
+                userId, RoomMemberRoleEnum.OWNER);
+
+        if (currentRooms >= maxRooms) {
+            throw new RuntimeException(
+                    "Gói " + userPlan + " chỉ được tạo tối đa " + maxRooms + " room. Vui lòng nâng cấp gói.");
+        }
+
+        return true;
     }
 }

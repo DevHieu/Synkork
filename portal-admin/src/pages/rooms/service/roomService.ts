@@ -13,6 +13,18 @@ export const roomService = {
     return res.data.data
   },
 
+  async getRoomMembers(roomId: string) {
+    const res = await axiosClient.get(`/api/manage/rooms/${roomId}/members`)
+
+    return res.data.data
+  },
+
+  async getRoomSpaces(roomId: string) {
+    const res = await axiosClient.get(`/api/manage/rooms/${roomId}/spaces`)
+
+    return res.data.data
+  },
+
   async createRoom(payload: RoomFormPayload) {
     const res = await axiosClient.post('/api/manage/rooms', payload)
     return res.data

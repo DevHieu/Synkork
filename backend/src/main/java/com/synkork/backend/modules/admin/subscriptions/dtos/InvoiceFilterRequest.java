@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.admin.subscriptions.dtos;
 
 import com.synkork.backend.common.dtos.PageableFilter;
+import com.synkork.backend.modules.payment.enums.BillingCycleEnum;
 import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
 import com.synkork.backend.modules.payment.enums.PaymentMethodEnum;
 import com.synkork.backend.modules.user.enums.PlanEnum;
@@ -14,6 +15,7 @@ public record InvoiceFilterRequest(
         String search,
         InvoiceStatusEnum status,
         PlanEnum plan,
+        BillingCycleEnum billingCycle,
         PaymentMethodEnum paymentMethod,
 
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)

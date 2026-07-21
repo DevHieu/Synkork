@@ -25,4 +25,10 @@ public class UpdateManagerRequest {
             message = "Vai tro phai la manager hoac admin"
     )
     private String role;
+
+    @Pattern(
+            regexp = "(?i)free|team|business",
+            message = "Goi dang ky phai la free, team hoac business"
+    )
+    private String plan;
 }

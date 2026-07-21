@@ -23,6 +23,12 @@ public record UserFilterRequest(
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
         LocalDateTime dateTo,
 
+        @Min(value = 0, message = "Size phải >= 0")
+        Integer minWarning,
+
+        @Min(value = 0, message = "Size phải >= 0")
+        Integer maxWarning,
+
         @Min(value = 0, message = "Page phải >= 0")
         Integer page,
 

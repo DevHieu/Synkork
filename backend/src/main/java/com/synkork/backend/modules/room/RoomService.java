@@ -14,6 +14,7 @@ import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
 import com.synkork.backend.modules.roomMember.RoomMemberService;
 import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
+import com.synkork.backend.modules.roomMember.enums.MemberStatusEnum;
 import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
 import com.synkork.backend.modules.space.SpaceEntity;
 import com.synkork.backend.modules.space.SpaceService;
@@ -30,6 +31,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -70,20 +72,34 @@ public class RoomService {
         return roomRepository.findById(uuid).orElseThrow(() -> new RuntimeException("Room không tồn tại!"));
     }
 
+    public UserEntity findOwnerByRoomId(UUID roomId) {
+        return roomRepository.findOwnerByRoomId(roomId).orElseThrow(() -> new RuntimeException("Room owner not found!"));
+    }
+
+    public List<RoomEntity> findRoomUserJoined(@NonNull UUID userId) {
+        return roomRepository.findRoomMembersJoined(userId);
+    }
+
+    public RoomReviewResponse getRoomByInviteCode(String code) {
+        RoomEntity room = roomRepository.findByInviteCode(code)
+                .orElseThrow(() -> new RuntimeException("Link mời không tồn tại"));
+
+        return RoomReviewResponse.builder()
+                .roomName(room.getName())
+                .roomAvatar(room.getAvatarUrl())
+                .roomMembers(roomMemberRepository.countByRoom_Id(room.getId()))
+                .build();
+    }
+
     public RoomEntity createRoom(CreateRoomDto roomData) {
         if (roomData.ownerId() != null) {
             UUID ownerId = UUID.fromString(roomData.ownerId());
             UserEntity owner = userRepository.findById(ownerId)
                     .orElseThrow(() -> new RuntimeException("User không tồn tại"));
 
-            PlanEnum plan = owner.getCurrentPlan();
-            int maxRooms = PlanLimitUtils.maxRooms(plan);
-            long currentRooms = roomMemberRepository.countGroupRoomsByUserIdAndRole(
-                    ownerId, RoomMemberRoleEnum.OWNER);
-
-            if (currentRooms >= maxRooms) {
-                throw new RuntimeException(
-                        "Gói " + plan + " chỉ được tạo tối đa " + maxRooms + " room. Vui lòng nâng cấp gói.");
+            // Check xem owner được chọn có quá số lượng phòng theo gói hay không
+            if (!PlanLimitUtils.checkMaxRooms(owner.getCurrentPlan(), owner.getId())) {
+                return null;
             }
         }
 
@@ -131,28 +147,22 @@ public class RoomService {
         return roomRepository.save(room);
     }
 
-    public List<RoomEntity> findRoomUserJoined(@NonNull UUID userId) {
-        return roomRepository.findRoomMembersJoined(userId);
-    }
-
-    public RoomReviewResponse getRoomByInviteCode(String code) {
-        RoomEntity room = roomRepository.findByInviteCode(code)
-                .orElseThrow(() -> new RuntimeException("Link mời không tồn tại"));
-
-        return RoomReviewResponse.builder()
-                .roomName(room.getName())
-                .roomAvatar(room.getAvatarUrl())
-                .roomMembers(roomMemberRepository.countByRoom_Id(room.getId()))
-                .build();
-    }
-
     public RoomDto joinRoom(String code, UUID userId) {
         RoomEntity room = roomRepository.findByInviteCode(code)
                 .orElseThrow(() -> new RuntimeException("Link mời không tồn tại"));
 
-        boolean alreadyMember = roomMemberRepository.existsByRoom_IdAndUser_Id(room.getId(), userId);
-        if (alreadyMember)
-            throw new RuntimeException("Bạn đã là thành viên của phòng này");
+        Optional<RoomMemberEntity> alreadyMember = roomMemberRepository.findByRoom_IdAndUser_Id(room.getId(), userId);
+
+        // Check xem mmber đã trong phòng? Đã trong phòng thì statsu là gì
+        if (alreadyMember.isPresent()) {
+            RoomMemberEntity member = alreadyMember.get();
+            if (member.getStatus() == MemberStatusEnum.INACTIVE) {
+                member.setStatus(MemberStatusEnum.ACTIVE);
+                roomMemberRepository.save(member);
+            } else {
+                throw new RuntimeException("Bạn đã là thành viên của phòng này");
+            }
+        }
 
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User không tồn tại"));
@@ -200,7 +210,7 @@ public class RoomService {
         PermissionService.requirePermission(roomId, requesterId, RoomMemberRoleEnum.OWNER);
 
         RoomEntity room = this.findById(roomId);
-
+        room.setStatus(RoomStatusEnum.LOCKED);
     }
 
     public RoomMemberDto inviteFriendToRoom(UUID roomId, UUID friendId) {

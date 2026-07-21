@@ -52,6 +52,20 @@ public class UserSpecification {
                 );
             }
 
+            if (request.minWarning() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(
+                        root.get("warning"),
+                        request.minWarning()
+                ));
+            }
+
+            if (request.maxWarning() != null) {
+                predicates.add(cb.lessThanOrEqualTo(
+                        root.get("warning"),
+                        request.maxWarning()
+                ));
+            }
+
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }

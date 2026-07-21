@@ -4,6 +4,7 @@ import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.common.utils.EmailService;
 import com.synkork.backend.modules.admin.manager.dto.*;
 import com.synkork.backend.modules.user.UserEntity;
+import com.synkork.backend.modules.user.enums.PlanEnum;
 import com.synkork.backend.modules.user.enums.RoleEnum;
 import com.synkork.backend.modules.user.enums.UserStatusEnum;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -99,6 +100,10 @@ public class ManagerService {
             account.setRole(parseManagedRole(request.getRole()));
         }
 
+        if (request.getPlan() != null) {
+            account.setCurrentPlan(parsePlan(request.getPlan()));
+        }
+
         UserEntity saved = managerRepository.save(account);
         if (!isLockedStatus(oldStatus) && isLockedStatus(saved.getStatus())) {
             sendManagerLockedEmail(saved, "Tai khoan cua ban da bi khoa boi quan tri vien.");
@@ -168,6 +173,14 @@ public class ManagerService {
             return UserStatusEnum.valueOf(status.toUpperCase());
         } catch (IllegalArgumentException exception) {
             throw new IllegalArgumentException("Trang thai khong hop le");
+        }
+    }
+
+    private PlanEnum parsePlan(String plan) {
+        try {
+            return PlanEnum.valueOf(plan.toUpperCase());
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Goi dang ky phai la free, team hoac business");
         }
     }
 

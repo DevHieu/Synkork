@@ -3,6 +3,9 @@ package com.synkork.backend.modules.collaboration.calendar.repository;
 import com.synkork.backend.modules.collaboration.calendar.entity.CalendarEventEntity;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -30,4 +33,12 @@ public interface CalendarEventRepository extends JpaRepository<CalendarEventEnti
     List<CalendarEventEntity> findBySpaceIdAndEventDate(UUID spaceId, LocalDate date);
 
     void deleteBySpaceId(UUID spaceId);
+
+    @Modifying
+    @Query("""
+        UPDATE CalendarEventEntity e
+        SET e.callRoomSpace = null
+        WHERE e.callRoomSpace.room.id = :roomId
+    """)
+    int clearCallRoomSpaceByRoomId(@Param("roomId") UUID roomId);
 }

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { Eye, LoaderIcon, Lock, PlusIcon, RefreshCwIcon, Search, Unlock, X } from '@lucide/vue'
+import { Eye, LoaderIcon, Lock, PlusIcon, Search, Unlock, X } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
 import { computed, h, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -9,17 +9,10 @@ import type { TableColumn } from '@/components/base-table.vue'
 import BaseTable from '@/components/base-table.vue'
 import ConfirmDialog from '@/components/confirm-dialog.vue'
 import { BasicPage } from '@/components/global-layout'
+import NumberField from '@/components/number-field.vue'
 import Pagination from '@/components/pagination.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button as UiButton } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Input as UiInput } from '@/components/ui/input'
 import {
   Select,
@@ -28,15 +21,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Textarea as UiTextarea } from '@/components/ui/textarea'
 
-import type {
-  Room,
-  RoomFormPayload,
-  RoomParams,
-  UserOption,
-} from './types/RoomTypes'
+import type { Room, RoomParams } from './types/RoomTypes'
 
+import CreateRoomDialog from './components/CreateRoomDialog.vue'
 import RoomDetailDialog from './components/RoomDetailDialog.vue'
 import { roomService } from './service/roomService'
 
@@ -55,118 +43,45 @@ const pageSize = 20
 
 const searchKeyword = ref('')
 const selectedStatus = ref<string>('ALL')
+const minMembers = ref<number>()
+const maxMembers = ref<number>()
+const minWarning = ref<number>()
+const maxWarning = ref<number>()
 
 const debounceSearchKeyword = refDebounced(searchKeyword, 500)
+const debounceMinMembers = refDebounced(minMembers, 500)
+const debounceMaxMembers = refDebounced(maxMembers, 500)
+const debounceMinWarning = refDebounced(minWarning, 500)
+const debounceMaxWarning = refDebounced(maxWarning, 500)
 
 const totalPage = computed(() => Math.ceil(totalCount.value / pageSize))
 const hasActiveFilter = computed(() =>
   !!searchKeyword.value
-  || selectedStatus.value !== 'ALL',
+  || selectedStatus.value !== 'ALL'
+  || !!minMembers.value
+  || !!maxMembers.value
+  || !!minWarning.value
+  || !!maxWarning.value,
 )
+
+function clearFilters() {
+  searchKeyword.value = ''
+  selectedStatus.value = 'ALL'
+  minMembers.value = undefined
+  maxMembers.value = undefined
+  minWarning.value = undefined
+  maxWarning.value = undefined
+}
 
 function handleViewDetail(room: Room) {
   selectedRoom.value = room
   isDetailOpen.value = true
 }
 
-function clearFilters() {
-  searchKeyword.value = ''
-  selectedStatus.value = 'ALL'
-}
-
-// ===================== Create form =====================
 const isCreateOpen = ref(false)
 
-const form = ref<RoomFormPayload>({
-  name: '',
-  description: '',
-  status: 'OPEN',
-  ownerId: undefined,
-})
-
-const ownerKeyword = ref('')
-const ownerOptions = ref<UserOption[]>([])
-const selectedOwner = ref<UserOption | null>(null)
-const isSearchingOwner = ref(false)
-const showOwnerDropdown = ref(false)
-const debouncedOwnerKeyword = refDebounced(ownerKeyword, 400)
-
-const isSubmitting = ref(false)
-const formError = ref('')
-
-function resetForm() {
-  form.value = {
-    name: '',
-    description: '',
-    status: 'OPEN',
-    ownerId: undefined,
-  }
-  selectedOwner.value = null
-  ownerKeyword.value = ''
-  ownerOptions.value = []
-  showOwnerDropdown.value = false
-  formError.value = ''
-}
-
 function handleCreate() {
-  resetForm()
   isCreateOpen.value = true
-}
-
-watch(debouncedOwnerKeyword, async (keyword) => {
-  if (!keyword.trim()) {
-    ownerOptions.value = []
-    return
-  }
-
-  isSearchingOwner.value = true
-  try {
-    ownerOptions.value = await roomService.searchOwners(keyword.trim())
-  }
-  finally {
-    isSearchingOwner.value = false
-  }
-})
-
-function pickOwner(user: UserOption) {
-  selectedOwner.value = user
-  form.value.ownerId = user.id
-  ownerKeyword.value = ''
-  ownerOptions.value = []
-  showOwnerDropdown.value = false
-}
-
-function clearOwner() {
-  selectedOwner.value = null
-  form.value.ownerId = undefined
-}
-
-async function handleSubmitCreate() {
-  formError.value = ''
-
-  if (!form.value.name.trim()) {
-    formError.value = 'Tên room không được để trống'
-    return
-  }
-
-  if (!form.value.ownerId) {
-    formError.value = 'Vui lòng chọn owner cho room'
-    return
-  }
-
-  isSubmitting.value = true
-
-  try {
-    await roomService.createRoom(form.value)
-    isCreateOpen.value = false
-    fetchRooms()
-  }
-  catch (error: any) {
-    formError.value = error?.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại'
-  }
-  finally {
-    isSubmitting.value = false
-  }
 }
 
 const isLockConfirmOpen = ref(false)
@@ -227,7 +142,66 @@ function renderRoomStatus(status: string) {
   }, () => config?.label ?? status)
 }
 
-// ===================== Columns =====================
+async function fetchRooms() {
+  loading.value = true
+
+  try {
+    const queryParams: RoomParams = {
+      page: currentPage.value - 1,
+      size: pageSize,
+    }
+
+    if (searchKeyword.value.trim())
+      queryParams.search = searchKeyword.value.trim()
+
+    if (selectedStatus.value !== 'ALL')
+      queryParams.status = selectedStatus.value
+
+    queryParams.minMembers = minMembers.value
+    queryParams.maxMembers = maxMembers.value
+    queryParams.minWarning = minWarning.value
+    queryParams.maxWarning = maxWarning.value
+
+    const response = await roomService.getRooms(queryParams)
+
+    roomsData.value = response.data || []
+    totalCount.value = response.meta?.totalElements || 0
+  }
+  catch (error) {
+    console.error('Lỗi khi tải rooms:', error)
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+watch(
+  [debounceSearchKeyword, selectedStatus, debounceMinMembers, debounceMaxMembers, debounceMinWarning, debounceMaxWarning],
+  () => {
+    currentPage.value = 1
+    fetchRooms()
+  },
+)
+
+watch(() => route.query.keyword, (value) => {
+  const nextKeyword = typeof value === 'string' ? value : ''
+  if (nextKeyword && nextKeyword !== searchKeyword.value) {
+    searchKeyword.value = nextKeyword
+    currentPage.value = 1
+  }
+})
+
+watch(currentPage, () => {
+  fetchRooms()
+})
+
+onMounted(() => {
+  if (keywordParam !== '') {
+    return searchKeyword.value = keywordParam
+  }
+  fetchRooms()
+})
+
 const columns = computed<TableColumn<any>[]>(() => [
   {
     header: 'Tên Room',
@@ -256,6 +230,11 @@ const columns = computed<TableColumn<any>[]>(() => [
   {
     header: 'Thành viên',
     accessor: 'memberCount',
+    minWidth: 90,
+  },
+  {
+    header: 'Số lần bị cảnh báo',
+    accessor: 'warning',
     minWidth: 90,
   },
   {
@@ -289,54 +268,6 @@ const columns = computed<TableColumn<any>[]>(() => [
       ]),
   },
 ])
-
-// ===================== Fetch =====================
-async function fetchRooms() {
-  loading.value = true
-
-  try {
-    const queryParams: RoomParams = {
-      page: currentPage.value - 1,
-      size: pageSize,
-    }
-
-    if (searchKeyword.value.trim())
-      queryParams.search = searchKeyword.value.trim()
-
-    if (selectedStatus.value !== 'ALL')
-      queryParams.status = selectedStatus.value
-
-    const response = await roomService.getRooms(queryParams)
-
-    roomsData.value = response.data || []
-    totalCount.value = response.meta?.totalElements || 0
-  }
-  catch (error) {
-    console.error('Lỗi khi tải rooms:', error)
-  }
-  finally {
-    loading.value = false
-  }
-}
-
-watch(
-  [debounceSearchKeyword, selectedStatus],
-  () => {
-    currentPage.value = 1
-    fetchRooms()
-  },
-)
-
-watch(currentPage, () => {
-  fetchRooms()
-})
-
-onMounted(() => {
-  if (keywordParam !== '') {
-    return searchKeyword.value = keywordParam
-  }
-  fetchRooms()
-})
 </script>
 
 <template>
@@ -345,21 +276,6 @@ onMounted(() => {
     description="Quản lý tất cả room trong hệ thống"
     sticky
   >
-    <template #actions>
-      <div class="flex items-center gap-2">
-        <UiButton variant="outline" @click="fetchRooms">
-          <RefreshCwIcon class="mr-2 h-4 w-4" />
-          Refresh
-        </UiButton>
-
-        <UiButton @click="handleCreate">
-          <PlusIcon class="mr-2 h-4 w-4" />
-          Tạo Room
-        </UiButton>
-      </div>
-    </template>
-
-    <!-- filters -->
     <div class="mb-4 flex flex-wrap items-center gap-3">
       <div class="relative w-full max-w-sm">
         <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -393,6 +309,36 @@ onMounted(() => {
         </Select>
       </div>
 
+      <div class="flex items-center gap-1.5">
+        <span class="whitespace-nowrap text-[13px] text-foreground">Thành viên</span>
+        <NumberField
+          v-model="minMembers"
+          placeholder="Từ"
+          class="w-[90px]"
+        />
+        <span class="text-muted-foreground">-</span>
+        <NumberField
+          v-model="maxMembers"
+          placeholder="Đến"
+          class="w-[90px]"
+        />
+      </div>
+
+      <div class="flex items-center gap-1.5">
+        <span class="whitespace-nowrap text-[13px] text-foreground">Cảnh báo</span>
+        <NumberField
+          v-model="minWarning"
+          placeholder="Từ"
+          class="w-[90px]"
+        />
+        <span class="text-muted-foreground">-</span>
+        <NumberField
+          v-model="maxWarning"
+          placeholder="Đến"
+          class="w-[90px]"
+        />
+      </div>
+
       <UiButton
         v-if="hasActiveFilter"
         variant="ghost"
@@ -403,6 +349,13 @@ onMounted(() => {
         <X class="h-3.5 w-3.5" />
         Xóa bộ lọc
       </UiButton>
+
+      <div class="ml-auto">
+        <UiButton @click="handleCreate">
+          <PlusIcon class="mr-2 h-4 w-4" />
+          Tạo Room
+        </UiButton>
+      </div>
     </div>
 
     <!-- table -->
@@ -427,7 +380,6 @@ onMounted(() => {
     </div>
   </BasicPage>
 
-  <!-- Detail + Edit dialog (gộp làm 1) -->
   <RoomDetailDialog
     v-if="selectedRoom"
     v-model:open="isDetailOpen"
@@ -435,129 +387,10 @@ onMounted(() => {
     @updated="fetchRooms"
   />
 
-  <!-- Create dialog -->
-  <Dialog v-model:open="isCreateOpen">
-    <DialogContent class="max-w-[520px]">
-      <DialogHeader>
-        <DialogTitle>
-          Tạo Room mới
-        </DialogTitle>
-        <DialogDescription class="sr-only">
-          Form tạo room mới
-        </DialogDescription>
-      </DialogHeader>
-
-      <div class="flex flex-col gap-4 py-2">
-        <!-- Name -->
-        <div class="flex flex-col gap-1.5">
-          <label class="text-[12px] font-medium text-muted-foreground">
-            Tên Room <span class="text-red-500">*</span>
-          </label>
-          <UiInput
-            v-model="form.name"
-            placeholder="VD: Team Marketing"
-          />
-        </div>
-
-        <!-- Description -->
-        <div class="flex flex-col gap-1.5">
-          <label class="text-[12px] font-medium text-muted-foreground">
-            Description
-          </label>
-          <UiTextarea
-            v-model="form.description"
-            rows="3"
-            placeholder="Mô tả ngắn về room này..."
-          />
-        </div>
-
-        <!-- Owner -->
-        <div class="flex flex-col gap-1.5">
-          <label class="text-[12px] font-medium text-muted-foreground">
-            Owner <span class="text-red-500">*</span>
-          </label>
-
-          <div
-            v-if="selectedOwner"
-            class="flex items-center justify-between rounded-lg border border-border bg-muted/40 px-3 py-2"
-          >
-            <div>
-              <p class="text-[13px] font-medium">
-                {{ selectedOwner.username }}
-              </p>
-              <p v-if="selectedOwner.email" class="text-[11px] text-muted-foreground">
-                {{ selectedOwner.email }}
-              </p>
-            </div>
-            <UiButton variant="ghost" size="sm" @click="clearOwner">
-              Đổi
-            </UiButton>
-          </div>
-
-          <div v-else class="relative">
-            <UiInput
-              v-model="ownerKeyword"
-              placeholder="Tìm theo username hoặc email..."
-              @focus="showOwnerDropdown = true"
-            />
-
-            <div
-              v-if="showOwnerDropdown && (ownerOptions.length || isSearchingOwner)"
-              class="absolute z-10 mt-1 w-full rounded-lg border border-border bg-background shadow-md"
-            >
-              <p v-if="isSearchingOwner" class="px-3 py-2 text-[12px] text-muted-foreground">
-                Đang tìm...
-              </p>
-
-              <button
-                v-for="user in ownerOptions"
-                :key="user.id"
-                type="button"
-                class="flex w-full flex-col items-start px-3 py-2 text-left hover:bg-muted/60"
-                @click="pickOwner(user)"
-              >
-                <span class="text-[13px] font-medium">{{ user.username }}</span>
-                <span class="text-[11px] text-muted-foreground">{{ user.email }}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Status -->
-        <div class="flex flex-col gap-1.5">
-          <label class="text-[12px] font-medium text-muted-foreground">
-            Trạng thái
-          </label>
-          <Select v-model="form.status">
-            <SelectTrigger class="h-9 w-full">
-              <SelectValue placeholder="Trạng thái" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="OPEN">
-                Đang mở
-              </SelectItem>
-              <SelectItem value="LOCKED">
-                Đã khoá
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <p v-if="formError" class="text-[12px] text-red-500">
-          {{ formError }}
-        </p>
-      </div>
-
-      <DialogFooter>
-        <UiButton variant="outline" :disabled="isSubmitting" @click="isCreateOpen = false">
-          Hủy
-        </UiButton>
-        <UiButton :disabled="isSubmitting" @click="handleSubmitCreate">
-          {{ isSubmitting ? 'Đang lưu...' : 'Lưu' }}
-        </UiButton>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
+  <CreateRoomDialog
+    v-model:open="isCreateOpen"
+    @created="fetchRooms"
+  />
 
   <ConfirmDialog
     v-model:open="isLockConfirmOpen"

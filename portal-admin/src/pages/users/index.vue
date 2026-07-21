@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Eye, LoaderIcon, Lock, Search, Unlock } from '@lucide/vue'
+import { LoaderIcon, Lock, Pencil, Search, Unlock } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
 import { computed, h, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -11,8 +11,8 @@ import BaseTable from '@/components/base-table.vue'
 import ConfirmDialog from '@/components/confirm-dialog.vue'
 import DateRangePicker from '@/components/date-range-picker.vue'
 import { BasicPage } from '@/components/global-layout'
+import NumberField from '@/components/number-field.vue'
 import Pagination from '@/components/pagination.vue'
-import { Modal, ModalContent } from '@/components/prop-ui/modal'
 import Badge from '@/components/ui/badge/Badge.vue'
 import { Button as UiButton } from '@/components/ui/button'
 import { Input as UiInput } from '@/components/ui/input'
@@ -22,7 +22,7 @@ import { defaultDateRange, formatToISODateTime } from '@/utils/date.utils'
 import type { User, UserParams, UserPlan, UserStatus } from './types/userTypes'
 
 import UserCreate from './components/user-create.vue'
-import UserResource from './components/user-resource.vue'
+import UserDetailDialog from './components/UserDetailDialog.vue'
 import { userService } from './services/userService'
 
 const route = useRoute()
@@ -34,17 +34,21 @@ const keyword = ref('')
 const dateRange = ref(defaultDateRange())
 const selectedStatus = ref<string>('ALL')
 const selectedPlan = ref<string>('ALL')
+const minWarning = ref<number>()
+const maxWarning = ref<number>()
 const currentPage = ref(1)
 const pageSize = 20
 const totalCount = ref(0)
 const totalPage = ref(0)
 
 const debounceKeyword = refDebounced(keyword, 500)
+const debounceMinWarning = refDebounced(minWarning, 500)
+const debounceMaxWarning = refDebounced(maxWarning, 500)
 
-const editTarget = ref<User | null>(null)
+const detailTarget = ref<User | null>(null)
 const actionTarget = ref<User | null>(null)
 const actionReason = ref('')
-const showEditModal = ref(false)
+const showDetailDialog = ref(false)
 const showActionDialog = ref(false)
 
 const statusOptions = [
@@ -61,15 +65,6 @@ const planOptions = [
   { value: 'BUSINESS', label: 'BUSINESS' },
 ] as const
 
-/**
- * Nguồn xác định duy nhất cho việc user có đang ACTIVE hay không.
- * Mọi chỗ cần biết trạng thái active/locked đều phải qua đây,
- * tránh lặp lại `.toUpperCase() === 'ACTIVE'` rải rác gây lệch logic.
- */
-function isUserActive(user: Pick<User, 'status'> | null | undefined): boolean {
-  return user?.status?.toUpperCase() === 'ACTIVE'
-}
-
 async function fetchData() {
   loading.value = true
   try {
@@ -78,17 +73,17 @@ async function fetchData() {
       size: pageSize,
     }
 
-    if (debounceKeyword.value.trim()) {
+    if (debounceKeyword.value.trim())
       queryParams.search = debounceKeyword.value.trim()
-    }
 
-    if (selectedStatus.value !== 'ALL') {
+    if (selectedStatus.value !== 'ALL')
       queryParams.status = selectedStatus.value as UserStatus
-    }
 
-    if (selectedPlan.value !== 'ALL') {
+    if (selectedPlan.value !== 'ALL')
       queryParams.plan = selectedPlan.value as UserPlan
-    }
+
+    queryParams.minWarning = minWarning.value
+    queryParams.maxWarning = maxWarning.value
 
     if (dateRange.value?.from) {
       const fromDate = typeof dateRange.value.from === 'string' ? new Date(dateRange.value.from) : dateRange.value.from
@@ -117,25 +112,13 @@ async function fetchData() {
   }
 }
 
-watch(currentPage, () => {
-  fetchData()
-})
+function handleEditUser(user: User) {
+  detailTarget.value = user
+  showDetailDialog.value = true
+}
 
-watch([debounceKeyword, selectedStatus, selectedPlan, dateRange], () => {
-  currentPage.value = 1
-  fetchData()
-})
-
-onMounted(() => {
-  if (keywordParam !== '') {
-    return keyword.value = keywordParam
-  }
-  fetchData()
-})
-
-function handleViewDetail(user: User) {
-  editTarget.value = user
-  showEditModal.value = true
+function isUserActive(user: Pick<User, 'status'> | null | undefined): boolean {
+  return user?.status?.toUpperCase() === 'ACTIVE'
 }
 
 function handleOpenUserAction(user: User) {
@@ -158,6 +141,7 @@ async function handleConfirmUserAction(reason: string) {
       await userService.updateStatus(actionTarget.value.id, 'ACTIVE')
       toast.success(`Đã mở khóa người dùng: ${actionTarget.value.username}`)
     }
+
     showActionDialog.value = false
     fetchData()
   }
@@ -172,11 +156,6 @@ async function handleConfirmUserAction(reason: string) {
   finally {
     loading.value = false
   }
-}
-
-function onUserSaved() {
-  showEditModal.value = false
-  fetchData()
 }
 
 function renderPlan(plan: string) {
@@ -229,6 +208,32 @@ function renderStatus(status: string) {
   )
 }
 
+watch(currentPage, () => {
+  fetchData()
+})
+
+watch([debounceKeyword, selectedStatus, selectedPlan, debounceMinWarning, debounceMaxWarning, dateRange], () => {
+  currentPage.value = 1
+  fetchData()
+})
+
+watch(() => route.query.keyword, (value) => {
+  const nextKeyword = typeof value === 'string' ? value : ''
+  if (nextKeyword && nextKeyword !== keyword.value) {
+    keyword.value = nextKeyword
+    currentPage.value = 1
+  }
+})
+
+onMounted(() => {
+  if (keywordParam !== '') {
+    keyword.value = keywordParam
+    return
+  }
+
+  fetchData()
+})
+
 const columns = computed<TableColumn<User>[]>(() => [
   { header: 'Username', accessor: 'username', minWidth: 150 },
   {
@@ -255,8 +260,8 @@ const columns = computed<TableColumn<User>[]>(() => [
         variant: 'outline',
         size: 'sm',
         class: 'h-8 gap-1 px-2 text-xs',
-        onClick: () => handleViewDetail(row),
-      }, () => [h(Eye, { class: 'h-3.5 w-3.5' }), 'Xem']),
+        onClick: () => handleEditUser(row),
+      }, () => [h(Pencil, { class: 'h-3.5 w-3.5' }), 'Sửa']),
       isUserActive(row)
         ? h(UiButton, {
             variant: 'outline',
@@ -320,18 +325,31 @@ const isLockingUser = computed(() => isUserActive(actionTarget.value))
         </UiSelect>
       </div>
 
+      <div class="flex items-center gap-1.5">
+        <span class="whitespace-nowrap text-[13px] text-foreground">Cảnh báo</span>
+        <NumberField
+          v-model="minWarning"
+          placeholder="Từ"
+          class="w-[90px]"
+        />
+        <span class="text-muted-foreground">-</span>
+        <NumberField
+          v-model="maxWarning"
+          placeholder="Đến"
+          class="w-[90px]"
+        />
+      </div>
+
       <div>
         <DateRangePicker v-model="dateRange" />
       </div>
 
-      <!-- Button tạo mới người dùng -->
       <div class="ml-auto">
         <UserCreate @saved="fetchData" />
       </div>
     </div>
 
     <div class="relative rounded-md border border-neutral-200 dark:border-neutral-800">
-      <!-- Loading Overlay -->
       <div v-if="loading" class="absolute inset-0 z-20 flex items-center justify-center bg-white/50 dark:bg-black/50">
         <LoaderIcon class="animate-spin text-primary" />
       </div>
@@ -352,16 +370,11 @@ const isLockingUser = computed(() => isUserActive(actionTarget.value))
     </div>
   </BasicPage>
 
-  <!-- Edit Modal -->
-  <Modal v-model:open="showEditModal">
-    <ModalContent class="overflow-hidden p-0 sm:max-w-2xl">
-      <UserResource
-        :user="editTarget ?? undefined"
-        @close="showEditModal = false"
-        @saved="onUserSaved"
-      />
-    </ModalContent>
-  </Modal>
+  <UserDetailDialog
+    v-model:open="showDetailDialog"
+    :user="detailTarget"
+    @saved="fetchData"
+  />
 
   <ConfirmDialog
     v-model:open="showActionDialog"
