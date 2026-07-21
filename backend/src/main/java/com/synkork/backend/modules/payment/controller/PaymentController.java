@@ -1,21 +1,14 @@
 package com.synkork.backend.modules.payment.controller;
 
-import com.synkork.backend.modules.payment.dto.PaymentRequest;
-import com.synkork.backend.modules.payment.dto.PaymentResponse;
-import com.synkork.backend.modules.payment.service.PaymentService;
-
-import lombok.RequiredArgsConstructor;
-
-import java.util.Base64;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
+import com.synkork.backend.modules.payment.dto.PaymentRequest;
+import com.synkork.backend.modules.payment.service.PaymentService;
 
 @RestController 
 @RequestMapping("/payment")
@@ -30,8 +23,7 @@ public class PaymentController {
         Map<String, Object> result = paymentService.createMomoPayment(
                 request.getPlan(),
                 request.getBillingCycle(),
-                email,
-                request.getPromoCode()
+                email
         );
         return ResponseEntity.ok(result);
     }

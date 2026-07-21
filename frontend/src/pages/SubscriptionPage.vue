@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useUserStore } from "@/stores/userStore";
-import { createPaymentLink } from "@/services/subscriptionService";
+import { createPaymentLink, getPlanPricing, type PlanPricingItem } from "@/services/subscriptionService";
 import { Check, X, Sparkles, Zap, Rocket } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -14,32 +14,17 @@ const loading = ref(false);
 const selectedPlan = ref("");
 const isYearly = ref(false);
 
-const activePlan = computed(() => {
-  if (!userPlan.value) return "FREE";
-  return userPlan.value;
-});
+const pricingLoading = ref(true);
+const pricingList = ref<PlanPricingItem[]>([]);
 
-const daysUntilExpiry = computed(() => {
-  if (!userPlan.value || userPlan.value === "FREE" || !planExpiresAt.value) {
-    return null;
-  }
-  const now = new Date();
-  const expiry = new Date(planExpiresAt.value);
-  const diffMs = expiry.getTime() - now.getTime();
-  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-});
-
-const isExpiringSoon = computed(() => {
-  return daysUntilExpiry.value !== null && daysUntilExpiry.value <= 3;
-});
-
-const plans = [
+// Chỉ chứa thông tin TĨNH (tên, mô tả, icon, feature) — KHÔNG chứa giá.
+// Giá được lấy từ API /payment/plan-pricing để admin đổi giá là FE tự cập nhật theo,
+// không cần sửa code + deploy lại mỗi lần đổi giá.
+const planMeta = [
   {
     id: "FREE",
     name: "Gói Miễn Phí",
     description: "Khởi đầu tuyệt vời cho cá nhân",
-    monthlyPrice: 0,
-    yearlyPrice: 0,
     icon: Zap,
     features: [
       { text: "Tối đa 5 phòng (Rooms)", included: true },
@@ -58,8 +43,6 @@ const plans = [
     id: "TEAM",
     name: "Gói Team",
     description: "Dành cho nhóm nhỏ và sáng tạo",
-    monthlyPrice: 69000,
-    yearlyPrice: 659000,
     icon: Sparkles,
     features: [
       { text: "Tối đa 15 phòng (Rooms)", included: true },
@@ -80,8 +63,6 @@ const plans = [
     id: "BUSINESS",
     name: "Gói Business",
     description: "Sức mạnh tối đa cho chuyên nghiệp",
-    monthlyPrice: 129000,
-    yearlyPrice: 1239000,
     icon: Rocket,
     popular: true,
     features: [
@@ -102,6 +83,43 @@ const plans = [
     buttonClass: "bg-secondary hover:opacity-90 text-secondary-foreground",
   },
 ];
+
+// Tra giá theo plan + chu kỳ từ dữ liệu API. FREE mặc định 0đ (không cần có trong DB).
+function findPrice(planId: string, cycle: "MONTHLY" | "YEARLY"): number {
+  if (planId === "FREE") return 0;
+  const found = pricingList.value.find(
+    (p) => p.plan === planId && p.billingCycle === cycle && p.active
+  );
+  return found ? Number(found.amount) : 0;
+}
+
+// Ghép metadata tĩnh với giá động lấy từ API — component dùng "plans" y hệt trước đây.
+const plans = computed(() =>
+  planMeta.map((meta) => ({
+    ...meta,
+    monthlyPrice: findPrice(meta.id, "MONTHLY"),
+    yearlyPrice: findPrice(meta.id, "YEARLY"),
+  }))
+);
+
+const activePlan = computed(() => {
+  if (!userPlan.value) return "FREE";
+  return userPlan.value;
+});
+
+const daysUntilExpiry = computed(() => {
+  if (!userPlan.value || userPlan.value === "FREE" || !planExpiresAt.value) {
+    return null;
+  }
+  const now = new Date();
+  const expiry = new Date(planExpiresAt.value);
+  const diffMs = expiry.getTime() - now.getTime();
+  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+});
+
+const isExpiringSoon = computed(() => {
+  return daysUntilExpiry.value !== null && daysUntilExpiry.value <= 3;
+});
 
 const choosePlan = async (planId: string) => {
   if (planId === "FREE") return;
@@ -129,6 +147,16 @@ const choosePlan = async (planId: string) => {
 const renewPlan = () => {
   choosePlan(activePlan.value);
 };
+
+onMounted(async () => {
+  try {
+    pricingList.value = await getPlanPricing();
+  } catch (error) {
+    console.error("Không lấy được bảng giá:", error);
+  } finally {
+    pricingLoading.value = false;
+  }
+});
 </script>
 
 <template>
@@ -218,7 +246,11 @@ const renewPlan = () => {
         </Button>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+      <div v-if="pricingLoading" class="text-center py-20 text-muted-foreground font-bold">
+        Đang tải bảng giá...
+      </div>
+
+      <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
         <div v-for="plan in plans" :key="plan.id"
           class="group relative p-8 rounded-[32px] border backdrop-blur-sm transition-all duration-500 flex flex-col min-h-[660px]"
           :class="[

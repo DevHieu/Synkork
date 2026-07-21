@@ -1,21 +1,19 @@
 package com.synkork.backend.modules.payment.repository;
 
-import com.synkork.backend.modules.admin.statistics.dtos.InvoiceStatusCount;
-import com.synkork.backend.modules.payment.entity.InvoiceEntity;
-import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import org.springframework.data.domain.Pageable;
+import com.synkork.backend.modules.admin.statistics.dtos.InvoiceStatusCount;
+import com.synkork.backend.modules.payment.entity.InvoiceEntity;
+import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
 
 @Repository
 public interface InvoiceRepository extends JpaRepository<InvoiceEntity, UUID>, JpaSpecificationExecutor<InvoiceEntity> {
@@ -41,4 +39,10 @@ public interface InvoiceRepository extends JpaRepository<InvoiceEntity, UUID>, J
     GROUP BY i.status
     """)
     List<InvoiceStatusCount> countGroupByStatus(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    @Query("SELECT COALESCE(SUM(i.amount), 0) FROM InvoiceEntity i WHERE i.status = :status")
+    BigDecimal sumAmountByStatus(@Param("status") InvoiceStatusEnum status);
+
+    @Query("SELECT COALESCE(SUM(i.amount), 0) FROM InvoiceEntity i WHERE i.status = :status AND i.paidAt >= :start")
+    BigDecimal sumAmountByStatusAndPaidAtAfter(@Param("status") InvoiceStatusEnum status, @Param("start") LocalDateTime start);
 }
