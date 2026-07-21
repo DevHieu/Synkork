@@ -17,9 +17,10 @@ public interface DashboardRepository extends JpaRepository<RoomEntity, UUID>, Jp
     long countByStatus(RoomStatusEnum status);
     long countByType(RoomTypeEnum type);
     long countByCreatedAtBetween(LocalDateTime from, LocalDateTime to);
+    long countByStatusAndCreatedAtBetween(RoomStatusEnum status, LocalDateTime from, LocalDateTime to);
+    long countByTypeAndCreatedAtBetween(RoomTypeEnum type, LocalDateTime from, LocalDateTime to);
 
     // Chart - cumulative counts up to a point in time
     long countByCreatedAtBefore(LocalDateTime before);
     long countByStatusAndCreatedAtBefore(RoomStatusEnum status, LocalDateTime before);
 }
-

@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.admin.statistics;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -10,14 +11,10 @@ import java.util.stream.Collectors;
 import com.synkork.backend.modules.admin.statistics.dtos.*;
 import com.synkork.backend.modules.admin.subscriptions.dtos.SubscriptionDashboardChart;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import com.synkork.backend.config.WebSocketEventListener;
-import com.synkork.backend.modules.admin.statistics.enums.PeriodEnum;
-import com.synkork.backend.modules.admin.subscriptions.dtos.AdminInvoiceResponse;
 import com.synkork.backend.modules.message.MessageRepository;
 import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
 import com.synkork.backend.modules.payment.repository.InvoiceRepository;
@@ -30,7 +27,6 @@ import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import com.synkork.backend.modules.user.UserRepository;
 import com.synkork.backend.modules.user.enums.PlanEnum;
 import com.synkork.backend.modules.user.enums.RoleEnum;
-import com.synkork.backend.modules.user.enums.UserStatusEnum;
 
 @Service
 public class StatisticsService {
@@ -58,20 +54,10 @@ public class StatisticsService {
     @Autowired
     private ReportRepository reportRepository;
 
-    private LocalDateTime getStart(PeriodEnum period) {
-
-        return switch (period) {
-            case WEEKLY -> LocalDateTime.now().minusDays(7);
-            case MONTHLY -> LocalDateTime.now().minusMonths(1);
-            case QUARTERLY -> LocalDateTime.now().minusMonths(3);
-            case YEARLY -> LocalDateTime.now().minusYears(1);
-        };
-    }
-
     private double calcGrowth(long current, long previous) {
         System.out.println("current: " + current + " previous: " + previous);
         if (previous == 0)
-            return 100.0;
+            return current > 0 ? 100.0 : 0.0;
         return Math.round(((double) (current - previous) / previous) * 1000.0) / 10.0;
     }
 
@@ -85,7 +71,7 @@ public class StatisticsService {
         LocalDateTime start = LocalDate.now().atStartOfDay();
         LocalDateTime end = start.plusDays(1);
 
-        long newUsers = userRepository.countByCreatedAtBetweenAndRole(start, end, RoleEnum.USER);
+        long newUsers = userRepository.countByRoleAndCreatedAtBetween(RoleEnum.USER, start, end);
         long newRooms = roomRepository.countByCreatedAtBetweenAndType(start, end, RoomTypeEnum.GROUP);
         long newSubscriptions = invoiceRepository.countByStatusAndPaidAtBetween(InvoiceStatusEnum.PAID, start, end);
         long userOnlines = WebSocketEventListener.onlineUserCounter;
@@ -110,11 +96,12 @@ public class StatisticsService {
         statisticsRepository.save(statistics);
     }
 
-    public List<OverviewChartResponse> getOverviewChartData(PeriodEnum period) {
+    public List<OverviewChartResponse> getOverviewChartData(LocalDateTime dateFrom, LocalDateTime dateTo) {
+        List<StatisticsEntity> statistics = dateFrom != null && dateTo != null
+                ? statisticsRepository.findByCreatedAtBetweenOrderByCreatedAtAsc(dateFrom, dateTo)
+                : statisticsRepository.findAll(Sort.by(Sort.Direction.ASC, "createdAt"));
 
-        LocalDateTime from = getStart(period);
-
-        return statisticsRepository.findByDateRange(from)
+        return statistics
                 .stream()
                 .map(s -> new OverviewChartResponse(
                         s.getCreatedAt().toLocalDate(),
@@ -124,41 +111,42 @@ public class StatisticsService {
                 .toList();
     }
 
-    public OverviewStatsResponse getOverviewStatsData() {
+    public OverviewStatsResponse getOverviewStatsData(LocalDateTime dateFrom, LocalDateTime dateTo) {
+        boolean hasRange = dateFrom != null && dateTo != null;
 
-        long totalUser = userRepository.countByRole(RoleEnum.USER);
-        long totalRoom = roomRepository.countByType(RoomTypeEnum.GROUP);
-        long totalSubscriptions = invoiceRepository.countByStatus(InvoiceStatusEnum.PAID);
+        long totalUser = hasRange
+                ? userRepository.countByRoleAndCreatedAtBetween(RoleEnum.USER, dateFrom, dateTo)
+                : userRepository.countByRole(RoleEnum.USER);
+        long totalRoom = hasRange
+                ? roomRepository.countByTypeAndCreatedAtBetween(RoomTypeEnum.GROUP, dateFrom, dateTo)
+                : roomRepository.countByType(RoomTypeEnum.GROUP);
+        long totalSubscriptions = hasRange
+                ? invoiceRepository.countByStatusAndCreatedAtBetween(InvoiceStatusEnum.PAID, dateFrom, dateTo)
+                : invoiceRepository.countByStatus(InvoiceStatusEnum.PAID);
         long userOnlines = WebSocketEventListener.onlineUsers.size();
 
-        StatisticsEntity yesterdayStats = statisticsRepository
-                .findByDate(LocalDate.now().minusDays(1).atStartOfDay())
-                .orElse(null);
+        double userGrowth = 0;
+        double roomGrowth = 0;
+        double subscriptionGrowth = 0;
+        double onlineGrowth = 0;
 
-        StatisticsEntity monthBeforeStats = statisticsRepository
-                .findByDate(LocalDate.now().minusMonths(1).atStartOfDay())
-                .orElse(null);
+        if (hasRange) {
+            Duration periodLength = Duration.between(dateFrom, dateTo);
+            LocalDateTime previousFrom = dateFrom.minus(periodLength);
+            LocalDateTime previousTo = dateFrom;
 
-        double userDayGrowth = 0;
-        double roomDayGrowth = 0;
-        double subscriptionDayGrowth = 0;
-        double onlineDayGrowth = 0;
-
-        double userMonthGrowth = 0;
-        double roomMonthGrowth = 0;
-        double subscriptionMonthGrowth = 0;
-
-        if (yesterdayStats != null) {
-            userDayGrowth = calcGrowth(totalUser, yesterdayStats.getTotalUsers());
-            roomDayGrowth = calcGrowth(totalRoom, yesterdayStats.getTotalRooms());
-            subscriptionDayGrowth = calcGrowth(totalSubscriptions, yesterdayStats.getTotalSubscriptions());
-            onlineDayGrowth = calcGrowth(userOnlines, yesterdayStats.getUserOnlines());
-        }
-
-        if (monthBeforeStats != null) {
-            userMonthGrowth = calcGrowth(totalUser, monthBeforeStats.getTotalUsers());
-            roomMonthGrowth = calcGrowth(totalRoom, monthBeforeStats.getTotalRooms());
-            subscriptionMonthGrowth = calcGrowth(totalSubscriptions, monthBeforeStats.getTotalSubscriptions());
+            userGrowth = calcGrowth(
+                    totalUser,
+                    userRepository.countByRoleAndCreatedAtBetween(RoleEnum.USER, previousFrom, previousTo)
+            );
+            roomGrowth = calcGrowth(
+                    totalRoom,
+                    roomRepository.countByTypeAndCreatedAtBetween(RoomTypeEnum.GROUP, previousFrom, previousTo)
+            );
+            subscriptionGrowth = calcGrowth(
+                    totalSubscriptions,
+                    invoiceRepository.countByStatusAndCreatedAtBetween(InvoiceStatusEnum.PAID, previousFrom, previousTo)
+            );
         }
 
         return new OverviewStatsResponse(
@@ -166,38 +154,46 @@ public class StatisticsService {
                 userOnlines,
                 totalRoom,
                 totalSubscriptions,
-                userDayGrowth,
-                roomDayGrowth,
-                subscriptionDayGrowth,
-                onlineDayGrowth,
-                userMonthGrowth,
-                roomMonthGrowth,
-                subscriptionMonthGrowth);
+                userGrowth,
+                roomGrowth,
+                subscriptionGrowth,
+                onlineGrowth);
     }
 
-    public UserStatsResponse getUserStatsData() {
-        LocalDate today = LocalDate.now();
-        LocalDateTime startOfDay = today.atStartOfDay();
-        LocalDateTime startOfTomorrow = today.plusDays(1).atStartOfDay();
-        LocalDateTime startOfMonth = today.withDayOfMonth(1).atStartOfDay();
-
+    public UserStatsResponse getUserStatsData(LocalDateTime dateFrom, LocalDateTime dateTo) {
         RoleEnum userRole = RoleEnum.USER;
+        LocalDate today = LocalDate.now();
+        LocalDateTime startOfToday = today.atStartOfDay();
+        LocalDateTime startOfTomorrow = today.plusDays(1).atStartOfDay();
+
+        LocalDateTime effectiveTo = dateTo != null ? dateTo : LocalDateTime.now();
+        LocalDateTime effectiveFrom = dateFrom != null ? dateFrom : effectiveTo.minusMonths(1);
+        LocalDateTime previousFrom = dateFrom == null && dateTo == null
+                ? effectiveFrom.minusMonths(1)
+                : effectiveFrom.minus(Duration.between(effectiveFrom, effectiveTo));
+        LocalDateTime previousTo = effectiveFrom;
+
+        long totalUsers = userRepository.countByRole(userRole);
+        long currentPeriodUsers = userRepository.countByRoleAndCreatedAtBetween(userRole, effectiveFrom, effectiveTo);
+        long previousPeriodUsers = userRepository.countByRoleAndCreatedAtBetween(userRole, previousFrom, previousTo);
+        long newUsersToday = userRepository.countByRoleAndCreatedAtBetween(userRole, startOfToday, startOfTomorrow);
+        double userGrowth = calcGrowth(currentPeriodUsers, previousPeriodUsers);
 
         return new UserStatsResponse(
-                userRepository.countByRole(userRole),
-                userRepository.countByCreatedAtBetweenAndRole(startOfDay, startOfTomorrow, userRole),
-                userRepository.countByCreatedAtBetweenAndRole(startOfMonth, startOfTomorrow, userRole),
-                userRepository.countByRoleAndStatus(userRole, UserStatusEnum.ACTIVE),
-                userRepository.countByRoleAndStatus(userRole, UserStatusEnum.INACTIVE),
-                userRepository.countByRoleAndStatus(userRole, UserStatusEnum.BANNED),
-                userRepository.countByRoleAndCurrentPlan(userRole, PlanEnum.FREE),
-                userRepository.countByRoleAndCurrentPlan(userRole, PlanEnum.TEAM),
-                userRepository.countByRoleAndCurrentPlan(userRole, PlanEnum.BUSINESS));
+                totalUsers,
+                newUsersToday,
+                userGrowth);
+    }
+
+    public UserDashboardChartResponse getUserChartData(LocalDateTime dateFrom, LocalDateTime dateTo) {
+        RoleEnum userRole = RoleEnum.USER;
+        return new UserDashboardChartResponse(
+                userRepository.countGroupByStatus(userRole, dateFrom, dateTo),
+                userRepository.countGroupByPlan(userRole, dateFrom, dateTo)
+        );
     }
 
     public SubscriptionDashboardResponse getSubscriptionDashboardData(LocalDateTime dateFrom, LocalDateTime dateTo) {
-        boolean hasRange = dateFrom != null && dateTo != null;
-
         BigDecimal totalRevenue = invoiceRepository.sumAmountByStatus(InvoiceStatusEnum.PAID, dateFrom, dateTo);
 
         long newSubscriptions = userSubscriptionRepository.countByPlanIn(PAID_PLANS, dateFrom, dateTo);
@@ -242,21 +238,33 @@ public class StatisticsService {
                 .build();
     }
 
-    public ReportStatsResponse getReportStatsData() {
-        long total = reportRepository.count();
-        long pending = reportRepository.countByStatus(ReportStatusEnums.PENDING);
-        long resolved = reportRepository.countByStatus(ReportStatusEnums.RESOLVED);
-        long dismissed = reportRepository.countByStatus(ReportStatusEnums.DISMISSED);
-        long userReports = reportRepository.countByReportType(ReportTypeEnums.USER);
-        long roomReports = reportRepository.countByReportType(ReportTypeEnums.ROOM);
+    public ReportStatsResponse getReportStatsData(LocalDateTime dateFrom, LocalDateTime dateTo) {
+        boolean hasRange = dateFrom != null && dateTo != null;
+
+        long total = hasRange
+                ? reportRepository.countByCreatedAtBetween(dateFrom, dateTo)
+                : reportRepository.count();
+        long pending = hasRange
+                ? reportRepository.countByStatusAndCreatedAtBetween(ReportStatusEnums.PENDING, dateFrom, dateTo)
+                : reportRepository.countByStatus(ReportStatusEnums.PENDING);
+        long resolved = hasRange
+                ? reportRepository.countByStatusAndCreatedAtBetween(ReportStatusEnums.RESOLVED, dateFrom, dateTo)
+                : reportRepository.countByStatus(ReportStatusEnums.RESOLVED);
+        long dismissed = hasRange
+                ? reportRepository.countByStatusAndCreatedAtBetween(ReportStatusEnums.DISMISSED, dateFrom, dateTo)
+                : reportRepository.countByStatus(ReportStatusEnums.DISMISSED);
+        long userReports = hasRange
+                ? reportRepository.countByReportTypeAndCreatedAtBetween(ReportTypeEnums.USER, dateFrom, dateTo)
+                : reportRepository.countByReportType(ReportTypeEnums.USER);
+        long roomReports = hasRange
+                ? reportRepository.countByReportTypeAndCreatedAtBetween(ReportTypeEnums.ROOM, dateFrom, dateTo)
+                : reportRepository.countByReportType(ReportTypeEnums.ROOM);
 
         return new ReportStatsResponse(total, pending, resolved, dismissed, userReports, roomReports);
     }
 
-    public List<ReportChartResponse> getReportChart(PeriodEnum period) {
-        LocalDateTime from = getStart(period);
-
-        return reportRepository.findDailyReportCounts(from)
+    public List<ReportChartResponse> getReportChart(LocalDateTime dateFrom, LocalDateTime dateTo) {
+        return reportRepository.findDailyReportCounts(dateFrom, dateTo)
                 .stream()
                 .map(row -> new ReportChartResponse(
                         (LocalDate) row[0],
@@ -265,7 +273,7 @@ public class StatisticsService {
                 .toList();
     }
 
-    public List<ReportReasonStatsResponse> getReportReasonStats() {
-        return reportRepository.findReasonCountsGroupedByType();
+    public List<ReportReasonStatsResponse> getReportReasonStats(LocalDateTime dateFrom, LocalDateTime dateTo) {
+        return reportRepository.findReasonCountsGroupedByType(dateFrom, dateTo);
     }
 }

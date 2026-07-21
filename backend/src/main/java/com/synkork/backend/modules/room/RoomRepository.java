@@ -30,6 +30,8 @@ public interface RoomRepository extends JpaRepository<RoomEntity, UUID> {
  
     long countByType(RoomTypeEnum type);
 
+    long countByTypeAndCreatedAtBetween(RoomTypeEnum type, LocalDateTime from, LocalDateTime to);
+
     long countByCreatedAtBetweenAndType(LocalDateTime createdAtAfter, LocalDateTime createdAtBefore, RoomTypeEnum type);
 
     void deleteByStatus(RoomStatusEnum roomStatusEnum);

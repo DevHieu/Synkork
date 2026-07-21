@@ -5,6 +5,7 @@ import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -16,32 +17,48 @@ public class RoomDashboardService {
     @Autowired
     private DashboardRepository roomRepository;
 
-    public RoomDashboardStatsResponse getStats() {
-        long totalRooms = roomRepository.count();
-        long openRooms = roomRepository.countByStatus(RoomStatusEnum.OPEN);
-        long lockedRooms = roomRepository.countByStatus(RoomStatusEnum.LOCKED);
-        long groupRooms = roomRepository.countByType(RoomTypeEnum.GROUP);
-        long dmRooms = roomRepository.countByType(RoomTypeEnum.DM);
+    public RoomDashboardStatsResponse getStats(LocalDateTime dateFrom, LocalDateTime dateTo) {
+        boolean hasRange = dateFrom != null && dateTo != null;
 
-        // Day growth: so sánh hôm nay với hôm qua
-         LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
-        LocalDateTime startOfYesterday = startOfToday.minusDays(1);
+        long totalRooms = hasRange ? roomRepository.countByCreatedAtBetween(dateFrom, dateTo) : roomRepository.count();
+        long openRooms = hasRange
+                ? roomRepository.countByStatusAndCreatedAtBetween(RoomStatusEnum.OPEN, dateFrom, dateTo)
+                : roomRepository.countByStatus(RoomStatusEnum.OPEN);
+        long lockedRooms = hasRange
+                ? roomRepository.countByStatusAndCreatedAtBetween(RoomStatusEnum.LOCKED, dateFrom, dateTo)
+                : roomRepository.countByStatus(RoomStatusEnum.LOCKED);
+        long groupRooms = hasRange
+                ? roomRepository.countByTypeAndCreatedAtBetween(RoomTypeEnum.GROUP, dateFrom, dateTo)
+                : roomRepository.countByType(RoomTypeEnum.GROUP);
+        long dmRooms = hasRange
+                ? roomRepository.countByTypeAndCreatedAtBetween(RoomTypeEnum.DM, dateFrom, dateTo)
+                : roomRepository.countByType(RoomTypeEnum.DM);
 
-        long todayCount = roomRepository.countByCreatedAtBetween(startOfToday, LocalDateTime.now());
-        long yesterdayCount = roomRepository.countByCreatedAtBetween(startOfYesterday, startOfToday);
-        double dayGrowth = yesterdayCount == 0
-                ? (todayCount > 0 ? 100.0 : 0.0)
-                : ((double)(todayCount - yesterdayCount) / yesterdayCount) * 100;
+        double dayGrowth;
+        double monthGrowth;
 
-        // Month growth: so sánh tháng này với tháng trước
-        LocalDateTime startOfThisMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
-        LocalDateTime startOfLastMonth = startOfThisMonth.minusMonths(1);
+        if (hasRange) {
+            Duration periodLength = Duration.between(dateFrom, dateTo);
+            LocalDateTime previousFrom = dateFrom.minus(periodLength);
+            LocalDateTime previousTo = dateFrom;
+            dayGrowth = calculateGrowth(totalRooms, roomRepository.countByCreatedAtBetween(previousFrom, previousTo));
+            monthGrowth = dayGrowth;
+        }
+        else {
+            LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+            LocalDateTime startOfYesterday = startOfToday.minusDays(1);
 
-        long thisMonthCount = roomRepository.countByCreatedAtBetween(startOfThisMonth, LocalDateTime.now());
-        long lastMonthCount = roomRepository.countByCreatedAtBetween(startOfLastMonth, startOfThisMonth);
-        double monthGrowth = lastMonthCount == 0
-                ? (thisMonthCount > 0 ? 100.0 : 0.0)
-                : ((double)(thisMonthCount - lastMonthCount) / lastMonthCount) * 100;
+            long todayCount = roomRepository.countByCreatedAtBetween(startOfToday, LocalDateTime.now());
+            long yesterdayCount = roomRepository.countByCreatedAtBetween(startOfYesterday, startOfToday);
+            dayGrowth = calculateGrowth(todayCount, yesterdayCount);
+
+            LocalDateTime startOfThisMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+            LocalDateTime startOfLastMonth = startOfThisMonth.minusMonths(1);
+
+            long thisMonthCount = roomRepository.countByCreatedAtBetween(startOfThisMonth, LocalDateTime.now());
+            long lastMonthCount = roomRepository.countByCreatedAtBetween(startOfLastMonth, startOfThisMonth);
+            monthGrowth = calculateGrowth(thisMonthCount, lastMonthCount);
+        }
 
         return RoomDashboardStatsResponse.builder()
                 .totalRooms(totalRooms)
@@ -49,12 +66,16 @@ public class RoomDashboardService {
                 .lockedRooms(lockedRooms)
                 .groupRooms(groupRooms)
                 .dmRooms(dmRooms)
-                .dayGrowth(Math.round(dayGrowth * 10.0) / 10.0)
-                .monthGrowth(Math.round(monthGrowth * 10.0) / 10.0)
+                .dayGrowth(dayGrowth)
+                .monthGrowth(monthGrowth)
                 .build();
     }
 
-    public List<RoomDashboardChartResponse> getChart(String period) {
+    public List<RoomDashboardChartResponse> getChart(String period, LocalDateTime dateFrom, LocalDateTime dateTo) {
+        if (dateFrom != null && dateTo != null) {
+            return getRangeChart(period, dateFrom, dateTo);
+        }
+
         List<RoomDashboardChartResponse> result = new ArrayList<>();
         LocalDate today = LocalDate.now();
 
@@ -62,14 +83,13 @@ public class RoomDashboardService {
             case "MONTHLY" -> getLast12Months(today);
             case "QUARTERLY" -> getLast4Quarters(today);
             case "YEARLY" -> getLast5Years(today);
-            default -> getLast7Weeks(today); // WEEKLY
+            default -> getLast7Weeks(today);
         };
 
         for (int i = 0; i < dates.size() - 1; i++) {
             LocalDate from = dates.get(i);
             LocalDate to = dates.get(i + 1);
 
-            LocalDateTime fromDt = from.atStartOfDay();
             LocalDateTime toDt = to.atStartOfDay();
 
             long total = roomRepository.countByCreatedAtBefore(toDt);
@@ -82,7 +102,44 @@ public class RoomDashboardService {
         return result;
     }
 
-    // --- Helpers tạo danh sách mốc thời gian ---
+    private List<RoomDashboardChartResponse> getRangeChart(String period, LocalDateTime dateFrom, LocalDateTime dateTo) {
+        List<RoomDashboardChartResponse> result = new ArrayList<>();
+        LocalDateTime cursor = dateFrom;
+
+        while (cursor.isBefore(dateTo)) {
+            LocalDateTime next = nextBucket(cursor, period);
+            if (next.isAfter(dateTo)) {
+                next = dateTo;
+            }
+
+            long total = roomRepository.countByCreatedAtBetween(cursor, next);
+            long open = roomRepository.countByStatusAndCreatedAtBetween(RoomStatusEnum.OPEN, cursor, next);
+            long locked = roomRepository.countByStatusAndCreatedAtBetween(RoomStatusEnum.LOCKED, cursor, next);
+
+            result.add(new RoomDashboardChartResponse(cursor.toLocalDate(), total, open, locked));
+            cursor = next;
+        }
+
+        return result;
+    }
+
+    private LocalDateTime nextBucket(LocalDateTime from, String period) {
+        return switch (period) {
+            case "MONTHLY" -> from.plusMonths(1);
+            case "QUARTERLY" -> from.plusMonths(3);
+            case "YEARLY" -> from.plusYears(1);
+            default -> from.plusWeeks(1);
+        };
+    }
+
+    private double calculateGrowth(long current, long previous) {
+        if (previous == 0) {
+            return current > 0 ? 100.0 : 0.0;
+        }
+
+        double growth = ((double) (current - previous) / previous) * 100;
+        return Math.round(growth * 10.0) / 10.0;
+    }
 
     private List<LocalDate> getLast7Weeks(LocalDate today) {
         List<LocalDate> dates = new ArrayList<>();

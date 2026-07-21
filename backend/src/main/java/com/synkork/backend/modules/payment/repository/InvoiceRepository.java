@@ -22,6 +22,8 @@ public interface InvoiceRepository extends JpaRepository<InvoiceEntity, UUID>, J
 
     long countByStatus(InvoiceStatusEnum status);
 
+    long countByStatusAndCreatedAtBetween(InvoiceStatusEnum status, LocalDateTime from, LocalDateTime to);
+
     long countByStatusAndPaidAtBetween(InvoiceStatusEnum status, LocalDateTime start, LocalDateTime end);
 
     @Query("SELECT COALESCE(SUM(i.amount), 0) FROM InvoiceEntity i WHERE i.status = :status AND (:start IS NULL OR i.paidAt >= :start) AND (:end IS NULL OR i.paidAt <= :end)")

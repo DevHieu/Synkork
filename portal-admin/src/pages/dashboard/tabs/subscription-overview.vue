@@ -1,23 +1,15 @@
 <script setup lang="ts">
 import { AlertCircle, CheckCircle2, Clock, DollarSign, PackagePlus, Percent, PieChart } from '@lucide/vue'
 import { VisDonut, VisSingleContainer } from '@unovis/vue'
-import dayjs from 'dayjs'
+import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
-
-import type { AppDateRange } from '@/types/Date'
 
 import DateRangePicker from '@/components/date-range-picker.vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { formatToISODateTime } from '@/utils/date.utils'
 
 import DataCard from '../components/overview/data-card.vue'
 import { dashboardService } from '../services/dashboardService'
-
-const isLoadingStats = ref(false)
-const isLoadingChart = ref(false)
-const statsData = ref<SubscriptionStats | null>(null)
-const chartData = ref<SubscriptionChart | null>(null)
-const dateRange = ref<AppDateRange>(null)
+import { useDashboardFilterStore } from '../stores/dashboard-filter'
 
 interface SubscriptionStats {
   totalRevenue: number | string | null
@@ -39,27 +31,18 @@ interface PlanDistributionRow {
   color: string
 }
 
-const rangeParams = computed(() => {
-  if (!dateRange.value)
-    return undefined
+const dashboardFilterStore = useDashboardFilterStore()
+const { dateRange, dateRangeLabel, dateRangeParams } = storeToRefs(dashboardFilterStore)
 
-  return {
-    dateFrom: formatToISODateTime(dateRange.value.from),
-    dateTo: formatToISODateTime(dateRange.value.to, true),
-  }
-})
-
-const rangeLabel = computed(() => {
-  if (!dateRange.value)
-    return 'Tất cả thời gian'
-
-  return `${dayjs(dateRange.value.from).format('DD/MM/YYYY')} - ${dayjs(dateRange.value.to).format('DD/MM/YYYY')}`
-})
+const isLoadingStats = ref(false)
+const isLoadingChart = ref(false)
+const statsData = ref<SubscriptionStats | null>(null)
+const chartData = ref<SubscriptionChart | null>(null)
 
 async function fetchSubscriptionStats() {
   isLoadingStats.value = true
   try {
-    statsData.value = await dashboardService.getSubscriptionStatData(rangeParams.value)
+    statsData.value = await dashboardService.getSubscriptionStatData(dateRangeParams.value)
   }
   catch (err) {
     console.error('Error fetching subscription stats:', err)
@@ -73,7 +56,7 @@ async function fetchSubscriptionStats() {
 async function fetchSubscriptionChart() {
   isLoadingChart.value = true
   try {
-    chartData.value = await dashboardService.getSubscriptionChartData(rangeParams.value)
+    chartData.value = await dashboardService.getSubscriptionChartData(dateRangeParams.value)
   }
   catch (err) {
     console.error('Error fetching subscription chart:', err)
@@ -115,14 +98,6 @@ function getPlanPercent(value: number) {
   return `${Math.round((value / totalPaidPlans.value) * 100)}%`
 }
 
-onMounted(() => {
-  fetchSubscriptionData()
-})
-
-watch(dateRange, () => {
-  fetchSubscriptionData()
-})
-
 function formatMoney(amount?: number | string | null) {
   const value = typeof amount === 'string' ? Number(amount) : amount ?? 0
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(value)
@@ -132,6 +107,9 @@ function formatPercent(value?: number | string | null) {
   const numericValue = typeof value === 'string' ? Number(value) : value ?? 0
   return `${numericValue.toFixed(1)}%`
 }
+
+onMounted(fetchSubscriptionData)
+watch(dateRange, fetchSubscriptionData)
 </script>
 
 <template>
@@ -142,7 +120,7 @@ function formatPercent(value?: number | string | null) {
           Thống kê gói đăng ký
         </h2>
         <p class="text-sm text-muted-foreground">
-          Dữ liệu đơn mua gói trong khoảng: {{ rangeLabel }}
+          Dữ liệu đơn mua gói trong khoảng: {{ dateRangeLabel }}
         </p>
       </div>
 

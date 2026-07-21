@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { CheckCircle2, Clock, Eye, LayoutGrid, ShieldAlert, User, XCircle } from '@lucide/vue'
-import { onMounted, ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import type { Report, ReportFilterParams, ReportStatus } from '@/pages/report/types/Reports'
 
+import ConfirmDialog from '@/components/confirm-dialog.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button as UiButton } from '@/components/ui/button'
 import ReportDetail from '@/pages/report/components/ReportDetail.vue'
@@ -12,11 +14,33 @@ import { roomService } from '@/pages/rooms/service/roomService'
 import { userService } from '@/pages/users/services/userService'
 import { formatTimestamp } from '@/utils/date.utils'
 
+import { useDashboardFilterStore } from '../../stores/dashboard-filter'
+
 const loading = ref(false)
 const reports = ref<Report[]>([])
 
+const dashboardFilterStore = useDashboardFilterStore()
+const { dateRangeParams } = storeToRefs(dashboardFilterStore)
+
+const reportDateParams = computed(() => {
+  if (!dateRangeParams.value)
+    return {}
+
+  return {
+    fromDate: dateRangeParams.value.dateFrom,
+    toDate: dateRangeParams.value.dateTo,
+  }
+})
+
 const selectedReport = ref<Report | null>(null)
 const isDetailOpen = ref(false)
+const isLockConfirmOpen = ref(false)
+const isLockingTarget = ref(false)
+const pendingLockTarget = ref<{ reportType: 'USER' | 'ROOM', targetId: string } | null>(null)
+
+const lockTargetLabel = computed(() =>
+  pendingLockTarget.value?.reportType === 'USER' ? 'user' : 'room',
+)
 
 const statusVariantMap: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   PENDING: 'secondary',
@@ -44,6 +68,7 @@ async function fetchRecentReports() {
       page: 0,
       size: 5,
       status: 'PENDING',
+      ...reportDateParams.value,
     }
     const res = await getReports({ params })
     reports.value = res.data
@@ -72,28 +97,38 @@ async function handleUpdateReportStatus({ id, status, note }: { id: string, stat
   }
 }
 
-async function handleLockTarget({ reportType, targetId }: { reportType: 'USER' | 'ROOM', targetId: string }) {
-  const confirmMsg = reportType === 'USER'
-    ? 'Bạn có chắc muốn khoá user này?'
-    : 'Bạn có chắc muốn khoá room này?'
+function handleLockTarget(payload: { reportType: 'USER' | 'ROOM', targetId: string }) {
+  pendingLockTarget.value = payload
+  isLockConfirmOpen.value = true
+}
 
-  if (!confirm(confirmMsg))
+async function confirmLockTarget() {
+  if (!pendingLockTarget.value)
     return
 
   try {
-    if (reportType === 'USER') {
-      await userService.updateStatus(targetId, 'BANNED')
+    isLockingTarget.value = true
+
+    if (pendingLockTarget.value.reportType === 'USER') {
+      await userService.updateStatus(pendingLockTarget.value.targetId, 'BANNED')
     }
     else {
-      await roomService.changeRoomStatus(targetId, 'LOCKED')
+      await roomService.changeRoomStatus(pendingLockTarget.value.targetId, 'LOCKED')
     }
+
+    isLockConfirmOpen.value = false
+    pendingLockTarget.value = null
   }
   catch (error) {
-    console.error('Lỗi khoá đối tượng:', error)
+    console.error('Lỗi khóa đối tượng:', error)
+  }
+  finally {
+    isLockingTarget.value = false
   }
 }
 
 onMounted(fetchRecentReports)
+watch(reportDateParams, fetchRecentReports)
 </script>
 
 <template>
@@ -163,4 +198,22 @@ onMounted(fetchRecentReports)
     @action="handleUpdateReportStatus"
     @lock-target="handleLockTarget"
   />
+
+  <ConfirmDialog
+    v-model:open="isLockConfirmOpen"
+    :is-loading="isLockingTarget"
+    destructive
+    confirm-button-text="Khóa"
+    cancel-button-text="Hủy"
+    @confirm="confirmLockTarget"
+  >
+    <template #title>
+      Khóa {{ lockTargetLabel }}
+    </template>
+    <template #description>
+      <p>
+        Bạn có chắc muốn khóa {{ lockTargetLabel }} này?
+      </p>
+    </template>
+  </ConfirmDialog>
 </template>

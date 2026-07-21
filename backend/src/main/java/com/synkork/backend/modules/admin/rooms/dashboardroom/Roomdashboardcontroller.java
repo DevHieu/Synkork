@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.admin.rooms.dashboardroom;
 
 import com.synkork.backend.common.response.ApiResponse;
+import com.synkork.backend.modules.admin.statistics.dtos.DateRangeRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,14 +15,21 @@ public class Roomdashboardcontroller {
     private RoomDashboardService roomDashboardService;
 
     @GetMapping("/stats")
-    public ApiResponse<RoomDashboardStatsResponse> getStats() {
-        return ApiResponse.success("Get room stats successfully", roomDashboardService.getStats());
+    public ApiResponse<RoomDashboardStatsResponse> getStats(@ModelAttribute DateRangeRequest dateRange) {
+        return ApiResponse.success(
+                "Get room stats successfully",
+                roomDashboardService.getStats(dateRange.dateFrom(), dateRange.dateTo())
+        );
     }
 
     @GetMapping("/chart")
     public ApiResponse<List<RoomDashboardChartResponse>> getChart(
-            @RequestParam(defaultValue = "WEEKLY") String period
+            @RequestParam(defaultValue = "WEEKLY") String period,
+            @ModelAttribute DateRangeRequest dateRange
     ) {
-        return ApiResponse.success("Get room chart successfully", roomDashboardService.getChart(period));
+        return ApiResponse.success(
+                "Get room chart successfully",
+                roomDashboardService.getChart(period, dateRange.dateFrom(), dateRange.dateTo())
+        );
     } 
 }

@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import { Activity } from '@lucide/vue'
 import { VisAxis, VisGroupedBar, VisXYContainer } from '@unovis/vue'
-import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 
 import type { ChartConfig } from '@/components/ui/chart'
 
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
@@ -20,14 +18,6 @@ import {
   ChartTooltipContent,
   componentToString,
 } from '@/components/ui/chart'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { useTimeRangeStore } from '@/stores/time-range'
 
 import type {
   ReportChartLegendRow,
@@ -35,19 +25,13 @@ import type {
   ReportTrendPoint,
 } from '../../types/report-overview.types'
 
-import { dashboardService } from '../../services/dashboardService'
 import {
   REPORT_CHART_COLORS,
-  REPORT_TIME_RANGE_LABELS,
-  REPORT_TIME_RANGE_OPTIONS,
 } from '../../types/report-overview.constants'
 
 const props = defineProps<{
   stats: ReportStats | null
 }>()
-
-const timeRangeStore = useTimeRangeStore()
-const { timeRange } = storeToRefs(timeRangeStore)
 
 const trendData = ref<ReportTrendPoint[]>([])
 const isLoading = ref(false)
@@ -72,25 +56,6 @@ const typeRows = computed<ReportChartLegendRow[]>(() => [
   { name: 'Người dùng', value: props.stats?.userReports ?? 0, color: REPORT_CHART_COLORS.user },
   { name: 'Phòng', value: props.stats?.roomReports ?? 0, color: REPORT_CHART_COLORS.room },
 ])
-
-const periodLabel = computed(() => REPORT_TIME_RANGE_LABELS[timeRange.value])
-
-async function fetchChart() {
-  isLoading.value = true
-  try {
-    trendData.value = await dashboardService.getReportChartData(timeRange.value)
-  }
-  catch (err) {
-    console.error('Failed to load report trend:', err)
-    trendData.value = []
-  }
-  finally {
-    isLoading.value = false
-  }
-}
-
-onMounted(fetchChart)
-watch(timeRange, fetchChart)
 </script>
 
 <template>
@@ -101,21 +66,7 @@ watch(timeRange, fetchChart)
           <Activity class="h-4 w-4 text-muted-foreground" />
           Xu hướng tố cáo
         </CardTitle>
-        <CardDescription>
-          Tố cáo người dùng và phòng theo {{ periodLabel }}
-        </CardDescription>
       </div>
-
-      <Select v-model="timeRange">
-        <SelectTrigger class="w-[140px]">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem v-for="opt in REPORT_TIME_RANGE_OPTIONS" :key="opt.value" :value="opt.value">
-            {{ opt.label }}
-          </SelectItem>
-        </SelectContent>
-      </Select>
     </CardHeader>
 
     <CardContent>

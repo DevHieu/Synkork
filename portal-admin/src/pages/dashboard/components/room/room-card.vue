@@ -8,7 +8,6 @@ import type { ChartConfig } from '@/components/ui/chart'
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
@@ -20,16 +19,9 @@ import {
   ChartTooltipContent,
   componentToString,
 } from '@/components/ui/chart'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { useTimeRangeStore } from '@/stores/time-range'
 
 import { dashboardService } from '../../services/dashboardService'
+import { useDashboardFilterStore } from '../../stores/dashboard-filter'
 
 interface ChartPoint {
   date: number
@@ -38,13 +30,13 @@ interface ChartPoint {
   locked: number
 }
 
-const timeRangeStore = useTimeRangeStore()
-const { timeRange } = storeToRefs(timeRangeStore)
+const dashboardFilterStore = useDashboardFilterStore()
+const { dateRangeParams } = storeToRefs(dashboardFilterStore)
 const rawData = ref<any[]>([])
 
 async function fetchData() {
   try {
-    const data = await dashboardService.getRoomChartData(timeRange.value)
+    const data = await dashboardService.getRoomChartData(dateRangeParams.value)
     rawData.value = Array.isArray(data) ? data : []
   }
   catch (err) {
@@ -54,7 +46,7 @@ async function fetchData() {
 }
 
 onMounted(fetchData)
-watch(timeRange, fetchData)
+watch([dateRangeParams], fetchData)
 
 const chartData = computed<ChartPoint[]>(() => {
   return rawData.value.map(item => ({
@@ -116,17 +108,6 @@ const yMax = computed(() => {
 
   return max === 0 ? 10 : Math.ceil(max * 1.3)
 })
-
-const periodLabel = computed(() => {
-  const map = {
-    WEEKLY: 'tuần',
-    MONTHLY: 'tháng',
-    QUARTERLY: 'quý',
-    YEARLY: 'năm',
-  }
-
-  return map[timeRange.value]
-})
 </script>
 
 <template>
@@ -136,35 +117,7 @@ const periodLabel = computed(() => {
     >
       <div class="grid flex-1 gap-1">
         <CardTitle>Tăng trưởng Rooms</CardTitle>
-
-        <CardDescription>
-          Tổng, Open và Locked theo
-          <b>{{ periodLabel }}</b>
-        </CardDescription>
       </div>
-
-      <Select v-model="timeRange">
-        <SelectTrigger
-          class="hidden w-[160px] rounded-lg sm:ml-auto sm:flex"
-        >
-          <SelectValue placeholder="Weekly" />
-        </SelectTrigger>
-
-        <SelectContent class="rounded-xl">
-          <SelectItem value="WEEKLY" class="rounded-lg">
-            Tuần
-          </SelectItem>
-          <SelectItem value="MONTHLY" class="rounded-lg">
-            Tháng
-          </SelectItem>
-          <SelectItem value="QUARTERLY" class="rounded-lg">
-            Quý
-          </SelectItem>
-          <SelectItem value="YEARLY" class="rounded-lg">
-            Năm
-          </SelectItem>
-        </SelectContent>
-      </Select>
     </CardHeader>
 
     <CardContent class="px-2 pt-4 pb-4 sm:px-6 sm:pt-6">

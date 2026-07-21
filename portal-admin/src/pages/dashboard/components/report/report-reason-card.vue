@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ShieldAlert } from '@lucide/vue'
-import { computed, onMounted, ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import {
   Card,
@@ -23,10 +24,14 @@ import type {
 } from '../../types/report-overview.types'
 
 import { dashboardService } from '../../services/dashboardService'
+import { useDashboardFilterStore } from '../../stores/dashboard-filter'
 import {
   REPORT_REASON_COLORS,
   REPORT_REASON_LABELS,
 } from '../../types/report-overview.constants'
+
+const dashboardFilterStore = useDashboardFilterStore()
+const { dateRangeParams } = storeToRefs(dashboardFilterStore)
 
 const reasonScope = ref<ReportReasonScope>('all')
 const reasonStats = ref<ReportReasonStat[]>([])
@@ -35,7 +40,7 @@ const isLoading = ref(false)
 async function fetchReasonStats() {
   isLoading.value = true
   try {
-    reasonStats.value = await dashboardService.getReportReasonStats()
+    reasonStats.value = await dashboardService.getReportReasonStats(dateRangeParams.value)
   }
   catch (err) {
     console.error('Failed to load report reasons:', err)
@@ -66,6 +71,7 @@ const maxReasonCount = computed(() =>
 )
 
 onMounted(fetchReasonStats)
+watch(dateRangeParams, fetchReasonStats)
 </script>
 
 <template>
