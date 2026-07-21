@@ -65,4 +65,8 @@ public class InvoiceEntity {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    @Column(name = "discount_amount", precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal discountAmount = BigDecimal.ZERO;
 }
