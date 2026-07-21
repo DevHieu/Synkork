@@ -259,9 +259,7 @@ public class CalendarEventService {
         syncEventRelations(calendarEvent, eventRequest, creator);
 
         CalendarEventEntity savedEvent = calendarEventRepository.save(Objects.requireNonNull(calendarEvent));
-        
-        // ponytail: sync async to google calendar
-        googleCalendarService.syncEventToGoogleAsync(savedEvent.getId());
+        googleCalendarService.syncEventToGoogle(savedEvent.getId());
         
         CalendarEventDTO result = new CalendarEventDTO(savedEvent);
         broadcastCalendarUpdate(eventRequest.getSpaceId(), "CREATED", result);
@@ -309,9 +307,7 @@ public class CalendarEventService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng với ID: " + userId));
         syncEventRelations(calendarEvent, eventRequest, actor);
         CalendarEventEntity savedEvent = calendarEventRepository.save(Objects.requireNonNull(calendarEvent));
-        
-        // ponytail: sync async to google calendar
-        googleCalendarService.syncEventToGoogleAsync(savedEvent.getId());
+        googleCalendarService.syncEventToGoogle(savedEvent.getId());
         
         CalendarEventDTO result = new CalendarEventDTO(savedEvent);
         broadcastCalendarUpdate(result.getSpaceId(), "UPDATED", result);
@@ -440,10 +436,8 @@ public class CalendarEventService {
 
         // Broadcast trước khi xóa
         CalendarEventDTO deletedDto = new CalendarEventDTO(entity);
+        googleCalendarService.deleteEventFromGoogle(entity);
         calendarEventRepository.delete(entity);
-        
-        // ponytail: delete async from google calendar
-        googleCalendarService.deleteEventFromGoogleAsync(eventId);
         
         broadcastCalendarUpdate(deletedDto.getSpaceId(), "DELETED", deletedDto);
     }

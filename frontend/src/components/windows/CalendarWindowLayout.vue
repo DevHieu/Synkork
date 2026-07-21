@@ -234,6 +234,7 @@ const showNotification = (
 };
 
 const isSavingEvent = ref(false);
+const isSaveSuccess = ref(false);
 const pendingSavePayload = ref<{
   isEditing: boolean;
   eventId?: string;
@@ -275,10 +276,15 @@ const persistEvent = async (payload: { isEditing: boolean; eventId?: string; dat
     } else {
       await createEvent(payload.data);
     }
-    showDialog.value = false;
-    showViewDialog.value = false;
-    notificationState.value.show = false;
-    pendingSavePayload.value = null;
+    isSaveSuccess.value = true;
+    
+    setTimeout(() => {
+      showDialog.value = false;
+      showViewDialog.value = false;
+      notificationState.value.show = false;
+      pendingSavePayload.value = null;
+      isSaveSuccess.value = false;
+    }, 1200);
   } catch (err: any) {
     console.error("Lỗi khi lưu sự kiện:", err);
     pendingSavePayload.value = null;
@@ -423,7 +429,7 @@ watch(
       @edit="openEditDialog" @delete="handleDeleteEvent" />
 
     <CalendarEventDialog v-model:show="showDialog" :is-editing="isEditing" :initial-data="initialFormData" :room-members="members"
-      @save="handleSaveEvent" />
+      :is-saving="isSavingEvent" :is-success="isSaveSuccess" @save="handleSaveEvent" />
 
     <!-- Unified Notification Dialog -->
     <CalendarNotificationDialog v-model:show="notificationState.show" :type="notificationState.type"

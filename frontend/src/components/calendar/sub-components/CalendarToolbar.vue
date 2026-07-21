@@ -11,6 +11,8 @@ import {
 import { ref } from "vue";
 import { useRoute } from "vue-router";
 import axiosClient from "@/lib/axiosClient";
+import { useUserStore } from "@/stores/userStore";
+import PremiumFeatureDialog from "@/components/dialog/PremiumFeatureDialog.vue";
 
 const props = defineProps<{
   currentSpaceName?: string;
@@ -29,9 +31,16 @@ const emit = defineEmits<{
 }>();
 
 const isConnecting = ref(false);
+const showPremiumDialog = ref(false);
 const route = useRoute();
+const userStore = useUserStore();
 
 const connectGoogleCalendar = async () => {
+  if (userStore.userPlan === "FREE") {
+    showPremiumDialog.value = true;
+    return;
+  }
+
   try {
     isConnecting.value = true;
     const response = await axiosClient.get('/api/integrations/google-calendar/authorize-url', {
@@ -137,6 +146,13 @@ const connectGoogleCalendar = async () => {
         </button>
       </div>
     </div>
+
+    <!-- Premium Feature Dialog -->
+    <PremiumFeatureDialog 
+      v-model:open="showPremiumDialog" 
+      feature-name="Đồng bộ Google Calendar" 
+      :business-only="false" 
+    />
   </div>
 </template>
 

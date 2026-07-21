@@ -147,21 +147,18 @@ public class GoogleCalendarService {
         calendarEventRepository.save(entity);
     }
 
-    public void deleteEventFromGoogleAsync(UUID eventId) {
-        CompletableFuture.runAsync(() -> {
-            CalendarEventEntity entity = calendarEventRepository.findById(eventId).orElse(null);
-            if (entity == null || entity.getGoogleEventId() == null) return;
+    public void deleteEventFromGoogle(CalendarEventEntity entity) {
+        if (entity == null || entity.getGoogleEventId() == null) return;
 
-            UserEntity user = entity.getCreatedBy();
-            try {
-                Calendar client = getCalendarClient(user);
-                if (client != null) {
-                    client.events().delete("primary", entity.getGoogleEventId()).execute();
-                }
-            } catch (Exception e) {
-                log.error("Failed to delete event", e);
+        UserEntity user = entity.getCreatedBy();
+        try {
+            Calendar client = getCalendarClient(user);
+            if (client != null) {
+                client.events().delete("primary", entity.getGoogleEventId()).execute();
             }
-        });
+        } catch (Exception e) {
+            log.error("Failed to delete event", e);
+        }
     }
 
     public void syncOldEvents(UUID userId) {

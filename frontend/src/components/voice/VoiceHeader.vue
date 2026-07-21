@@ -68,10 +68,10 @@ const handleSummary = () => {
   }
 
   // Testing
-  // if (userStore.userPlan === "FREE") {
-  //   showPremiumDialog.value = true;
-  //   return;
-  // }
+  if (userStore.userPlan === "FREE") {
+    showPremiumDialog.value = true;
+    return;
+  }
   // 
   // 
   // 

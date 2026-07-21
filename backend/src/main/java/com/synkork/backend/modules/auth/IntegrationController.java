@@ -57,7 +57,6 @@ public class IntegrationController {
             
             googleCalendarOAuthService.handleCallback(code, UUID.fromString(userId));
             
-            // ponytail: sync old events in background
             googleCalendarService.syncOldEvents(UUID.fromString(userId));
             
             return new RedirectView(frontendUrl + redirectPath + "?sync=success");
