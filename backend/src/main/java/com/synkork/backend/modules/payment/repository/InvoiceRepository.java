@@ -40,9 +40,9 @@ public interface InvoiceRepository extends JpaRepository<InvoiceEntity, UUID>, J
     """)
     List<InvoiceStatusCount> countGroupByStatus(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
-    @Query("SELECT COALESCE(SUM(i.amount), 0) FROM InvoiceEntity i WHERE i.status = :status")
-    BigDecimal sumAmountByStatus(@Param("status") InvoiceStatusEnum status);
-
-    @Query("SELECT COALESCE(SUM(i.amount), 0) FROM InvoiceEntity i WHERE i.status = :status AND i.paidAt >= :start")
-    BigDecimal sumAmountByStatusAndPaidAtAfter(@Param("status") InvoiceStatusEnum status, @Param("start") LocalDateTime start);
+//    @Query("SELECT COALESCE(SUM(i.amount), 0) FROM InvoiceEntity i WHERE i.status = :status")
+//    BigDecimal sumAmountByStatus(@Param("status") InvoiceStatusEnum status);
+//
+//    @Query("SELECT COALESCE(SUM(i.amount), 0) FROM InvoiceEntity i WHERE i.status = :status AND i.paidAt >= :start")
+//    BigDecimal sumAmountByStatusAndPaidAtAfter(@Param("status") InvoiceStatusEnum status, @Param("start") LocalDateTime start);
 }

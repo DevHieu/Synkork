@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { DoorOpen, LayoutGrid, LockKeyhole, MessageSquare } from '@lucide/vue'
+import { AlertTriangle, LayoutGrid, TrendingUp, UserRoundPlus } from '@lucide/vue'
 import { storeToRefs } from 'pinia'
 import { onMounted, ref, watch } from 'vue'
 
@@ -18,10 +18,18 @@ import TopRooms from '../components/room/top-room.vue'
 import { dashboardService } from '../services/dashboardService'
 import { useDashboardFilterStore } from '../stores/dashboard-filter'
 
+interface RoomStats {
+  totalRooms: number
+  newRooms: number
+  roomGrowth: number
+  averageMembersPerRoom: number
+  warnedRooms: number
+}
+
 const dashboardFilterStore = useDashboardFilterStore()
 const { dateRange, dateRangeLabel, dateRangeParams } = storeToRefs(dashboardFilterStore)
 
-const stats = ref<any>(null)
+const stats = ref<RoomStats | null>(null)
 const isLoadingStats = ref(false)
 
 async function fetchRoomStats() {
@@ -36,6 +44,14 @@ async function fetchRoomStats() {
   finally {
     isLoadingStats.value = false
   }
+}
+
+function formatNumber(value?: number) {
+  return value?.toLocaleString() ?? '-'
+}
+
+function formatAverage(value?: number) {
+  return value !== undefined ? value.toFixed(1) : '-'
 }
 
 onMounted(fetchRoomStats)
@@ -61,28 +77,26 @@ watch(dateRange, fetchRoomStats)
 
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <DataCard
-        title="Rooms"
-        :data="isLoadingStats ? '-' : stats?.totalRooms?.toLocaleString() ?? '-'"
+        title="Tổng rooms"
+        :data="isLoadingStats ? '-' : formatNumber(stats?.totalRooms)"
         :icon="LayoutGrid"
-        :day-growth="stats?.dayGrowth"
-        :month-growth="stats?.monthGrowth"
+        :day-growth="stats?.roomGrowth"
         day-growth-label="so với kỳ trước"
-        month-growth-label="so với kỳ trước"
       />
       <DataCard
-        title="Đang mở"
-        :data="isLoadingStats ? '-' : stats?.openRooms?.toLocaleString() ?? '-'"
-        :icon="DoorOpen"
+        title="Room mới"
+        :data="isLoadingStats ? '-' : formatNumber(stats?.newRooms)"
+        :icon="TrendingUp"
       />
       <DataCard
-        title="Đã khóa"
-        :data="isLoadingStats ? '-' : stats?.lockedRooms?.toLocaleString() ?? '-'"
-        :icon="LockKeyhole"
+        title="TB thành viên/room"
+        :data="isLoadingStats ? '-' : `${formatAverage(stats?.averageMembersPerRoom)}%`"
+        :icon="UserRoundPlus"
       />
       <DataCard
-        title="Group Rooms"
-        :data="isLoadingStats ? '-' : stats?.groupRooms?.toLocaleString() ?? '-'"
-        :icon="MessageSquare"
+        title="Room bị cảnh báo"
+        :data="isLoadingStats ? '-' : formatNumber(stats?.warnedRooms)"
+        :icon="AlertTriangle"
       />
     </div>
 

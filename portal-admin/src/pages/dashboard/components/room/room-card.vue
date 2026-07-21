@@ -1,238 +1,143 @@
 <script setup lang="ts">
-import { VisArea, VisAxis, VisLine, VisXYContainer } from '@unovis/vue'
+import { ChartPie } from '@lucide/vue'
+import { VisDonut, VisSingleContainer } from '@unovis/vue'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
-
-import type { ChartConfig } from '@/components/ui/chart'
 
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import {
-  ChartContainer,
-  ChartCrosshair,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-  componentToString,
-} from '@/components/ui/chart'
 
 import { dashboardService } from '../../services/dashboardService'
 import { useDashboardFilterStore } from '../../stores/dashboard-filter'
 
-interface ChartPoint {
-  date: number
-  total: number
-  open: number
-  locked: number
+interface RoomStatusCount {
+  count: number
+  status: 'OPEN' | 'LOCKED' | 'PENDING_REMOVAL'
+}
+
+interface StatusRow {
+  name: string
+  status: RoomStatusCount['status']
+  value: number
+  color: string
 }
 
 const dashboardFilterStore = useDashboardFilterStore()
 const { dateRangeParams } = storeToRefs(dashboardFilterStore)
-const rawData = ref<any[]>([])
+
+const rawData = ref<RoomStatusCount[]>([])
+const isLoading = ref(false)
+
+const statusConfig: Array<Omit<StatusRow, 'value'>> = [
+  { name: 'Đang mở', status: 'OPEN', color: 'var(--chart-1)' },
+  { name: 'Đã khóa', status: 'LOCKED', color: 'var(--chart-2)' },
+  { name: 'Chờ xóa', status: 'PENDING_REMOVAL', color: 'var(--chart-3)' },
+]
+
+const statusRows = computed<StatusRow[]>(() =>
+  statusConfig.map(item => ({
+    ...item,
+    value: rawData.value.find(row => row.status === item.status)?.count ?? 0,
+  })),
+)
+
+const totalRooms = computed(() =>
+  statusRows.value.reduce((total, row) => total + row.value, 0),
+)
 
 async function fetchData() {
+  isLoading.value = true
   try {
     const data = await dashboardService.getRoomChartData(dateRangeParams.value)
     rawData.value = Array.isArray(data) ? data : []
   }
   catch (err) {
-    console.error('Failed to fetch room chart:', err)
+    console.error('Failed to fetch room status chart:', err)
     rawData.value = []
+  }
+  finally {
+    isLoading.value = false
   }
 }
 
+function getStatusValue(row: StatusRow) {
+  return row.value
+}
+
+function getStatusColor(row: StatusRow) {
+  return row.color
+}
+
+function getStatusPercent(value: number) {
+  if (totalRooms.value === 0)
+    return '0%'
+
+  return `${Math.round((value / totalRooms.value) * 100)}%`
+}
+
 onMounted(fetchData)
-watch([dateRangeParams], fetchData)
-
-const chartData = computed<ChartPoint[]>(() => {
-  return rawData.value.map(item => ({
-    date: new Date(item.date).getTime(),
-    total: item.totalRooms,
-    open: item.openRooms,
-    locked: item.lockedRooms,
-  }))
-})
-
-const getDate = (d: ChartPoint) => d.date
-const getTotal = (d: ChartPoint) => d.total
-const getOpen = (d: ChartPoint) => d.open
-const getLocked = (d: ChartPoint) => d.locked
-
-const chartConfig = {
-  total: {
-    label: 'Total Rooms',
-    color: 'var(--chart-1)',
-  },
-  open: {
-    label: 'Open',
-    color: 'var(--chart-2)',
-  },
-  locked: {
-    label: 'Locked',
-    color: 'var(--chart-3)',
-  },
-} satisfies ChartConfig
-
-const svgDefs = `
-  <linearGradient id="fillTotal" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="5%" stop-color="var(--color-total)" stop-opacity="0.8" />
-    <stop offset="95%" stop-color="var(--color-total)" stop-opacity="0.1" />
-  </linearGradient>
-
-  <linearGradient id="fillOpen" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="5%" stop-color="var(--color-open)" stop-opacity="0.8" />
-    <stop offset="95%" stop-color="var(--color-open)" stop-opacity="0.1" />
-  </linearGradient>
-
-  <linearGradient id="fillLocked" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="5%" stop-color="var(--color-locked)" stop-opacity="0.8" />
-    <stop offset="95%" stop-color="var(--color-locked)" stop-opacity="0.1" />
-  </linearGradient>
-`
-
-const yMax = computed(() => {
-  if (!chartData.value.length)
-    return 10
-
-  const max = Math.max(
-    ...chartData.value.flatMap(d => [
-      d.total,
-      d.open,
-      d.locked,
-    ]),
-  )
-
-  return max === 0 ? 10 : Math.ceil(max * 1.3)
-})
+watch(dateRangeParams, fetchData)
 </script>
 
 <template>
-  <Card class="pt-0">
-    <CardHeader
-      class="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row"
-    >
-      <div class="grid flex-1 gap-1">
-        <CardTitle>Tăng trưởng Rooms</CardTitle>
-      </div>
+  <Card>
+    <CardHeader>
+      <CardTitle class="flex items-center gap-2 text-base">
+        <ChartPie class="h-4 w-4 text-muted-foreground" />
+        Trạng thái rooms
+      </CardTitle>
+      <CardDescription>
+        Phân bổ room theo trạng thái trong khoảng đã chọn.
+      </CardDescription>
     </CardHeader>
 
-    <CardContent class="px-2 pt-4 pb-4 sm:px-6 sm:pt-6">
-      <ChartContainer
-        v-if="chartData.length > 0"
-        :config="chartConfig"
-        class="aspect-auto h-[250px] w-full"
-        :cursor="false"
-      >
-        <VisXYContainer
-          :data="chartData"
-          :svg-defs="svgDefs"
-          :margin="{ left: -40 }"
-          :y-domain="[0, yMax]"
-        >
-          <!-- Total -->
-          <VisArea
-            :x="getDate"
-            :y="getTotal"
-            color="url(#fillTotal)"
-            :opacity="0.4"
-          />
-          <VisLine
-            :x="getDate"
-            :y="getTotal"
-            :color="chartConfig.total.color"
-            :line-width="2"
-          />
-
-          <!-- Open -->
-          <VisArea
-            :x="getDate"
-            :y="getOpen"
-            color="url(#fillOpen)"
-            :opacity="0.4"
-          />
-          <VisLine
-            :x="getDate"
-            :y="getOpen"
-            :color="chartConfig.open.color"
-            :line-width="2"
-          />
-
-          <!-- Locked -->
-          <VisArea
-            :x="getDate"
-            :y="getLocked"
-            color="url(#fillLocked)"
-            :opacity="0.4"
-          />
-          <VisLine
-            :x="getDate"
-            :y="getLocked"
-            :color="chartConfig.locked.color"
-            :line-width="2"
-          />
-
-          <VisAxis
-            type="x"
-            :x="getDate"
-            :tick-line="false"
-            :domain-line="false"
-            :grid-line="false"
-            :num-ticks="6"
-            :tick-format="
-              (d: number) =>
-                new Date(d).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                })
-            "
-          />
-
-          <VisAxis
-            type="y"
-            :num-ticks="3"
-            :tick-line="false"
-            :domain-line="false"
-            :tick-format="(d: number) => Math.round(d).toString()"
-          />
-
-          <ChartTooltip />
-
-          <ChartCrosshair
-            :template="
-              componentToString(
-                chartConfig,
-                ChartTooltipContent,
-                {
-                  labelFormatter: (d) =>
-                    new Date(d).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                    }),
-                },
-              )
-            "
-            :color="
-              (_d: unknown, i: number) => [
-                chartConfig.total.color,
-                chartConfig.open.color,
-                chartConfig.locked.color,
-              ][i % 3]
-            "
-          />
-        </VisXYContainer>
-
-        <ChartLegendContent />
-      </ChartContainer>
-
-      <div
-        v-else
-        class="flex h-[250px] items-center justify-center text-sm text-muted-foreground"
-      >
+    <CardContent class="space-y-4">
+      <div v-if="isLoading" class="flex h-[260px] items-center justify-center text-sm text-muted-foreground">
+        Đang tải...
+      </div>
+      <div v-else-if="totalRooms === 0" class="flex h-[260px] items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
         Không có dữ liệu
+      </div>
+      <div v-else class="grid gap-6 sm:grid-cols-[1fr_auto] sm:items-center">
+        <div class="h-[260px]">
+          <VisSingleContainer :data="statusRows" class="h-full">
+            <VisDonut
+              :value="getStatusValue"
+              :color="getStatusColor"
+              :arc-width="34"
+              :corner-radius="6"
+              :pad-angle="0.04"
+              central-label="Rooms"
+              :central-sub-label="totalRooms.toLocaleString()"
+            />
+          </VisSingleContainer>
+        </div>
+
+        <div class="space-y-3">
+          <div
+            v-for="row in statusRows"
+            :key="row.status"
+            class="flex min-w-44 items-center justify-between gap-8 rounded-lg border border-border/60 p-3"
+          >
+            <div class="flex items-center gap-2">
+              <span class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: row.color }" />
+              <span class="text-sm font-medium">{{ row.name }}</span>
+            </div>
+            <div class="text-right">
+              <div class="text-sm font-semibold">
+                {{ row.value.toLocaleString() }}
+              </div>
+              <div class="text-xs text-muted-foreground">
+                {{ getStatusPercent(row.value) }}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </CardContent>
   </Card>

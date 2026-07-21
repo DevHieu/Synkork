@@ -23,13 +23,10 @@ public class Roomdashboardcontroller {
     }
 
     @GetMapping("/chart")
-    public ApiResponse<List<RoomDashboardChartResponse>> getChart(
-            @RequestParam(defaultValue = "WEEKLY") String period,
-            @ModelAttribute DateRangeRequest dateRange
-    ) {
+    public ApiResponse<List<RoomStatusCount>> getChart(@ModelAttribute DateRangeRequest dateRange) {
         return ApiResponse.success(
                 "Get room chart successfully",
-                roomDashboardService.getChart(period, dateRange.dateFrom(), dateRange.dateTo())
+                roomDashboardService.getChart(dateRange.dateFrom(), dateRange.dateTo())
         );
     } 
 }

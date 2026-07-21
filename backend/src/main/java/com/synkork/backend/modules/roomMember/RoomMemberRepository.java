@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import com.synkork.backend.modules.roomMember.enums.MemberStatusEnum;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -52,6 +53,19 @@ public interface RoomMemberRepository extends JpaRepository<RoomMemberEntity, UU
 
     @Query("SELECT COUNT(rm) FROM RoomMemberEntity rm WHERE rm.user.id = :userId AND rm.role = :role AND rm.room.type = 'GROUP' AND rm.status = 'ACTIVE'")
     long countGroupRoomsByUserIdAndRole(@Param("userId") UUID userId, @Param("role") RoomMemberRoleEnum role);
+
+    @Query("""
+            SELECT COUNT(rm)
+            FROM RoomMemberEntity rm
+            WHERE rm.room.type = :roomType
+              AND (:start IS NULL OR rm.room.createdAt >= :start)
+              AND (:end IS NULL OR rm.room.createdAt <= :end)
+            """)
+    long countByRoomTypeAndRoomCreatedAtBetween(
+            @Param("roomType") RoomTypeEnum roomType,
+            @Param("start") java.time.LocalDateTime start,
+            @Param("end") java.time.LocalDateTime end
+    );
 
 //    @Modifying
 //    @Query(value = "DELETE FROM card_assignees WHERE room_member_id = :roomMemberId", nativeQuery = true)

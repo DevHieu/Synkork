@@ -7,11 +7,9 @@ import lombok.Data;
 @Builder
 public class RoomDashboardStatsResponse {
     private long totalRooms;
-    private long openRooms;
-    private long lockedRooms;
-    private long groupRooms;
-    private long dmRooms;
-    private double dayGrowth;
-    private double monthGrowth;
+    private long newRooms;
+    private double roomGrowth;
+    private double averageMembersPerRoom;
+    private long warnedRooms;
 }
  
