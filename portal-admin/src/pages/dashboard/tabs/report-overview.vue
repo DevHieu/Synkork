@@ -57,7 +57,7 @@ watch(dateRange, fetchStats)
 
     <div class="grid gap-4 lg:grid-cols-2">
       <ReportReasonCard />
-      <ReportTrendCard :stats="stats" />
+      <ReportTrendCard />
     </div>
   </div>
 </template>

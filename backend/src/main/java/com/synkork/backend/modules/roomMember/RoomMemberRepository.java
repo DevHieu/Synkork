@@ -21,6 +21,9 @@ public interface RoomMemberRepository extends JpaRepository<RoomMemberEntity, UU
 
     List<RoomMemberEntity> findByUserId(UUID userId);
 
+    @Query("SELECT rm FROM RoomMemberEntity rm JOIN FETCH rm.room r LEFT JOIN FETCH r.owner WHERE rm.user.id = :userId")
+    List<RoomMemberEntity> findByUserIdWithRoom(@Param("userId") UUID userId);
+
     @Query("SELECT rm FROM RoomMemberEntity rm JOIN FETCH rm.user WHERE rm.user.id = :userId AND rm.room.id = :roomId")
     Optional<RoomMemberEntity> findByUserIdAndRoom_IdWithUser(
             @Param("userId") UUID userId,

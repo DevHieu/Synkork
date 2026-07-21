@@ -8,6 +8,7 @@ import com.synkork.backend.modules.admin.auditLog.dtos.BuildLog;
 import com.synkork.backend.modules.admin.auditLog.enums.LogActionEnum;
 import com.synkork.backend.modules.admin.auditLog.enums.LogEntityTypeEnum;
 import com.synkork.backend.modules.admin.users.dtos.AdminUserResponse;
+import com.synkork.backend.modules.admin.users.dtos.AdminUserRoomResponse;
 import com.synkork.backend.modules.admin.users.dtos.CreateUserRequest;
 import com.synkork.backend.modules.admin.users.dtos.DeleteUserRequest;
 import com.synkork.backend.modules.admin.users.dtos.UpdateUserRequest;
@@ -96,6 +97,18 @@ public class AdminUserService {
 
     public AdminUserResponse getUserById(UUID id) {
         return AdminUserResponse.from(this.findUserById(id));
+    }
+
+    public List<AdminUserRoomResponse> getUserRooms(UUID id) {
+        this.findUserById(id);
+
+        return roomMemberRepository.findByUserIdWithRoom(id)
+                .stream()
+                .map(member -> AdminUserRoomResponse.from(
+                        member,
+                        roomMemberRepository.countByRoom_Id(member.getRoom().getId())
+                ))
+                .toList();
     }
 
     public AdminUserResponse createUser(CreateUserRequest req) {

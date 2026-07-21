@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Activity } from '@lucide/vue'
 import { VisAxis, VisGroupedBar, VisXYContainer } from '@unovis/vue'
-import { computed, ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { computed, ref, watch } from 'vue'
 
 import type { ChartConfig } from '@/components/ui/chart'
 
@@ -21,19 +22,22 @@ import {
 
 import type {
   ReportChartLegendRow,
-  ReportStats,
+  ReportChartResponse,
   ReportTrendPoint,
 } from '../../types/report-overview.types'
 
+import { dashboardService } from '../../services/dashboardService'
+import { useDashboardFilterStore } from '../../stores/dashboard-filter'
 import {
   REPORT_CHART_COLORS,
 } from '../../types/report-overview.constants'
 
-const props = defineProps<{
-  stats: ReportStats | null
-}>()
+const MIN_Y_MAX = 5 // tối thiểu của trục Y biểu đồ
 
-const trendData = ref<ReportTrendPoint[]>([])
+const dashboardFilterStore = useDashboardFilterStore()
+const { dateRange, dateRangeParams } = storeToRefs(dashboardFilterStore)
+
+const trendData = ref<ReportChartResponse[]>([])
 const isLoading = ref(false)
 
 const chartConfig = {
@@ -52,10 +56,49 @@ const svgDefs = `
 </linearGradient>
 `
 
-const typeRows = computed<ReportChartLegendRow[]>(() => [
-  { name: 'Người dùng', value: props.stats?.userReports ?? 0, color: REPORT_CHART_COLORS.user },
-  { name: 'Phòng', value: props.stats?.roomReports ?? 0, color: REPORT_CHART_COLORS.room },
-])
+const chartPoint = computed<ReportTrendPoint[]>(() =>
+  trendData.value.map(item => ({
+    date: new Date(item.date),
+    user: item.userReports,
+    room: item.roomReports,
+  })),
+)
+
+const yDomain = computed<[number, number]>(() => {
+  const maxValue = chartPoint.value.reduce(
+    (max, d) => Math.max(max, d.user ?? 0, d.room ?? 0),
+    0,
+  )
+
+  return [0, Math.max(maxValue, MIN_Y_MAX)]
+})
+
+const typeRows = computed<ReportChartLegendRow[]>(() => {
+  const totalUser = chartPoint.value.reduce((sum, d) => sum + (d.user ?? 0), 0)
+  const totalRoom = chartPoint.value.reduce((sum, d) => sum + (d.room ?? 0), 0)
+
+  return [
+    { name: 'Người dùng', value: totalUser, color: REPORT_CHART_COLORS.user },
+    { name: 'Phòng', value: totalRoom, color: REPORT_CHART_COLORS.room },
+  ]
+})
+
+async function fetchData() {
+  isLoading.value = true
+  try {
+    const data = await dashboardService.getReportChartData(dateRangeParams.value)
+    trendData.value = Array.isArray(data) ? data : []
+  }
+  catch (err) {
+    console.error('Failed to load report reasons:', err)
+    trendData.value = []
+  }
+  finally {
+    isLoading.value = false
+  }
+}
+
+watch(dateRange, fetchData, { immediate: true })
 </script>
 
 <template>
@@ -73,8 +116,8 @@ const typeRows = computed<ReportChartLegendRow[]>(() => [
       <div v-if="isLoading" class="flex h-[260px] items-center justify-center text-sm text-muted-foreground">
         Đang tải...
       </div>
-      <ChartContainer v-else-if="trendData.length" :config="chartConfig" class="h-[260px] w-full" :cursor="false">
-        <VisXYContainer :data="trendData" :svg-defs="svgDefs" :x-domain="[-0.5, trendData.length - 0.5]">
+      <ChartContainer v-else-if="chartPoint.length" :config="chartConfig" class="h-[260px] w-full" :cursor="false">
+        <VisXYContainer :data="chartPoint" :svg-defs="svgDefs" :x-domain="[-0.5, chartPoint.length - 0.5]" :y-domain="yDomain">
           <VisGroupedBar
             :x="(_: ReportTrendPoint, i: number) => i"
             :y="[(d: ReportTrendPoint) => d.user, (d: ReportTrendPoint) => d.room]"
@@ -91,7 +134,7 @@ const typeRows = computed<ReportChartLegendRow[]>(() => [
             :tick-line="false"
             :domain-line="false"
             :grid-line="false"
-            :tick-format="(i: number) => trendData[i] ? new Date(trendData[i].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''"
+            :tick-format="(i: number) => chartPoint[i] ? new Date(chartPoint[i].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''"
           />
 
           <VisAxis type="y" :tick-line="false" :domain-line="false" :grid-line="true" />

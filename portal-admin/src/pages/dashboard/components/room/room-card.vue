@@ -33,10 +33,16 @@ const { dateRangeParams } = storeToRefs(dashboardFilterStore)
 const rawData = ref<RoomStatusCount[]>([])
 const isLoading = ref(false)
 
+const ROOM_STATUS_COLORS = {
+  OPEN: '#14b8a6',
+  LOCKED: '#f97316',
+  PENDING_REMOVAL: '#eab308',
+} as const
+
 const statusConfig: Array<Omit<StatusRow, 'value'>> = [
-  { name: 'Đang mở', status: 'OPEN', color: 'var(--chart-1)' },
-  { name: 'Đã khóa', status: 'LOCKED', color: 'var(--chart-2)' },
-  { name: 'Chờ xóa', status: 'PENDING_REMOVAL', color: 'var(--chart-3)' },
+  { name: 'Đang mở', status: 'OPEN', color: ROOM_STATUS_COLORS.OPEN },
+  { name: 'Đã khóa', status: 'LOCKED', color: ROOM_STATUS_COLORS.LOCKED },
+  { name: 'Chờ xóa', status: 'PENDING_REMOVAL', color: ROOM_STATUS_COLORS.PENDING_REMOVAL },
 ]
 
 const statusRows = computed<StatusRow[]>(() =>

@@ -39,6 +39,11 @@ const isLoadingChart = ref(false)
 const statsData = ref<SubscriptionStats | null>(null)
 const chartData = ref<SubscriptionChart | null>(null)
 
+const SUBSCRIPTION_PLAN_COLORS = {
+  TEAM: '#06b6d4',
+  BUSINESS: '#a855f7',
+} as const
+
 async function fetchSubscriptionStats() {
   isLoadingStats.value = true
   try {
@@ -75,8 +80,8 @@ function fetchSubscriptionData() {
 }
 
 const planDistributionRows = computed<PlanDistributionRow[]>(() => [
-  { name: 'TEAM', value: chartData.value?.teamSubscriptions ?? 0, color: 'var(--chart-2)' },
-  { name: 'BUSINESS', value: chartData.value?.businessSubscriptions ?? 0, color: 'var(--chart-3)' },
+  { name: 'TEAM', value: chartData.value?.teamSubscriptions ?? 0, color: SUBSCRIPTION_PLAN_COLORS.TEAM },
+  { name: 'BUSINESS', value: chartData.value?.businessSubscriptions ?? 0, color: SUBSCRIPTION_PLAN_COLORS.BUSINESS },
 ])
 
 const totalPaidPlans = computed(() =>

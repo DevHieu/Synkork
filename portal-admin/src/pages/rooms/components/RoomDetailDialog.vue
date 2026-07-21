@@ -303,7 +303,7 @@ function showReportDetail(userEmail: string) {
                 </p>
                 <div class="h-8 text-[13px] font-medium flex items-center justify-between">
                   {{ room.warning }}
-                  <UiButton size="sm" variant="outline" @click="showReportDetail(room.name)">
+                  <UiButton v-if="room.warning > 0" size="sm" variant="outline" @click="showReportDetail(room.name)">
                     Chi tiết
                   </UiButton>
                 </div>

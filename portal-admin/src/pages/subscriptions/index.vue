@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { BasicPage } from '@/components/global-layout'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -8,13 +9,36 @@ import SubscriptionOrdersTab from './tabs/subscription-orders-tab.vue'
 import SubscriptionPricingTab from './tabs/subscription-pricing-tab.vue'
 import UserSubscriptionsTab from './tabs/user-subscriptions-tab.vue'
 
+const route = useRoute()
 const activeTab = ref('user-subscriptions')
 const invoiceKeyword = ref('')
+const userSubscriptionKeyword = ref('')
+
+const validTabs = ['user-subscriptions', 'orders', 'pricing']
 
 function handleViewInvoice(invoiceId: string) {
   invoiceKeyword.value = invoiceId
   activeTab.value = 'orders'
 }
+
+watch(
+  [() => route.query.tab, () => route.query.keyword],
+  ([tab, keyword]) => {
+    const nextTab = typeof tab === 'string' && validTabs.includes(tab)
+      ? tab
+      : activeTab.value
+    const nextKeyword = typeof keyword === 'string' ? keyword : ''
+
+    activeTab.value = nextTab
+
+    if (nextTab === 'user-subscriptions')
+      userSubscriptionKeyword.value = nextKeyword
+
+    if (nextTab === 'orders')
+      invoiceKeyword.value = nextKeyword
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -41,7 +65,7 @@ function handleViewInvoice(invoiceId: string) {
       </TabsContent>
 
       <TabsContent value="user-subscriptions">
-        <UserSubscriptionsTab @view-invoice="handleViewInvoice" />
+        <UserSubscriptionsTab :keyword="userSubscriptionKeyword" @view-invoice="handleViewInvoice" />
       </TabsContent>
 
       <TabsContent value="pricing">

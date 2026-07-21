@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { Eye, LoaderIcon, Lock, PlusIcon, RefreshCwIcon, Search, Unlock, X } from '@lucide/vue'
+import { Eye, LoaderIcon, Lock, PlusIcon, Search, Unlock, X } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
 import { computed, h, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -183,6 +183,14 @@ watch(
   },
 )
 
+watch(() => route.query.keyword, (value) => {
+  const nextKeyword = typeof value === 'string' ? value : ''
+  if (nextKeyword && nextKeyword !== searchKeyword.value) {
+    searchKeyword.value = nextKeyword
+    currentPage.value = 1
+  }
+})
+
 watch(currentPage, () => {
   fetchRooms()
 })
@@ -268,17 +276,6 @@ const columns = computed<TableColumn<any>[]>(() => [
     description="Quản lý tất cả room trong hệ thống"
     sticky
   >
-    <!-- <template #actions>
-      <div class="flex items-center gap-2">
-        <UiButton variant="outline" @click="fetchRooms">
-          <RefreshCwIcon class="mr-2 h-4 w-4" />
-          Refresh
-        </UiButton>
-
-      </div>
-    </template> -->
-
-    <!-- filters -->
     <div class="mb-4 flex flex-wrap items-center gap-3">
       <div class="relative w-full max-w-sm">
         <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />

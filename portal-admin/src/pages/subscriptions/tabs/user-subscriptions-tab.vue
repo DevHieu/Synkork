@@ -19,6 +19,10 @@ import type { SubscriptionSearchParams, UserSubscription } from '../types/invoic
 
 import { subscriptionService } from '../service/subscriptionService'
 
+const props = defineProps<{
+  keyword?: string
+}>()
+
 const emit = defineEmits<{
   viewInvoice: [invoiceId: string]
 }>()
@@ -184,7 +188,22 @@ watch(currentPage, () => {
   fetchSubscriptions()
 })
 
-onMounted(fetchSubscriptions)
+watch(() => props.keyword, (keyword) => {
+  if (!keyword || keyword === searchKeyword.value)
+    return
+
+  searchKeyword.value = keyword
+  currentPage.value = 1
+})
+
+onMounted(() => {
+  if (props.keyword) {
+    searchKeyword.value = props.keyword
+    return
+  }
+
+  fetchSubscriptions()
+})
 
 const columns = computed<TableColumn<UserSubscription>[]>(() => [
   {

@@ -1,5 +1,3 @@
-import type { TimeRangeType } from '@/types/Date'
-
 export interface ReportStats {
   totalReports: number
   pendingReports: number
@@ -39,8 +37,3 @@ export interface ReportChartLegendRow {
 }
 
 export type ReportReasonScope = 'all' | 'user' | 'room'
-
-export interface ReportTimeRangeOption {
-  value: TimeRangeType
-  label: string
-}

@@ -50,16 +50,28 @@ const chart = ref<UserChart | null>(null)
 const isLoadingStats = ref(false)
 const isLoadingChart = ref(false)
 
+const USER_STATUS_COLORS = {
+  ACTIVE: '#10b981',
+  INACTIVE: '#94a3b8',
+  BANNED: '#f43f5e',
+} as const
+
+const USER_PLAN_COLORS = {
+  FREE: '#64748b',
+  TEAM: '#3b82f6',
+  BUSINESS: '#8b5cf6',
+} as const
+
 const statusConfig: Array<{ name: string, status: UserStatusCount['status'], color: string }> = [
-  { name: 'Active', status: 'ACTIVE', color: 'var(--chart-1)' },
-  { name: 'Inactive', status: 'INACTIVE', color: 'var(--chart-2)' },
-  { name: 'Banned', status: 'BANNED', color: 'var(--chart-3)' },
+  { name: 'Active', status: 'ACTIVE', color: USER_STATUS_COLORS.ACTIVE },
+  { name: 'Inactive', status: 'INACTIVE', color: USER_STATUS_COLORS.INACTIVE },
+  { name: 'Banned', status: 'BANNED', color: USER_STATUS_COLORS.BANNED },
 ]
 
 const planConfig: Array<{ name: string, plan: UserPlanCount['plan'], color: string }> = [
-  { name: 'Free', plan: 'FREE', color: 'var(--chart-1)' },
-  { name: 'Team', plan: 'TEAM', color: 'var(--chart-2)' },
-  { name: 'Business', plan: 'BUSINESS', color: 'var(--chart-3)' },
+  { name: 'Free', plan: 'FREE', color: USER_PLAN_COLORS.FREE },
+  { name: 'Team', plan: 'TEAM', color: USER_PLAN_COLORS.TEAM },
+  { name: 'Business', plan: 'BUSINESS', color: USER_PLAN_COLORS.BUSINESS },
 ]
 
 const statusRows = computed<ChartRow[]>(() =>

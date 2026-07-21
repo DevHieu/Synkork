@@ -32,6 +32,7 @@ import type {
 
 import { managerService } from '../services/managerService'
 import ManagerResource from './manager-resource.vue'
+import ManagerDetailDialog from './ManagerDetailDialog.vue'
 
 const loading = ref(false)
 const accounts = ref<ManagerAccount[]>([])
@@ -47,9 +48,11 @@ const dateRange = ref(defaultDateRange())
 const debouncedKeyword = refDebounced(keyword, 400)
 
 const editTarget = ref<ManagerAccount>()
+const detailTarget = ref<ManagerAccount | null>(null)
 const lockTarget = ref<ManagerAccount>()
 const lockReason = ref('')
 const showResourceModal = ref(false)
+const showDetailDialog = ref(false)
 const showLockModal = ref(false)
 
 const statusOptions = [
@@ -110,8 +113,8 @@ function openCreateModal() {
 }
 
 function openEditModal(account: ManagerAccount) {
-  editTarget.value = account
-  showResourceModal.value = true
+  detailTarget.value = account
+  showDetailDialog.value = true
 }
 
 function openLockModal(account: ManagerAccount) {
@@ -343,6 +346,12 @@ function clearFilters() {
       />
     </ModalContent>
   </Modal>
+
+  <ManagerDetailDialog
+    v-model:open="showDetailDialog"
+    :account="detailTarget"
+    @saved="fetchData"
+  />
 
   <ConfirmDialog
     v-model:open="showLockModal"

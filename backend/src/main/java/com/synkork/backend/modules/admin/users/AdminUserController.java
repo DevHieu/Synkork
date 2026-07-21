@@ -39,6 +39,11 @@ public class AdminUserController {
         return ApiResponse.success("Get user successfully", adminUserService.getUserById(id));
     }
 
+    @GetMapping("/{id}/rooms")
+    public ApiResponse<List<AdminUserRoomResponse>> getUserRooms(@PathVariable UUID id) {
+        return ApiResponse.success("Get user rooms successfully", adminUserService.getUserRooms(id));
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<AdminUserResponse> createUser(
