@@ -43,8 +43,8 @@ public class ChatEventLlmService {
         "đám cưới", "offline", "online", "seminar", "workshop",
         "mai", "mốt", "hôm nay", "ngày mai",
         "thứ", "tuần", "tháng", "năm",
-        "cuối tuần", "đầu tuần",
-        "lúc", "vào", "ngày", "giờ", "chiều", "sáng", "tối",
+        "cuối tuần", "đầu tuần","tuần sau","tuần tới",
+        "lúc", "vào", "ngày", "giờ", "chiều", "sáng", "tối","sau","tới",
 
         // English
         "event", "appointment", "schedule", "calendar",
@@ -126,7 +126,7 @@ public class ChatEventLlmService {
         this.openRouterClient = openRouterClient;
     }
 
-    // ── Public API ────────────────────────────────────────────────────────────
+    // Public API
 
     public String detectSuggestionFromMessage(String messageContent) {
         if (!openRouterClient.isConfigured()) return "{}";
@@ -201,7 +201,7 @@ public class ChatEventLlmService {
         throw new IllegalStateException("No fallback model available");
     }
 
-    // ── Pre-filter ────────────────────────────────────────────────────────────
+    //  Pre-filter
 
     /**
      * Trả về {@code false} nếu tin nhắn không đáng gửi lên

@@ -83,7 +83,7 @@ const formattedContent = computed(() => {
 
   text += `2. CÁC Ý CHÍNH QUAN TRỌNG:\n`;
   if (summaryPart.keyPoints.length > 0) {
-    summaryPart.keyPoints.forEach((point) => {
+    (summaryPart.keyPoints as string[]).forEach((point) => {
       text += ` - ${point}\n`;
     });
   } else {
@@ -93,7 +93,7 @@ const formattedContent = computed(() => {
 
   text += `3. VIỆC CẦN LÀM (ACTION ITEMS):\n`;
   if (summaryPart.actionItems.length > 0) {
-    summaryPart.actionItems.forEach((item) => {
+    (summaryPart.actionItems as string[]).forEach((item) => {
       text += ` - [ ] ${item}\n`;
     });
   } else {
@@ -152,7 +152,8 @@ const handleDownload = () => {
 
 <template>
   <Dialog :open="open" @update:open="handleClose">
-    <DialogContent :show-close-button="false" class="summary-modal flex flex-col p-0 overflow-hidden max-h-[85vh] sm:max-w-[640px] w-[95vw]">
+    <DialogContent :show-close-button="false"
+      class="summary-modal flex flex-col p-0 overflow-hidden max-h-[85vh] sm:max-w-[640px] w-[95vw]">
 
       <!-- HEADER — sticky top -->
       <DialogHeader class="modal-header">
@@ -189,20 +190,13 @@ const handleDownload = () => {
           </section>
 
           <!-- ② Điểm chính -->
-          <section
-            v-if="parsedSummary.keyPoints.length > 0"
-            class="content-section"
-          >
+          <section v-if="parsedSummary.keyPoints.length > 0" class="content-section">
             <h3 class="section-label">
               <CheckSquare class="h-3.5 w-3.5" />
               Điểm chính
             </h3>
             <ul class="item-list">
-              <li
-                v-for="(point, index) in parsedSummary.keyPoints"
-                :key="index"
-                class="item-row"
-              >
+              <li v-for="(point, index) in parsedSummary.keyPoints" :key="index" class="item-row">
                 <span class="item-dot" aria-hidden="true" />
                 <span>{{ point }}</span>
               </li>
@@ -210,20 +204,13 @@ const handleDownload = () => {
           </section>
 
           <!-- ③ Việc cần làm -->
-          <section
-            v-if="parsedSummary.actionItems.length > 0"
-            class="content-section"
-          >
+          <section v-if="parsedSummary.actionItems.length > 0" class="content-section">
             <h3 class="section-label">
               <ListTodo class="h-3.5 w-3.5" />
               Việc cần làm
             </h3>
             <ul class="item-list">
-              <li
-                v-for="(item, index) in parsedSummary.actionItems"
-                :key="index"
-                class="item-row"
-              >
+              <li v-for="(item, index) in parsedSummary.actionItems" :key="index" class="item-row">
                 <span class="action-checkbox" aria-hidden="true" />
                 <span>{{ item }}</span>
               </li>
@@ -232,19 +219,12 @@ const handleDownload = () => {
 
           <!-- Bản ghi hội thoại (accordion) -->
           <section class="content-section">
-            <button
-              class="transcript-toggle"
-              :aria-expanded="transcriptOpen"
-              @click="transcriptOpen = !transcriptOpen"
-            >
+            <button class="transcript-toggle" :aria-expanded="transcriptOpen" @click="transcriptOpen = !transcriptOpen">
               <span class="section-label no-margin">
                 <FileText class="h-3.5 w-3.5" />
                 Bản ghi cuộc trò chuyện
               </span>
-              <ChevronDown
-                class="h-3.5 w-3.5 toggle-chevron"
-                :class="{ 'chevron-open': transcriptOpen }"
-              />
+              <ChevronDown class="h-3.5 w-3.5 toggle-chevron" :class="{ 'chevron-open': transcriptOpen }" />
             </button>
             <div v-if="transcriptOpen" class="transcript-body">
               {{ transcript || "Không tìm thấy dữ liệu hội thoại." }}
@@ -260,22 +240,11 @@ const handleDownload = () => {
           Đóng
         </Button>
         <div class="footer-actions">
-          <Button
-            variant="outline"
-            size="sm"
-            class="btn-copy"
-            :disabled="isLoading || !transcript"
-            @click="handleCopy"
-          >
+          <Button variant="outline" size="sm" class="btn-copy" :disabled="isLoading || !transcript" @click="handleCopy">
             <component :is="isCopied ? Check : Copy" class="h-3.5 w-3.5" />
             {{ isCopied ? "Đã sao chép" : "Sao chép" }}
           </Button>
-          <Button
-            size="sm"
-            class="btn-download"
-            :disabled="isLoading || !transcript"
-            @click="handleDownload"
-          >
+          <Button size="sm" class="btn-download" :disabled="isLoading || !transcript" @click="handleDownload">
             <Download class="h-3.5 w-3.5" />
             Tải xuống
           </Button>
@@ -356,8 +325,13 @@ const handleDownload = () => {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-text {
@@ -530,4 +504,3 @@ const handleDownload = () => {
   opacity: 0.88;
 }
 </style>
-

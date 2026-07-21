@@ -6,7 +6,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
+  Link as LinkIcon
 } from "lucide-vue-next";
+import { ref } from "vue";
+import { useRoute } from "vue-router";
+import axiosClient from "@/lib/axiosClient";
 
 const props = defineProps<{
   currentSpaceName?: string;
@@ -23,6 +27,25 @@ const emit = defineEmits<{
 
   (e: "openCreateDialog"): void;
 }>();
+
+const isConnecting = ref(false);
+const route = useRoute();
+
+const connectGoogleCalendar = async () => {
+  try {
+    isConnecting.value = true;
+    const response = await axiosClient.get('/api/integrations/google-calendar/authorize-url', {
+      params: { redirectPath: route.path }
+    });
+    if (response.data && response.data.authorizeUrl) {
+      window.location.href = response.data.authorizeUrl;
+    }
+  } catch (error) {
+    console.error("Failed to get Google Calendar auth URL", error);
+  } finally {
+    isConnecting.value = false;
+  }
+};
 
 // Toolbar chỉ phát sự kiện điều hướng, toàn bộ logic nằm ở layout cha.
 </script>
@@ -93,6 +116,16 @@ const emit = defineEmits<{
             Năm
           </button>
         </div>
+
+        <!-- Connect Google Calendar Button -->
+        <button
+          @click="connectGoogleCalendar"
+          :disabled="isConnecting"
+          class="flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-3 font-sans text-xs font-semibold text-foreground shadow-sm transition-all hover:bg-accent"
+        >
+          <LinkIcon :size="12" />
+          {{ isConnecting ? 'Đang kết nối...' : 'Kết nối Google Calendar' }}
+        </button>
 
         <!-- Add Event Button -->
         <button

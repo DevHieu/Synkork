@@ -111,40 +111,50 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     isMuted.value = mutedStore.value;
     isDeafen.value = deafenStore.value;
 
-    const token = await getZegoToken(userID);
+    try {
+      const token = await getZegoToken(userID);
 
-    await zego.initEngine();
-    await zegoState.zg!.checkSystemRequirements();
-    await zego.registerCallback();
+      await zego.initEngine();
+      await zegoState.zg!.checkSystemRequirements();
+      await zego.registerCallback();
 
-    const result = await zegoState.zg!.loginRoom(
-      spaceId,
-      token,
-      { userID, userName },
-      { userUpdate: true },
-    );
+      const result = await zegoState.zg!.loginRoom(
+        spaceId,
+        token,
+        { userID, userName },
+        { userUpdate: true },
+      );
 
-    if (result) {
-      currentSpaceId.value = spaceId;
-      isInRoom.value = true;
+      if (result) {
+        currentSpaceId.value = spaceId;
+        isInRoom.value = true;
+        isJoining.value = false;
+
+        router.push(
+          `/rooms/voice/${router.currentRoute.value.params.roomId}/${spaceId}`,
+        );
+
+        // Add bản thân vào trong list participant
+        participants.value.set(userID, {
+          userID,
+          userName,
+          videoOn: false,
+          micOn: micOn.value,
+          audioOn: true,
+          screenOn: false,
+          isLocal: true,
+          muted: isMuted.value,
+          deafen: isDeafen.value,
+        });
+
+        await zego.local.publishAudioStream();
+        zego.utils.playNotificationSound("join");
+        zego.media.requestMediaStates(spaceId);
+      }
+    } catch (error) {
+      console.error("[Room] Error joining room:", error);
+    } finally {
       isJoining.value = false;
-
-      // Add bản thân vào trong list participant
-      participants.value.set(userID, {
-        userID,
-        userName,
-        videoOn: false,
-        micOn: micOn.value,
-        audioOn: true,
-        screenOn: false,
-        isLocal: true,
-        muted: isMuted.value,
-        deafen: isDeafen.value,
-      });
-
-      await zego.local.publishAudioStream();
-      zego.utils.playNotificationSound("join");
-      zego.media.requestMediaStates(spaceId);
     }
   };
 

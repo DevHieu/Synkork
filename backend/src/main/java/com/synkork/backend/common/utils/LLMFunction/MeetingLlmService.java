@@ -20,8 +20,7 @@ public class MeetingLlmService {
 
     private static final Logger log = LoggerFactory.getLogger(MeetingLlmService.class);
 
-    private static final String[] SUPPORTED_AUDIO_FORMATS = {"mp3", "m4a", "webm", "ogg", "wav"};
-    private static final String   DEFAULT_AUDIO_FORMAT    = "wav";
+
 
     private final OpenRouterClient openRouterClient;
 
@@ -37,13 +36,38 @@ public class MeetingLlmService {
     // ── Public API ────────────────────────────────────────────────────────────
 
     public String transcribeAudio(MultipartFile audioFile) throws Exception {
+        if (!openRouterClient.isConfigured()) {
+            throw new IllegalStateException("OPENROUTER_API_KEY chưa được cấu hình.");
+        }
+
         byte[] bytes = audioFile.getBytes();
+        String base64Audio = Base64.getEncoder().encodeToString(bytes);
+
+        // Mặc định ép sang 'mp3' để lừa JSON Schema Validation của OpenRouter 
+        // (OpenRouter chỉ cho phép 'wav' hoặc 'mp3' theo format của OpenAI).
+        // Model bên dưới (Gemini) thường tự nhận diện header file nên vẫn giải mã được WebM.
+        String format = "mp3";
+
+        List<Map<String, Object>> contentArray = List.of(
+                Map.of("type", "text", "text", LlmPrompts.MEETING_TRANSCRIPTION_INSTRUCTION),
+                Map.of("type", "input_audio", "input_audio", Map.of(
+                        "data", base64Audio,
+                        "format", format
+                ))
+        );
+
+        List<Map<String, Object>> messages = List.of(
+                Map.of("role", "user", "content", contentArray)
+        );
+
+        log.info("[MeetingLlmService] Đang gọi OpenRouter để bóc băng ghi âm (model: {})", LlmPrompts.MODEL_TRANSCRIPTION);
+        
         return openRouterClient.chatCompletion(
                 LlmPrompts.REFERER_DEFAULT,
                 LlmPrompts.APP_TITLE,
                 LlmPrompts.MODEL_TRANSCRIPTION,
-                List.of(buildTranscriptionMessage(audioFile, bytes)),
-                false
+                messages,
+                false // không bắt buộc JSON
         );
     }
 
@@ -78,32 +102,4 @@ public class MeetingLlmService {
         return "{}";
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    /**
-     * OpenRouter yêu cầu một user message duy nhất gồm phần text và phần audio.
-     */
-    private Map<String, Object> buildTranscriptionMessage(MultipartFile audioFile, byte[] bytes) {
-        return Map.of(
-                "role", "user",
-                "content", List.of(
-                        Map.of("type", "text",
-                               "text", LlmPrompts.MEETING_TRANSCRIPTION_INSTRUCTION),
-                        Map.of("type", "input_audio",
-                               "input_audio", Map.of(
-                                       "data", Base64.getEncoder().encodeToString(bytes),
-                                       "format", resolveAudioFormat(audioFile.getOriginalFilename())))
-                )
-        );
-    }
-
-    private String resolveAudioFormat(String fileName) {
-        if (fileName != null && fileName.contains(".")) {
-            String ext = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
-            for (String supported : SUPPORTED_AUDIO_FORMATS) {
-                if (supported.equals(ext)) return ext;
-            }
-        }
-        return DEFAULT_AUDIO_FORMAT;
-    }
 }

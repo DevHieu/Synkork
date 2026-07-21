@@ -29,5 +29,7 @@ public interface CalendarEventRepository extends JpaRepository<CalendarEventEnti
     @EntityGraph(attributePaths = {"space", "createdBy", "callRoomSpace", "attendees", "attendees.user"})
     List<CalendarEventEntity> findBySpaceIdAndEventDate(UUID spaceId, LocalDate date);
 
+    List<CalendarEventEntity> findByCreatedByIdAndGoogleEventIdIsNull(UUID createdById);
+
     void deleteBySpaceId(UUID spaceId);
 }
