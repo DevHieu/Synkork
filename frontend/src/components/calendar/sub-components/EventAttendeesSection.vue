@@ -32,7 +32,7 @@ const userStore = useUserStore();
 const filteredMembers = computed(() => {
   const query = search.value.trim().toLowerCase();
   return props.roomMembers
-    // ponytail: exclude current user in 1 line
+
     .filter((member) => member.memberId && member.username !== userStore.user?.username)
     .filter((member) => {
       if (!query) return true;

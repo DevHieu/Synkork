@@ -21,14 +21,14 @@ import type { EventFormData } from "@/components/calendar/composables/useEventFo
 import { PlanLimitUtils } from "@/utils/PlanLimitUtils";
 import PremiumFeatureDialog from "@/components/dialog/PremiumFeatureDialog.vue";
 import { extractNewFiles, formatPayload } from "@/components/calendar/composables/calendarUtils";
-import { createEvent as apiCreateEvent, deleteEvent as apiDeleteEvent } from "@/services/calendarService";
+import { createEvent as apiCreateEvent, deleteEvent as apiDeleteEvent, checkConflicts as apiCheckConflicts, summarizeAttachment as apiSummarizeAttachment } from "@/services/calendarService";
 
 // Store state
 const spaceStore = useSpaceStore();
 const userStore = useUserStore();
 const calendarSuggestionStore = useSuggestionStore();
 const roomMemberStore = useRoomMemberStore();
-const { currentSpace, isPersonalSpace } = storeToRefs(spaceStore);
+const { currentSpace } = storeToRefs(spaceStore);
 const { user, userPlan } = storeToRefs(userStore);
 const { members } = storeToRefs(roomMemberStore);
 
@@ -37,27 +37,28 @@ const currentUserId = computed(() => (user.value as any)?.id || "");
 
 // Calendar logic
 const spaceIdRef = computed(() => currentSpace.value?.id);
-const {
-  viewMode,
-  currentDate,
-  selectedDate,
-  events,
-  loading,
-  headerTitle,
-  relativeTimeText,
-  goNext,
-  goPrev,
-  goToday,
-  selectDate,
-  setYearMonth,
-  createEvent,
-  updateEvent,
-  deleteEvent,
-  checkConflicts,
-  dayNamesLong,
-  isToday,
-  isSelected,
-} = useCalendar(spaceIdRef, currentUserId);
+  const {
+    viewMode,
+    currentDate,
+    selectedDate,
+    events,
+    loading,
+    headerTitle,
+    relativeTimeText,
+    goNext,
+    goPrev,
+    goToday,
+    selectDate,
+    setYearMonth,
+    createEvent,
+    updateEvent,
+    deleteEvent,
+    checkConflicts,
+    fetchEvents,
+    dayNamesLong,
+    isToday,
+    isSelected,
+  } = useCalendar(spaceIdRef, currentUserId);
 
 // Event modal state
 const showDialog = ref(false);
@@ -304,7 +305,7 @@ const persistEvent = async (payload: { isEditing: boolean; eventId?: string; dat
 
 // Submit lưu sự kiện
 const handleSaveEvent = async (data: EventFormData) => {
-  // ponytail: block event creation before API call if file too large
+
   const newFiles = extractNewFiles(data);
   const limit = PlanLimitUtils.maxFileSizeBytes(userPlan.value);
   if (newFiles.some(f => f.size > limit)) {
@@ -379,7 +380,7 @@ const deleteAllStep = ref(0);
 
 const showDeleteAllConfirmationStep = () => {
   const events = eventsToDeleteAll.value;
-  if (!events || events.length === 0) return;
+  if (!events || events.length === 0 || !events[0]) return;
   
   const rawDate = events[0].eventDate;
   const parts = rawDate.split("-");
@@ -449,17 +450,33 @@ const executeDeleteAllEvents = async () => {
 const eventToCopyToPersonal = ref<CalendarEvent | null>(null);
 
 // Mở confirm dialog
-const handleAddToPersonalCalendar = (eventToCopy: CalendarEvent) => {
+const handleAddToPersonalCalendar = async (eventToCopy: CalendarEvent) => {
   if (!user.value?.personalCalendarId) {
     showNotification("error", "LỖI", "Bạn chưa có không gian lịch cá nhân.");
     return;
   }
   showViewDialog.value = false;
   eventToCopyToPersonal.value = eventToCopy;
+
+
+  let conflicts: CalendarEvent[] = [];
+  try {
+    const res = await apiCheckConflicts(
+      user.value.personalCalendarId,
+      eventToCopy.eventDate,
+      eventToCopy.endDate || eventToCopy.eventDate,
+      eventToCopy.startTime,
+      eventToCopy.endTime
+    );
+    conflicts = res.data || [];
+  } catch (e) {
+    console.error(e);
+  }
+
   showNotification(
     "confirm",
-    "LƯU VÀO LỊCH CÁ NHÂN",
-    "Bạn có chắc chắn muốn lưu bản sao của sự kiện này vào lịch cá nhân không?",
+    conflicts.length > 0 ? "CẢNH BÁO TRÙNG LỊCH" : "LƯU VÀO LỊCH CÁ NHÂN",
+    conflicts.length > 0 ? buildConflictMessage(conflicts) : "Bạn có chắc chắn muốn lưu bản sao của sự kiện này vào lịch cá nhân không?",
     { confirmText: "LƯU NGAY", cancelText: "HỦY" }
   );
 };
@@ -494,6 +511,73 @@ const executeAddToPersonalCalendar = async () => {
     showNotification("error", "LỖI", err.response?.data || "CÓ LỖI XẢY RA KHI LƯU VÀO LỊCH CÁ NHÂN!");
   } finally {
     isSavingEvent.value = false;
+  }
+};
+
+// Xử lý tóm tắt tài liệu
+const handleSummarizeAttachment = async (attachment: any, event: CalendarEvent) => {
+  if (!event.id) return;
+  try {
+    showNotification("info", "ĐANG XỬ LÝ", "AI đang phân tích và tóm tắt tài liệu của bạn...");
+    const res = await apiSummarizeAttachment(event.id, attachment.id || "0");
+    
+    // Đảm bảo parse chuỗi thành object nếu cần
+    let data = res.data;
+    if (typeof data === "string") {
+      try {
+        data = JSON.parse(data);
+      } catch(e) {
+        // Bỏ qua nếu không phải JSON
+      }
+    }
+
+    // Nếu data là object (JSON từ AI)
+    let summaryHtml = "";
+    if (data && typeof data === "object") {
+      const iconTarget = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar inline mr-1 -mt-0.5"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>`;
+      const iconClock = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock inline mr-1 -mt-0.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+      const iconDoc = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text inline mr-1 -mt-0.5"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>`;
+      const iconCheck = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-square inline mr-1 -mt-0.5"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/></svg>`;
+
+      if (data.event_name) summaryHtml += `<div class="mb-2 flex items-start"><span class="shrink-0 text-primary mt-0.5 mr-1">${iconTarget}</span><div><strong>Tên sự kiện:</strong> ${data.event_name}</div></div>`;
+      if (data.time_location) summaryHtml += `<div class="mb-2 flex items-start"><span class="shrink-0 text-primary mt-0.5 mr-1">${iconClock}</span><div><strong>Thời gian & Địa điểm:</strong> ${data.time_location}</div></div>`;
+      if (data.summary) summaryHtml += `<div class="mb-3 flex items-start"><span class="shrink-0 text-primary mt-0.5 mr-1">${iconDoc}</span><div><strong>Tóm tắt:</strong> ${data.summary}</div></div>`;
+      
+      if (data.action_items && Array.isArray(data.action_items) && data.action_items.length > 0) {
+        summaryHtml += `<div class="mb-1 flex items-center"><span class="shrink-0 text-primary mr-1">${iconCheck}</span><strong>Công việc cần làm:</strong></div><ul class="list-disc pl-5 mb-2 ml-5">`;
+        data.action_items.forEach((item: any) => {
+          if (typeof item === "string") {
+            summaryHtml += `<li>${item}</li>`;
+          } else if (typeof item === "object" && item !== null) {
+            // Đề phòng AI thỉnh thoảng trả về object thay vì string (vd: { task: "...", assignee: "..." })
+            const text = Object.values(item).filter(v => typeof v === "string").join(" - ");
+            summaryHtml += `<li>${text || JSON.stringify(item)}</li>`;
+          }
+        });
+        summaryHtml += `</ul>`;
+      }
+      
+      if (!summaryHtml) {
+        summaryHtml = `<pre class="text-xs whitespace-pre-wrap">${JSON.stringify(data, null, 2)}</pre>`;
+      }
+    } else {
+      summaryHtml = data;
+    }
+
+    summaryHtml += `
+      <div class="mt-4 pt-3 border-t border-border/60 text-[18px] font-semibold text-destructive flex items-start italic leading-tight">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-triangle inline shrink-0 mr-1.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+        <span>Nội dung được tóm tắt bởi AI có thể không chính xác 100%, bạn nên kiểm tra lại tài liệu gốc nếu có thể.</span>
+      </div>
+    `;
+
+    // Gói toàn bộ nội dung trong thẻ div scroll, giới hạn chiều cao (max-h-[60vh]), kèm font-sans của dự án
+    const finalHtml = `<div class="font-sans text-sm text-foreground max-h-[60vh] overflow-y-auto calendar-scrollbar pr-2">${summaryHtml}</div>`;
+
+    showNotification("success", "TÓM TẮT BỞI AI", finalHtml);
+  } catch (error: any) {
+    console.error(error);
+    showNotification("error", "LỖI", error.response?.data || "CÓ LỖI KHI TÓM TẮT TÀI LIỆU!");
   }
 };
 
@@ -585,7 +669,8 @@ watch(
     </div>
 
     <CalendarEventViewDialog v-model:show="showViewDialog" :event="selectedEvent" :current-user-id="currentUserId"
-      @edit="openEditDialog" @delete="handleDeleteEvent" @add-to-personal-calendar="handleAddToPersonalCalendar" />
+      @edit="openEditDialog" @delete="handleDeleteEvent" @add-to-personal-calendar="handleAddToPersonalCalendar"
+      @summarize-attachment="handleSummarizeAttachment" />
 
     <CalendarEventDialog v-model:show="showDialog" :is-editing="isEditing" :initial-data="initialFormData" :room-members="members"
       :is-saving="isSavingEvent" :is-success="isSaveSuccess" @save="handleSaveEvent" />

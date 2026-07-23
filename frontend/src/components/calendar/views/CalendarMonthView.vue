@@ -57,7 +57,7 @@ const eventsByDate = computed(() => {
     map[d].push(event);
   }
   for (const key in map) {
-    map[key].sort((a, b) => a.startTime.localeCompare(b.startTime));
+    map[key]?.sort((a, b) => a.startTime.localeCompare(b.startTime));
   }
   return map;
 });
@@ -196,7 +196,7 @@ const handleDeleteAllForDate = () => {
             @click="handleDeleteAllForDate"
             class="text-[11px] font-semibold px-2.5 py-1.5 bg-destructive text-white rounded-sm hover:bg-destructive/90 transition-colors shadow-sm"
           >
-            Xóa ngày này
+            Xóa TOÀN BỘ SỰ KIỆN Ở ngày này
           </button>
         </div>
         <ScrollArea class="calendar-scroll-area min-h-0 flex-1">
@@ -263,7 +263,7 @@ const handleDeleteAllForDate = () => {
                         />
                         <AvatarFallback />
                       </Avatar>
-                      <span class="font-sans text-xs font-medium uppercase truncate max-w-[150px]">{{ getCreatorLabel(event) }}</span>
+                      <span class="font-sans text-xs font-medium uppercase truncate max-w-37.5">{{ getCreatorLabel(event) }}</span>
                     </div>
                   </div>
                 </div>

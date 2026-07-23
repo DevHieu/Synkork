@@ -153,7 +153,7 @@ const handleDownload = () => {
 <template>
   <Dialog :open="open" @update:open="handleClose">
     <DialogContent :show-close-button="false"
-      class="summary-modal flex flex-col p-0 overflow-hidden max-h-[85vh] sm:max-w-[640px] w-[95vw]">
+      class="summary-modal flex flex-col p-0 overflow-hidden max-h-[85vh] sm:max-w-160 w-[95vw]">
 
       <!-- HEADER — sticky top -->
       <DialogHeader class="modal-header">

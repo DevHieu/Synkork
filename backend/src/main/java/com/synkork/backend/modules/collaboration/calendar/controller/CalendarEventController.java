@@ -91,7 +91,7 @@ public class CalendarEventController {
         return ResponseEntity.ok().build();
     }
 
-    // ponytail: upload attachment directly to event
+
     @PostMapping("/{eventId}/attachments")
     public ResponseEntity<List<CalendarEventAttachmentDTO>> uploadAttachments(
             @PathVariable UUID eventId,
@@ -101,7 +101,15 @@ public class CalendarEventController {
         return ResponseEntity.ok(uploaded);
     }
 
-    // ponytail: delete attachment from event
+
+    @PostMapping("/{eventId}/attachments/{attachmentId}/summarize")
+    public ResponseEntity<String> summarizeAttachment(
+            @PathVariable UUID eventId,
+            @PathVariable UUID attachmentId) {
+        UUID userId = AuthUtils.getCurrentUserId();
+        return ResponseEntity.ok(calendarEventService.summarizeAttachment(eventId, attachmentId, userId));
+    }
+
     @DeleteMapping("/{eventId}/attachments/{attachmentId}")
     public ResponseEntity<Void> deleteAttachment(
             @PathVariable UUID eventId,

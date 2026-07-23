@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { AlertTriangle, Info, Trash2, XCircle } from "lucide-vue-next";
+import { AlertTriangle, Info, Trash2, XCircle, CheckCircle } from "lucide-vue-next";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-export type NotificationType = "info" | "warning" | "error" | "confirm" | "delete";
+export type NotificationType = "info" | "warning" | "error" | "confirm" | "delete" | "success";
 
 const props = withDefaults(
   defineProps<{
@@ -67,6 +67,8 @@ const iconComponent = computed(() => {
       return XCircle;
     case "delete":
       return Trash2;
+    case "success":
+      return CheckCircle;
     default:
       return Info;
   }
@@ -88,6 +90,13 @@ const themeClasses = computed(() => {
         border: "border-amber-500/20",
         bg: "bg-amber-500/5",
         btn: "bg-amber-500 text-amber-950 hover:bg-amber-500/90",
+      };
+    case "success":
+      return {
+        icon: "text-green-500",
+        border: "border-green-500/20",
+        bg: "bg-green-500/5",
+        btn: "bg-green-500 text-white hover:bg-green-600",
       };
     default:
       return {

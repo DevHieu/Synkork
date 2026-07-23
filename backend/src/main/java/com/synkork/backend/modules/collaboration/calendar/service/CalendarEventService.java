@@ -59,6 +59,9 @@ public class CalendarEventService {
     private RoomMemberRepository roomMemberRepository;
 
     @Autowired
+    private com.synkork.backend.common.utils.LLMFunction.TikaFileService tikaFileService;
+
+    @Autowired
     private SpaceService spaceService;
 
     @Autowired
@@ -273,7 +276,7 @@ public class CalendarEventService {
         CalendarEventDTO result = new CalendarEventDTO(savedEvent);
         broadcastCalendarUpdate(eventRequest.getSpaceId(), "CREATED", result);
         
-        // ponytail: immediate email notification for all attendees
+
         if (!savedEvent.getAttendees().isEmpty()) {
             calendarEmailService.sendEventNotificationEmail(savedEvent, savedEvent.getAttendees(), false);
         }
@@ -321,7 +324,7 @@ public class CalendarEventService {
         UserEntity actor = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng với ID: " + userId));
                 
-        // ponytail: track old attendees to find new ones
+
         List<RoomMemberEntity> oldAttendees = new ArrayList<>(calendarEvent.getAttendees());
                 
         syncEventRelations(calendarEvent, eventRequest, actor);
@@ -335,7 +338,7 @@ public class CalendarEventService {
         CalendarEventDTO result = new CalendarEventDTO(savedEvent);
         broadcastCalendarUpdate(result.getSpaceId(), "UPDATED", result);
         
-        // ponytail: immediate email notification for newly added attendees
+
         if (!addedAttendees.isEmpty()) {
             calendarEmailService.sendEventNotificationEmail(savedEvent, addedAttendees, false);
         }
@@ -415,10 +418,7 @@ public class CalendarEventService {
     }
 
     private Integer normalizeAttachmentSize(Integer size) {
-        if (size == null || size <= 0) {
-            return 0;
-        }
-        return size;
+        return (size == null || size <= 0) ? 0 : size;
     }
 
     private String normalizeAttachmentUrl(String fileUrl) {
@@ -471,7 +471,7 @@ public class CalendarEventService {
         broadcastCalendarUpdate(deletedDto.getSpaceId(), "DELETED", deletedDto);
     }
 
-    // ponytail: upload attachment directly to event
+
     @Transactional
     public List<CalendarEventAttachmentDTO> uploadAttachments(UUID eventId, List<MultipartFile> files, UUID userId) {
         CalendarEventEntity event = calendarEventRepository.findById(Objects.requireNonNull(eventId))
@@ -517,7 +517,20 @@ public class CalendarEventService {
         return resultList;
     }
 
-    // ponytail: delete attachment from event
+
+    @Transactional(readOnly = true)
+    public String summarizeAttachment(UUID eventId, UUID attachmentId, UUID userId) {
+        CalendarEventEntity event = calendarEventRepository.findById(Objects.requireNonNull(eventId))
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sự kiện"));
+                
+        EventAttachmentEntity target = event.getAttachments().stream()
+                .filter(a -> a.getId() != null && a.getId().equals(attachmentId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đính kèm"));
+                
+        return tikaFileService.convertClondinaryToString(target.getFileUrl());
+    }
+
     @Transactional
     public void deleteAttachment(UUID eventId, UUID attachmentId, UUID userId) {
         CalendarEventEntity event = calendarEventRepository.findById(Objects.requireNonNull(eventId))

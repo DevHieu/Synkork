@@ -20,7 +20,7 @@ public class CalendarNotificationScheduler {
     private final CalendarEventRepository calendarEventRepository;
     private final CalendarEmailService calendarEmailService;
 
-    // ponytail: exact minute match for reminders to avoid tracking state
+
     @Scheduled(cron = "0 * * * * *")
     @Transactional(readOnly = true)
     public void scanAndRemindUpcomingEvents() {

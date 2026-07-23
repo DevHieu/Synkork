@@ -56,7 +56,7 @@ public class CalendarEmailService {
 
         for (RoomMemberEntity member : recipients) {
             if (member.getUser() != null && member.getUser().getEmail() != null) {
-                // ponytail: call the generic method from the shared EmailService directly
+
                 emailService.send(member.getUser().getEmail(), subject, body);
             }
         }

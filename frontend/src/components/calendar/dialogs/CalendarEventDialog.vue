@@ -156,7 +156,7 @@ const handleSubmit = (): void => {
               <Label class="text-[10px] font-sans font-bold text-muted-foreground uppercase tracking-wider">Mô
                 tả</Label>
               <Textarea v-model="formData.description" placeholder="Mô tả chi tiết sự kiện..."
-                class="w-full min-h-[80px] rounded-md border-border/60 font-sans text-xs" />
+                class="w-full min-h-20 rounded-md border-border/60 font-sans text-xs" />
             </div>
 
             <!-- Link sự kiện -->

@@ -2,10 +2,7 @@ package com.synkork.backend.common.utils.LLMFunction;
 
 import java.util.List;
 
-public final class LlmPrompts {
-
-  private LlmPrompts() {}
-
+public class LlmPrompts {
   // App Meta
   public static final String APP_TITLE = "Synkork";
   public static final String REFERER_CHAT = "http://localhost:5173/rooms/chat";
