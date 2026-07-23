@@ -48,24 +48,27 @@ public class ManagerService {
 
     @Transactional
     public ManagerResponse createManager(CreateManagerRequest request) {
-        if (managerRepository.existsByEmail(request.getEmail())) {
+        String email = request.getEmail().trim();
+        if (managerRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("Email da duoc su dung");
         }
-        if (managerRepository.existsByUsername(request.getUsername())) {
+
+        String username = request.getUsername().trim();
+        if (managerRepository.existsByUsername(username)) {
             throw new IllegalArgumentException("Username da duoc su dung");
         }
 
-        String temporaryPassword = UUID.randomUUID().toString().substring(0, 8);
+        String temporaryPassword = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
         UserEntity account = new UserEntity();
         account.setDisplayName(request.getDisplayName().trim());
-        account.setUsername(request.getUsername().trim());
-        account.setEmail(request.getEmail().trim());
+        account.setUsername(username);
+        account.setEmail(email);
         account.setPassword(passwordEncoder.encode(temporaryPassword));
         account.setRole(parseManagedRole(request.getRole()));
         account.setStatus(parseRequiredStatus(request.getStatus()));
 
         UserEntity saved = managerRepository.save(account);
-        sendWelcomeEmail(saved, temporaryPassword);
+        sendManagerAccessEmail(saved, temporaryPassword);
         return ManagerResponse.from(saved);
     }
 
@@ -97,7 +100,7 @@ public class ManagerService {
         }
 
         if (request.getRole() != null) {
-            account.setRole(parseManagedRole(request.getRole()));
+            account.setRole(parseAssignableRole(request.getRole()));
         }
 
         if (request.getPlan() != null) {
@@ -158,9 +161,12 @@ public class ManagerService {
         }
     }
 
-    private RoleEnum parseRole(String role) {
-        if (role == null || role.isBlank()) return null;
-        return parseManagedRole(role);
+    private RoleEnum parseAssignableRole(String role) {
+        try {
+            return RoleEnum.valueOf(role.toUpperCase());
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Vai tro phai la user, manager hoac admin");
+        }
     }
 
     private UserStatusEnum parseStatus(String status) {
@@ -184,15 +190,20 @@ public class ManagerService {
         }
     }
 
-    private void sendWelcomeEmail(UserEntity account, String temporaryPassword) {
+    private void sendManagerAccessEmail(UserEntity account, String temporaryPassword) {
         String body = plainTextEmailBody(String.format(
-                "Xin chao %s,\n\nUsername: %s\nMat khau tam thoi: %s\n\n"
+                "Xin chao %s,\n\nTai khoan cua ban da duoc cap quyen %s tren Synkork.\n\n"
+                        + "Email dang nhap: %s\n"
+                        + "Username: %s\n"
+                        + "Mat khau tam thoi: %s\n\n"
                         + "Vui long doi mat khau sau khi dang nhap.",
                 account.getDisplayName(),
+                account.getRole(),
+                account.getEmail(),
                 account.getUsername(),
                 temporaryPassword
         ));
-        emailService.send(account.getEmail(), "[Synkork] Tai khoan quan tri da duoc tao", body);
+        emailService.send(account.getEmail(), "[Synkork] Thong tin dang nhap tai khoan quan tri", body);
     }
 
     private void sendManagerLockedEmail(UserEntity account, String reason) {

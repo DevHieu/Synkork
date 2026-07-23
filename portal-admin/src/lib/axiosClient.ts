@@ -37,6 +37,13 @@ axiosClient.interceptors.response.use(
       return Promise.reject(error)
     }
 
+    // 403: FORBIDDEN: Không có quyền -> cút ra đăng nhập luôn
+    if (error.response?.status === 403) {
+      removeCookie('accessToken')
+      removeCookie('refreshToken')
+      window.location.href = '/auth/sign-in'
+    }
+
     // Token mà không hợp lệ thì về trang đăng nhập
     if (
       error.response?.status === 401

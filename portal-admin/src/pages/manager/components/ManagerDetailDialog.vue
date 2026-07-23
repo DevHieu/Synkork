@@ -67,6 +67,7 @@ const statusOptions = [
 ] as const
 
 const roleOptions = [
+  { value: 'user', label: 'Người dùng' },
   { value: 'manager', label: 'Quản lý' },
   { value: 'admin', label: 'Quản trị viên' },
 ] as const
