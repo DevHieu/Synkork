@@ -18,6 +18,10 @@ import CalendarToolbar from "@/components/calendar/sub-components/CalendarToolba
 import CalendarNotificationDialog from "@/components/calendar/dialogs/CalendarNotificationDialog.vue";
 import type { NotificationType } from "@/components/calendar/dialogs/CalendarNotificationDialog.vue";
 import type { EventFormData } from "@/components/calendar/composables/useEventForm";
+import { PlanLimitUtils } from "@/utils/PlanLimitUtils";
+import PremiumFeatureDialog from "@/components/dialog/PremiumFeatureDialog.vue";
+import { extractNewFiles, formatPayload } from "@/components/calendar/composables/calendarUtils";
+import { createEvent as apiCreateEvent, deleteEvent as apiDeleteEvent } from "@/services/calendarService";
 
 // Store state
 const spaceStore = useSpaceStore();
@@ -25,7 +29,7 @@ const userStore = useUserStore();
 const calendarSuggestionStore = useSuggestionStore();
 const roomMemberStore = useRoomMemberStore();
 const { currentSpace, isPersonalSpace } = storeToRefs(spaceStore);
-const { user } = storeToRefs(userStore);
+const { user, userPlan } = storeToRefs(userStore);
 const { members } = storeToRefs(roomMemberStore);
 
 // Current user ID
@@ -58,6 +62,7 @@ const {
 // Event modal state
 const showDialog = ref(false);
 const showViewDialog = ref(false);
+const showPremiumDialog = ref(false);
 const isEditing = ref(false);
 const editingEventId = ref<string | undefined>(undefined);
 const selectedEvent = ref<CalendarEvent | null>(null);
@@ -215,13 +220,14 @@ const notificationState = ref({
   message: "",
   confirmText: "ĐỒNG Ý",
   cancelText: "HỦY",
+  requireInput: undefined as string | undefined,
 });
 
 const showNotification = (
   type: NotificationType,
   title: string,
   message: string,
-  options?: { confirmText?: string; cancelText?: string },
+  options?: { confirmText?: string; cancelText?: string, requireInput?: string },
 ) => {
   notificationState.value = {
     show: true,
@@ -230,6 +236,7 @@ const showNotification = (
     message,
     confirmText: options?.confirmText || "ĐỒNG Ý",
     cancelText: options?.cancelText || "HỦY",
+    requireInput: options?.requireInput,
   };
 };
 
@@ -297,6 +304,14 @@ const persistEvent = async (payload: { isEditing: boolean; eventId?: string; dat
 
 // Submit lưu sự kiện
 const handleSaveEvent = async (data: EventFormData) => {
+  // ponytail: block event creation before API call if file too large
+  const newFiles = extractNewFiles(data);
+  const limit = PlanLimitUtils.maxFileSizeBytes(userPlan.value);
+  if (newFiles.some(f => f.size > limit)) {
+    showPremiumDialog.value = true;
+    return; // block creation, keep modal open
+  }
+
   const payload = {
     isEditing: isEditing.value,
     eventId: editingEventId.value,
@@ -359,14 +374,154 @@ const executeDelete = async () => {
   }
 };
 
+const eventsToDeleteAll = ref<CalendarEvent[]>([]);
+const deleteAllStep = ref(0);
+
+const showDeleteAllConfirmationStep = () => {
+  const events = eventsToDeleteAll.value;
+  if (!events || events.length === 0) return;
+  
+  const rawDate = events[0].eventDate;
+  const parts = rawDate.split("-");
+  const displayDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : rawDate;
+
+  if (deleteAllStep.value === 1) {
+    showNotification(
+      "delete",
+      "CẢNH BÁO LẦN 1: XÁC NHẬN XÓA TOÀN BỘ",
+      `Bạn đang yêu cầu <b>xóa toàn bộ ${events.length} sự kiện</b> do bạn tạo trong ngày <b>${displayDate}</b>.<br/><br/>Hành động này có thể ảnh hưởng đến người khác nếu đó là sự kiện nhóm.`,
+      { 
+        confirmText: "Tiếp tục", 
+        cancelText: "Hủy" 
+      }
+    );
+  } else if (deleteAllStep.value === 2) {
+    showNotification(
+      "delete",
+      "CẢNH BÁO LẦN 2: CHẮC CHẮN MUỐN XÓA TOÀN BỘ",
+      `Bạn <b>chắc chắn muốn xóa toàn bộ</b> sự kiện trong ngày <b>${displayDate}</b> chứ?<br/><br/>Hành động này <b>tuyệt đối KHÔNG THỂ hoàn tác</b>.`,
+      { 
+        confirmText: "Chắc chắn", 
+        cancelText: "Quay Lại" 
+      }
+    );
+  } else if (deleteAllStep.value === 3) {
+    showNotification(
+      "delete",
+      `XÓA TOÀN BỘ SỰ KIỆN TRONG ${displayDate}`,
+      `Bước cuối cùng. Hãy nhập từ khóa để hoàn tất việc xóa <b>${events.length}</b> sự kiện.`,
+      { 
+        confirmText: "XÁC NHẬN XÓA", 
+        cancelText: "Hủy",
+        requireInput: "DELETE"
+      }
+    );
+  }
+};
+
+const requestDeleteAllEvents = (events: CalendarEvent[]) => {
+  if (events.length === 0) return;
+  eventsToDeleteAll.value = events;
+  deleteAllStep.value = 1;
+  showDeleteAllConfirmationStep();
+};
+
+const executeDeleteAllEvents = async () => {
+  isDeletingEvent.value = true;
+  try {
+    await Promise.all(
+      eventsToDeleteAll.value.map(e => apiDeleteEvent(e.id).catch(err => {
+        console.warn("Bỏ qua lỗi xóa sự kiện (có thể đã bị xóa trước đó):", e.id, err);
+      }))
+    );
+    notificationState.value.show = false;
+    await fetchEvents();
+  } catch (err) {
+    console.error(err);
+    notificationState.value.show = false;
+  } finally {
+    isDeletingEvent.value = false;
+    eventsToDeleteAll.value = [];
+    deleteAllStep.value = 0;
+  }
+};
+
+const eventToCopyToPersonal = ref<CalendarEvent | null>(null);
+
+// Mở confirm dialog
+const handleAddToPersonalCalendar = (eventToCopy: CalendarEvent) => {
+  if (!user.value?.personalCalendarId) {
+    showNotification("error", "LỖI", "Bạn chưa có không gian lịch cá nhân.");
+    return;
+  }
+  showViewDialog.value = false;
+  eventToCopyToPersonal.value = eventToCopy;
+  showNotification(
+    "confirm",
+    "LƯU VÀO LỊCH CÁ NHÂN",
+    "Bạn có chắc chắn muốn lưu bản sao của sự kiện này vào lịch cá nhân không?",
+    { confirmText: "LƯU NGAY", cancelText: "HỦY" }
+  );
+};
+
+// Thực thi call API
+const executeAddToPersonalCalendar = async () => {
+  if (!eventToCopyToPersonal.value || !user.value?.personalCalendarId) {
+    notificationState.value.show = false;
+    return;
+  }
+  isSavingEvent.value = true;
+  try {
+    const eventToCopy = eventToCopyToPersonal.value;
+    const payload = formatPayload({
+      title: eventToCopy.title,
+      description: eventToCopy.description,
+      eventDate: eventToCopy.eventDate,
+      endDate: eventToCopy.endDate || eventToCopy.eventDate,
+      startTime: eventToCopy.startTime,
+      endTime: eventToCopy.endTime,
+      recurrenceType: eventToCopy.recurrenceType || "NONE",
+      recurrenceEndDate: eventToCopy.recurrenceEndDate,
+      eventLink: eventToCopy.eventLink,
+      attachments: eventToCopy.attachments,
+    }, ref(user.value.personalCalendarId), currentUserId);
+
+    await apiCreateEvent(payload);
+    notificationState.value.show = false;
+    eventToCopyToPersonal.value = null;
+    showNotification("success", "THÀNH CÔNG", "Đã lưu sự kiện vào lịch cá nhân.");
+  } catch (err: any) {
+    showNotification("error", "LỖI", err.response?.data || "CÓ LỖI XẢY RA KHI LƯU VÀO LỊCH CÁ NHÂN!");
+  } finally {
+    isSavingEvent.value = false;
+  }
+};
+
 const handleNotificationConfirm = () => {
+  if (eventsToDeleteAll.value.length > 0) {
+    if (deleteAllStep.value === 1) {
+      deleteAllStep.value = 2;
+      showDeleteAllConfirmationStep();
+    } else if (deleteAllStep.value === 2) {
+      deleteAllStep.value = 3;
+      showDeleteAllConfirmationStep();
+    } else if (deleteAllStep.value === 3) {
+      executeDeleteAllEvents();
+    }
+    return;
+  }
+
   if (notificationState.value.type === 'delete') {
     executeDelete();
     return;
   }
 
-  if (notificationState.value.type === 'confirm' && pendingSavePayload.value) {
-    persistEvent(pendingSavePayload.value);
+  if (notificationState.value.type === 'confirm') {
+    if (pendingSavePayload.value) {
+      persistEvent(pendingSavePayload.value);
+    } else if (eventToCopyToPersonal.value) {
+      executeAddToPersonalCalendar();
+    }
     return;
   }
 
@@ -376,12 +531,16 @@ const handleNotificationConfirm = () => {
 const handleNotificationCancel = () => {
   if (notificationState.value.type === "confirm") {
     pendingSavePayload.value = null;
+    eventToCopyToPersonal.value = null;
   }
-
   if (notificationState.value.type === "delete") {
     eventToDelete.value = null;
   }
   
+  if (eventsToDeleteAll.value.length > 0) {
+    eventsToDeleteAll.value = [];
+    deleteAllStep.value = 0;
+  }
   notificationState.value.show = false;
 };
 
@@ -415,7 +574,7 @@ watch(
 
       <CalendarMonthView v-if="viewMode === 'month'" :current-date="currentDate" :selected-date="selectedDate"
         :events="events" :current-user-id="currentUserId" :day-names="dayNamesLong" :is-today="isToday"
-        :is-selected="isSelected" @select-date="selectDate" @view-event="openViewDialog" />
+        :is-selected="isSelected" @select-date="selectDate" @view-event="openViewDialog" @delete-all-events="requestDeleteAllEvents" />
 
       <CalendarWeekView v-if="viewMode === 'week'" :current-date="currentDate" :selected-date="selectedDate"
         :events="events" :day-names="dayNamesLong" :is-today="isToday" :is-selected="isSelected"
@@ -426,17 +585,22 @@ watch(
     </div>
 
     <CalendarEventViewDialog v-model:show="showViewDialog" :event="selectedEvent" :current-user-id="currentUserId"
-      @edit="openEditDialog" @delete="handleDeleteEvent" />
+      @edit="openEditDialog" @delete="handleDeleteEvent" @add-to-personal-calendar="handleAddToPersonalCalendar" />
 
     <CalendarEventDialog v-model:show="showDialog" :is-editing="isEditing" :initial-data="initialFormData" :room-members="members"
       :is-saving="isSavingEvent" :is-success="isSaveSuccess" @save="handleSaveEvent" />
 
-    <!-- Unified Notification Dialog -->
     <CalendarNotificationDialog v-model:show="notificationState.show" :type="notificationState.type"
       :title="notificationState.title" :message="notificationState.message"
       :confirm-text="notificationState.confirmText" :cancel-text="notificationState.cancelText"
+      :require-input="notificationState.requireInput"
       :is-loading="isDeletingEvent || isSavingEvent" @confirm="handleNotificationConfirm"
       @cancel="handleNotificationCancel" />
+
+    <PremiumFeatureDialog
+      v-model:open="showPremiumDialog"
+      feature-name="Tải lên file lớn"
+    />
   </div>
 </template>
 

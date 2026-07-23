@@ -90,10 +90,4 @@ const route = useRoute();
       @delete="emit('delete')"
     />
   </SidebarMenuItem>
-  <VoiceSummaryModal
-    v-model:open="showSummaryModal"
-    :is-loading="isSummaryLoading"
-    :transcript="meetingTranscript"
-    :summary-json="meetingSummaryJson"
-  />
 </template>

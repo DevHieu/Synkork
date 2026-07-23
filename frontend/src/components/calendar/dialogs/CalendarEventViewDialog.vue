@@ -15,6 +15,7 @@ import {
   Users,
   PhoneCall,
   CheckSquare,
+  CalendarPlus,
 } from "lucide-vue-next";
 import type { CalendarEvent } from "@/types/CalendarEvent";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -41,6 +42,7 @@ const emit = defineEmits<{
   (e: "update:show", value: boolean): void;
   (e: "edit", event: CalendarEvent): void;
   (e: "delete", event: CalendarEvent): void;
+  (e: "addToPersonalCalendar", event: CalendarEvent): void;
 }>();
 
 const isCreator = computed(() => props.event?.createdById === props.currentUserId);
@@ -499,6 +501,18 @@ const goToNoteSpace = async () => {
           @click="emit('update:show', false)"
         >
           Đóng
+        </Button>
+
+        <Button
+          v-if="event"
+          type="button"
+          variant="secondary"
+          size="sm"
+          class="rounded-sm font-sans text-xs font-semibold px-4 py-2 border border-border/60 shadow-sm"
+          @click="emit('addToPersonalCalendar', event)"
+        >
+          <CalendarPlus class="mr-1.5 h-3.5 w-3.5" />
+          Lưu lịch cá nhân
         </Button>
 
         <Button

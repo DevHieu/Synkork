@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import com.synkork.backend.modules.collaboration.calendar.dto.CalendarEventAttachmentDTO;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -86,6 +88,26 @@ public class CalendarEventController {
     public ResponseEntity<Void> deleteEvent(@PathVariable UUID eventId) {
         UUID userId = AuthUtils.getCurrentUserId();
         calendarEventService.deleteEvent(eventId, userId);
+        return ResponseEntity.ok().build();
+    }
+
+    // ponytail: upload attachment directly to event
+    @PostMapping("/{eventId}/attachments")
+    public ResponseEntity<List<CalendarEventAttachmentDTO>> uploadAttachments(
+            @PathVariable UUID eventId,
+            @RequestParam("files") List<MultipartFile> files) {
+        UUID userId = AuthUtils.getCurrentUserId();
+        List<CalendarEventAttachmentDTO> uploaded = calendarEventService.uploadAttachments(eventId, files, userId);
+        return ResponseEntity.ok(uploaded);
+    }
+
+    // ponytail: delete attachment from event
+    @DeleteMapping("/{eventId}/attachments/{attachmentId}")
+    public ResponseEntity<Void> deleteAttachment(
+            @PathVariable UUID eventId,
+            @PathVariable UUID attachmentId) {
+        UUID userId = AuthUtils.getCurrentUserId();
+        calendarEventService.deleteAttachment(eventId, attachmentId, userId);
         return ResponseEntity.ok().build();
     }
 

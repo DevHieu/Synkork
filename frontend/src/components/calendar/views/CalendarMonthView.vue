@@ -18,6 +18,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "selectDate", date: dayjs.Dayjs): void;
   (e: "viewEvent", event: CalendarEvent): void;
+  (e: "deleteAllEvents", events: CalendarEvent[]): void;
 }>();
 
 /**
@@ -101,6 +102,17 @@ const getContinuationLabel = (event: CalendarEvent) => {
   if (event.continuesToNextDay) return "TIẾP TỤC Ở NGÀY HÔM SAU";
   return "";
 };
+
+const handleDeleteAllForDate = () => {
+  const eventsToDelete = selectedDateEvents.value.filter(e => e.createdById === props.currentUserId);
+  
+  if (eventsToDelete.length === 0) {
+    alert("Bạn không có quyền xóa các sự kiện trong ngày này!");
+    return;
+  }
+  
+  emit("deleteAllEvents", eventsToDelete);
+};
 </script>
 
 <template>
@@ -179,6 +191,13 @@ const getContinuationLabel = (event: CalendarEvent) => {
               {{ selectedDateEvents.length }} SỰ KIỆN
             </p>
           </div>
+          <button
+            v-if="selectedDateEvents.length > 0"
+            @click="handleDeleteAllForDate"
+            class="text-[11px] font-semibold px-2.5 py-1.5 bg-destructive text-white rounded-sm hover:bg-destructive/90 transition-colors shadow-sm"
+          >
+            Xóa ngày này
+          </button>
         </div>
         <ScrollArea class="calendar-scroll-area min-h-0 flex-1">
           <div class="flex flex-col gap-3.5 p-4 pr-5">
