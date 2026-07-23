@@ -1,6 +1,5 @@
 package com.synkork.backend.modules.admin.changePassword;
 
-import com.synkork.backend.common.utils.EmailService;
 import com.synkork.backend.modules.admin.changePassword.dto.PasswordResetRequestFilter;
 import com.synkork.backend.modules.admin.changePassword.email.PasswordResetRequestEmailService;
 import com.synkork.backend.modules.admin.changePassword.enums.PasswordResetStatusEnum;
@@ -32,9 +31,6 @@ public class PasswordResetRequestService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private EmailService emailService;
 
     @Autowired
     private PasswordResetRequestEmailService passwordResetRequestEmailService;
@@ -72,7 +68,7 @@ public class PasswordResetRequestService {
         // Tạo ra otp code verify
         VerificationEntity entity = verificationService.createVerifyWithOTP(user, VerifyTypeEnum.FORGOT_PASSWORD);
 
-        emailService.sendOTPEmail(entity.getUser().getEmail(), entity.getOtpCode());
+        passwordResetRequestEmailService.sendOtpEmail(entity.getUser().getEmail(), entity.getOtpCode());
         return entity.getId().toString();
     }
 
