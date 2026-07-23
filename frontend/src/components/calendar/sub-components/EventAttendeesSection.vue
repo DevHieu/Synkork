@@ -4,6 +4,7 @@ import { Plus, X, Check } from "lucide-vue-next";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import type { Member } from "@/types/Member";
+import { useUserStore } from "@/stores/userStore";
 
 const props = defineProps<{
   initialAttendeeIds?: string[];
@@ -26,10 +27,13 @@ const selectedMembers = computed(() =>
     .filter(Boolean) as Member[],
 );
 
+const userStore = useUserStore();
+
 const filteredMembers = computed(() => {
   const query = search.value.trim().toLowerCase();
   return props.roomMembers
-    .filter((member) => member.memberId)
+    // ponytail: exclude current user in 1 line
+    .filter((member) => member.memberId && member.username !== userStore.user?.username)
     .filter((member) => {
       if (!query) return true;
       return [member.displayName, member.username]
