@@ -228,6 +228,8 @@ watch(
         <ReportEvidence
           v-if="report.evidenceUrl"
           :src="report.evidenceUrl"
+          :name="report.evidenceName || ''"
+          :resource-type="report.evidenceResourceType || ''"
           v-model:open="isImageZoomed"
         />
       </div>

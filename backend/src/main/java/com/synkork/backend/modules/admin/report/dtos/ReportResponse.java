@@ -24,7 +24,9 @@ public record ReportResponse(
         ReportStatusEnums status,
         ReportSeverityEnums severity,
         LocalDateTime createdAt,
-        String evidenceUrl
+        String evidenceUrl,
+        String evidenceName,
+        String evidenceResourceType
         ) {
     public ReportResponse(ReportEntity e) {
         this(
@@ -49,6 +51,8 @@ public record ReportResponse(
                 e.getStatus(),
                 e.getSeverity(),
                 e.getCreatedAt(),
-                e.getEvidenceUrl());
+                e.getEvidenceUrl(),
+                e.getEvidenceName(),
+                e.getEvidenceResourceType());
     }
 }

@@ -79,4 +79,24 @@ public class FileService {
             throw new RuntimeException("Delete file failed", e);
         }
     }
+
+    @SuppressWarnings("unchecked")
+    public FileUploaded uploadVideo(MultipartFile file, String folderName) {
+    try {
+        Map<String, Object> options = ObjectUtils.asMap(
+                "folder", folderName,
+                "resource_type", "video"
+        );
+        Map uploaded = cloudinary.uploader().upload(file.getBytes(), options);
+        String publicId = (String) uploaded.get("public_id");
+        String url = cloudinary.url()
+                .secure(true)
+                .resourceType("video")
+                .generate(publicId);
+
+        return new FileUploaded(url, publicId, "video", file.getOriginalFilename());
+    } catch (IOException e) {
+        throw new RuntimeException("Upload video failed", e);
+    }
+}
 }

@@ -163,7 +163,7 @@ const handleSubmit = async () => {
   }
 }
 
-const truncateMiddle = (name: string, maxLength = 38) => {
+const truncateMiddle = (name: string, maxLength = 35) => {
   if (name.length <= maxLength) return name
 
   const dotIndex = name.lastIndexOf('.')
