@@ -350,12 +350,12 @@ const columns = computed<TableColumn<any>[]>(() => [
         Xóa bộ lọc
       </UiButton>
 
-      <div class="ml-auto">
+      <!-- <div class="ml-auto">
         <UiButton @click="handleCreate">
           <PlusIcon class="mr-2 h-4 w-4" />
           Tạo Room
         </UiButton>
-      </div>
+      </div> -->
     </div>
 
     <!-- table -->

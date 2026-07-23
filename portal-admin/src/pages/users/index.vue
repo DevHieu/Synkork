@@ -344,9 +344,9 @@ const isLockingUser = computed(() => isUserActive(actionTarget.value))
         <DateRangePicker v-model="dateRange" />
       </div>
 
-      <div class="ml-auto">
+      <!-- <div class="ml-auto">
         <UserCreate @saved="fetchData" />
-      </div>
+      </div> -->
     </div>
 
     <div class="relative rounded-md border border-neutral-200 dark:border-neutral-800">
