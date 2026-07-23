@@ -14,6 +14,29 @@ public class PasswordResetRequestEmailService {
     }
 
     @Async
+    public void sendOtpEmail(String to, String otp) {
+        if (isBlank(to)) {
+            return;
+        }
+
+        String subject = "[Synkork] Ma OTP xac thuc cua ban";
+        String body = """
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #023c3d;">Xac thuc yeu cau doi mat khau</h2>
+                    <p>Ma OTP cua ban la:</p>
+                    <div style="font-size: 32px; font-weight: bold; letter-spacing: 8px;
+                                color: #023c3d; margin: 24px 0; text-align: center;">
+                        %s
+                    </div>
+                    <p style="color: #888; font-size: 13px;">Ma co hieu luc trong 5 phut.</p>
+                    <p style="color: #888; font-size: 13px;">Neu ban khong yeu cau ma nay, hay bo qua email.</p>
+                </div>
+                """.formatted(escapeHtml(otp));
+
+        emailService.send(to, subject, body);
+    }
+
+    @Async
     public void sendApprovedEmail(String to) {
         if (isBlank(to)) {
             return;
@@ -53,5 +76,17 @@ public class PasswordResetRequestEmailService {
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private String escapeHtml(String text) {
+        if (text == null) {
+            return "";
+        }
+        return text
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
     }
 }

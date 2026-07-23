@@ -73,7 +73,7 @@ async function onSubmit() {
         username: form.username.trim(),
         email: form.email.trim(),
         status: form.status,
-        role: form.role,
+        role: form.role as Exclude<ManagementRole, 'user'>,
       }
       result = await managerService.create(payload)
       toast.success('Tạo tài khoản quản trị thành công')
@@ -119,8 +119,15 @@ async function onSubmit() {
             <SelectValue placeholder="Chọn vai trò" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="manager">Quản lý</SelectItem>
-            <SelectItem value="admin">Quản trị viên</SelectItem>
+            <SelectItem v-if="isEditing" value="user">
+              Người dùng
+            </SelectItem>
+            <SelectItem value="manager">
+              Quản lý
+            </SelectItem>
+            <SelectItem value="admin">
+              Quản trị viên
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -132,9 +139,15 @@ async function onSubmit() {
             <SelectValue placeholder="Chọn trạng thái" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="active">Hoạt động</SelectItem>
-            <SelectItem value="inactive">Ngừng hoạt động</SelectItem>
-            <SelectItem value="banned">Bị khóa</SelectItem>
+            <SelectItem value="active">
+              Hoạt động
+            </SelectItem>
+            <SelectItem value="inactive">
+              Ngừng hoạt động
+            </SelectItem>
+            <SelectItem value="banned">
+              Bị khóa
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>

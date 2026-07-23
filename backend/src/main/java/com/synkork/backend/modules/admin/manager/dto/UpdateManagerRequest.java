@@ -21,8 +21,8 @@ public class UpdateManagerRequest {
     private String status;
 
     @Pattern(
-            regexp = "(?i)manager|admin",
-            message = "Vai tro phai la manager hoac admin"
+            regexp = "(?i)user|manager|admin",
+            message = "Vai tro phai la user, manager hoac admin"
     )
     private String role;
 

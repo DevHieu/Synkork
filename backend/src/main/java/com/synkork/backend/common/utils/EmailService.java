@@ -13,7 +13,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import com.synkork.backend.modules.collaboration.task.card.CardEntity;
-import com.synkork.backend.modules.report.enums.ReportStatusEnums;
 
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -468,61 +467,4 @@ public class EmailService {
 
         send(toEmail, subject, body);
     }
-
-    @Async
-    public void sendReportResolvedEmail(String toEmail, String reporterName, String note, ReportStatusEnums status) {
-        String statusText;
-        String statusColor;
-        switch (status) {
-            case RESOLVED:
-                statusText = "Đã xử lý vi phạm";
-                statusColor = "#22c55e";
-                break;
-            case DISMISSED:
-                statusText = "Không đủ căn cứ xử lý";
-                statusColor = "#ef4444";
-                break;
-            default:
-                statusText = status.name();
-                statusColor = "#6b7280";
-                break;
-        }
-
-        String subject = "[Synkork] Kết quả xử lý tố cáo";
-
-        String noteBlock = (note != null && !note.isBlank())
-                ? """
-                        <p style="margin: 8px 0 0 0; color: #374151;">
-                            📝 Ghi chú: %s
-                        </p>
-                        """.formatted(note)
-                : "";
-
-        String body = """
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;
-                            padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px;">
-                    <h2 style="color: #023c3d;">Kết quả xử lý tố cáo</h2>
-                    <p style="color: #374151;">
-                        Xin chào <strong>%s</strong>, tố cáo của bạn đã được quản trị viên xem xét.
-                    </p>
-                    <div style="margin: 24px 0; padding: 16px; background: #f9fafb;
-                                border-left: 4px solid %s; border-radius: 8px;">
-                        <p style="margin: 0; color: #111827;">
-                            Kết quả: <strong style="color: %s;">%s</strong>
-                        </p>
-                        %s
-                    </div>
-                    <p style="color: #374151;">
-                        Cảm ơn bạn đã giúp xây dựng cộng đồng Synkork an toàn hơn.
-                    </p>
-                    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0 16px;"/>
-                    <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">
-                        Đây là email tự động từ Synkork — vui lòng không reply.
-                    </p>
-                </div>
-                """.formatted(reporterName, statusColor, statusColor, statusText, noteBlock);
-
-        send(toEmail, subject, body);
-    }
-
 }

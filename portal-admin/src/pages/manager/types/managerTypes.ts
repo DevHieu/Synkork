@@ -1,5 +1,5 @@
 export type ManagerStatus = 'active' | 'inactive' | 'banned'
-export type ManagementRole = 'manager' | 'admin'
+export type ManagementRole = 'user' | 'manager' | 'admin'
 export type ManagerPlan = 'FREE' | 'TEAM' | 'BUSINESS'
 
 export interface ManagerAccount {
@@ -31,10 +31,11 @@ export interface CreateManagerPayload {
   username: string
   email: string
   status: ManagerStatus
-  role: ManagementRole
+  role: Exclude<ManagementRole, 'user'>
 }
 
-export type UpdateManagerPayload = Partial<Omit<CreateManagerPayload, 'username'>>
+export type UpdateManagerPayload = Partial<Omit<CreateManagerPayload, 'username' | 'role'>>
   & {
+    role?: ManagementRole
     plan?: ManagerPlan
   }
