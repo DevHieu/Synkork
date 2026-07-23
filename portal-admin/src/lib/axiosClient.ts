@@ -16,8 +16,7 @@ axiosClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = getCookie('accessToken')
     const url = config.url ?? ''
-    const authRoute = ['/auth/login', '/auth/logout']
-    if (!authRoute.some(route => url.includes(route))) {
+    if (!url.includes('auth/')) {
       if (token) {
         config.headers = config.headers ?? {}
         config.headers.Authorization = `Bearer ${token}`

@@ -8,19 +8,18 @@ import java.util.function.Function;
 
 import javax.crypto.SecretKey;
 
-import com.synkork.backend.modules.auth.dto.JwtResponse;
-import com.synkork.backend.modules.user.enums.RoleEnum;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
+import com.synkork.backend.modules.user.enums.RoleEnum;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletResponse;
 
 @Service
 public class JwtService {
@@ -32,7 +31,7 @@ public class JwtService {
         String roleString = role.toString();
 
         long duration = type.equals("ACCESS")
-                ? TimeUnit.MINUTES.toMillis(60) // Access key hết hạn sau 60p
+                ? TimeUnit.MINUTES.toMillis(1) // Access key hết hạn sau 1 phút
                 : TimeUnit.DAYS.toMillis(7); // Refresh key thì 7 ngày
 
         Date now = new Date();
