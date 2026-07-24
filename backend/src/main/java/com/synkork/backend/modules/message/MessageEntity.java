@@ -50,4 +50,7 @@ public class MessageEntity extends BaseEntity {
 
     @Column(name = "attachment_name")
     private String attachmentName;  // tên file gốc để hiển thị cho user
+
+    @Version
+    private Integer version;
 }

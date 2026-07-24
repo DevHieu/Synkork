@@ -486,9 +486,7 @@ public class CalendarEventService {
         for (MultipartFile file : files) {
             // Use FileService
             boolean isImage = file.getContentType() != null && file.getContentType().startsWith("image/");
-            FileUploaded uploaded = isImage 
-                    ? fileService.uploadImage(file, "calendar_events")
-                    : fileService.uploadFile(file, "calendar_events", false);
+            FileUploaded uploaded = fileService.handleUpload(file, "calendar_events");
                     
             EventAttachmentEntity attachment = new EventAttachmentEntity();
             attachment.setEvent(event);

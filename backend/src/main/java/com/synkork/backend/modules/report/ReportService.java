@@ -94,9 +94,7 @@ public class ReportService {
             throw new RuntimeException("Tệp bằng chứng vượt quá "+ maxMB + "MB cho phép");
         }
 
-        FileUploaded uploaded = isImage
-                ? fileService.uploadImage(evidence, "report_file")
-                : fileService.uploadVideo(evidence, "report_file");
+        FileUploaded uploaded = fileService.handleUpload(evidence, "report_file", false);
    
         builder.evidenceUrl(uploaded.url())
                .evidencePublicId(uploaded.publicId())

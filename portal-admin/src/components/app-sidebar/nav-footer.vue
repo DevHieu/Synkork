@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { BadgeCheckIcon, BellIcon, ChevronsUpDownIcon, CreditCardIcon, LogOutIcon, SparklesIcon, UserRoundCogIcon } from '@lucide/vue'
+import { ChevronsUpDownIcon, LogOutIcon, UserRoundCogIcon } from '@lucide/vue'
+
+import type { Account } from '@/types/Account'
 
 import { useSidebar } from '@/components/ui/sidebar'
-import { Account } from '@/types/Account';
 
 const { user } = defineProps<
   { user: Account }
@@ -57,33 +58,9 @@ const { isMobile, open } = useSidebar()
 
           <UiDropdownMenuSeparator />
           <UiDropdownMenuGroup>
-            <UiDropdownMenuItem @click="$router.push('/billing/')">
-              <SparklesIcon />
-              Nâng cấp gói
-            </UiDropdownMenuItem>
-          </UiDropdownMenuGroup>
-
-          <UiDropdownMenuSeparator />
-          <UiDropdownMenuGroup>
-            <UiDropdownMenuItem @click="$router.push('/billing?type=billing')">
-              <CreditCardIcon />
-              Thanh toán
-            </UiDropdownMenuItem>
-          </UiDropdownMenuGroup>
-
-          <UiDropdownMenuSeparator />
-          <UiDropdownMenuGroup>
             <UiDropdownMenuItem @click="$router.push('/settings/')">
               <UserRoundCogIcon />
               Hồ sơ
-            </UiDropdownMenuItem>
-            <UiDropdownMenuItem @click="$router.push('/settings/account')">
-              <BadgeCheckIcon />
-              Tài khoản
-            </UiDropdownMenuItem>
-            <UiDropdownMenuItem @click="$router.push('/settings/notifications')">
-              <BellIcon />
-              Thông báo
             </UiDropdownMenuItem>
           </UiDropdownMenuGroup>
 

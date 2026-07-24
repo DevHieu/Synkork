@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { FileIcon, Plus, X } from "lucide-vue-next";
+import { FileIcon, PlayCircle, Plus, X } from "lucide-vue-next";
 
 const props = defineProps<{
   files: File[];
@@ -13,6 +13,8 @@ const emit = defineEmits<{
 }>();
 
 const isImage = (file: File) => file.type.startsWith("image/");
+const isVideo = (file: File) => file.type.startsWith("video/");
+const isPreviewableMedia = (file: File) => isImage(file) || isVideo(file);
 </script>
 
 <template>
@@ -34,12 +36,31 @@ const isImage = (file: File) => file.type.startsWith("image/");
         :key="file.name + file.size"
         class="relative group/thumb w-16 h-16 rounded-lg overflow-hidden border border-border bg-muted shrink-0"
       >
-        <img
-          v-if="isImage(file) && previews.get(file)"
-          :src="previews.get(file)"
-          class="w-full h-full object-cover"
-          :alt="file.name"
-        />
+        <template v-if="isPreviewableMedia(file) && previews.get(file)">
+          <img
+            v-if="isImage(file)"
+            :src="previews.get(file)"
+            class="h-full w-full object-cover"
+            :alt="file.name"
+          >
+
+          <video
+            v-else
+            :src="previews.get(file)"
+            muted
+            playsinline
+            preload="metadata"
+            class="h-full w-full object-cover"
+          />
+
+          <div
+            v-if="isVideo(file)"
+            class="absolute inset-0 flex items-center justify-center bg-black/20 text-white"
+          >
+            <PlayCircle class="h-6 w-6" />
+          </div>
+        </template>
+
         <div
           v-else
           class="w-full h-full flex flex-col items-center justify-center gap-1 px-1"
