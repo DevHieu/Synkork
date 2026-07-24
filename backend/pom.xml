@@ -40,6 +40,18 @@
 				<version>1.0.0</version>
 			</dependency>
 
+			<!-- Google API Client & Calendar -->
+			<dependency>
+				<groupId>com.google.api-client</groupId>
+				<artifactId>google-api-client</artifactId>
+				<version>2.6.0</version>
+			</dependency>
+			<dependency>
+				<groupId>com.google.apis</groupId>
+				<artifactId>google-api-services-calendar</artifactId>
+				<version>v3-rev20240111-2.0.0</version>
+			</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -169,6 +181,17 @@
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>2.8.17</version>
+        </dependency>
+        <!-- Apache Tika for extracting text from documents (PDF, DOCX, etc.) -->
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-core</artifactId>
+            <version>2.9.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-parsers-standard-package</artifactId>
+            <version>2.9.2</version>
         </dependency>
 	</dependencies>
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import SidebarTrigger from "../ui/sidebar/SidebarTrigger.vue";
-import { FileText, Volume2 } from "lucide-vue-next";
+import { FileText, Volume2, UploadCloud } from "lucide-vue-next";
 import { useUserStore } from "@/stores/userStore";
 import { useVoiceSpaceStore } from "@/stores/voiceSpaceStore";
 import { useRoute } from "vue-router";
@@ -23,9 +23,41 @@ const showSummaryModal = ref(false);
 const isSummaryLoading = ref(false);
 const meetingTranscript = ref("");
 const meetingSummaryJson = ref("{}");
+const testFileInput = ref<HTMLInputElement | null>(null);
 
+const triggerTestUpload = () => {
+  testFileInput.value?.click();
+};
 
-
+const handleTestFileUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (!file) return;
+  showSummaryModal.value = true;
+  isSummaryLoading.value = true;
+  meetingTranscript.value = "";
+  meetingSummaryJson.value = "{}";
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("roomId", (route.params.roomId as string) || "00000000-0000-0000-0000-000000000000");
+  try {
+    const response = await axiosClient.post("/api/public/voice-summary/test-upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+      timeout: 180000, // 3 phút 
+    });
+    const data = response.data;
+    meetingTranscript.value = data.transcript;
+    meetingSummaryJson.value = data.summaryJson;
+    toast.success("Xử lý file test thành công!");
+  } catch (error) {
+    console.error("Lỗi khi test tóm tắt cuộc họp:", error);
+    toast.error("Gửi file test thất bại hoặc lỗi xử lý AI.");
+    showSummaryModal.value = false;
+  } finally {
+    isSummaryLoading.value = false;
+    target.value = ""; // Reset input
+  }
+};
 
 const handleSummary = () => {
   // Đang record → dừng lại
@@ -35,10 +67,23 @@ const handleSummary = () => {
     return;
   }
 
+  // Testing
   if (userStore.userPlan === "FREE") {
     showPremiumDialog.value = true;
     return;
   }
+  // 
+  // 
+  // 
+  // 
+  // 
+  // 
+  // 
+  // 
+  // 
+  // 
+  // 
+  // 
 
   const tracks = voiceSpaceStore.getAudioTracks();
   if (tracks.length === 0) {
@@ -48,7 +93,7 @@ const handleSummary = () => {
 
   // Truyền tracks vào đây chứ không để rỗng
   const audioStream = new MediaStream(tracks);
-  recorder = new MediaRecorder(audioStream, { mimeType: "audio/mp4" });
+  recorder = new MediaRecorder(audioStream, { mimeType: "audio/webm" });
   chunks = [];
 
   recorder.ondataavailable = (e) => {
@@ -74,6 +119,8 @@ const handleSummary = () => {
         headers: {
           "Content-Type": "multipart/form-data",
         },
+        timeout: 60000,
+        // t set timeout 60s, vì file ghi âm có thể khá dài, nên cần thời gian xử lý lâu hơn - AI TỰ GỢI Ý =))))
       });
 
       // Nhận dữ liệu phản hồi từ backend
@@ -104,6 +151,18 @@ const handleSummary = () => {
       </span>
     </div>
     <div class="flex items-center gap-2">
+      <!-- Test upload button -->
+      <input
+        type="file"
+        ref="testFileInput"
+        class="hidden"
+        accept="audio/*"
+        @change="handleTestFileUpload"
+      />
+      <button @click="triggerTestUpload" class="flex items-center gap-2 px-4 py-1 rounded-lg text-sm font-normal text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 transition-colors border border-amber-500/30 h-8">
+        <UploadCloud class="h-4 w-4" />
+        Test Tóm Tắt
+      </button>
 
       <button @click="handleSummary"
         class="flex items-center gap-2 px-4 py-1 rounded-lg text-sm font-normal text-muted-foreground hover:text-foreground hover:bg-muted transition-colors border border-border h-8"
@@ -114,13 +173,8 @@ const handleSummary = () => {
     </div>
   </div>
   <PremiumFeatureDialog v-model:open="showPremiumDialog" feature-name="Tóm tắt cuộc họp" :business-only="true" />
-  <VoiceSummaryModal 
-    v-model:open="showSummaryModal" 
-    :is-loading="isSummaryLoading" 
-    :transcript="meetingTranscript" 
-    :summary-json="meetingSummaryJson" 
-  />
+  <VoiceSummaryModal v-model:open="showSummaryModal" :is-loading="isSummaryLoading" :transcript="meetingTranscript"
+    :summary-json="meetingSummaryJson" />
 </template>
 
 <style scoped></style>
-

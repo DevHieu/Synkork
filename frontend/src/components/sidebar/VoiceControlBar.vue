@@ -151,7 +151,7 @@ const leaveRoom = async () => {
               class="relative inline-flex rounded-full h-2 w-2 bg-green-500"
             />
           </span>
-          <span class="text-xs text-green-500 font-medium">Đang kết nối</span>
+          <span class="text-xs text-green-500 font-medium">Đã kết nối</span>
         </div>
         <div class="flex items-center gap-1">
           <button

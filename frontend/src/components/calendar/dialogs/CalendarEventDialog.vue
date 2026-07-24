@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { watch, computed } from "vue";
-import { CalendarPlus2, Pencil, X } from "lucide-vue-next";
+import { CalendarPlus2, Pencil, X, Check } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -48,6 +48,8 @@ const props = defineProps<{
   isEditing: boolean;
   initialData: EventFormData;
   roomMembers: Member[];
+  isSaving?: boolean;
+  isSuccess?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -154,7 +156,7 @@ const handleSubmit = (): void => {
               <Label class="text-[10px] font-sans font-bold text-muted-foreground uppercase tracking-wider">Mô
                 tả</Label>
               <Textarea v-model="formData.description" placeholder="Mô tả chi tiết sự kiện..."
-                class="w-full min-h-[80px] rounded-md border-border/60 font-sans text-xs" />
+                class="w-full min-h-20 rounded-md border-border/60 font-sans text-xs" />
             </div>
 
             <!-- Link sự kiện -->
@@ -258,10 +260,25 @@ const handleSubmit = (): void => {
             <X class="mr-1.5 h-3.5 w-3.5" />
             Hủy
           </Button>
-          <Button type="submit" size="sm"
-            class="rounded-sm bg-primary font-sans text-xs font-semibold text-primary-foreground px-4 py-2 shadow-sm hover:bg-primary/90">
-            <component :is="isEditing ? Pencil : CalendarPlus2" class="mr-1.5 h-3.5 w-3.5" />
-            {{ isEditing ? "Cập nhật" : "Tạo sự kiện" }}
+          <Button type="submit" size="sm" :disabled="isSaving || isSuccess"
+            class="rounded-sm font-sans text-xs font-semibold px-4 py-2 shadow-sm transition-all duration-300 relative overflow-hidden"
+            :class="[
+              isSuccess ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : 'bg-primary hover:bg-primary/90 text-primary-foreground'
+            ]">
+            <span class="flex items-center gap-1.5 transition-all duration-300" :class="{ 'opacity-0 scale-95': isSaving || isSuccess }">
+              <component :is="isEditing ? Pencil : CalendarPlus2" class="h-3.5 w-3.5" />
+              {{ isEditing ? "Cập nhật" : "Tạo sự kiện" }}
+            </span>
+            
+            <span class="absolute inset-0 flex items-center justify-center gap-1.5 transition-all duration-300" :class="{ 'opacity-100 scale-100': isSaving, 'opacity-0 scale-105 pointer-events-none': !isSaving }">
+              <div class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              <span>Đang lưu...</span>
+            </span>
+
+            <span class="absolute inset-0 flex items-center justify-center gap-1.5 transition-all duration-300" :class="{ 'opacity-100 scale-100': isSuccess, 'opacity-0 scale-95 pointer-events-none': !isSuccess }">
+              <Check class="h-3.5 w-3.5" />
+              <span>Đã lưu!</span>
+            </span>
           </Button>
         </div>
       </form>

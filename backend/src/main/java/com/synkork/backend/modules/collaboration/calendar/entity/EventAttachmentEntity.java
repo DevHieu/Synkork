@@ -26,6 +26,12 @@ public class EventAttachmentEntity extends BaseEntity {
     private String fileUrl;
 
     @Column(length = 255)
+    private String filePublicId;
+
+    @Column(length = 50)
+    private String resourceType;
+
+    @Column(length = 255)
     private String fileName;
 
     private Integer fileSizeKb;

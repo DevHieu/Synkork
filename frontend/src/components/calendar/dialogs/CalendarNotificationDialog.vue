@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { AlertTriangle, Info, Trash2, XCircle } from "lucide-vue-next";
+import { computed, ref } from "vue";
+import { AlertTriangle, Info, Trash2, XCircle, CheckCircle } from "lucide-vue-next";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-export type NotificationType = "info" | "warning" | "error" | "confirm" | "delete";
+export type NotificationType = "info" | "warning" | "error" | "confirm" | "delete" | "success";
 
 const props = withDefaults(
   defineProps<{
@@ -22,6 +22,7 @@ const props = withDefaults(
     confirmText?: string;
     cancelText?: string;
     isLoading?: boolean;
+    requireInput?: string;
   }>(),
   {
     type: "info",
@@ -38,11 +39,14 @@ const emit = defineEmits<{
 }>();
 
 // Chặn đóng dialog khi đang loading để tránh mất trạng thái xác nhận.
+const inputValue = ref("");
+
 const handleOpenChange = (open: boolean) => {
   if (!open && props.isLoading) return; // Không cho đóng khi đang load
   emit("update:show", open);
   if (!open) {
     emit("cancel");
+    inputValue.value = "";
   }
 };
 
@@ -51,6 +55,7 @@ const handleConfirm = (e: Event) => {
   emit("confirm");
   if (props.type !== "confirm" && props.type !== "delete") {
     emit("update:show", false);
+    inputValue.value = "";
   }
 };
 
@@ -62,6 +67,8 @@ const iconComponent = computed(() => {
       return XCircle;
     case "delete":
       return Trash2;
+    case "success":
+      return CheckCircle;
     default:
       return Info;
   }
@@ -83,6 +90,13 @@ const themeClasses = computed(() => {
         border: "border-amber-500/20",
         bg: "bg-amber-500/5",
         btn: "bg-amber-500 text-amber-950 hover:bg-amber-500/90",
+      };
+    case "success":
+      return {
+        icon: "text-green-500",
+        border: "border-green-500/20",
+        bg: "bg-green-500/5",
+        btn: "bg-green-500 text-white hover:bg-green-600",
       };
     default:
       return {
@@ -123,6 +137,16 @@ const themeClasses = computed(() => {
           as="div"
         >
           <div v-html="message" class="break-words"></div>
+
+          <div v-if="requireInput" class="mt-4">
+            <p class="text-xs font-medium mb-1.5 text-foreground">Vui lòng gõ <span class="font-bold select-all">"{{ requireInput }}"</span> để xác nhận:</p>
+            <input 
+              v-model="inputValue" 
+              type="text" 
+              class="w-full px-3 py-2 text-sm rounded-md border border-input bg-background shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring transition-colors"
+              :placeholder="requireInput"
+            />
+          </div>
         </DialogDescription>
       </div>
 
@@ -139,7 +163,7 @@ const themeClasses = computed(() => {
         </Button>
         
         <Button
-          :disabled="isLoading"
+          :disabled="isLoading || (requireInput ? inputValue !== requireInput : false)"
           @click="handleConfirm"
           size="sm"
           class="w-full sm:w-auto text-xs font-semibold"

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
-import { ZoomIn } from '@lucide/vue'
+import { computed, onMounted, onUnmounted } from 'vue'
+import { ZoomIn, PlayCircle } from '@lucide/vue'
 
 import {
   Dialog,
@@ -11,11 +11,28 @@ const props = defineProps<{
   src: string
   open: boolean
   name?: string
+  resourceType?: string // 'image' | 'video'
 }>()
 
 const emit = defineEmits<{
   (e: 'update:open', value: boolean): void
 }>()
+
+// Nhận diện video dựa vào đuôi file trong src (hoặc name nếu có)
+const VIDEO_EXTENSIONS = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv', '3gp']
+
+function getExtension(value?: string) {
+  if (!value) return ''
+  const clean = value.split('?')[0].split('#')[0]
+  const parts = clean.split('.')
+  return parts.length > 1 ? parts.pop()!.toLowerCase() : ''
+}
+
+const isVideo = computed(() => {
+  if (props.resourceType) return props.resourceType === 'video'
+  const ext = getExtension(props.name) || getExtension(props.src)
+  return VIDEO_EXTENSIONS.includes(ext)
+})
 
 const close = () => emit('update:open', false)
 
@@ -28,7 +45,7 @@ const handleDownload = async () => {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = props.name ?? 'image'
+  a.download = props.name ?? (isVideo.value ? 'video' : 'image')
   a.click()
 
   URL.revokeObjectURL(url)
@@ -46,7 +63,7 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
 <template>
   <div class="space-y-1.5">
     <p class="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-      Hình ảnh minh chứng
+      {{ isVideo ? 'Video minh chứng' : 'Hình ảnh minh chứng' }}
     </p>
 
     <button
@@ -54,7 +71,14 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
       class="group relative block w-full overflow-hidden rounded-lg border bg-muted/30 cursor-zoom-in transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       @click="emit('update:open', true)"
     >
+      <video
+        v-if="isVideo"
+        :src="src"
+        muted
+        class="max-h-64 w-full object-contain transition-transform duration-300 ease-out group-hover:scale-[1.03]"
+      />
       <img
+        v-else
         :src="src"
         alt="Hình ảnh vi phạm"
         class="max-h-64 w-full object-contain transition-transform duration-300 ease-out group-hover:scale-[1.03]"
@@ -62,8 +86,9 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
 
       <div class="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors duration-200 group-hover:bg-black/40">
         <div class="flex items-center gap-1.5 rounded-full bg-black/70 px-3 py-1.5 text-xs font-medium text-white opacity-0 scale-95 transition-all duration-200 group-hover:opacity-100 group-hover:scale-100">
-          <ZoomIn class="h-3.5 w-3.5" />
-          Xem ảnh gốc
+          <PlayCircle v-if="isVideo" class="h-3.5 w-3.5" />
+          <ZoomIn v-else class="h-3.5 w-3.5" />
+          {{ isVideo ? 'Xem video gốc' : 'Xem ảnh gốc' }}
         </div>
       </div>
     </button>
@@ -84,7 +109,7 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
             style="background: linear-gradient(to bottom, rgba(0,0,0,.65), transparent);"
           >
             <span class="text-white/80 text-sm font-medium truncate max-w-xs">
-              {{ name ?? 'image' }}
+              {{ name ?? (isVideo ? 'video' : 'image') }}
             </span>
 
             <div class="flex items-center gap-2">
@@ -125,9 +150,17 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
             </div>
           </div>
 
-          <!-- Image -->
+          <!-- Media -->
           <div class="flex items-center justify-center p-2 pt-14 pb-4">
+            <video
+              v-if="isVideo"
+              :src="src"
+              controls
+              autoplay
+              class="max-h-[80vh] max-w-full rounded-lg select-none"
+            />
             <img
+              v-else
               :src="src"
               :alt="name"
               class="max-h-[80vh] max-w-full rounded-lg object-contain select-none"
