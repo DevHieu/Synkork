@@ -15,6 +15,7 @@ import com.synkork.backend.modules.collaboration.calendar.enums.SyncStatus;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -51,6 +52,8 @@ public class CalendarEventEntity extends BaseEntity {
     @Column(nullable = false)
     private LocalDate eventDate;
 
+    private LocalDate endDate;
+
     @Column(nullable = false)
     private LocalTime startTime;
 
@@ -59,6 +62,9 @@ public class CalendarEventEntity extends BaseEntity {
 
     private String recurrenceType;
     private LocalDate recurrenceEndDate;
+
+    private boolean schedule;
+    private UUID scheduleId;
 
     private boolean allowEditAll;
     private Integer remindBeforeMinutes;
@@ -87,6 +93,7 @@ public class CalendarEventEntity extends BaseEntity {
     private List<RoomMemberEntity> attendees;
 
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
+    @org.hibernate.annotations.Fetch(org.hibernate.annotations.FetchMode.SUBSELECT)
     @Setter(AccessLevel.NONE)
     private List<EventAttachmentEntity> attachments;
 

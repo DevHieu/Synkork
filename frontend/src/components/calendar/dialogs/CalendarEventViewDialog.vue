@@ -97,6 +97,10 @@ const displayEventDate = computed(() =>
   props.event ? dayjs(props.event.displayDate || props.event.eventDate).format("DD/MM/YYYY") : "",
 );
 
+const displayEndDate = computed(() =>
+  props.event ? dayjs(props.event.endDate || props.event.eventDate).format("DD/MM/YYYY") : "",
+);
+
 const attachments = computed(() => props.event?.attachments ?? []);
 const attendees = computed(() => props.event?.attendees ?? []);
 const eventLink = computed(() => props.event?.eventLink?.trim() ?? "");
@@ -193,6 +197,14 @@ const goToNoteSpace = async () => {
           <div class="flex flex-wrap items-center gap-2">
             <Badge variant="default" class="font-sans text-[9px] font-bold uppercase tracking-wider bg-primary text-primary-foreground rounded-sm px-1.5 py-0.5">
               Sự kiện
+            </Badge>
+            <!-- schedule badge -->
+            <Badge
+              v-if="event?.schedule"
+              variant="outline"
+              class="font-sans text-[9px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 rounded-sm px-1.5 py-0.5 border-amber-400/60"
+            >
+              Sự kiện liên tục
             </Badge>
             <Badge
               v-if="event?.allowEditAll"
@@ -362,13 +374,21 @@ const goToNoteSpace = async () => {
                 </p>
               </div>
 
-              <div class="pt-3 border-t border-primary/10 grid grid-cols-2 gap-2">
+              <div class="pt-3 border-t border-primary/10 grid grid-cols-3 gap-2">
                 <div>
                   <p class="font-sans text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80">
                     Ngày bắt đầu
                   </p>
                   <p class="font-sans text-[11px] font-medium text-foreground mt-0.5">
                     {{ displayEventDate }}
+                  </p>
+                </div>
+                <div>
+                  <p class="font-sans text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+                    Ngày kết thúc
+                  </p>
+                  <p class="font-sans text-[11px] font-medium text-foreground mt-0.5">
+                    {{ displayEndDate }}
                   </p>
                 </div>
                 <div>

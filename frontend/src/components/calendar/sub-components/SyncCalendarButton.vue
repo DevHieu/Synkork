@@ -1,11 +1,20 @@
 <script setup lang="ts">
 import axiosClient from '@/lib/axiosClient'
 import { ref, onUnmounted } from 'vue'
+import { useUserStore } from '@/stores/userStore'
+import PremiumFeatureDialog from '@/components/dialog/PremiumFeatureDialog.vue'
 
+const userStore = useUserStore()
+const showPremiumDialog = ref(false)
 const isLoading = ref(false)
 let popupCheckInterval: number | undefined
 
 const handleSyncGoogleCalendar = async () => {
+  if (userStore.userPlan === 'FREE') {
+    showPremiumDialog.value = true
+    return
+  }
+
   isLoading.value = true
   try {
     const res = await axiosClient.get('/api/integrations/google-calendar/authorize-url')
@@ -25,7 +34,6 @@ const handleSyncGoogleCalendar = async () => {
 
     if (!popup) {
       isLoading.value = false
-      // toast: trình duyệt block popup, nhắc user cho phép popup
       return
     }
 
@@ -46,7 +54,6 @@ const handleSyncGoogleCalendar = async () => {
 
     window.addEventListener('message', handleMessage)
 
-    // Phòng trường hợp user tự đóng popup giữa đường (không có postMessage)
     popupCheckInterval = window.setInterval(() => {
       if (popup.closed) {
         clearInterval(popupCheckInterval)
@@ -54,9 +61,11 @@ const handleSyncGoogleCalendar = async () => {
         isLoading.value = false
       }
     }, 500)
-  } catch (e) {
+  } catch (e: any) {
     isLoading.value = false
-    // toast lỗi gọi API
+    if (e.response?.status === 403) {
+      showPremiumDialog.value = true
+    }
   }
 }
 
@@ -70,6 +79,12 @@ onUnmounted(() => {
     <button class="px-5 py-3 bg-red-300 disabled:opacity-50" :disabled="isLoading" @click="handleSyncGoogleCalendar">
       {{ isLoading ? 'Đang liên kết...' : 'Liên kết calendar' }}
     </button>
+
+    <PremiumFeatureDialog 
+      v-model:open="showPremiumDialog" 
+      feature-name="Đồng bộ Google Calendar" 
+      :business-only="false" 
+    />
   </div>
 </template>
 

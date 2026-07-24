@@ -28,21 +28,18 @@ public class CalendarNotificationScheduler {
         List<CalendarEventEntity> events = calendarEventRepository.findUpcomingOrRecurringEvents(now.toLocalDate());
         
         Set<Long> notifyMinutes = Set.of(
-            21 * 24 * 60L, // 3 weeks
-            7 * 24 * 60L,  // 1 week
-            4 * 24 * 60L,  // 4 days
-            2 * 24 * 60L,  // 2 days
-            24 * 60L,      // 1 day
-            16 * 60L,      // 16 hours
-            8 * 60L,       // 8 hours
-            4 * 60L,       // 4 hours
-            2 * 60L,       // 2 hours
-            60L,           // 1 hour
-            30L,           // 30 minutes
-            15L            // 15 minutes
+            30L, // 30 minutes
+            15L, // 15 minutes
+            5L,  // 5 minutes
+            0L   // Event start time
         );
 
         for (CalendarEventEntity event : events) {
+            if (event.isSchedule() && event.getScheduleId() != null
+                    && !event.getEventDate().equals(now.toLocalDate())) {
+                continue;
+            }
+
             LocalDateTime eventTime = LocalDateTime.of(event.getEventDate(), event.getStartTime()).withSecond(0).withNano(0);
             
             if (event.getRecurrenceType() != null && !event.getRecurrenceType().equals("NONE")) {
@@ -58,7 +55,7 @@ public class CalendarNotificationScheduler {
                 shouldNotify = true;
             }
 
-            if (shouldNotify && !event.getAttendees().isEmpty()) {
+            if (shouldNotify) {
                 calendarEmailService.sendEventNotificationEmail(event, event.getAttendees(), true);
             }
         }

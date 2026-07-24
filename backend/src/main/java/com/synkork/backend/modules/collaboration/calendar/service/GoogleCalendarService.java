@@ -21,6 +21,8 @@ import com.synkork.backend.modules.collaboration.calendar.enums.SyncStatus;
 import com.synkork.backend.modules.collaboration.calendar.repository.CalendarEventRepository;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
+import com.synkork.backend.modules.user.enums.PlanEnum;
+import com.synkork.backend.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -58,8 +60,8 @@ public class GoogleCalendarService {
     }
 
     private Calendar getCalendarClient(UserEntity user) throws Exception {
-        if (user.getGoogleCalendarAccessToken() == null) {
-            return null; // Not connected
+        if (user == null || user.getCurrentPlan() == PlanEnum.FREE || user.getGoogleCalendarAccessToken() == null) {
+            return null; // Not connected or on FREE plan
         }
 
         // Auto refresh
@@ -82,7 +84,7 @@ public class GoogleCalendarService {
 
     private void refreshToken(UserEntity user) {
         try {
-            if (user.getGoogleCalendarRefreshToken() == null) return;
+            if (user == null || user.getCurrentPlan() == PlanEnum.FREE || user.getGoogleCalendarRefreshToken() == null) return;
 
             GoogleCredential credential = new GoogleCredential.Builder()
                     .setTransport(GoogleNetHttpTransport.newTrustedTransport())
@@ -112,6 +114,11 @@ public class GoogleCalendarService {
         if (entity == null) return;
 
         UserEntity user = entity.getCreatedBy();
+        if (user == null || user.getCurrentPlan() == PlanEnum.FREE) {
+            log.info("Bỏ qua đồng bộ Google Calendar cho người dùng gói FREE");
+            return;
+        }
+
         try {
             Calendar client = getCalendarClient(user);
             if (client == null) return;
@@ -151,6 +158,10 @@ public class GoogleCalendarService {
         if (entity == null || entity.getGoogleEventId() == null) return;
 
         UserEntity user = entity.getCreatedBy();
+        if (user == null || user.getCurrentPlan() == PlanEnum.FREE) {
+            return;
+        }
+
         try {
             Calendar client = getCalendarClient(user);
             if (client != null) {
@@ -162,6 +173,10 @@ public class GoogleCalendarService {
     }
 
     public void syncOldEvents(UUID userId) {
+        UserEntity user = userRepository.findById(userId).orElse(null);
+        if (user == null || user.getCurrentPlan() == PlanEnum.FREE) {
+            return;
+        }
         List<CalendarEventEntity> oldEvents = calendarEventRepository.findByCreatedByIdAndGoogleEventIdIsNull(userId);
         for (CalendarEventEntity event : oldEvents) {
             syncEventToGoogle(event.getId());

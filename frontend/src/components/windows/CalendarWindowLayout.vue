@@ -8,6 +8,7 @@ import { storeToRefs } from "pinia";
 import { useCalendar } from "@/components/calendar/composables/useCalendar";
 import type { CalendarEvent } from "@/types/CalendarEvent";
 import type { SuggestedEventDraft } from "@/types/CalendarSuggestion";
+import dayjs from "dayjs";
 
 import CalendarMonthView from "@/components/calendar/views/CalendarMonthView.vue";
 import CalendarWeekView from "@/components/calendar/views/CalendarWeekView.vue";
@@ -198,17 +199,55 @@ const openSuggestedCreateDialog = (draft: SuggestedEventDraft) => {
   showDialog.value = true;
 };
 
+/**
+ * Chuẩn hóa sự kiện liên tục: nếu sự kiện thuộc nhóm scheduleId, tìm ngày bắt đầu thực tế (min) và ngày kết thúc thực tế (max) của nhóm.
+ */
+const resolveScheduleEvent = (event: CalendarEvent): CalendarEvent => {
+  if (event.schedule && event.scheduleId) {
+    const group = events.value.filter((e) => e.scheduleId === event.scheduleId);
+    if (group.length > 0) {
+      let minDate = event.eventDate;
+      let maxDate = event.endDate || event.eventDate;
+      for (const e of group) {
+        if (e.eventDate && dayjs(e.eventDate).isValid()) {
+          if (!minDate || dayjs(e.eventDate).isBefore(dayjs(minDate))) {
+            minDate = e.eventDate;
+          }
+        }
+        const eEnd = e.endDate || e.eventDate;
+        if (eEnd && dayjs(eEnd).isValid()) {
+          if (!maxDate || dayjs(eEnd).isAfter(dayjs(maxDate))) {
+            maxDate = eEnd;
+          }
+        }
+        if (e.eventDate && dayjs(e.eventDate).isValid()) {
+          if (!maxDate || dayjs(e.eventDate).isAfter(dayjs(maxDate))) {
+            maxDate = e.eventDate;
+          }
+        }
+      }
+      return {
+        ...event,
+        eventDate: minDate || event.eventDate,
+        endDate: maxDate || event.endDate || event.eventDate,
+      };
+    }
+  }
+  return event;
+};
+
 const openViewDialog = (event: CalendarEvent) => {
-  selectedEvent.value = event;
+  selectedEvent.value = resolveScheduleEvent(event);
   showViewDialog.value = true;
 };
 
 // Mở chức năng sửa sự kiện
 const openEditDialog = (event: CalendarEvent) => {
+  const resolved = resolveScheduleEvent(event);
   isEditing.value = true;
-  selectedEvent.value = event;
-  editingEventId.value = event.id;
-  initialFormData.value = createFormDataFromEvent(event);
+  selectedEvent.value = resolved;
+  editingEventId.value = resolved.id;
+  initialFormData.value = createFormDataFromEvent(resolved);
   showViewDialog.value = false;
   showDialog.value = true;
 };

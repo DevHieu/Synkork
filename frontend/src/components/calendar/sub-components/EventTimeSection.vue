@@ -35,7 +35,23 @@ const endDate = ref(props.initialEndDate || props.initialDate);
 const dateValue = computed({
   get: () => eventDate.value ? parseDate(eventDate.value) : undefined,
   set: (val) => {
-    if (val) eventDate.value = val.toString();
+    if (val) {
+      const newDateStr = val.toString();
+      const oldDateStr = eventDate.value;
+      eventDate.value = newDateStr;
+
+      // Khi người dùng tương tác chọn ngày bắt đầu mới, duy trì khoảng cách số ngày của sự kiện sang endDate
+      if (oldDateStr && endDate.value) {
+        const diffDays = dayjs(endDate.value).diff(dayjs(oldDateStr), "day");
+        if (diffDays >= 0) {
+          endDate.value = dayjs(newDateStr).add(diffDays, "day").format("YYYY-MM-DD");
+        } else {
+          endDate.value = newDateStr;
+        }
+      } else {
+        endDate.value = newDateStr;
+      }
+    }
   }
 });
 
