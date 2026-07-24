@@ -2,6 +2,7 @@ import { getUserInfo } from "@/services/userService";
 import type { User } from "@/types/User";
 import { defineStore } from "pinia";
 import { useNotificationStore } from "./notificationStore";
+import { userSocket } from "@/services/websocket/userSocket";
 
 export const useUserStore = defineStore("users", {
   state: () => ({
@@ -16,20 +17,21 @@ export const useUserStore = defineStore("users", {
         const response = await getUserInfo();
         this.user = response.data;
         if (this.user?.id) {
-          const notificationStore = useNotificationStore()
+          const notificationStore = useNotificationStore();
           try {
-            await notificationStore.fetchNotifications()
+            await notificationStore.fetchNotifications();
           } catch (e) {
-            console.warn("Không load được notifications:", e)
+            console.warn("Không load được notifications:", e);
           }
-          await notificationStore.connect()
+          notificationStore.connect();
+          userSocket.subscribeRoomInvited();
         }
       } catch (error) {
         console.error("Error fetching user info:", error);
       } finally {
         this.loading = false;
       }
-    }
+    },
   },
 
   getters: {
@@ -42,5 +44,5 @@ export const useUserStore = defineStore("users", {
       calendarId: state.user?.personalCalendarId ?? "",
       noteId: state.user?.personalNoteId ?? "",
     }),
-  }
+  },
 });

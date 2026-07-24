@@ -13,7 +13,7 @@ axiosClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = getCookie("accessToken");
     const url = config.url ?? "";
-    if (!url.startsWith("/api/auth/")) {
+    if (!url.startsWith("/api/auth/") || url === "/api/auth/check") {
       if (token) {
         config.headers = config.headers ?? {};
         config.headers.Authorization = `Bearer ${token}`;

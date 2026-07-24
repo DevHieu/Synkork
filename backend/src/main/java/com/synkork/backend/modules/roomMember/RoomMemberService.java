@@ -121,10 +121,6 @@ public class RoomMemberService {
         target.setInactiveByAdminLock(false);
         roomMemberRepository.save(target);
 
-//        roomMemberRepository.removeFromCardAssignees(memberUUID);
-//        roomMemberRepository.removeFromCalendarEventRoomMembers(memberUUID);
-//        roomMemberRepository.deleteById(memberUUID);
-
         return target.getUser().getEmail();
     }
 
@@ -151,22 +147,6 @@ public class RoomMemberService {
         return roomMemberRepository.save(target);
     }
 
-    // public void toggleMuteMembers(UUID roomId, UUID memberId, UUID requesterId, MuteRequest muteRequest) {
-
-
-    //     PermissionService.requirePermission(roomId, requesterId, RoomMemberRoleEnum.OWNER, RoomMemberRoleEnum.ADMIN);
-
-    //     RoomMemberEntity member = this.getRoomMemberByRoomIdAndUserId(roomId, memberId);
-
-    //     if (muteRequest.muted() != null) {
-    //         member.setMuted(muteRequest.muted());
-    //     } else {
-    //         member.setDeafen(muteRequest.deafen());
-    //     }
-
-    //     roomMemberRepository.save(member);
-    // }
-    
     public RoomMemberEntity toggleMuteMembers(UUID roomId, UUID memberId, UUID requesterId, MuteRequest muteRequest) {
 
 
