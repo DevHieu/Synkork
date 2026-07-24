@@ -26,6 +26,9 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import org.springframework.web.multipart.MultipartFile;
+import com.synkork.backend.common.utils.FileService;
+import com.synkork.backend.common.dtos.FileUploaded;
 
 @Service
 public class CalendarEventService {
@@ -56,10 +59,22 @@ public class CalendarEventService {
     private RoomMemberRepository roomMemberRepository;
 
     @Autowired
+    private com.synkork.backend.common.utils.LLMFunction.TikaFileService tikaFileService;
+
+    @Autowired
     private SpaceService spaceService;
 
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
+
+    @Autowired
+    private GoogleCalendarService googleCalendarService;
+
+    @Autowired
+    private FileService fileService;
+
+    @Autowired
+    private CalendarEmailService calendarEmailService;
 
     private void broadcastCalendarUpdate(String spaceId, String action, CalendarEventDTO event) {
         Map<String, Object> payload = new HashMap<>();
@@ -256,8 +271,16 @@ public class CalendarEventService {
         syncEventRelations(calendarEvent, eventRequest, creator);
 
         CalendarEventEntity savedEvent = calendarEventRepository.save(Objects.requireNonNull(calendarEvent));
+        googleCalendarService.syncEventToGoogle(savedEvent.getId());
+        
         CalendarEventDTO result = new CalendarEventDTO(savedEvent);
         broadcastCalendarUpdate(eventRequest.getSpaceId(), "CREATED", result);
+        
+
+        if (!savedEvent.getAttendees().isEmpty()) {
+            calendarEmailService.sendEventNotificationEmail(savedEvent, savedEvent.getAttendees(), false);
+        }
+        
         return result;
     }
 
@@ -300,10 +323,26 @@ public class CalendarEventService {
         }
         UserEntity actor = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng với ID: " + userId));
+                
+
+        List<RoomMemberEntity> oldAttendees = new ArrayList<>(calendarEvent.getAttendees());
+                
         syncEventRelations(calendarEvent, eventRequest, actor);
+        
+        List<RoomMemberEntity> addedAttendees = calendarEvent.getAttendees().stream()
+                .filter(a -> !oldAttendees.contains(a)).toList();
+        
         CalendarEventEntity savedEvent = calendarEventRepository.save(Objects.requireNonNull(calendarEvent));
+        googleCalendarService.syncEventToGoogle(savedEvent.getId());
+        
         CalendarEventDTO result = new CalendarEventDTO(savedEvent);
         broadcastCalendarUpdate(result.getSpaceId(), "UPDATED", result);
+        
+
+        if (!addedAttendees.isEmpty()) {
+            calendarEmailService.sendEventNotificationEmail(savedEvent, addedAttendees, false);
+        }
+        
         return result;
     }
 
@@ -379,10 +418,7 @@ public class CalendarEventService {
     }
 
     private Integer normalizeAttachmentSize(Integer size) {
-        if (size == null || size <= 0) {
-            return 0;
-        }
-        return size;
+        return (size == null || size <= 0) ? 0 : size;
     }
 
     private String normalizeAttachmentUrl(String fileUrl) {
@@ -429,8 +465,96 @@ public class CalendarEventService {
 
         // Broadcast trước khi xóa
         CalendarEventDTO deletedDto = new CalendarEventDTO(entity);
+        googleCalendarService.deleteEventFromGoogle(entity);
         calendarEventRepository.delete(entity);
+        
         broadcastCalendarUpdate(deletedDto.getSpaceId(), "DELETED", deletedDto);
+    }
+
+
+    @Transactional
+    public List<CalendarEventAttachmentDTO> uploadAttachments(UUID eventId, List<MultipartFile> files, UUID userId) {
+        CalendarEventEntity event = calendarEventRepository.findById(Objects.requireNonNull(eventId))
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sự kiện"));
+        if (!hasPermissionToEdit(event, userId)) {
+            throw new SecurityException("Không có quyền chỉnh sửa");
+        }
+        UserEntity uploader = userRepository.findById(userId).orElseThrow();
+        
+        List<EventAttachmentEntity> newAttachments = new ArrayList<>();
+        
+        for (MultipartFile file : files) {
+            // Use FileService
+            boolean isImage = file.getContentType() != null && file.getContentType().startsWith("image/");
+            FileUploaded uploaded = isImage 
+                    ? fileService.uploadImage(file, "calendar_events")
+                    : fileService.uploadFile(file, "calendar_events", false);
+                    
+            EventAttachmentEntity attachment = new EventAttachmentEntity();
+            attachment.setEvent(event);
+            attachment.setUploadedBy(uploader);
+            attachment.setFileName(uploaded.originalName());
+            attachment.setFileUrl(uploaded.url());
+            attachment.setFilePublicId(uploaded.publicId());
+            attachment.setResourceType(uploaded.resourceType());
+            attachment.setFileSizeKb((int)(file.getSize() / 1024));
+            
+            attachment.setType(isImage ? AttachmentTypeEnum.IMAGE : AttachmentTypeEnum.FILE);
+            
+            event.getAttachments().add(attachment);
+            newAttachments.add(attachment);
+        }
+        
+        calendarEventRepository.save(event);
+        
+        CalendarEventDTO result = new CalendarEventDTO(event);
+        broadcastCalendarUpdate(event.getSpace().getId().toString(), "UPDATED", result);
+        
+        List<CalendarEventAttachmentDTO> resultList = new ArrayList<>();
+        for (EventAttachmentEntity att : newAttachments) {
+            resultList.add(new CalendarEventAttachmentDTO(att));
+        }
+        return resultList;
+    }
+
+
+    @Transactional(readOnly = true)
+    public String summarizeAttachment(UUID eventId, UUID attachmentId, UUID userId) {
+        CalendarEventEntity event = calendarEventRepository.findById(Objects.requireNonNull(eventId))
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sự kiện"));
+                
+        EventAttachmentEntity target = event.getAttachments().stream()
+                .filter(a -> a.getId() != null && a.getId().equals(attachmentId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đính kèm"));
+                
+        return tikaFileService.convertClondinaryToString(target.getFileUrl());
+    }
+
+    @Transactional
+    public void deleteAttachment(UUID eventId, UUID attachmentId, UUID userId) {
+        CalendarEventEntity event = calendarEventRepository.findById(Objects.requireNonNull(eventId))
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sự kiện"));
+        if (!hasPermissionToEdit(event, userId)) {
+            throw new SecurityException("Không có quyền chỉnh sửa");
+        }
+        
+        Optional<EventAttachmentEntity> target = event.getAttachments().stream()
+                .filter(a -> a.getId() != null && a.getId().equals(attachmentId))
+                .findFirst();
+                
+        if (target.isPresent()) {
+            EventAttachmentEntity attachment = target.get();
+            event.getAttachments().remove(attachment);
+            calendarEventRepository.save(event);
+            
+            if (attachment.getFilePublicId() != null && attachment.getResourceType() != null) {
+                fileService.deleteFile(attachment.getFilePublicId(), attachment.getResourceType());
+            }
+            
+            CalendarEventDTO result = new CalendarEventDTO(event);
+            broadcastCalendarUpdate(event.getSpace().getId().toString(), "UPDATED", result);
+        }
     }
 
     // Kiểm tra sự kiện trùng giờ

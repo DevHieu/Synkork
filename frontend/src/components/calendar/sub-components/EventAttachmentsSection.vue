@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { watch } from "vue";
 import { useAttachments, type Attachment } from "../composables/useAttachments";
+import { X } from "lucide-vue-next";
 
 const props = defineProps<{
   initialAttachments?: Attachment[];
@@ -45,7 +46,7 @@ watch(() => props.show, (isOpen) => {
             <span class="font-sans font-medium text-foreground truncate text-[11px]">{{ file.name }}</span>
           </div>
           <button type="button" @click="removeAttachment(idx)" class="text-muted-foreground hover:text-destructive px-2 shrink-0 transition-colors">
-            <i class="pi pi-trash" />
+            <X class="h-4 w-4" />
           </button>
         </div>
       </div>

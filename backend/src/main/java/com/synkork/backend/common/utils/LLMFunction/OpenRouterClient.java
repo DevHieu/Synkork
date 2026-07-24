@@ -78,12 +78,18 @@ public class OpenRouterClient {
         }
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, buildHeaders(referer, title));
-        ResponseEntity<String> response = restTemplate.exchange(
-                openRouterBaseUrl + "/chat/completions",
-                HttpMethod.POST,
-                entity,
-                String.class
-        );
+        ResponseEntity<String> response;
+        try {
+            response = restTemplate.exchange(
+                    openRouterBaseUrl + "/chat/completions",
+                    HttpMethod.POST,
+                    entity,
+                    String.class
+            );
+        } catch (org.springframework.web.client.HttpStatusCodeException ex) {
+            log.error("[OpenRouter] Lỗi HTTP {}: {}", ex.getStatusCode(), ex.getResponseBodyAsString());
+            throw new RuntimeException("OpenRouter API error: " + ex.getResponseBodyAsString(), ex);
+        }
 
         String responseBody = response.getBody();
         JsonNode root = (responseBody != null && !responseBody.isBlank())

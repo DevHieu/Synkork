@@ -15,6 +15,8 @@ import {
   Users,
   PhoneCall,
   CheckSquare,
+  CalendarPlus,
+  Sparkles,
 } from "lucide-vue-next";
 import type { CalendarEvent } from "@/types/CalendarEvent";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -41,6 +43,8 @@ const emit = defineEmits<{
   (e: "update:show", value: boolean): void;
   (e: "edit", event: CalendarEvent): void;
   (e: "delete", event: CalendarEvent): void;
+  (e: "addToPersonalCalendar", event: CalendarEvent): void;
+  (e: "summarizeAttachment", attachment: any, event: CalendarEvent): void;
 }>();
 
 const isCreator = computed(() => props.event?.createdById === props.currentUserId);
@@ -467,16 +471,30 @@ const goToNoteSpace = async () => {
                         {{ attachment.size }} KB
                       </p>
                     </div>
-                    <a
-                      v-if="attachment.fileUrl"
-                      :href="attachment.fileUrl"
-                      target="_blank"
-                      rel="noreferrer"
-                      class="inline-flex items-center gap-1 rounded-sm border border-border bg-background px-2 py-1 font-sans text-[9px] font-semibold text-muted-foreground hover:bg-accent shrink-0 transition-colors"
-                    >
-                      <LinkIcon class="h-2.5 w-2.5" />
-                      Mở
-                    </a>
+                    <div class="flex items-center gap-1 shrink-0">
+                      <Button
+                        v-if="attachment.fileUrl"
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        class="h-auto py-1 px-2 text-[9px] font-sans font-semibold rounded-sm bg-background hover:bg-accent hover:text-primary transition-colors border-border shadow-none"
+                        @click="emit('summarizeAttachment', attachment, event!)"
+                        title="Tóm tắt nội dung file bằng AI"
+                      >
+                        <Sparkles class="h-2.5 w-2.5 mr-1" />
+                        AI Tóm tắt
+                      </Button>
+                      <a
+                        v-if="attachment.fileUrl"
+                        :href="attachment.fileUrl"
+                        target="_blank"
+                        rel="noreferrer"
+                        class="inline-flex items-center gap-1 rounded-sm border border-border bg-background px-2 py-1 font-sans text-[9px] font-semibold text-muted-foreground hover:bg-accent shrink-0 transition-colors"
+                      >
+                        <LinkIcon class="h-2.5 w-2.5" />
+                        Mở
+                      </a>
+                    </div>
                   </div>
                 </div>
                 <p v-else class="font-sans text-[10px] text-muted-foreground italic uppercase tracking-wider">
@@ -499,6 +517,18 @@ const goToNoteSpace = async () => {
           @click="emit('update:show', false)"
         >
           Đóng
+        </Button>
+
+        <Button
+          v-if="event"
+          type="button"
+          variant="secondary"
+          size="sm"
+          class="rounded-sm font-sans text-xs font-semibold px-4 py-2 border border-border/60 shadow-sm"
+          @click="emit('addToPersonalCalendar', event)"
+        >
+          <CalendarPlus class="mr-1.5 h-3.5 w-3.5" />
+          Lưu lịch cá nhân
         </Button>
 
         <Button

@@ -3,8 +3,9 @@ import { ref, computed, watch } from "vue";
 import Dialog from "@/components/ui/dialog/Dialog.vue";
 import DialogContent from "@/components/ui/dialog/DialogContent.vue";
 import DialogTitle from "@/components/ui/dialog/DialogTitle.vue";
+import DialogDescription from "@/components/ui/dialog/DialogDescription.vue";
 import DialogHeader from "@/components/ui/dialog/DialogHeader.vue";
-import { Copy, Check, RefreshCw, Link, UserPlus, Users } from "lucide-vue-next";
+import { Copy, Check, RefreshCw, Link, UserPlus, Users, Loader2 } from "lucide-vue-next";
 import { useRoomsStore } from "@/stores/roomStore";
 import { storeToRefs } from "pinia";
 import { getInviteCode, resetInviteCode, inviteFriendToRoom } from "@/services/roomService";
@@ -122,9 +123,9 @@ watch(
         <DialogTitle class="text-base font-semibold text-foreground">
           Mời bạn bè vào {{ currentRoom?.name }}
         </DialogTitle>
-        <p class="text-xs text-muted-foreground mt-1">
+        <DialogDescription class="text-xs text-muted-foreground mt-1">
           Chia sẻ link bên dưới để mời người khác tham gia phòng
-        </p>
+        </DialogDescription>
       </DialogHeader>
 
       <div class="px-6 pb-5 flex flex-col gap-5">

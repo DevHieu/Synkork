@@ -2,8 +2,7 @@ import axiosClient from "@/lib/axiosClient";
 
 // Lấy tất cả event theo spaceId
 export const getEventsBySpaceId = async (spaceId: string) => {
-  const res = await axiosClient.get(`/api/calendar-events/${spaceId}`);
-  return res;
+  return await axiosClient.get(`/api/calendar-events/${spaceId}`);
 };
 
 // Lấy event theo khoảng thời gian
@@ -12,42 +11,36 @@ export const getEventsByDateRange = async (
   start: string,
   end: string
 ) => {
-  const res = await axiosClient.get(
+  return await axiosClient.get(
     `/api/calendar-events/${spaceId}/range?start=${start}&end=${end}`
   );
-  return res;
 };
 
 // Lấy event theo ngày cụ thể
 export const getEventsByDate = async (spaceId: string, date: string) => {
-  const res = await axiosClient.get(`/api/calendar-events/${spaceId}/date?date=${date}`);
-  return res;
+  return await axiosClient.get(`/api/calendar-events/${spaceId}/date?date=${date}`);
 };
 
 // Tạo event mới
 export const createEvent = async (data: any) => {
-  const res = await axiosClient.post(`/api/calendar-events`, data);
-  return res;
+  return await axiosClient.post(`/api/calendar-events`, data);
 };
 
 // Cập nhật event
 export const updateEvent = async (eventId: string, data: any) => {
-  const res = await axiosClient.put(`/api/calendar-events/${eventId}`, data);
-  return res;
+  return await axiosClient.put(`/api/calendar-events/${eventId}`, data);
 };
 
 export const uploadEventAttachments = async (eventId: string, files: File[]) => {
   const formData = new FormData();
   files.forEach((file) => formData.append("files", file));
-  const res = await axiosClient.post(`/api/calendar-events/${eventId}/attachments`, formData, {
+  return await axiosClient.post(`/api/calendar-events/${eventId}/attachments`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
-  return res;
 };
 
 export const deleteEvent = async (eventId: string) => {
-  const res = await axiosClient.delete(`/api/calendar-events/${eventId}`);
-  return res;
+  return await axiosClient.delete(`/api/calendar-events/${eventId}`);
 };
 
 // Kiểm tra sự kiện trùng giờ
@@ -61,6 +54,14 @@ export const checkConflicts = async (
 ) => {
   let url = `/api/calendar-events/${spaceId}/conflicts?date=${date}&endDate=${endDate}&startTime=${startTime}&endTime=${endTime}`;
   if (excludeId) url += `&excludeId=${excludeId}`;
-  const res = await axiosClient.get(url);
-  return res;
+  return await axiosClient.get(url);
+};
+
+// Tóm tắt nội dung file đính kèm bằng AI
+export const summarizeAttachment = async (eventId: string, attachmentId: string) => {
+  return await axiosClient.post(
+    `/api/calendar-events/${eventId}/attachments/${attachmentId}/summarize`,
+    {}, // Không có body
+    { timeout: 60000 } // Tăng timeout lên 60s cho xử lý AI
+  );
 };

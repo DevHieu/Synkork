@@ -9,6 +9,9 @@ import com.synkork.backend.modules.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+import com.synkork.backend.modules.collaboration.calendar.enums.SyncStatus;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -63,6 +66,15 @@ public class CalendarEventEntity extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="created_by",nullable = false, columnDefinition = "BINARY(16)")
     private UserEntity createdBy;
+
+    // Google Calendar Sync Fields
+    private String googleEventId;
+    private String googleCalendarId = "primary";
+    
+    @Enumerated(EnumType.STRING)
+    private SyncStatus syncStatus = SyncStatus.PENDING;
+    
+    private LocalDateTime lastSyncedAt;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(

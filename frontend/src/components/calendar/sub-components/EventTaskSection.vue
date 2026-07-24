@@ -101,13 +101,6 @@ watch(() => props.show, async (isOpen) => {
     <div class="space-y-1.5">
       <Label class="text-[10px] font-sans font-bold text-muted-foreground uppercase tracking-wider">Kênh Task</Label>
 
-      const value = selected.value
-
-const value = selected.value
-
-if (typeof value === "string") {
-    submit(value)
-}
 
       <Select :model-value="selectedSpaceId || 'none'"
         @update:model-value="val => { selectedSpaceId = val as string; }">

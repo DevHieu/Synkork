@@ -2,8 +2,10 @@ package com.synkork.backend.modules.auth;
 
 import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.modules.auth.GoogleCalendarOAuthService;
+import com.synkork.backend.modules.collaboration.calendar.service.GoogleCalendarService;
 import com.synkork.backend.security.JwtService;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.web.servlet.view.RedirectView;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -26,41 +28,40 @@ public class IntegrationController {
     @Autowired
     private GoogleCalendarOAuthService googleCalendarOAuthService;
 
+    @Autowired
+    private GoogleCalendarService googleCalendarService;
+
     @GetMapping("/google-calendar/authorize-url")
-    public ResponseEntity<Map<String, String>> getAuthorizeUrl() {
+    public ResponseEntity<Map<String, String>> getAuthorizeUrl(@RequestParam(required = false) String redirectPath) {
         UUID userId = AuthUtils.getCurrentUserId();
-        String state = jwtService.generateShortLivedState(userId.toString());
+        String state = jwtService.generateShortLivedState(userId.toString(), redirectPath);
         return ResponseEntity.ok(Map.of("authorizeUrl", googleCalendarOAuthService.buildAuthorizeUrl(state)));
     }
 
     @GetMapping("/google-calendar/callback")
-    public void handleCallback(
+    public RedirectView handleCallback(
             @RequestParam(required = false) String code,
             @RequestParam(required = false) String state,
-            @RequestParam(required = false) String error,
-            HttpServletResponse response
-    ) throws IOException {
-        String resultStatus;
-        try {
-            if (error != null) {
-                resultStatus = "error";
-            } else {
-                String userId = jwtService.validateAndExtractStateUserId(state);
-                googleCalendarOAuthService.handleCallback(code, UUID.fromString(userId));
-                resultStatus = "success";
-            }
-        } catch (Exception e) {
-            resultStatus = "error";
+            @RequestParam(required = false) String error
+    ) {
+        if (error != null) {
+            return new RedirectView(frontendUrl + "/me?sync=error");
         }
-
-        response.setContentType("text/html");
-        response.getWriter().write("""
-            <html><body>
-            <script>
-                window.opener.postMessage({ type: "GOOGLE_CALENDAR_LINK", status: "%s" }, "%s");
-                window.close();
-            </script>
-            </body></html>
-        """.formatted(resultStatus, frontendUrl));
+        
+        try {
+            var claims = jwtService.validateAndExtractState(state);
+            String userId = claims.get("userId", String.class);
+            String redirectPath = claims.get("redirectPath", String.class);
+            
+            if (redirectPath == null) redirectPath = "/me";
+            
+            googleCalendarOAuthService.handleCallback(code, UUID.fromString(userId));
+            
+            googleCalendarService.syncOldEvents(UUID.fromString(userId));
+            
+            return new RedirectView(frontendUrl + redirectPath + "?sync=success");
+        } catch (Exception e) {
+            return new RedirectView(frontendUrl + "/me?sync=error");
+        }
     }
 }

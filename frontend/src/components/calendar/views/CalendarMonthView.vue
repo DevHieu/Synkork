@@ -18,6 +18,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "selectDate", date: dayjs.Dayjs): void;
   (e: "viewEvent", event: CalendarEvent): void;
+  (e: "deleteAllEvents", events: CalendarEvent[]): void;
 }>();
 
 /**
@@ -56,7 +57,7 @@ const eventsByDate = computed(() => {
     map[d].push(event);
   }
   for (const key in map) {
-    map[key].sort((a, b) => a.startTime.localeCompare(b.startTime));
+    map[key]?.sort((a, b) => a.startTime.localeCompare(b.startTime));
   }
   return map;
 });
@@ -100,6 +101,17 @@ const getContinuationLabel = (event: CalendarEvent) => {
   if (event.continuesFromPreviousDay) return "BẮT ĐẦU TỪ NGÀY HÔM TRƯỚC";
   if (event.continuesToNextDay) return "TIẾP TỤC Ở NGÀY HÔM SAU";
   return "";
+};
+
+const handleDeleteAllForDate = () => {
+  const eventsToDelete = selectedDateEvents.value.filter(e => e.createdById === props.currentUserId);
+  
+  if (eventsToDelete.length === 0) {
+    alert("Bạn không có quyền xóa các sự kiện trong ngày này!");
+    return;
+  }
+  
+  emit("deleteAllEvents", eventsToDelete);
 };
 </script>
 
@@ -179,6 +191,13 @@ const getContinuationLabel = (event: CalendarEvent) => {
               {{ selectedDateEvents.length }} SỰ KIỆN
             </p>
           </div>
+          <button
+            v-if="selectedDateEvents.length > 0"
+            @click="handleDeleteAllForDate"
+            class="text-[11px] font-semibold px-2.5 py-1.5 bg-destructive text-white rounded-sm hover:bg-destructive/90 transition-colors shadow-sm"
+          >
+            Xóa TOÀN BỘ SỰ KIỆN Ở ngày này
+          </button>
         </div>
         <ScrollArea class="calendar-scroll-area min-h-0 flex-1">
           <div class="flex flex-col gap-3.5 p-4 pr-5">
@@ -244,7 +263,7 @@ const getContinuationLabel = (event: CalendarEvent) => {
                         />
                         <AvatarFallback />
                       </Avatar>
-                      <span class="font-sans text-xs font-medium uppercase truncate max-w-[150px]">{{ getCreatorLabel(event) }}</span>
+                      <span class="font-sans text-xs font-medium uppercase truncate max-w-37.5">{{ getCreatorLabel(event) }}</span>
                     </div>
                   </div>
                 </div>

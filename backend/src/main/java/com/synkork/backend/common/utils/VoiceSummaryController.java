@@ -22,8 +22,8 @@ public class VoiceSummaryController {
 
     private static final Logger log = LoggerFactory.getLogger(VoiceSummaryController.class);
 
-    /** Giới hạn 10 MB — đủ cho audio cuộc họp ngắn và nằm trong giới hạn LLM provider. */
-    private static final long MAX_VOICE_FILE_SIZE = 10 * 1024 * 1024;
+    /** Giới hạn 20 MB */
+    private static final long MAX_VOICE_FILE_SIZE = 20 * 1024 * 1024;
 
     private static final Set<String> ALLOWED_AUDIO_TYPES = Set.of(
             "audio/mpeg", "audio/mp4", "audio/webm", "audio/wav",
@@ -47,7 +47,7 @@ public class VoiceSummaryController {
             @RequestParam("file") MultipartFile file,
             @RequestParam("roomId") String roomId) {
 
-        // ── Validate roomId format ───────────────────────────────────────────
+        // Validate roomId format
         UUID roomUuid;
         try {
             roomUuid = UUID.fromString(roomId);
@@ -55,27 +55,29 @@ public class VoiceSummaryController {
             return ResponseEntity.badRequest().body("roomId không hợp lệ.");
         }
 
-        // ── Kiểm tra quyền truy cập room ────────────────────────────────────
+        // Kiểm tra quyền truy cập room
         UUID currentUserId = AuthUtils.getCurrentUserId();
         if (!roomMemberRepository.existsByRoom_IdAndUser_Id(roomUuid, currentUserId)) {
             return ResponseEntity.status(403).body("Bạn không phải thành viên của phòng này.");
         }
 
-        // ── Kiểm tra LLM service sẵn sàng ───────────────────────────────────
+        // Kiểm tra LLM service sẵn sàng
         if (!meetingService.isConfigured()) {
             return ResponseEntity.status(503).body("Dịch vụ AI tạm thời không khả dụng.");
         }
 
-        // ── Validate file trước khi xử lý ───────────────────────────────────
+        // Validate file
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("File rỗng.");
         }
         if (file.getSize() > MAX_VOICE_FILE_SIZE) {
+            System.out.println("File quá lớn");
             return ResponseEntity.badRequest()
                     .body("File vượt quá giới hạn " + (MAX_VOICE_FILE_SIZE / (1024 * 1024)) + "MB.");
         }
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_AUDIO_TYPES.contains(contentType)) {
+            System.out.println("Phải đúng chuẩn hỗ trợ");
             return ResponseEntity.badRequest()
                     .body("Loại file không được hỗ trợ. Chỉ chấp nhận: mp3, m4a, webm, wav, ogg.");
         }
@@ -102,16 +104,16 @@ public class VoiceSummaryController {
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            // Dọn dẹp file đã upload nếu xử lý tiếp theo thất bại
+            // Dọn dẹp file đã upload nếu xử lý thất bại
             if (uploaded != null) {
                 try {
                     fileService.deleteFile(uploaded.publicId(), uploaded.resourceType());
                 } catch (Exception cleanupEx) {
-                    log.warn("Không thể dọn dẹp file orphaned publicId={}", uploaded.publicId(), cleanupEx);
+                    System.out.println("Không thể dọn dẹp file orphaned publicId"+ uploaded.publicId()+ cleanupEx);
                 }
             }
-            log.error("Lỗi xử lý file voice cho room={}", roomId, e);
-            return ResponseEntity.status(500).body("Lỗi xử lý file voice. Vui lòng thử lại.");
+            System.out.println("Lỗi xử lý file voice cho room"+roomId+e );
+            return ResponseEntity.status(500).body("Lỗi xử lý file voice: " + e.getMessage());
         }
     }
 }

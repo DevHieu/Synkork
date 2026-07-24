@@ -9,12 +9,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CalendarEventAttachmentDTO {
+    private String id;
     private String name;
     private Integer size;
     private String fileUrl;
     private String type;
 
     public CalendarEventAttachmentDTO(EventAttachmentEntity entity) {
+        this.id = entity.getId() != null ? entity.getId().toString() : null;
         this.name = entity.getFileName();
         this.size = entity.getFileSizeKb();
         this.fileUrl = entity.getFileUrl();
