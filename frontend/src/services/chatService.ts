@@ -1,19 +1,38 @@
 import axiosClient from "@/lib/axiosClient";
 import type { MessageRequest } from "@/types/Message";
+import axios from "axios";
+import { toast } from "vue-sonner";
 
 export const chatService = {
   async sendMessage(spaceId: string, msg: MessageRequest) {
     return axiosClient.post(`/api/spaces/${spaceId}/messages`, msg);
   },
 
-  async updateMessage(spaceId: string, messageId: string, message: MessageRequest) {
-    return axiosClient.put(`/api/spaces/${spaceId}/messages/${messageId}`, message);
+  async updateMessage(
+    spaceId: string,
+    messageId: string,
+    message: MessageRequest,
+  ) {
+    try {
+      return await axiosClient.put(
+        `/api/spaces/${spaceId}/messages/${messageId}`,
+        message,
+      );
+    } catch (e) {
+      if (axios.isAxiosError(e) && e.response?.status === 409) {
+        toast.error("Tin nhắn đã bị thay đổi bởi người khác", {
+          description: "Vui lòng tải lại và thử lại",
+        });
+        return;
+      }
+      throw e;
+    }
   },
 
   async deleteMessage(spaceId: string, messageId: string) {
     return axiosClient.delete(`/api/spaces/${spaceId}/messages/${messageId}`);
-  }
-}
+  },
+};
 
 export const getChatFromSpaceId = async (
   spaceId: string,

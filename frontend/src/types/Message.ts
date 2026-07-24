@@ -23,9 +23,11 @@ export interface Message {
   failed?: boolean;
   createdAt: string;
   updatedAt: string;
+  version: number;
 }
 
 export interface MessageRequest {
   content: string;
+  version?: number;
   replyToId: string | null;
 }

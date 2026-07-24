@@ -50,21 +50,29 @@ const isFullAction = computed(
   () => canManage.value || props.message.sender?.username === user.value?.username,
 );
 const isEditing = ref(false);
+const editElement = ref<Message | null>(null)
 const editContent = ref("");
 const isDeleteOpen = ref(false);
 
 const handleEdit = () => {
   isEditing.value = true;
-  editContent.value = props.message.content ?? "";
+  editElement.value = props.message
+  editContent.value = editElement.value.content ?? "";
 };
 
 const handleSaveEdit = () => {
-  const trimmed = editContent.value.trim();
-  if (!trimmed || trimmed === props.message.content) {
+  if (!editElement.value) {
     handleCancelEdit();
     return;
   }
-  chatService.updateMessage(props.spaceId, props.message.id, { content: trimmed, replyToId: null }); // Null thì tại update chỉ có update text thôi
+
+  const trimmed = editContent.value.trim();
+  if (!trimmed || trimmed === editElement.value.content) {
+    handleCancelEdit();
+    return;
+  }
+
+  chatService.updateMessage(props.spaceId, editElement.value.id, { content: trimmed, version: editElement.value.version, replyToId: null }); // Null thì tại update chỉ có update text thôi
   isEditing.value = false;
 };
 

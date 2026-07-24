@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import com.synkork.backend.modules.message.dto.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -173,12 +174,15 @@ public class MessageService {
         MessageEntity entity = messageRepository.findById(messageUUID)
                 .orElseThrow(() -> new IllegalArgumentException("Message not found"));
 
+        if (!entity.getVersion().equals(request.version())) {
+            throw new ObjectOptimisticLockingFailureException(MessageEntity.class, entity.getId());
+        }
+
         entity.setContent(request.content());
         entity.setEdited(true); // thêm cái này vào là xong
 
         MessageEntity saved = messageRepository.save(entity);
         saved.setUpdatedAt(saved.getUpdatedAt());
-        saved.setEdited(true);
 
         return new MessageDTO(saved);
     }
