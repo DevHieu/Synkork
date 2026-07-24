@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { login } from "@/services/authService";
 import type { LoginData } from "@/types/LoginData";
+import { consumeAuthFlashMessage } from "@/utils/authFlashMessage";
 
 const router = useRouter();
 
@@ -14,6 +15,13 @@ const errors = ref({ username: "", password: "" });
 const serverError = ref("");
 const highlightGoogle = ref(false);
 const showPassword = ref(false);
+
+onMounted(() => {
+  const flashMessage = consumeAuthFlashMessage();
+  if (flashMessage) {
+    serverError.value = flashMessage;
+  }
+});
 
 const validate = () => {
   let valid = true;
