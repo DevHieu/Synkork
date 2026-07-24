@@ -14,7 +14,7 @@ export interface Message {
   deleted: boolean;
   pinned: boolean;
   edited: boolean;
-  type: "TEXT" | "IMAGE" | "FILE";
+  type: "TEXT" | "IMAGE" | "VIDEO" | "FILE";
   sender: Member;
   replyTo: ReplyPreview | null;
   attachmentUrl: string | null;

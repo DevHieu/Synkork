@@ -37,6 +37,8 @@ const messageStore = useMessageStore();
 const { replyingTo } = storeToRefs(messageStore);
 
 const isImage = (file: File) => file.type.startsWith("image/");
+const isVideo = (file: File) => file.type.startsWith("video/");
+const isPreviewableMedia = (file: File) => isImage(file) || isVideo(file);
 const hasFiles = computed(() => selectedFiles.value.length > 0);
 
 const fileSizeDialogOpen = ref(false);
@@ -59,20 +61,19 @@ const addFiles = (newFiles: FileList | File[]) => {
     )
       return;
     selectedFiles.value.push(file);
-    if (isImage(file)) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        filePreviews.value = new Map(filePreviews.value).set(
-          file,
-          e.target?.result as string,
-        );
-      };
-      reader.readAsDataURL(file);
+    if (isPreviewableMedia(file)) {
+      filePreviews.value = new Map(filePreviews.value).set(
+        file,
+        URL.createObjectURL(file),
+      );
     }
   });
 };
 
 const removeFile = (file: File) => {
+  const previewUrl = filePreviews.value.get(file);
+  if (previewUrl) URL.revokeObjectURL(previewUrl);
+
   selectedFiles.value = selectedFiles.value.filter((f) => f !== file);
   const map = new Map(filePreviews.value);
   map.delete(file);
@@ -80,6 +81,7 @@ const removeFile = (file: File) => {
 };
 
 const clearFiles = () => {
+  filePreviews.value.forEach((url) => URL.revokeObjectURL(url));
   selectedFiles.value = [];
   filePreviews.value = new Map();
   if (fileInputRef.value) fileInputRef.value.value = "";

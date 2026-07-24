@@ -351,14 +351,16 @@ function createTempMessage(
   content: string | null,
   replyTo: Message | null,
 ): Message {
+  const isImage = file?.type.startsWith("image/") ?? false;
+  const isVideo = file?.type.startsWith("video/") ?? false;
+
   return {
     id: crypto.randomUUID(),
     content,
     spaceId,
-    type: file ? (file.type.startsWith("image/") ? "IMAGE" : "FILE") : "TEXT",
+    type: file ? (isImage ? "IMAGE" : isVideo ? "VIDEO" : "FILE") : "TEXT",
     attachmentName: file ? file.name : null,
-    attachmentUrl:
-      file && file.type.startsWith("image/") ? URL.createObjectURL(file) : null,
+    attachmentUrl: file && (isImage || isVideo) ? URL.createObjectURL(file) : null,
     sending: true,
     failed: false,
     sender: useUserStore().user as any,

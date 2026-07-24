@@ -11,6 +11,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import com.synkork.backend.modules.message.dto.*;
+import com.synkork.backend.security.UserPrinciple;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -28,7 +29,6 @@ import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
 import com.synkork.backend.modules.space.SpaceEntity;
 import com.synkork.backend.modules.space.SpaceRepository;
-import com.synkork.backend.modules.user.enums.PlanEnum;
 
 @Service
 public class MessageService {
@@ -258,22 +258,20 @@ public class MessageService {
         RoomMemberEntity sender = roomMemberRepository
                 .findByUserIdAndRoom_IdWithUser(userId, space.getRoom().getId())
                 .orElseThrow(() -> new IllegalArgumentException("User is not a member of this room"));
+
         requireChatEnabled(sender);
 
         // Gửi từng file message
-        requireChatEnabled(sender);
-
         for (MultipartFile file : fileList) {
             boolean isImage = file.getContentType() != null && file.getContentType().startsWith("image/");
-            FileUploaded uploaded = isImage
-                    ? fileService.uploadImage(file, "message_file")
-                    : fileService.uploadFile(file, "message_file");
+            boolean isVideo = file.getContentType() != null && file.getContentType().startsWith("video/");
+            FileUploaded uploaded = fileService.handleUpload(file, "message_file");
 
             MessageEntity fileMessage = new MessageEntity();
             fileMessage.setSpace(space);
             fileMessage.setSender(sender);
             fileMessage.setContent(null);
-            fileMessage.setType(isImage ? MessageTypeEnum.IMAGE : MessageTypeEnum.FILE);
+            fileMessage.setType(isImage ? MessageTypeEnum.IMAGE : isVideo ? MessageTypeEnum.VIDEO : MessageTypeEnum.FILE);
             fileMessage.setAttachmentUrl(uploaded.url());
             fileMessage.setAttachmentPublicId(uploaded.publicId());
             fileMessage.setAttachmentResourceType(uploaded.resourceType());

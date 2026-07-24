@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import ImageViewerDialog from "@/components/dialog/ImageViewerDialog.vue";
-import { FileIcon } from "lucide-vue-next";
-import { ref } from "vue";
+import { FileIcon, PlayCircle } from "lucide-vue-next";
+import { computed, ref } from "vue";
+
+import MediaPreviewDialog from "./MediaPreviewDialog.vue";
 
 const props = defineProps<{
-  type: "IMAGE" | "FILE";
+  type: "IMAGE" | "VIDEO" | "FILE";
   attachmentUrl: string;
   attachmentName: string | null;
   sending?: boolean;
@@ -12,8 +13,12 @@ const props = defineProps<{
 
 const viewerOpen = ref(false);
 
+const isPreviewableMedia = computed(
+  () => props.type === "IMAGE" || props.type === "VIDEO",
+);
+
 const handleClick = async () => {
-  if (props.type === "IMAGE") {
+  if (isPreviewableMedia.value) {
     viewerOpen.value = true;
   } else {
     const res = await fetch(props.attachmentUrl);
@@ -32,8 +37,8 @@ const handleClick = async () => {
   <!-- Skeleton -->
   <template v-if="sending">
     <div
-      v-if="type === 'IMAGE'"
-      class="w-48 h-36 bg-muted rounded-lg animate-pulse"
+      v-if="isPreviewableMedia"
+      class="h-36 w-48 animate-pulse rounded-lg bg-muted"
     />
     <div
       v-else
@@ -47,19 +52,44 @@ const handleClick = async () => {
     </div>
   </template>
 
-  <!-- Image -->
-  <div v-else-if="type === 'IMAGE'" class="mt-1">
-    <img
-      :src="attachmentUrl"
-      :alt="attachmentName ?? 'image'"
-      class="max-w-xs max-h-72 rounded-lg object-cover cursor-zoom-in hover:opacity-90 transition-opacity"
+  <!-- Image / Video -->
+  <div v-else-if="isPreviewableMedia" class="mt-1">
+    <button
+      type="button"
+      class="group relative block max-w-xs overflow-hidden rounded-lg bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       @click="handleClick"
-    />
+    >
+      <img
+        v-if="type === 'IMAGE'"
+        :src="attachmentUrl"
+        :alt="attachmentName ?? 'image'"
+        class="max-h-72 max-w-xs cursor-zoom-in object-cover transition-opacity group-hover:opacity-90"
+      >
 
-    <ImageViewerDialog
+      <video
+        v-else
+        :src="attachmentUrl"
+        muted
+        playsinline
+        preload="metadata"
+        class="max-h-72 max-w-xs cursor-pointer object-cover transition-opacity group-hover:opacity-90"
+      />
+
+      <div
+        v-if="type === 'VIDEO'"
+        class="absolute inset-0 flex items-center justify-center bg-black/10 transition-colors group-hover:bg-black/25"
+      >
+        <div class="rounded-full bg-black/65 p-2 text-white shadow-sm">
+          <PlayCircle class="h-7 w-7" />
+        </div>
+      </div>
+    </button>
+
+    <MediaPreviewDialog
       v-model:open="viewerOpen"
       :src="attachmentUrl"
-      :name="attachmentName ?? 'image'"
+      :name="attachmentName ?? (type === 'VIDEO' ? 'video' : 'image')"
+      :resource-type="type === 'VIDEO' ? 'video' : 'image'"
     />
   </div>
 
