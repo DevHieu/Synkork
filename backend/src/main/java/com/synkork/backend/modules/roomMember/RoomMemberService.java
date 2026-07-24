@@ -117,8 +117,7 @@ public class RoomMemberService {
             throw new RuntimeException("ADMIN cannot kick another ADMIN");
         }
 
-        target.setStatus(MemberStatusEnum.INACTIVE);
-        target.setInactiveByAdminLock(false);
+        target.setStatus(MemberStatusEnum.KICKED);
         roomMemberRepository.save(target);
 
         return target.getUser().getEmail();
@@ -205,8 +204,7 @@ public class RoomMemberService {
     @Transactional
     public void leaveRoom(UUID roomUUID, UUID requesterId) {
         RoomMemberEntity member = this.getRoomMemberByRoomIdAndUserId(roomUUID, requesterId);
-        member.setStatus(MemberStatusEnum.INACTIVE);
-        member.setInactiveByAdminLock(false);
+        member.setStatus(MemberStatusEnum.KICKED);
         roomMemberRepository.save(member);
 
 //        roomMemberRepository.removeFromCardAssignees(member.getId());
@@ -216,8 +214,7 @@ public class RoomMemberService {
 
     public void deleteMember(UUID userId, UUID roomId) {
         RoomMemberEntity member = this.getRoomMemberByRoomIdAndUserId(roomId, userId);
-        member.setStatus(MemberStatusEnum.INACTIVE);
-        member.setInactiveByAdminLock(false);
+        member.setStatus(MemberStatusEnum.KICKED);
         roomMemberRepository.save(member);
     }
 
@@ -240,7 +237,6 @@ public class RoomMemberService {
         RoomMemberEntity ownerMember = newOwner.get();
         ownerMember.setRole(RoomMemberRoleEnum.OWNER);
         ownerMember.setStatus(MemberStatusEnum.ACTIVE);
-        ownerMember.setInactiveByAdminLock(false);
         room.setOwner(ownerMember.getUser());
         roomMemberRepository.save(ownerMember);
         roomRepository.save(room);

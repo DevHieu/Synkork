@@ -156,7 +156,7 @@ public class RoomService {
         // Check xem mmber đã trong phòng? Đã trong phòng thì statsu là gì
         if (alreadyMember.isPresent()) {
             RoomMemberEntity member = alreadyMember.get();
-            if (member.getStatus() == MemberStatusEnum.INACTIVE) {
+            if (member.getStatus() == MemberStatusEnum.KICKED) {
                 member.setStatus(MemberStatusEnum.ACTIVE);
                 roomMemberRepository.save(member);
 
@@ -231,7 +231,7 @@ public class RoomService {
         if (alreadyMember.isPresent()) {
             RoomMemberEntity member = alreadyMember.get();
             System.out.println(member.getStatus());
-            if (member.getStatus() == MemberStatusEnum.INACTIVE) {
+            if (member.getStatus() == MemberStatusEnum.KICKED) {
                 member.setStatus(MemberStatusEnum.ACTIVE);
                 roomMemberRepository.save(member);
 

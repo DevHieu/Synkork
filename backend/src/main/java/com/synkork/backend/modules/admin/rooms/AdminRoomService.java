@@ -319,7 +319,6 @@ public class AdminRoomService {
                 .ifPresentOrElse(member -> {
                     member.setStatus(MemberStatusEnum.ACTIVE);
                     member.setRole(RoomMemberRoleEnum.OWNER);
-                    member.setInactiveByAdminLock(false);
                     roomMemberRepository.save(member);
                 }, () -> roomMemberService.addRoomMembers(
                         owner.getId().toString(),

@@ -30,7 +30,7 @@ export interface UserJoinedRoom {
   ownerUsername?: string | null
   warning: number
   memberRole: string
-  memberStatus: string
+  memberStatus: 'ACTIVE' | 'INACTIVE' | 'KICKED'
   joinedAt?: string | null
   createdAt?: string | null
 }

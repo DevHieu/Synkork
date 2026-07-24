@@ -54,7 +54,8 @@ function roomStatusLabel(status: string) {
 function memberStatusLabel(status: string) {
   return {
     ACTIVE: 'Đang tham gia',
-    INACTIVE: 'Ngừng tham gia',
+    INACTIVE: 'Tạm ngưng do tài khoản bị khóa',
+    KICKED: 'Đã rời/bị kick',
   }[status] ?? status
 }
 
