@@ -154,7 +154,8 @@ export const useSpaceStore = defineStore("spaces", {
         if (!this.currentSpace || this.currentSpace.id === spaceId) {
           this.currentSpace = this.chatSpaces[0] ?? null;
           router.push(
-            `/rooms/chat/${router.currentRoute.value.params.roomId}/${this.chatSpaces[0]?.id || ""
+            `/rooms/chat/${router.currentRoute.value.params.roomId}/${
+              this.chatSpaces[0]?.id || ""
             }`,
           );
         }
@@ -165,14 +166,17 @@ export const useSpaceStore = defineStore("spaces", {
       if (space === null) {
         this.currentSpace = this.chatSpaces[0] ?? null;
         router.push(
-          `/rooms/chat/${router.currentRoute.value.params.roomId}/${this.chatSpaces[0]?.id || ""
+          `/rooms/chat/${router.currentRoute.value.params.roomId}/${
+            this.chatSpaces[0]?.id || ""
           }`,
         );
         return;
       }
 
       this.currentSpace = space;
-      router.push(`/rooms/${spaceType.toLowerCase()}/${router.currentRoute.value.params.roomId}/${spaceId}`);
+      router.push(
+        `/rooms/${spaceType.toLowerCase()}/${router.currentRoute.value.params.roomId}/${spaceId}`,
+      );
     },
 
     async joinDMSpace(spaceId: string, path: string = "/me") {
@@ -236,7 +240,8 @@ export const useSpaceStore = defineStore("spaces", {
         this.changeSpaceById(spaceId, "CHAT");
 
         router.push(
-          `/rooms/chat/${router.currentRoute.value.params.roomId}/${this.chatSpaces[0]?.id || ""
+          `/rooms/chat/${router.currentRoute.value.params.roomId}/${
+            this.chatSpaces[0]?.id || ""
           }`,
         );
       }
@@ -312,7 +317,7 @@ export const useSpaceStore = defineStore("spaces", {
 
     isPersonalSpace: (state) => {
       return state.currentSpace?.roomType === "PERSONAL";
-    }
+    },
   },
 });
 

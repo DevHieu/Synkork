@@ -8,4 +8,5 @@ import lombok.Setter;
 public class PaymentRequest {
     private String plan;
     private String billingCycle;
+    private String promoCode;
 }

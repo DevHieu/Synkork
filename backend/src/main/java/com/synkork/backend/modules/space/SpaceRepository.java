@@ -1,5 +1,6 @@
 package com.synkork.backend.modules.space;
 
+import com.synkork.backend.modules.room.enums.RoomStatusEnum;
 import com.synkork.backend.modules.space.dto.SpaceDTO;
 import com.synkork.backend.modules.space.enums.SpaceStatusEnum;
 import com.synkork.backend.modules.space.enums.SpaceTypeEnum;
@@ -16,14 +17,17 @@ import java.util.UUID;
 public interface SpaceRepository extends JpaRepository<SpaceEntity, UUID> {
 
     @Query("SELECT new com.synkork.backend.modules.space.dto.SpaceDTO(s.id, s.name, s.type, s.room.type, s.isRestricted) " +
-            "FROM SpaceEntity s WHERE s.room.id = :roomId ORDER BY s.createdAt ASC")
+            "FROM SpaceEntity s WHERE s.room.id = :roomId AND s.status = 'OPEN' ORDER BY s.createdAt ASC")
     List<SpaceDTO> findAllByRoomIdAsDto(@Param("roomId") UUID roomId);
+
+    long countByRoom_Id(UUID roomId);
 
     long countByRoom_IdAndType(UUID roomId, SpaceTypeEnum type);
 
     void deleteByStatus(SpaceStatusEnum spaceStatusEnum);
 
-    List<SpaceEntity> findByRoomIdAndTypeOrderByCreatedAtDesc(UUID roomId, SpaceTypeEnum type);
+    List<SpaceEntity> findByRoomIdOrderByCreatedAtDesc(UUID roomId);
+    List<SpaceEntity> findByRoomIdAndTypeAndStatusInOrderByCreatedAtDesc(UUID roomId, SpaceTypeEnum type, List<SpaceStatusEnum> statuses);
 
     @Modifying
     @Query("UPDATE SpaceEntity s SET s.status = :status WHERE s.id IN :ids")
@@ -32,6 +36,10 @@ public interface SpaceRepository extends JpaRepository<SpaceEntity, UUID> {
     @Modifying
     @Query("UPDATE SpaceEntity s SET s.status = :newStatus WHERE s.room.owner.id = :ownerId AND s.status = 'PENDING_REMOVAL'")
     void updatePendingSpaceStatusByRoom_OwnerId(@Param("newStatus") SpaceStatusEnum status, @Param("ownerId") UUID ownerId);
+
+    @Modifying
+    @Query("UPDATE SpaceEntity s SET s.status = :newStatus WHERE s.status = :oldStatus")
+    void updateStatusByStatus(@Param("oldStatus") SpaceStatusEnum oldStatus, @Param("newStatus") SpaceStatusEnum newStatus);
 
     @Query("""
              SELECT (COUNT(s) > 0)

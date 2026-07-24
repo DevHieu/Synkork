@@ -6,14 +6,9 @@ public record OverviewStatsResponse(
         long totalRooms,
         long totalSubscriptions,
 
-        // % so với hôm qua
-        double userDayGrowth,
-        double roomDayGrowth,
-        double subscriptionDayGrowth,
-        double onlineDayGrowth,
-
-        // % so với tháng trước
-        double userMonthGrowth,
-        double roomMonthGrowth,
-        double subscriptionMonthGrowth
+        // % so với kỳ liền trước (dateFrom -> dateTo)
+        double userGrowth,
+        double roomGrowth,
+        double subscriptionGrowth,
+        double onlineGrowth
 ) {}

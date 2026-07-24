@@ -7,8 +7,23 @@ export interface Room {
   status: 'OPEN' | 'LOCKED' | 'PENDING_REMOVAL'
   inviteCode?: string
   memberCount: number
+  warning: number
   ownerId?: string
   ownerUsername?: string
+}
+
+export interface Member {
+  id: string
+  username: string
+  email: string
+  avatarUrl?: string
+  role: string
+}
+
+export interface Space {
+  id: string
+  name: string
+  type: string
 }
 
 export interface RoomDetail extends Room {
@@ -21,20 +36,7 @@ export interface RoomDetail extends Room {
     email: string
     avatarUrl?: string
   }
-
-  members: {
-    id: string
-    username: string
-    email: string
-    avatarUrl?: string
-    role: string
-  }[]
-
-  spaces: {
-    id: string
-    name: string
-    type: string
-  }[]
+  spaceCount: number
 }
 
 export interface RoomParams {
@@ -43,6 +45,10 @@ export interface RoomParams {
   search?: string
   status?: string
   type?: string
+  minMembers?: number
+  maxMembers?: number
+  minWarning?: number
+  maxWarning?: number
 }
 export interface RoomFormPayload {
   name: string

@@ -2,10 +2,12 @@
 import { Eye, LoaderIcon, Search, ShieldAlert, Trash2, X } from '@lucide/vue'
 import { refDebounced } from '@vueuse/core'
 import { computed, h, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import type { TableColumn } from '@/components/base-table.vue'
 import type { Report, ReportFilterParams, ReportReason, ReportSeverity, ReportStatus, ReportType } from '@/pages/report/types/Reports.ts'
 
+import ConfirmDialog from '@/components/confirm-dialog.vue'
 import DateRangePicker from '@/components/date-range-picker.vue'
 import { BasicPage } from '@/components/global-layout'
 import { Badge } from '@/components/ui/badge'
@@ -17,6 +19,9 @@ import { defaultDateRange, formatTimestamp, formatToISODateTime } from '@/utils/
 import ReportDetail from './components/ReportDetail.vue'
 import { deleteReport, getReports, updateReportStatus } from './service/reportService'
 import { REASON_LABEL_MAP, SEVERITY_CONFIG } from './utils/report.utils.ts'
+
+const route = useRoute()
+const keywordParam = (route.query.keyword as string) ?? ''
 
 const loading = ref(false)
 const currentPage = ref(1)
@@ -34,7 +39,9 @@ const dateRange = ref(defaultDateRange())
 const debouncedSearch = refDebounced(searchKeyword, 500)
 
 const selectedReport = ref<Report | null>(null)
+const deleteTargetReport = ref<Report | null>(null)
 const isDetailOpen = ref(false)
+const isDeleteDialogOpen = ref(false)
 
 async function fetchReports() {
   loading.value = true
@@ -107,6 +114,11 @@ function handleViewDetail(report: Report) {
   isDetailOpen.value = true
 }
 
+function handleOpenDeleteReport(report: Report) {
+  deleteTargetReport.value = report
+  isDeleteDialogOpen.value = true
+}
+
 async function handleUpdateReportStatus({ id, status, note }: { id: string, status: ReportStatus, note?: string }) {
   try {
     loading.value = true
@@ -129,13 +141,14 @@ async function handleUpdateReportStatus({ id, status, note }: { id: string, stat
   }
 }
 
-async function handleDeleteReport(reportId: string) {
-  if (!confirm('Bạn có chắc chắn muốn xóa cái này?'))
+async function handleDeleteReport() {
+  if (!deleteTargetReport.value)
     return
 
   try {
     loading.value = true
-    await deleteReport(reportId)
+    await deleteReport(deleteTargetReport.value.id)
+    isDeleteDialogOpen.value = false
   }
   catch (error) {
     console.error('Lỗi xóa report:', error)
@@ -181,6 +194,8 @@ function renderStatus(status: string) {
 }
 
 const columns = computed<TableColumn<Report>[]>(() => [
+  { header: 'Email người báo cáo', accessor: 'reporterEmail', minWidth: 180 },
+  { header: 'Tên đối tượng bị tố cáo', accessor: 'targetName', minWidth: 180 },
   {
     header: 'Loại',
     accessor: 'reportType',
@@ -200,14 +215,12 @@ const columns = computed<TableColumn<Report>[]>(() => [
     minWidth: 130,
     render: row => renderSeverity(row.severity),
   },
-  { header: 'Mô tả', accessor: 'description', minWidth: 220 },
   {
     header: 'Trạng thái',
     accessor: 'status',
     minWidth: 150,
     render: row => renderStatus(row.status),
   },
-  { header: 'Email người báo cáo', accessor: 'reporterEmail', minWidth: 180 },
   {
     header: 'Ngày tạo',
     accessor: 'createdAt',
@@ -232,20 +245,12 @@ const columns = computed<TableColumn<Report>[]>(() => [
             'Xem',
           ],
         ),
-
-        h(
-          UiButton,
-          {
-            variant: 'destructive',
-            size: 'sm',
-            class: 'h-8 gap-1 px-2 text-xs',
-            onClick: () => handleDeleteReport(row.id),
-          },
-          () => [
-            h(Trash2, { class: 'h-3.5 w-3.5' }),
-            'Xóa',
-          ],
-        ),
+        h(UiButton, {
+          variant: 'outline',
+          size: 'sm',
+          class: 'h-8 gap-1 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 hover:border-destructive/30',
+          onClick: () => handleOpenDeleteReport(row),
+        }, () => [h(Trash2, { class: 'h-3.5 w-3.5' }), 'Xóa']),
       ]),
   },
 ])
@@ -256,7 +261,12 @@ watch([debouncedSearch, filterStatus, filterType, filterSeverity, dateRange], ()
 })
 watch(currentPage, fetchReports)
 
-onMounted(fetchReports)
+onMounted(() => {
+  if (keywordParam !== '') {
+    return searchKeyword.value = keywordParam
+  }
+  fetchReports()
+})
 </script>
 
 <template>
@@ -266,7 +276,7 @@ onMounted(fetchReports)
         <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
         <Input
           v-model="searchKeyword"
-          placeholder="Tìm theo lý do hoặc mô tả…"
+          placeholder="Tìm theo email người tố cáo, người bị tố cáo"
           class="pl-8 pr-8 h-9 text-sm"
         />
         <button
@@ -381,4 +391,24 @@ onMounted(fetchReports)
   </BasicPage>
 
   <ReportDetail v-if="selectedReport" v-model:open="isDetailOpen" :report="selectedReport" @action="handleUpdateReportStatus" />
+
+  <ConfirmDialog
+    v-model:open="isDeleteDialogOpen"
+    destructive
+    :close-on-confirm="false"
+    cancel-button-text="Hủy"
+    confirm-button-text="Xóa report"
+    :is-loading="loading"
+    @confirm="handleDeleteReport"
+  >
+    <template #title>
+      Xóa report này?
+    </template>
+
+    <template #description>
+      <p>
+        Report <strong>{{ deleteTargetReport?.id }}</strong> sẽ bị xóa khỏi hệ thống. Hành động này không thể hoàn tác.
+      </p>
+    </template>
+  </ConfirmDialog>
 </template>

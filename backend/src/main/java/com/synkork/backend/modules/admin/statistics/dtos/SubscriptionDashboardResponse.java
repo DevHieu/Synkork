@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -17,10 +18,13 @@ import java.util.List;
 @Builder
 public class SubscriptionDashboardResponse {
     private BigDecimal totalRevenue;
-    private BigDecimal revenueThisMonth;
-    private long activeSubscriptions;
+    private long newSubscriptions;
+    private double renewalRate;
+
     private long pendingInvoices;
     private long paidInvoices;
     private long failedInvoices;
-    private List<AdminInvoiceResponse> recentTransactions;
+
+    private LocalDateTime dateFrom;
+    private LocalDateTime dateTo;
 }

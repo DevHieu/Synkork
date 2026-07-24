@@ -8,7 +8,6 @@ import com.synkork.backend.modules.user.enums.UserStatusEnum;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,6 +37,11 @@ public class AdminUserController {
     @GetMapping("/{id}")
     public ApiResponse<AdminUserResponse> getUserById(@PathVariable UUID id) {
         return ApiResponse.success("Get user successfully", adminUserService.getUserById(id));
+    }
+
+    @GetMapping("/{id}/rooms")
+    public ApiResponse<List<AdminUserRoomResponse>> getUserRooms(@PathVariable UUID id) {
+        return ApiResponse.success("Get user rooms successfully", adminUserService.getUserRooms(id));
     }
 
     @PostMapping
@@ -74,8 +78,8 @@ public class AdminUserController {
     }
 
     @PatchMapping("/{id}/status")
-    public ApiResponse<AdminUserResponse> lockUser(@PathVariable UUID id, @Valid @RequestBody UpdateUserRequest request){
-        return ApiResponse.success("Lock user successfully", adminUserService.lockUser(id, UserStatusEnum.valueOf(request.status())));
+    public ApiResponse<AdminUserResponse> toggleLockUser(@PathVariable UUID id, @Valid @RequestBody UpdateUserRequest request){
+        return ApiResponse.success("Lock user successfully", adminUserService.toggleLockUser(id, UserStatusEnum.valueOf(request.status())));
     }
 
     @PatchMapping("/{id}/warn")

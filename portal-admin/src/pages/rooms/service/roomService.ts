@@ -13,6 +13,18 @@ export const roomService = {
     return res.data.data
   },
 
+  async getRoomMembers(roomId: string) {
+    const res = await axiosClient.get(`/api/manage/rooms/${roomId}/members`)
+
+    return res.data.data
+  },
+
+  async getRoomSpaces(roomId: string) {
+    const res = await axiosClient.get(`/api/manage/rooms/${roomId}/spaces`)
+
+    return res.data.data
+  },
+
   async createRoom(payload: RoomFormPayload) {
     const res = await axiosClient.post('/api/manage/rooms', payload)
     return res.data
@@ -34,8 +46,11 @@ export const roomService = {
     return res.data.data || []
   },
 
-  async lockRoom(roomId: string, status: string) {
-    const res = await axiosClient.patch(`/api/manage/rooms/${roomId}/status`, { status })
+  async changeRoomStatus(roomId: string, status: string, reason?: string) {
+    const res = await axiosClient.patch(`/api/manage/rooms/${roomId}/status`, {
+      status,
+      ...(reason ? { reason } : {}),
+    })
     return res.data
   },
 

@@ -44,8 +44,6 @@ public class SpaceService {
     @Autowired
     private UserRepository userRepository;
 
-//    @Autowired
-//    private CalendarEventRepository calendarEventRepository;
 
     public SpaceEntity createSpace(CreateSpaceRequest space, UUID roomId) {
         RoomEntity roomEntity = roomRepository.getReferenceById(roomId);
@@ -72,7 +70,11 @@ public class SpaceService {
             );
         }
 
-        SpaceEntity spaceEntity = new SpaceEntity(space.name(), type, roomEntity);
+        SpaceEntity spaceEntity = SpaceEntity.builder()
+                .name(space.name())
+                .type(type)
+                .room(roomEntity)
+                .build();
         return spaceRepository.save(spaceEntity);
     }
 

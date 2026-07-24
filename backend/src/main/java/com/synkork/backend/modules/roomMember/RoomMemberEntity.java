@@ -7,6 +7,7 @@ import java.util.UUID;
 import com.synkork.backend.common.utils.uuid.UuidV7Annotation;
 import com.synkork.backend.modules.message.MessageEntity;
 import com.synkork.backend.modules.room.RoomEntity;
+import com.synkork.backend.modules.roomMember.enums.MemberStatusEnum;
 import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
 import com.synkork.backend.modules.user.UserEntity;
 
@@ -45,6 +46,10 @@ public class RoomMemberEntity {
     @Builder.Default
     private RoomMemberRoleEnum role = RoomMemberRoleEnum.MEMBER;
 
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private MemberStatusEnum status = MemberStatusEnum.ACTIVE;
+
     @Builder.Default
     private LocalDateTime joinedAt =  LocalDateTime.now();
 
@@ -53,6 +58,9 @@ public class RoomMemberEntity {
 
     @Builder.Default
     private boolean deafen = false;
+
+    @Builder.Default
+    private boolean inactiveByAdminLock = false;
 
     @Column(nullable = true)
     private LocalDateTime chatDisableUntil;

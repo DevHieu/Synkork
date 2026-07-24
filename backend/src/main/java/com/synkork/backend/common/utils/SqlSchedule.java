@@ -1,11 +1,11 @@
 package com.synkork.backend.common.utils;
 
 import com.google.common.collect.Lists;
-import com.synkork.backend.modules.payment.ExpiredSubscriptionService;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.RoomRepository;
 import com.synkork.backend.modules.room.enums.RoomStatusEnum;
 import com.synkork.backend.modules.admin.statistics.StatisticsService;
+import com.synkork.backend.modules.payment.service.ExpiredSubscriptionService;
 import com.synkork.backend.modules.space.SpaceRepository;
 import com.synkork.backend.modules.space.enums.SpaceStatusEnum;
 import com.synkork.backend.modules.user.UserEntity;
@@ -94,7 +94,7 @@ public class SqlSchedule {
         }
 
         userRepository.resetExpiredUsersToPlan(PlanEnum.FREE, LocalDateTime.now());
-        roomRepository.deleteByStatus(RoomStatusEnum.PENDING_REMOVAL);
-        spaceRepository.deleteByStatus(SpaceStatusEnum.PENDING_REMOVAL);
+        roomRepository.updateStatusByStatus(RoomStatusEnum.PENDING_REMOVAL, RoomStatusEnum.LOCKED);
+        spaceRepository.updateStatusByStatus(SpaceStatusEnum.PENDING_REMOVAL, SpaceStatusEnum.LOCKED);
     }
 }

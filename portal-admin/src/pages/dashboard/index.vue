@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { ref } from 'vue'
+
 import { BasicPage } from '@/components/global-layout'
 
 import OverviewContent from './tabs/overview-content.vue'
