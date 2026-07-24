@@ -162,7 +162,9 @@ public class MessageService {
         if (message.getAttachmentPublicId() != null) {
             if (message.getType() == MessageTypeEnum.IMAGE) {
                 fileService.deleteFile(message.getAttachmentPublicId(), "image");
-            } else if (message.getType() == MessageTypeEnum.FILE) {
+            } else if (message.getType() == MessageTypeEnum.VIDEO) {
+                fileService.deleteFile(message.getAttachmentPublicId(), "video");
+            } else {
                 fileService.deleteFile(message.getAttachmentPublicId(), "raw");
             }
         }

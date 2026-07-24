@@ -13,6 +13,7 @@ import type { Message } from "@/types/Message";
 import type { MessageEventSuggestion } from "@/types/CalendarSuggestion";
 import { nextTick } from "vue";
 import { useUserStore } from "./userStore";
+import { useRoomMemberStore } from "./roomMemberStore";
 
 let _container: HTMLElement | null = null;
 const MESSAGE_SIZE = 20;
@@ -60,7 +61,9 @@ export const useMessageStore = defineStore("message", {
       chatSocket.subscribeMessages(spaceId, (msg: Message) => {
         // Nếu đang jump mode thì không push tin mới vào (tránh lộn xộn)
         if (!this.isJumpMode) {
-          this.messages = this.messages.filter((m) => m.id !== msg.id);
+          this.messages = this.messages.filter(
+            (m) => m.id !== msg.id && !isSameOptimisticMessage(m, msg),
+          );
           this.messages.unshift(msg);
 
           if (!this.isScrollTop) {
@@ -345,6 +348,23 @@ function highlightMessage(messageId: string) {
   setTimeout(() => el.classList.remove("message-highlight"), 2000);
 }
 
+function isSameOptimisticMessage(temp: Message, incoming: Message) {
+  if (!temp.sending && !temp.failed) return false;
+  if (temp.spaceId !== incoming.spaceId) return false;
+  if (temp.type !== incoming.type) return false;
+  if (temp.sender?.username !== incoming.sender?.username) return false;
+
+  if (temp.attachmentName || incoming.attachmentName) {
+    return temp.attachmentName === incoming.attachmentName;
+  }
+
+  return temp.content === incoming.content;
+}
+
+function getOptimisticRole(role: string | null) {
+  return role === "OWNER" || role === "ADMIN" ? role : "MEMBER";
+}
+
 function createTempMessage(
   file: File | null,
   spaceId: string,
@@ -353,6 +373,11 @@ function createTempMessage(
 ): Message {
   const isImage = file?.type.startsWith("image/") ?? false;
   const isVideo = file?.type.startsWith("video/") ?? false;
+  const user = useUserStore().user;
+  const memberStore = useRoomMemberStore();
+  const currentMember = memberStore.members.find(
+    (member) => member.username === user?.username,
+  );
 
   return {
     id: crypto.randomUUID(),
@@ -363,7 +388,16 @@ function createTempMessage(
     attachmentUrl: file && (isImage || isVideo) ? URL.createObjectURL(file) : null,
     sending: true,
     failed: false,
-    sender: useUserStore().user as any,
+    sender: currentMember ?? {
+      memberId: user?.id ?? "",
+      username: user?.username ?? "",
+      displayName: user?.displayName ?? "",
+      avatarUrl: user?.avatarUrl,
+      role: getOptimisticRole(memberStore.currentAuthority),
+      muted: false,
+      deafen: false,
+      chatDisableUntil: null,
+    },
     replyTo,
     deleted: false,
     pinned: false,

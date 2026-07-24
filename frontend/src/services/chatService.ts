@@ -98,6 +98,7 @@ export const sendFileMessage = async (spaceId: string, formData: FormData) => {
       headers: {
         "Content-Type": "multipart/form-data",
       },
+      timeout: 60000,
     },
   );
 
