@@ -129,11 +129,7 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
         currentSpaceId.value = spaceId;
         isInRoom.value = true;
         isJoining.value = false;
-
-        router.push(
-          `/rooms/voice/${router.currentRoute.value.params.roomId}/${spaceId}`,
-        );
-
+        
         // Add bản thân vào trong list participant
         participants.value.set(userID, {
           userID,
