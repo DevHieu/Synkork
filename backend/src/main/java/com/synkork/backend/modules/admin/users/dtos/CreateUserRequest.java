@@ -26,6 +26,12 @@ public record CreateUserRequest(
         String status,
 
         @Pattern(
+                regexp = "(?i)free|team|business",
+                message = "plan phải là: free, team, business"
+        )
+        String plan,
+
+        @Pattern(
                 regexp = "(?i)user",
                 message = "role must be user"
         )

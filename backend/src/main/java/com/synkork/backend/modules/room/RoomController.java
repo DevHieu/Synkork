@@ -88,7 +88,7 @@ public class RoomController {
 
     @Transactional
     @DeleteMapping("/{roomId}")
-    public ResponseEntity<?> deleteRoom(@PathVariable String roomId) {
+    public ResponseEntity<?> deleteRoom(@PathVariable String roomId)  {
         UUID roomUUID =  UUID.fromString(roomId);
         List<UserEntity> memberList = roomMemberService.getRoomMemberByRoomId(roomUUID);
 

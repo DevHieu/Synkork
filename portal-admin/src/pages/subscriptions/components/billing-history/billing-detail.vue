@@ -30,6 +30,13 @@ function formatMoney(amount?: number | string | null) {
 }
 
 const updatedAt = computed(() => props.billing.paidAt || props.billing.updatedAt || props.billing.createdAt)
+
+const billingDescription = computed(() => [
+  props.billing.userEmail || 'Unknown user',
+  props.billing.paymentMethod || 'N/A',
+  props.billing.plan || 'N/A',
+  props.billing.billingCycle || 'N/A',
+].join(' · '))
 </script>
 
 <template>
@@ -51,7 +58,7 @@ const updatedAt = computed(() => props.billing.paidAt || props.billing.updatedAt
       :state="normalizedState"
       :updated-at="formatTimestamp(updatedAt)"
       :invoice-no="billing.id"
-      :description="`${billing.userEmail || 'Unknown user'} · ${billing.paymentMethod || 'N/A'} · ${billing.plan || 'N/A'}`"
+      :description="billingDescription"
     />
   </div>
 </template>

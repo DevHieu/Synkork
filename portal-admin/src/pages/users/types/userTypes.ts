@@ -13,6 +13,26 @@ export interface User {
   avatarUrl: string | null
   provider: string
   createdAt: string
+  updatedAt?: string | null
+  warning?: number
+}
+
+export interface UserJoinedRoom {
+  id: string
+  name: string
+  avatarUrl?: string | null
+  description?: string | null
+  type: 'GROUP' | 'DM' | 'PERSONAL'
+  status: 'OPEN' | 'LOCKED' | 'PENDING_REMOVAL'
+  memberCount: number
+  inviteCode?: string | null
+  ownerId?: string | null
+  ownerUsername?: string | null
+  warning: number
+  memberRole: string
+  memberStatus: string
+  joinedAt?: string | null
+  createdAt?: string | null
 }
 
 export interface UserParams {
@@ -23,6 +43,6 @@ export interface UserParams {
   size?: number
   dateFrom?: string
   dateTo?: string
+  minWarning?: number
+  maxWarning?: number
 }
-
-

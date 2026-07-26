@@ -288,7 +288,7 @@ watch(filteredMembers, (newMember) => {
     </div>
   </div>
 
-  <AlertDialog :open="!!memberToKick" @update:open="(open) => !open && (memberToKick = null)">
+  <AlertDialog :open="!!memberToKick" @update:open="(open) => !open && (memberToKick != null)">
     <AlertDialogContent>
       <AlertDialogHeader>
         <AlertDialogTitle>Xóa thành viên khỏi phòng?</AlertDialogTitle>

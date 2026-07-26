@@ -3,8 +3,6 @@ package com.synkork.backend.modules.user;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import org.checkerframework.common.aliasing.qual.Unique;
-
 import com.synkork.backend.common.base.BaseEntity;
 import com.synkork.backend.modules.user.enums.PlanEnum;
 import com.synkork.backend.modules.user.enums.ProviderEnum;
@@ -51,16 +49,10 @@ public class UserEntity extends BaseEntity {
     @Builder.Default
     private UserStatusEnum status = UserStatusEnum.ACTIVE;
 
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private PlanEnum currentPlan = PlanEnum.FREE;
-
-    private LocalDateTime planExpiresAt;
-
-    @Unique
+    @Column(unique = true)
     private UUID personalNoteId;
 
-    @Unique
+    @Column(unique = true)
     private UUID personalCalendarId;
 
     @Column(length = 2048)
@@ -74,4 +66,11 @@ public class UserEntity extends BaseEntity {
     @Column(nullable = false)
     @Builder.Default
     private int warning = 0;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private PlanEnum currentPlan = PlanEnum.FREE;
+
+    private LocalDateTime planExpiresAt;
 }

@@ -32,6 +32,8 @@ export interface Report {
   status: ReportStatus
   createdAt: string
   evidenceUrl: string | null
+  evidenceName?: string | null
+  evidenceResourceType?: 'image' | 'video' | null
 }
 
 export interface ReportFilterParams {

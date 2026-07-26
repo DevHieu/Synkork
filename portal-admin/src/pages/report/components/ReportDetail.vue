@@ -111,7 +111,7 @@ async function handleLockTarget() {
       await userService.updateStatus(targetId.value, 'BANNED')
     }
     else {
-      await roomService.lockRoom(targetId.value, 'LOCKED')
+      await roomService.changeRoomStatus(targetId.value, 'LOCKED')
     }
     targetStatus.value = LOCKED_STATUS[props.report.reportType]
     emit('locked', { reportType: props.report.reportType, targetId: targetId.value })
@@ -228,6 +228,8 @@ watch(
         <ReportEvidence
           v-if="report.evidenceUrl"
           :src="report.evidenceUrl"
+          :name="report.evidenceName || ''"
+          :resource-type="report.evidenceResourceType || ''"
           v-model:open="isImageZoomed"
         />
       </div>

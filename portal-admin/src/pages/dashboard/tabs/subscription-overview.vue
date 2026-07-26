@@ -1,172 +1,252 @@
 <script setup lang="ts">
-import { AlertCircle, ArrowRight, CheckCircle2, Clock, DollarSign, TrendingUp, Users } from '@lucide/vue'
-import dayjs from 'dayjs'
-import { onMounted, ref } from 'vue'
+import { AlertCircle, CheckCircle2, Clock, DollarSign, PackagePlus, Percent, PieChart } from '@lucide/vue'
+import { VisDonut, VisSingleContainer } from '@unovis/vue'
+import { storeToRefs } from 'pinia'
+import { computed, onMounted, ref, watch } from 'vue'
 
-import { Badge } from '@/components/ui/badge'
+import DateRangePicker from '@/components/date-range-picker.vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
-import DataCard from '../components/data-card.vue'
+import DataCard from '../components/overview/data-card.vue'
 import { dashboardService } from '../services/dashboardService'
+import { useDashboardFilterStore } from '../stores/dashboard-filter'
 
-const loading = ref(false)
-const subData = ref<any>(null)
+interface SubscriptionStats {
+  totalRevenue: number | string | null
+  newSubscriptions: number
+  renewalRate: number | string
+  pendingInvoices: number
+  paidInvoices: number
+  failedInvoices: number
+}
 
-async function fetchSubscriptionData() {
-  loading.value = true
+interface SubscriptionChart {
+  teamSubscriptions: number
+  businessSubscriptions: number
+}
+
+interface PlanDistributionRow {
+  name: string
+  value: number
+  color: string
+}
+
+const dashboardFilterStore = useDashboardFilterStore()
+const { dateRange, dateRangeLabel, dateRangeParams } = storeToRefs(dashboardFilterStore)
+
+const isLoadingStats = ref(false)
+const isLoadingChart = ref(false)
+const statsData = ref<SubscriptionStats | null>(null)
+const chartData = ref<SubscriptionChart | null>(null)
+
+const SUBSCRIPTION_PLAN_COLORS = {
+  TEAM: '#06b6d4',
+  BUSINESS: '#a855f7',
+} as const
+
+async function fetchSubscriptionStats() {
+  isLoadingStats.value = true
   try {
-    subData.value = await dashboardService.getSubscriptionDashboardData()
+    statsData.value = await dashboardService.getSubscriptionStatData(dateRangeParams.value)
   }
   catch (err) {
-    console.error('Error fetching subscription dashboard data:', err)
+    console.error('Error fetching subscription stats:', err)
+    statsData.value = null
   }
   finally {
-    loading.value = false
+    isLoadingStats.value = false
   }
 }
 
-onMounted(() => {
-  fetchSubscriptionData()
-})
+async function fetchSubscriptionChart() {
+  isLoadingChart.value = true
+  try {
+    chartData.value = await dashboardService.getSubscriptionChartData(dateRangeParams.value)
+  }
+  catch (err) {
+    console.error('Error fetching subscription chart:', err)
+    chartData.value = null
+  }
+  finally {
+    isLoadingChart.value = false
+  }
+}
+
+function fetchSubscriptionData() {
+  void Promise.all([
+    fetchSubscriptionStats(),
+    fetchSubscriptionChart(),
+  ])
+}
+
+const planDistributionRows = computed<PlanDistributionRow[]>(() => [
+  { name: 'TEAM', value: chartData.value?.teamSubscriptions ?? 0, color: SUBSCRIPTION_PLAN_COLORS.TEAM },
+  { name: 'BUSINESS', value: chartData.value?.businessSubscriptions ?? 0, color: SUBSCRIPTION_PLAN_COLORS.BUSINESS },
+])
+
+const totalPaidPlans = computed(() =>
+  planDistributionRows.value.reduce((total, row) => total + row.value, 0),
+)
+
+function getPlanValue(row: PlanDistributionRow) {
+  return row.value
+}
+
+function getPlanColor(row: PlanDistributionRow) {
+  return row.color
+}
+
+function getPlanPercent(value: number) {
+  if (totalPaidPlans.value === 0)
+    return '0%'
+
+  return `${Math.round((value / totalPaidPlans.value) * 100)}%`
+}
 
 function formatMoney(amount?: number | string | null) {
   const value = typeof amount === 'string' ? Number(amount) : amount ?? 0
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(value)
 }
 
-function formatDate(dateStr?: string | null) {
-  if (!dateStr)
-    return '—'
-  return dayjs(dateStr).format('DD/MM/YYYY HH:mm')
+function formatPercent(value?: number | string | null) {
+  const numericValue = typeof value === 'string' ? Number(value) : value ?? 0
+  return `${numericValue.toFixed(1)}%`
 }
 
-function statusMeta(status?: string | null) {
-  const normalized = (status || 'PENDING').toUpperCase()
-  if (normalized === 'PAID')
-    return { label: 'Paid', color: 'text-green-500 bg-green-500/10 border-green-500/20' }
-  if (normalized === 'FAILED')
-    return { label: 'Failed', color: 'text-red-500 bg-red-500/10 border-red-500/20' }
-  return { label: 'Pending', color: 'text-orange-500 bg-orange-500/10 border-orange-500/20' }
-}
+onMounted(fetchSubscriptionData)
+watch(dateRange, fetchSubscriptionData)
 </script>
 
 <template>
   <div class="space-y-6">
-    <!-- Top Stats Cards -->
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h2 class="text-base font-semibold">
+          Thống kê gói đăng ký
+        </h2>
+        <p class="text-sm text-muted-foreground">
+          Dữ liệu đơn mua gói trong khoảng: {{ dateRangeLabel }}
+        </p>
+      </div>
+
+      <div class="w-full sm:w-[280px]">
+        <DateRangePicker v-model="dateRange" />
+      </div>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       <DataCard
-        title="Total Revenue"
-        :data="formatMoney(subData?.totalRevenue)"
+        title="Doanh thu"
+        :data="isLoadingStats ? '-' : formatMoney(statsData?.totalRevenue)"
         :icon="DollarSign"
       />
       <DataCard
-        title="Revenue This Month"
-        :data="formatMoney(subData?.revenueThisMonth)"
-        :icon="TrendingUp"
+        title="Gói mới"
+        :data="isLoadingStats ? '-' : statsData?.newSubscriptions?.toLocaleString() ?? '-'"
+        :icon="PackagePlus"
       />
       <DataCard
-        title="Active Subscriptions"
-        :data="subData?.activeSubscriptions?.toLocaleString() ?? '—'"
-        :icon="Users"
+        title="Tỷ lệ gia hạn"
+        :data="isLoadingStats ? '-' : formatPercent(statsData?.renewalRate)"
+        :icon="Percent"
       />
     </div>
 
-    <!-- Middle Summary Grid -->
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-7">
-      <!-- Status Distribution Card -->
       <Card class="col-span-1 lg:col-span-3">
         <CardHeader>
           <CardTitle>Invoice Status</CardTitle>
           <CardDescription>
-            Status distribution of all payment transactions
+            Status distribution in selected range
           </CardDescription>
         </CardHeader>
         <CardContent class="grid gap-4">
-          <div class="flex items-center gap-4 p-3 rounded-lg border border-green-500/10 bg-green-500/5">
+          <div class="flex items-center gap-4 rounded-lg border border-green-500/10 bg-green-500/5 p-3">
             <CheckCircle2 class="h-8 w-8 text-green-500" />
             <div class="flex-1">
               <div class="text-sm font-medium text-muted-foreground">
                 Paid (PAID)
               </div>
               <div class="text-2xl font-bold text-green-500">
-                {{ subData?.paidInvoices ?? 0 }}
+                {{ statsData?.paidInvoices ?? 0 }}
               </div>
             </div>
           </div>
-          <div class="flex items-center gap-4 p-3 rounded-lg border border-orange-500/10 bg-orange-500/5">
+          <div class="flex items-center gap-4 rounded-lg border border-orange-500/10 bg-orange-500/5 p-3">
             <Clock class="h-8 w-8 text-orange-500" />
             <div class="flex-1">
               <div class="text-sm font-medium text-muted-foreground">
                 Pending (PENDING)
               </div>
               <div class="text-2xl font-bold text-orange-500">
-                {{ subData?.pendingInvoices ?? 0 }}
+                {{ statsData?.pendingInvoices ?? 0 }}
               </div>
             </div>
           </div>
-          <div class="flex items-center gap-4 p-3 rounded-lg border border-red-500/10 bg-red-500/5">
+          <div class="flex items-center gap-4 rounded-lg border border-red-500/10 bg-red-500/5 p-3">
             <AlertCircle class="h-8 w-8 text-red-500" />
             <div class="flex-1">
               <div class="text-sm font-medium text-muted-foreground">
                 Failed (FAILED)
               </div>
               <div class="text-2xl font-bold text-red-500">
-                {{ subData?.failedInvoices ?? 0 }}
+                {{ statsData?.failedInvoices ?? 0 }}
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <!-- Recent Transactions Card -->
       <Card class="col-span-1 lg:col-span-4">
-        <CardHeader class="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Recent Transactions</CardTitle>
-            <CardDescription>5 latest subscription purchases</CardDescription>
-          </div>
-          <router-link to="/subscriptions" class="inline-flex items-center gap-1 text-xs text-primary hover:underline">
-            View All <ArrowRight class="h-3 w-3" />
-          </router-link>
+        <CardHeader>
+          <CardTitle class="flex items-center gap-2">
+            <PieChart class="h-4 w-4 text-muted-foreground" />
+            Phân bổ gói
+          </CardTitle>
+          <CardDescription>
+            Số lượng gói TEAM và BUSINESS trong khoảng đã chọn
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div v-if="loading" class="flex h-40 items-center justify-center">
+        <CardContent class="space-y-4">
+          <div v-if="isLoadingChart" class="flex h-40 items-center justify-center">
             <div class="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
-          <div v-else-if="!subData?.recentTransactions || subData.recentTransactions.length === 0" class="flex h-40 items-center justify-center text-sm text-muted-foreground">
-            No transactions yet
+          <div v-else-if="totalPaidPlans === 0" class="flex h-56 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
+            Chưa có gói đăng ký
           </div>
-          <div v-else class="space-y-4">
-            <div
-              v-for="tx in subData.recentTransactions"
-              :key="tx.id"
-              class="flex items-center justify-between p-3 rounded-lg border border-border/50 hover:bg-muted/30 transition-all duration-200"
-            >
-              <div class="flex flex-col gap-1">
-                <span class="text-sm font-medium">{{ tx.username || 'N/A' }}</span>
-                <span class="text-xs text-muted-foreground">{{ tx.userEmail }}</span>
-                <div class="flex items-center gap-2 mt-1">
-                  <Badge variant="outline" class="text-[10px] py-0 px-1.5 uppercase font-semibold">
-                    {{ tx.plan || 'FREE' }}
-                  </Badge>
-                  <span class="text-[10px] text-muted-foreground">
-                    {{ tx.paymentMethod || 'BANK' }}
-                  </span>
+          <div v-else class="grid gap-6 sm:grid-cols-[1fr_auto] sm:items-center">
+            <div class="h-[260px]">
+              <VisSingleContainer :data="planDistributionRows" class="h-full">
+                <VisDonut
+                  :value="getPlanValue"
+                  :color="getPlanColor"
+                  :arc-width="36"
+                  :corner-radius="6"
+                  :pad-angle="0.04"
+                  central-label="Tổng"
+                  :central-sub-label="totalPaidPlans.toLocaleString()"
+                />
+              </VisSingleContainer>
+            </div>
+
+            <div class="space-y-4">
+              <div
+                v-for="row in planDistributionRows"
+                :key="row.name"
+                class="flex min-w-44 items-center justify-between gap-8 rounded-lg border border-border/60 p-3"
+              >
+                <div class="flex items-center gap-2">
+                  <span class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: row.color }" />
+                  <span class="text-sm font-medium">{{ row.name }}</span>
                 </div>
-              </div>
-              <div class="flex flex-col items-end gap-2">
-                <span class="text-sm font-bold text-foreground">
-                  {{ formatMoney(tx.amount) }}
-                </span>
-                <span class="text-[10px] font-semibold text-muted-foreground">
-                  {{ formatDate(tx.createdAt) }}
-                </span>
-                <span
-                  class="text-[10px] px-2 py-0.5 rounded-full border font-semibold"
-                  :class="statusMeta(tx.status).color"
-                >
-                  {{ statusMeta(tx.status).label }}
-                </span>
+                <div class="text-right">
+                  <div class="text-sm font-semibold">
+                    {{ row.value.toLocaleString() }}
+                  </div>
+                  <div class="text-xs text-muted-foreground">
+                    {{ getPlanPercent(row.value) }}
+                  </div>
+                </div>
               </div>
             </div>
           </div>

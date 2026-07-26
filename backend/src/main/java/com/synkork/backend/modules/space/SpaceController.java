@@ -23,6 +23,7 @@ public class SpaceController {
 
     @GetMapping
     public ResponseEntity<List<SpaceDTO>> getAllSpaceByRoomId(@PathVariable UUID roomId) {
+        System.out.println("RoomID: " + roomId);
         List<SpaceDTO> spaces = spaceService.getAllSpaceByRoomId(roomId);
 
         return ResponseEntity.ok(spaces);

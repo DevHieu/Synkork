@@ -3,7 +3,6 @@ package com.synkork.backend.modules.admin.report;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.synkork.backend.common.utils.AuthUtils;
-import com.synkork.backend.common.utils.EmailService;
 import com.synkork.backend.common.utils.FileService;
 import com.synkork.backend.modules.admin.auditLog.AuditLogService;
 import com.synkork.backend.modules.admin.auditLog.dtos.BuildLog;
@@ -12,6 +11,7 @@ import com.synkork.backend.modules.admin.auditLog.enums.LogEntityTypeEnum;
 import com.synkork.backend.modules.admin.report.dtos.ReportFilterRequest;
 import com.synkork.backend.modules.admin.report.dtos.ReportResponse;
 import com.synkork.backend.modules.admin.report.dtos.ReportUpdateStatusRequest;
+import com.synkork.backend.modules.admin.report.email.AdminReportEmailService;
 import com.synkork.backend.modules.report.ReportEntity;
 import com.synkork.backend.modules.report.enums.ReportStatusEnums;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +29,7 @@ public class AdminReportService {
     private AdminReportRepository adminReportRepository;
 
     @Autowired
-    private EmailService emailService;
+    private AdminReportEmailService adminReportEmailService;
 
     @Autowired
     private AuditLogService auditLogService;
@@ -39,13 +39,6 @@ public class AdminReportService {
 
     @Autowired 
     private FileService fileService;
-
-    public List<ReportResponse> getAllReports() {
-        return adminReportRepository.findAll()
-                .stream()
-                .map(ReportResponse::new)
-                .toList();
-    }
 
     public ReportResponse getReportById(UUID id) {
         ReportEntity entity = adminReportRepository.findById(id).orElseThrow(() -> new RuntimeException("Report không tồn tại"));
@@ -83,7 +76,7 @@ public class AdminReportService {
         ReportEntity savedReport = adminReportRepository.save(report);
 
         if (newStatus == ReportStatusEnums.RESOLVED || newStatus == ReportStatusEnums.DISMISSED) {
-            emailService.sendReportResolvedEmail(
+            adminReportEmailService.sendReportResolvedEmail(
                     savedReport.getReporter().getEmail(),
                     savedReport.getReporter().getDisplayName(),
                     request.note(),

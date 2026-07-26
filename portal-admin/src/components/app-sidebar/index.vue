@@ -9,12 +9,16 @@ const {logout} = useAuth()
 
 const { user, loading } = storeToRefs(useAuthStore())
 
-const visibleNavMain = computed(() => sidebarData.navMain.map(group => ({
-  ...group,
-  items: group.items.filter(item =>
-    item.url !== '/manager' || user.value?.role === 'ADMIN',
-  ),
-})))
+const visibleNavMain = computed(() => {
+  const isAdmin = user.value?.role === 'ADMIN'
+
+  return sidebarData.navMain
+    .filter(group => isAdmin || !group.items.some(item => item.url === '/manager'))
+    .map(group => ({
+      ...group,
+      items: group.items.filter(item => isAdmin || item.url !== '/manager'),
+    }))
+})
 </script>
 
 <template>

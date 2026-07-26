@@ -28,7 +28,7 @@ const { contentLayout } = storeToRefs(themeStore)
         <CommandMenuPanel />
         <div class="flex-1" />
         <div class="ml-auto flex items-center space-x-4">
-          <LanguageChange />
+          <!-- <LanguageChange /> -->
           <ToggleTheme />
           <ThemePopover />
         </div>

@@ -18,6 +18,7 @@ public class ManagerResponse {
     private String avatarUrl;
     private String role;
     private String status;
+    private String plan;
     private String provider;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -31,6 +32,7 @@ public class ManagerResponse {
                 .avatarUrl(account.getAvatarUrl())
                 .role(account.getRole() != null ? account.getRole().name().toLowerCase() : null)
                 .status(account.getStatus() != null ? account.getStatus().name().toLowerCase() : null)
+                .plan(account.getCurrentPlan() != null ? account.getCurrentPlan().name() : null)
                 .provider(account.getProvider() != null ? account.getProvider().name().toLowerCase() : null)
                 .createdAt(account.getCreatedAt())
                 .updatedAt(account.getUpdatedAt())

@@ -8,6 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Textarea } from '@/components/ui/textarea'
 
 interface ConfirmDialogProps {
   isLoading?: boolean
@@ -15,27 +16,41 @@ interface ConfirmDialogProps {
   cancelButtonText?: string
   confirmButtonText?: string
   destructive?: boolean
+  requireReason?: boolean
+  reasonLabel?: string
+  reasonPlaceholder?: string
+  reasonError?: string
+  closeOnConfirm?: boolean
 }
 
 const {
   isLoading = false,
   disabled = false,
   destructive = false,
+  requireReason = false,
+  reasonLabel = 'Lý do',
+  reasonPlaceholder = 'Nhập lý do...',
+  reasonError = 'Vui lòng nhập lý do',
+  closeOnConfirm = true,
   cancelButtonText = 'Cancel',
   confirmButtonText = 'Continue',
 } = defineProps<ConfirmDialogProps>()
 
 const emits = defineEmits<{
-  (e: 'confirm'): void
+  (e: 'confirm', reason: string): void
 }>()
 
 const openModel = defineModel<boolean>('open', {
   default: false,
 })
+const reasonModel = defineModel<string>('reason', {
+  default: '',
+})
 
 function handleConfirm() {
-  emits('confirm')
-  openModel.value = false
+  emits('confirm', reasonModel.value.trim())
+  if (closeOnConfirm)
+    openModel.value = false
 }
 </script>
 
@@ -53,6 +68,18 @@ function handleConfirm() {
 
       <slot />
 
+      <div v-if="requireReason" class="space-y-2">
+        <label class="text-sm font-medium">{{ reasonLabel }}</label>
+        <Textarea
+          v-model="reasonModel"
+          class="min-h-24"
+          :placeholder="reasonPlaceholder"
+        />
+        <p v-if="!reasonModel.trim()" class="text-[12px] text-muted-foreground">
+          {{ reasonError }}
+        </p>
+      </div>
+
       <AlertDialogFooter>
         <AlertDialogCancel :disabled="isLoading" @click="openModel = false">
           {{ cancelButtonText }}
@@ -60,7 +87,7 @@ function handleConfirm() {
 
         <UiButton
           :variant="destructive ? 'destructive' : 'default'"
-          :disabled="disabled || isLoading"
+          :disabled="disabled || isLoading || (requireReason && !reasonModel.trim())"
           @click="handleConfirm"
         >
           {{ confirmButtonText }}

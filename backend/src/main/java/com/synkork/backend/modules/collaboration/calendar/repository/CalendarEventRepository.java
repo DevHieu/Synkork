@@ -45,4 +45,12 @@ public interface CalendarEventRepository extends JpaRepository<CalendarEventEnti
     void deleteByScheduleId(UUID scheduleId);
 
     void deleteBySpaceId(UUID spaceId);
+
+    @Modifying
+    @Query("""
+        UPDATE CalendarEventEntity e
+        SET e.callRoomSpace = null
+        WHERE e.callRoomSpace.room.id = :roomId
+    """)
+    int clearCallRoomSpaceByRoomId(@Param("roomId") UUID roomId);
 }
