@@ -125,4 +125,17 @@ public class NoteController {
 
     return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/{id}/copy-to-personal")
+        public ResponseEntity<NoteResponse> copyToPersonal(@PathVariable String id) {
+            UUID userId = AuthUtils.getCurrentUserId();
+
+            NoteResponse response = noteService.copyNoteToPersonalSpace(id, userId);
+            messageTemplate.convertAndSend(
+                "/topic/space/" + response.getSpaceId() + "/notes/create",
+                response
+            );
+
+            return ResponseEntity.ok(response);
+    }
 }

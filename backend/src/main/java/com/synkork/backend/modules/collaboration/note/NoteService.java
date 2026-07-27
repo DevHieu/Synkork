@@ -147,4 +147,39 @@ public class NoteService {
         note.setReminderSent(true);
         noteRepository.save(note);
     }
+
+    public NoteResponse copyNoteToPersonalSpace(String noteId, UUID userId) {
+        UUID noteUuid = UUID.fromString(noteId);
+        NoteEntity source = noteRepository.findById(noteUuid)
+            .orElseThrow(() -> new IllegalArgumentException("Note not found"));
+    
+        UserEntity user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    
+        if (user.getPersonalNoteId() == null) {
+            throw new IllegalStateException("User chưa có personal note space");
+        }
+    
+        SpaceEntity personalSpace = spaceRepository.findById(user.getPersonalNoteId())
+            .orElseThrow(() -> new IllegalArgumentException("Personal space not found"));
+    
+        NoteEntity clone = NoteEntity.builder()
+            .title(source.getTitle())
+            .note(source.getNote())
+            .pinned(false)
+            .color(source.getColor())
+            .allowEditAll(true)
+            .createdBy(user)
+            .space(personalSpace)
+            .reminderAt(null)          
+            .reminderSent(false)
+            .posX(0)
+            .posY(0)
+            .width(source.getWidth())
+            .height(source.getHeight())
+            .archived(false)
+            .build();
+    
+        return new NoteResponse(noteRepository.save(clone));
+    }
 }

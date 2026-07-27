@@ -9,7 +9,8 @@ import {
   togglePin,
   updatePosition,
   setReminder,
-  archiveNote
+  archiveNote,
+  copyToPersonal
 } from '@/services/noteService'
 
 import type { Note, NoteRequest } from '@/types/NoteType'
@@ -51,25 +52,23 @@ export const useNoteStore = defineStore('notes', () => {
   }
 
   // ARCHIVE
-async function archiveNoteStore(
-  spaceId: string,
-  id: string
-): Promise<void> {
-  try {
-    await archiveNote(spaceId, id)
-
-    // remove khỏi UI luôn
-    notes.value = notes.value.filter(
-      n => n.id !== id
-    )
-  } catch (e) {
-    error.value = 'Không thể lưu trữ ghi chú'
-    console.error(e)
+  async function archiveNoteStore(
+    spaceId: string,
+    id: string
+  ): Promise<void> {
+    try {
+      await archiveNote(spaceId, id)
+      notes.value = notes.value.filter(
+        n => n.id !== id
+      )
+    } catch (e) {
+      error.value = 'Không thể lưu trữ ghi chú'
+      console.error(e)
+    }
   }
-}
+
   // FETCH
   async function fetchNotes(spaceId: string) {
-    // ── Guard: không fetch lại nếu đang xem cùng space và đã có notes
     if (currentSpaceId.value === spaceId && notes.value.length > 0) return
 
     if (currentSpaceId.value && currentSpaceId.value !== spaceId) {
@@ -204,28 +203,44 @@ async function archiveNoteStore(
     }
   }
 
+  // COPY TO PERSONAL
+  async function copyNoteToPersonal(
+    spaceId: string,
+    id: string
+  ): Promise<Note> {
+    try {
+      const res = await copyToPersonal(spaceId, id)
+      return res
+    } catch (e) {
+      error.value = 'Không thể lưu ghi chú vào không gian cá nhân'
+      console.error(e)
+      throw e
+    }
+  }
+
   return {
     notes,
     loading,
     error,
     searchQuery,
-  
+
     filteredNotes,
     pinnedNotes,
     unpinnedNotes,
-  
+
     fetchNotes,
     createNote,
     updateNote,
-  
+
     deleteNote: deletedNote,
-  
+
     changePinStatus,
     disconnectSocket,
-  
+
     updateNotePosition,
     setNoteReminder,
-  
-    archiveNote: archiveNoteStore
+
+    archiveNote: archiveNoteStore,
+    copyNoteToPersonal
   }
 })

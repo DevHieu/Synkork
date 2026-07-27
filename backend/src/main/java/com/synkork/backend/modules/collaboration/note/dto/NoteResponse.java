@@ -15,6 +15,7 @@ import com.synkork.backend.modules.collaboration.note.NoteEntity;
 @AllArgsConstructor
 public class NoteResponse {
     private UUID id;
+    private UUID spaceId;
     private String title;
     private String note;
     private Boolean pinned;
@@ -32,6 +33,7 @@ public class NoteResponse {
 
     public NoteResponse(NoteEntity note) {
         this.id = note.getId();
+        this.spaceId = note.getSpace().getId();
         this.title = note.getTitle();
         this.note = note.getNote();
         this.pinned = note.getPinned();

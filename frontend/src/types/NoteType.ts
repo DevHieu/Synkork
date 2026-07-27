@@ -1,7 +1,8 @@
 export interface Note {
-  id: string        // ← đổi từ number sang string vì backend dùng UUID
+  id: string       
+  spaceId: string 
   title: string
-  note: string | null     // ← đổi từ content sang note
+  note: string | null    
   color: string | null
   pinned: boolean
   allowEditAll: boolean
@@ -17,7 +18,7 @@ export interface Note {
 
 export interface NoteRequest {
   title: string
-  note?: string        // ← đổi từ content sang note
+  note?: string       
   color?: string
   pinned?: boolean
   allowEditAll?: boolean

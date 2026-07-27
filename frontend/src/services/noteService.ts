@@ -77,3 +77,13 @@ export const setReminder = async (
   )
   return res.data
 }
+
+export const copyToPersonal = async (
+  spaceId: string,
+  noteId: string
+) => {
+  const res = await axiosClient.post(
+    `/api/spaces/${spaceId}/notes/${noteId}/copy-to-personal`
+  )
+  return res.data
+}
