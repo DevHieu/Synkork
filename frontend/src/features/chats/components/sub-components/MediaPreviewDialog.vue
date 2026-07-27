@@ -55,57 +55,36 @@ const handleDownload = async () => {
 
 <template>
   <Dialog :open="open" @update:open="emit('update:open', $event)">
-    <DialogContent
-      :show-close-button="false"
-      class="!w-[min(92vw,960px)] !max-w-[min(92vw,960px)] border-0 bg-transparent p-0 shadow-none"
-    >
+    <DialogContent :show-close-button="false"
+      class="!w-[min(92vw,960px)] !max-w-[min(92vw,960px)] border-0 bg-transparent p-0 shadow-none">
       <div class="relative w-full overflow-hidden rounded-xl bg-black/80">
-        <div
-          class="absolute left-0 right-0 top-0 z-10 flex items-center justify-between px-4 py-3"
-          style="background: linear-gradient(to bottom, rgba(0, 0, 0, 0.68), transparent)"
-        >
+        <div class="absolute left-0 right-0 top-0 z-10 flex items-center justify-between px-4 py-3"
+          style="background: linear-gradient(to bottom, rgba(0, 0, 0, 0.68), transparent)">
           <span class="max-w-[70%] truncate text-sm font-medium text-white/85">
             {{ mediaName }}
           </span>
 
           <div class="flex items-center gap-2">
-            <button
-              type="button"
+            <button type="button"
               class="flex h-8 w-8 items-center justify-center rounded-md bg-white/10 text-white transition-colors hover:bg-white/20"
-              title="Tai xuong"
-              @click="handleDownload"
-            >
+              title="Tai xuong" @click="handleDownload">
               <Download class="h-4 w-4" />
             </button>
 
-            <button
-              type="button"
+            <button type="button"
               class="flex h-8 w-8 items-center justify-center rounded-md bg-white/10 text-white transition-colors hover:bg-white/20"
-              title="Dong"
-              @click="close"
-            >
+              title="Dong" @click="close">
               <X class="h-4 w-4" />
             </button>
           </div>
         </div>
 
         <div class="flex max-h-[86vh] min-h-48 items-center justify-center p-2 pt-14">
-          <video
-            v-if="isVideo"
-            :src="src"
-            controls
-            autoplay
-            playsinline
-            class="max-h-[78vh] max-w-full select-none rounded-lg"
-          />
+          <video v-if="isVideo" :src="src" controls autoplay playsinline
+            class="max-h-[78vh] max-w-full select-none rounded-lg" />
 
-          <img
-            v-else
-            :src="src"
-            :alt="mediaName"
-            class="max-h-[78vh] max-w-full select-none rounded-lg object-contain"
-            draggable="false"
-          >
+          <img v-else :src="src" :alt="mediaName" class="max-h-[78vh] max-w-full select-none rounded-lg object-contain"
+            draggable="false">
         </div>
       </div>
     </DialogContent>
