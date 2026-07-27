@@ -58,19 +58,19 @@ public class SqlSchedule {
         System.out.println("delete verification sql successfully.");
     }
 
-    // @Transactional
-    // @Scheduled(cron = "0 0 0 * * *")
-    // public void deleteRoomDeleted() {
-    //     List<RoomEntity> rooms = roomRepository
-    //             .findAllByStatusAndUpdatedAtBefore(
-    //                     RoomStatusEnum.DELETED,
-    //                     LocalDateTime.now().minusDays(30) // Delete 30 ngày thì mới xóa hẳn
-    //             );
+     @Transactional
+     @Scheduled(cron = "0 0 0 * * *")
+     public void deleteRoomDeleted() {
+         List<RoomEntity> rooms = roomRepository
+                 .findAllByStatusAndUpdatedAtBefore(
+                         RoomStatusEnum.PENDING_REMOVAL,
+                         LocalDateTime.now().minusDays(3) // PENDING_REMOVAL 3 ngày thì mới xóa hẳn
+                 );
 
-    //     roomRepository.deleteAll(rooms);
+         roomRepository.deleteAll(rooms);
 
-    //     System.out.println("Deleted rooms: " + rooms.size());
-    // }
+         System.out.println("Deleted rooms: " + rooms.size());
+     }
 
     @Scheduled(cron = "0 08 09 * * *")
     public void remindUserToReNewSubscription() {

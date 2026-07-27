@@ -59,9 +59,6 @@ public class RoomMemberEntity {
     @Builder.Default
     private boolean deafen = false;
 
-    @Builder.Default
-    private boolean inactiveByAdminLock = false;
-
     @Column(nullable = true)
     private LocalDateTime chatDisableUntil;
 }

@@ -13,6 +13,10 @@ export interface PlanPricingItem {
   plan: "FREE" | "TEAM" | "BUSINESS";
   billingCycle: "MONTHLY" | "YEARLY";
   amount: number;
+  discountType?: "PERCENTAGE" | "FIXED" | null;
+  discountValue?: number | null;
+  discountAmount?: number | null;
+  finalAmount?: number | null;
   active: boolean;
   createdAt: string;
 }

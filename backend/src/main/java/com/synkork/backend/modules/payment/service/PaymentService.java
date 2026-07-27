@@ -233,7 +233,9 @@ public class PaymentService {
 
             LocalDateTime now = LocalDateTime.now();
             LocalDateTime expiresAt = resolveExpiresAt(now, billing);
-            LocalDateTime expireDate = expiresAt.plusDays(3); // buffer 3 ngày
+
+            // Lý do cần tăng lên 3 ngày vì khi user gần đến hạn 3 ngày thì phòng sẽ chuyển về PENDING_REMOVAL. Và đến khi hết hạn hẳn mà user không nâng cấp gói thì xóa phòng
+            LocalDateTime expireDate = expiresAt.plusDays(3);
 
             markInvoicePaid(invoice, payload, now);
 

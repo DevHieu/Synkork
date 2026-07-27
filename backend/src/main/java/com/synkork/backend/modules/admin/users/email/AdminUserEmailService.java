@@ -78,7 +78,7 @@ public class AdminUserEmailService {
         }
 
         String body = plainTextEmailBody(String.format(
-                "Xin chao %s,\n\nTai khoan Synkork cua ban da duoc chuyen sang trang thai INACTIVE.\n\n"
+                "Xin chao %s,\n\nTai khoan Synkork cua ban da bi khoa.\n\n"
                         + "Ly do: %s\n\n"
                         + "Ban da duoc xoa khoi tat ca room dang tham gia. "
                         + "Neu can ho tro them, vui long lien he quan tri vien.",

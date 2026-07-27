@@ -43,7 +43,7 @@ import DropdownMenuSeparator from "@/components/ui/dropdown-menu/DropdownMenuSep
 import DropdownMenuSub from "@/components/ui/dropdown-menu/DropdownMenuSub.vue";
 import DropdownMenuSubContent from "@/components/ui/dropdown-menu/DropdownMenuSubContent.vue";
 import DropdownMenuSubTrigger from "@/components/ui/dropdown-menu/DropdownMenuSubTrigger.vue";
-import InviteMemberDialog from "../InviteMemberDialog.vue";
+import InviteMemberDialog from "@/components/dialog/InviteMemberDialog.vue";
 
 type AudioToggleField = "muted" | "deafen";
 
@@ -57,6 +57,10 @@ const { members, canManage, isOwner, sortedMembers } =
 
 const filterRole = ref("ALL");
 const memberToKick = ref<Member | null>(null);
+
+const showOwnerTransferDialog = ref(false)
+const ownerTransferTarget = ref<Member | null>(null);
+const ownerTransferLoading = ref(false);
 
 const chatDisableOptions: { value: ChatDisableTime; label: string }[] = [
   { value: "NOT_DISABLE", label: "Bỏ chặn chat" },
@@ -102,14 +106,43 @@ const handleKick = (member: Member | null) => {
     });
 };
 
-const handleChangeRole = async (memberId: string, newRole: string) => {
+const handleChangeRole = async (member: Member, newRole: "OWNER" | "ADMIN" | "MEMBER") => {
+  if (newRole === "OWNER" && ownerTransferTarget.value == null) {
+    ownerTransferTarget.value = member;
+    showOwnerTransferDialog.value = true
+    return;
+  }
+
   try {
     await changeMemberAuthority(
-      { memberId, newRole: newRole as "OWNER" | "ADMIN" | "MEMBER" },
+      { memberId: member.memberId, newRole },
       props.roomId,
     );
   } catch (err) {
     console.error("Change role error:", err);
+  }
+};
+
+const handleConfirmOwnerTransfer = async () => {
+  const target = ownerTransferTarget.value;
+  if (!target) return;
+
+  ownerTransferLoading.value = true;
+
+  try {
+    await handleChangeRole(target, "OWNER");
+    showOwnerTransferDialog.value = false;
+    ownerTransferTarget.value = null;
+  } catch (err) {
+    console.error("Transfer owner error:", err);
+  } finally {
+    ownerTransferLoading.value = false;
+  }
+};
+
+const handleOwnerTransferDialogOpenChange = (open: boolean) => {
+  if (!open && !ownerTransferLoading.value) {
+    ownerTransferTarget.value = null;
   }
 };
 
@@ -202,7 +235,7 @@ watch(filteredMembers, (newMember) => {
 
         <!-- Actions -->
         <div class="opacity-0 group-hover:opacity-100 transition flex items-center gap-1">
-          <DropdownMenu v-if="isOwner && member.role !== 'OWNER'">
+          <DropdownMenu v-if="canManage && member.role !== 'OWNER'">
             <DropdownMenuTrigger as-child>
               <Button variant="ghost" size="sm" class="h-7 gap-1 text-xs text-muted-foreground">
                 <Shield class="h-3.5 w-3.5" />
@@ -211,16 +244,14 @@ watch(filteredMembers, (newMember) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" class="w-36">
-              <DropdownMenuItem @click="handleChangeRole(member.memberId, 'OWNER')"
-                :class="member.role === 'OWNER' ? 'text-primary' : ''">
+              <DropdownMenuItem @click="handleChangeRole(member, 'OWNER')">
                 <Crown class="h-3.5 w-3.5 mr-2" /> Chủ phòng
               </DropdownMenuItem>
-              <DropdownMenuItem @click="handleChangeRole(member.memberId, 'ADMIN')"
+              <DropdownMenuItem @click="handleChangeRole(member, 'ADMIN')"
                 :class="member.role === 'ADMIN' ? 'text-primary' : ''">
                 <Shield class="h-3.5 w-3.5 mr-2" /> Quản trị
               </DropdownMenuItem>
-              <DropdownMenuItem @click="handleChangeRole(member.memberId, 'MEMBER')"
-                :class="member.role === 'MEMBER' ? 'text-primary' : ''">
+              <DropdownMenuItem @click="handleChangeRole(member, 'MEMBER')">
                 <Users class="h-3.5 w-3.5 mr-2" /> Thành viên
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -304,6 +335,28 @@ watch(filteredMembers, (newMember) => {
           @click="handleKick(memberToKick)">
           Xóa khỏi phòng
         </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+
+  <AlertDialog :open="showOwnerTransferDialog" @update:open="handleOwnerTransferDialogOpenChange">
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Chuyển quyền chủ phòng?</AlertDialogTitle>
+        <AlertDialogDescription>
+          <span class="font-medium text-foreground">@{{ ownerTransferTarget?.username }}</span>
+          sẽ trở thành chủ phòng mới. Tài khoản chủ phòng hiện tại sẽ được đổi xuống quyền
+          <span class="font-medium text-foreground">Quản trị</span>.
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel :disabled="ownerTransferLoading">
+          Hủy
+        </AlertDialogCancel>
+        <Button :disabled="ownerTransferLoading" class="bg-primary text-white hover:bg-primary/70"
+          @click="handleConfirmOwnerTransfer">
+          {{ ownerTransferLoading ? "Đang chuyển..." : "Chuyển chủ phòng" }}
+        </Button>
       </AlertDialogFooter>
     </AlertDialogContent>
   </AlertDialog>

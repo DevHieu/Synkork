@@ -48,10 +48,19 @@ public class JwtFilter extends OncePerRequestFilter {
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     UserDetails userDetails = userDetailService.loadUserByUsername(username);
 
-                    if (!userDetails.isEnabled() || !userDetails.isAccountNonLocked()) {
+                    if (!userDetails.isAccountNonLocked()) {
                         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                         response.setContentType("application/json");
-                        response.getWriter().write("{\"error\": \"ACCOUNT_LOCKED\", \"message\": \"Account is locked\"}");
+                        response.setCharacterEncoding("UTF-8");
+                        response.getWriter().write("{\"error\": \"ACCOUNT_LOCKED\", \"message\": \"Tài khoản của bạn đang bị khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.\"}");
+                        return;
+                    }
+
+                    if (!userDetails.isEnabled()) {
+                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                        response.setContentType("application/json");
+                        response.setCharacterEncoding("UTF-8");
+                        response.getWriter().write("{\"error\": \"ACCOUNT_NOT_VERIFIED\", \"message\": \"Tài khoản này chưa xác minh qua email. Vui lòng kiểm tra email và xác minh trước khi đăng nhập.\"}");
                         return;
                     }
 

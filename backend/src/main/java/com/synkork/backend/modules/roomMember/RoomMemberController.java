@@ -44,14 +44,16 @@ public class RoomMemberController {
         UUID requesterId = AuthUtils.getCurrentUserId();
         UUID roomUUID = UUID.fromString(roomId);
 
-        RoomMemberEntity member = roomMemberService.changerAuthority(dto, roomUUID, requesterId);
-        RoomMemberDto resp = new RoomMemberDto(member);
+        List<RoomMemberEntity> updatedMembers = roomMemberService.changerAuthority(dto, roomUUID, requesterId);
+        List<RoomMemberDto> updatedDtos = updatedMembers.stream()
+                .map(RoomMemberDto::new)
+                .toList();
 
-        messagingTemplate.convertAndSend(
-                "/topic/room/" + roomId + "/members/changeAuthority", resp
-        );
+        updatedDtos.forEach(member -> messagingTemplate.convertAndSend(
+                "/topic/room/" + roomId + "/members/changeAuthority", member
+        ));
 
-        return ResponseEntity.ok(resp);
+        return ResponseEntity.ok(updatedDtos.get(updatedDtos.size() - 1));
     }
 
     @DeleteMapping("/{memberId}")

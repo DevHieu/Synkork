@@ -16,8 +16,8 @@ public record UpdateUserRequest(
         String plan,
 
         @Pattern(
-                regexp = "(?i)active|inactive|invited|suspended|banned",
-                message = "status phải là: active, inactive, invited, suspended, banned"
+                regexp = "(?i)active|inactive|banned",
+                message = "status phải là: active, inactive, banned"
         )
         String status,
 

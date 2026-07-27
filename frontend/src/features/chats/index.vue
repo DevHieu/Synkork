@@ -1,19 +1,22 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, computed, nextTick } from "vue";
-import { chatSocket } from "@/services/websocket/chatSocket";
+import { chatSocket } from "./services/chatSocket";
 import { useRoute } from "vue-router";
 import { useSpaceStore } from "@/stores/spaceStore";
-import { useMessageStore } from "@/stores/messageStore";
+import { useMessageStore } from "@/features/chats/stores/messageStore";
 import { useFriendStore } from "@/stores/friendStore";
 import { storeToRefs } from "pinia";
 
-import ChatHeader from "@/components/chat/ChatHeader.vue";
-import MessageList from "@/components/chat/MessageList.vue";
-import MessageInput from "@/components/chat/MessageInput.vue";
-import MemberPanel from "@/components/chat/MemberPanel.vue";
-import PinPanel from "@/components/chat/PinPanel.vue";
-import SuggestionDialog from "../chat/SuggestionDialog.vue";
 import type { MessageEventSuggestion } from "@/types/CalendarSuggestion";
+import { useChatComposable } from "@/features/chats/composable/chat.composable.ts";
+import { useChatUtilsComposable } from "@/features/chats/composable/chat-utils.composable.ts";
+import { useChatSocketComposable } from "@/features/chats/composable/chat-socket.compsable.ts";
+import ChatHeader from "@/features/chats/components/ChatHeader.vue";
+import MessageList from "@/features/chats/components/MessageList.vue";
+import MessageInput from "@/features/chats/components/MessageInput.vue";
+import PinPanel from "@/features/chats/components/PinPanel.vue";
+import MemberPanel from "@/features/chats/components/MemberPanel.vue";
+import SuggestionDialog from "@/features/chats/components/SuggestionDialog.vue";
 
 const route = useRoute();
 const spaceId = ref(route.params.spaceId as string);
@@ -24,6 +27,9 @@ const { currentSpace } = storeToRefs(spaceStore);
 const messageStore = useMessageStore();
 const { messages, beforeHasMore, afterHasMore, replyingTo } =
   storeToRefs(messageStore);
+const chat = useChatComposable();
+const chatUtils = useChatUtilsComposable();
+const chatRealtime = useChatSocketComposable();
 
 const friendStore = useFriendStore();
 const dmFriend = computed(() => {
@@ -59,19 +65,22 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  chatSocket.leaveSpace(spaceId.value);
+  if (spaceId.value) {
+    chatSocket.leaveSpace(spaceId.value);
+  }
 });
 
-const joinSpace = async (id: string) => {
+const joinSpace = async (id: string, previousId?: string) => {
   if (!id) return;
-  if (currentSpace.value?.id && currentSpace.value.id !== id) {
-    chatSocket.leaveSpace(currentSpace.value.id);
+  if (previousId && previousId !== id) {
+    chatSocket.leaveSpace(previousId);
   }
+  spaceId.value = id;
   messageStore.clearAll();
-  await messageStore.fetchMessages(id, null);
-  messageStore.scrollToBottom(spaceId.value);
-  messageStore.subscribeToChat(id);
-  messageStore.fetchPinnedList(id, null);
+  await chat.fetchMessages(id, null);
+  chatUtils.scrollToBottom(id);
+  chatRealtime.subscribeToChat(id);
+  chat.fetchPinnedList(id, null);
 };
 
 const handleOpenSuggestion = async (messageId: string) => {
@@ -93,7 +102,7 @@ const handleOpenSuggestion = async (messageId: string) => {
 watch(currentSpace, (space, prevSpace) => {
   if (!space?.id) return;
   if (space.id === prevSpace?.id) return; // không re-join nếu cùng space
-  joinSpace(space.id);
+  joinSpace(space.id, prevSpace?.id ?? spaceId.value);
 });
 </script>
 

@@ -11,7 +11,7 @@ import VerifyPage from "@/pages/auth/VerifyPage.vue";
 import OtpPage from "@/pages/auth/OtpPage.vue";
 import PasswordResetSuccessPage from "@/pages/auth/PasswordResetSuccessPage.vue";
 
-import ChatWindow from "@/components/windows/ChatWindow.vue";
+import ChatWindow from "@/features/chats/index.vue";
 import VoiceWindow from "@/components/windows/VoiceWindow.vue";
 import NoteWindow from "@/components/windows/NoteWindow.vue";
 import TaskWindow from "@/components/windows/TaskWindow.vue";
@@ -88,7 +88,7 @@ const routes = [
           {
             path: "calendar/:spaceId",
             component: CalendarWindowLayout,
-          }
+          },
         ],
       },
       {

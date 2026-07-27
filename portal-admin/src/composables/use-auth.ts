@@ -1,8 +1,9 @@
-import { LoginData } from './../pages/auth/types/LoginData';
 import { storeToRefs } from 'pinia'
 
-import { useAuthStore } from '@/stores/auth'
 import { authService } from '@/pages/auth/services/authService'
+import { useAuthStore } from '@/stores/auth'
+
+import type { LoginData } from './../pages/auth/types/LoginData'
 
 export function useAuth() {
   const router = useRouter()
@@ -17,7 +18,8 @@ export function useAuth() {
       user.value = data
       isLogin.value = true
       return true
-    } catch {
+    }
+    catch {
       isLogin.value = false
       user.value = null
       return false
@@ -30,16 +32,19 @@ export function useAuth() {
     try {
       await authService.login(data)
       await authStore.getUserInfo() // load user info luôn sau login
-      
+
       const redirect = router.currentRoute.value.query.redirect as string
       if (!redirect || redirect.startsWith('//')) {
         router.push('/dashboard')
-      } else {
+      }
+      else {
         router.push(redirect)
       }
-    } catch (err: any) {
+    }
+    catch (err: any) {
       error.value = err?.response?.data || 'Đăng nhập thất bại. Vui lòng thử lại.'
-    } finally {
+    }
+    finally {
       loading.value = false
     }
   }

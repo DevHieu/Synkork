@@ -1,6 +1,7 @@
 import { useRoomsStore } from "@/stores/roomStore";
 import { socketService } from "./socketService";
 import { toast } from "vue-sonner";
+import type { Room } from "@/types/Room";
 
 export const userSocket = {
   subscribeKicked() {
@@ -34,6 +35,18 @@ export const userSocket = {
       "/user/queue/rooms/deleted",
       (roomId: string) => {
         roomStore.removeRoomFromArray(roomId);
+      },
+      { persistent: true },
+    );
+  },
+
+  subscribeRoomInvited() {
+    const roomStore = useRoomsStore();
+    return socketService.subscribe(
+      "/user/queue/room/members/invited",
+      async () => {
+        await roomStore.fetchRooms();
+        toast.info("Bạn vừa được gia nhập vào 1 room mới");
       },
       { persistent: true },
     );
