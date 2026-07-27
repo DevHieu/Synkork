@@ -27,6 +27,9 @@ const { currentSpace } = storeToRefs(spaceStore);
 const messageStore = useMessageStore();
 const { messages, beforeHasMore, afterHasMore, replyingTo } =
   storeToRefs(messageStore);
+const chat = useChatComposable();
+const chatUtils = useChatUtilsComposable();
+const chatRealtime = useChatSocketComposable();
 
 const friendStore = useFriendStore();
 const dmFriend = computed(() => {
@@ -62,19 +65,22 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  chatSocket.leaveSpace(spaceId.value);
+  if (spaceId.value) {
+    chatSocket.leaveSpace(spaceId.value);
+  }
 });
 
-const joinSpace = async (id: string) => {
+const joinSpace = async (id: string, previousId?: string) => {
   if (!id) return;
-  if (currentSpace.value?.id && currentSpace.value.id !== id) {
-    chatSocket.leaveSpace(currentSpace.value.id);
+  if (previousId && previousId !== id) {
+    chatSocket.leaveSpace(previousId);
   }
+  spaceId.value = id;
   messageStore.clearAll();
-  await useChatComposable().fetchMessages(id, null);
-  useChatUtilsComposable().scrollToBottom(spaceId.value);
-  useChatSocketComposable().subscribeToChat(id);
-  useChatComposable().fetchPinnedList(id, null);
+  await chat.fetchMessages(id, null);
+  chatUtils.scrollToBottom(id);
+  chatRealtime.subscribeToChat(id);
+  chat.fetchPinnedList(id, null);
 };
 
 const handleOpenSuggestion = async (messageId: string) => {
@@ -96,7 +102,7 @@ const handleOpenSuggestion = async (messageId: string) => {
 watch(currentSpace, (space, prevSpace) => {
   if (!space?.id) return;
   if (space.id === prevSpace?.id) return; // không re-join nếu cùng space
-  joinSpace(space.id);
+  joinSpace(space.id, prevSpace?.id ?? spaceId.value);
 });
 </script>
 

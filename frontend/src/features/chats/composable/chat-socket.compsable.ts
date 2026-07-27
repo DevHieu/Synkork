@@ -3,35 +3,32 @@ import type { Message } from "@/types/Message";
 import { useUserStore } from "@/stores/userStore";
 import { useMessageStore } from "@/features/chats/stores/messageStore";
 import { storeToRefs } from "pinia";
-import { nextTick, ref } from "vue";
+import { nextTick } from "vue";
 import { socketService } from "@/services/websocket/socketService";
 import type { MessageEventSuggestion } from "@/types/CalendarSuggestion";
 import { useChatUtilsComposable } from "./chat-utils.composable";
 
 export function useChatSocketComposable() {
+  const userStore = useUserStore();
   const messageStore = useMessageStore();
   const { isJumpMode, messages, pinnedMessages, isScrollTop } =
     storeToRefs(messageStore);
-
-  const suggestionsByMessageId = ref<Record<string, MessageEventSuggestion>>(
-    {},
-  );
-  const suggestionSubscriptionReady = ref(false);
+  const chatUtils = useChatUtilsComposable();
 
   const subscribeToChat = (spaceId: string) => {
     chatSocket.subscribeMessages(spaceId, (msg: Message) => {
       // Nếu đang jump mode thì không push tin mới vào (tránh lộn xộn)
-      if (!isJumpMode) {
+      if (!isJumpMode.value) {
         messages.value = messages.value.filter(
           (m) =>
             m.id !== msg.id &&
-            !useChatUtilsComposable().isSameOptimisticMessage(m, msg),
+            !chatUtils.isSameOptimisticMessage(m, msg),
         );
         messages.value.unshift(msg);
 
-        if (!isScrollTop) {
+        if (!isScrollTop.value) {
           // Tự nhảy xuống
-          nextTick(() => useChatUtilsComposable().scrollToBottom(spaceId));
+          nextTick(() => chatUtils.scrollToBottom(spaceId));
         }
       }
     });
@@ -76,13 +73,13 @@ export function useChatSocketComposable() {
   };
 
   const subscribeToSuggestions = async () => {
-    const currentUserId = useUserStore().user?.id;
+    const currentUserId = userStore.user?.id;
     if (!currentUserId) {
       console.warn("[Goi y] Bo qua dang ky vi chua co userId hien tai");
       return;
     }
 
-    if (suggestionSubscriptionReady.value) {
+    if (messageStore.suggestionSubscriptionReady) {
       console.log("[Goi y] Bo qua dang ky vi kenh goi y da san sang truoc do");
       return;
     }
@@ -92,8 +89,8 @@ export function useChatSocketComposable() {
     const subscription = chatSocket.subscribeSuggestions(
       currentUserId,
       (suggestion) => {
-        suggestionsByMessageId.value = {
-          ...suggestionsByMessageId.value,
+        messageStore.suggestionsByMessageId = {
+          ...messageStore.suggestionsByMessageId,
           [suggestion.messageId]: suggestion,
         };
       },
@@ -104,7 +101,7 @@ export function useChatSocketComposable() {
       return;
     }
 
-    suggestionSubscriptionReady.value = true;
+    messageStore.suggestionSubscriptionReady = true;
     console.log("[Goi y] Dang ky thanh cong cho user:", currentUserId);
   };
 

@@ -13,6 +13,7 @@ import Avatar from "@/components/ui/avatar/Avatar.vue";
 import AvatarImage from "@/components/ui/avatar/AvatarImage.vue";
 import AvatarFallback from "@/components/ui/avatar/AvatarFallback.vue";
 import { useChatComposable } from "../../composable/chat.composable";
+import { SEARCH_LIMIT } from "../../utils/chat.utils";
 
 const props = defineProps<{
   spaceId: string;
@@ -22,7 +23,8 @@ const searchKeyword = ref("");
 const searchResults = ref<Message[]>([]);
 const isSearching = ref(false);
 const searchActive = ref(false);
-const LIMIT = 5;
+const chatApi = chatService();
+const chat = useChatComposable();
 
 const searchCursor = ref<string | null>(null);
 const searchHasMore = ref(false);
@@ -55,11 +57,11 @@ const handleSearch = async (val: string, reset = false) => {
 
   isSearching.value = true;
 
-  const res = await chatService().searchMessage(
+  const res = await chatApi.searchMessage(
     props.spaceId,
     val,
     searchCursor.value,
-    LIMIT,
+    SEARCH_LIMIT,
   );
   searchResults.value = reset
     ? res.messages
@@ -82,7 +84,7 @@ const clearSearch = () => {
 
 const jumpToMessage = async (messageId: string) => {
   close();
-  await useChatComposable().jumpToMessage(props.spaceId, messageId);
+  await chat.jumpToMessage(props.spaceId, messageId);
 };
 </script>
 

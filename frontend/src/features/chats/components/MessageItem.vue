@@ -32,7 +32,10 @@ const memberStore = useRoomMemberStore();
 const { canManage } = storeToRefs(memberStore);
 const roomStore = useRoomsStore();
 const { currentRoom } = storeToRefs(roomStore);
-const { isChatDisabled, chatDisabledLabel } = useChatUtilsComposable();
+const chatApi = chatService();
+const chat = useChatComposable();
+const chatUtils = useChatUtilsComposable();
+const { isChatDisabled, chatDisabledLabel } = chatUtils;
 
 const messageStore = useMessageStore();
 
@@ -73,7 +76,7 @@ const handleSaveEdit = () => {
     return;
   }
 
-  chatService.updateMessage(props.spaceId, editElement.value.id, { content: trimmed, version: editElement.value.version, replyToId: null }); // Null thì tại update chỉ có update text thôi
+  chatApi.updateMessage(props.spaceId, editElement.value.id, { content: trimmed, version: editElement.value.version, replyToId: null }); // Null thì tại update chỉ có update text thôi
   isEditing.value = false;
 };
 
@@ -82,7 +85,7 @@ const handleCancelEdit = () => {
 };
 
 const handleDelete = () => {
-  chatService.deleteMessage(props.spaceId, props.message.id);
+  chatApi.deleteMessage(props.spaceId, props.message.id);
 };
 
 const handleReply = () => messageStore.setReply(props.message);
@@ -93,11 +96,11 @@ const handleSuggestion = () => emit("openSuggestion", props.message.id);
 
 const jumpToReply = () => {
   if (!props.message.replyTo?.id) return;
-  useChatComposable().jumpToMessage(props.message.spaceId, props.message.replyTo.id);
+  chat.jumpToMessage(props.message.spaceId, props.message.replyTo.id);
 };
 
 const deleteFailedMessage = () => {
-  useChatUtilsComposable().dismissFailedMessage([props.message.id]);
+  chatUtils.dismissFailedMessage([props.message.id]);
 };
 
 const emit = defineEmits<{

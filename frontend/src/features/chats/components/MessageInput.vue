@@ -18,7 +18,10 @@ import { useChatComposable } from "../composable/chat.composable.ts";
 
 const userStore = useUserStore();
 const { userPlan } = storeToRefs(userStore);
-const { isChatDisabled, chatDisabledLabel } = useChatUtilsComposable();
+const themeStore = useThemeStore();
+const chat = useChatComposable();
+const chatUtils = useChatUtilsComposable();
+const { isChatDisabled, chatDisabledLabel } = chatUtils;
 
 const newMessage = ref("");
 const now = ref(Date.now());
@@ -112,7 +115,7 @@ const handleSubmit = async () => {
   newMessage.value = "";
   clearFiles();
 
-  useChatComposable().sendMessage(props.spaceId, content, formData, files);
+  chat.sendMessage(props.spaceId, content, formData, files);
 };
 
 const handleFileChange = (e: Event) => {
@@ -264,7 +267,7 @@ onUnmounted(() => {
         right: emojiPickerPos.right + 'px',
       }">
         <EmojiPicker :native="true" :disable-skin-tones="true" @select="onSelectEmoji"
-          :theme="useThemeStore().isDark ? 'dark' : 'light'" />
+          :theme="themeStore.isDark ? 'dark' : 'light'" />
       </div>
 
       <PlanLimitDialog v-model:open="fileSizeDialogOpen" :limit-type="'file'" :file-name="rejectedFile?.name ?? ''"

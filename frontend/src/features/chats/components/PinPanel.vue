@@ -11,6 +11,7 @@ const props = defineProps<{
 
 const messageStore = useMessageStore();
 const { pinnedMessages, pinnedHasMore, pinLoading } = storeToRefs(messageStore);
+const chat = useChatComposable();
 
 const searchQuery = ref("");
 
@@ -27,7 +28,7 @@ const handleUnpin = (messageId: string) => {
 };
 
 const loadMore = async () => {
-  await useChatComposable().fetchPinnedList(props.spaceId, messageStore.pinnedCursor);
+  await chat.fetchPinnedList(props.spaceId, messageStore.pinnedCursor);
 };
 </script>
 
@@ -86,7 +87,7 @@ const loadMore = async () => {
       <div v-else class="flex flex-col px-2 gap-1">
         <div v-for="msg in filtered" :key="msg.id"
           class="group relative rounded-lg px-3 py-3 cursor-pointer transition-all duration-200 border border-transparent hover:border-border hover:bg-accent/70"
-          @click="useChatComposable().jumpToMessage(props.spaceId, msg.id)">
+          @click="chat.jumpToMessage(props.spaceId, msg.id)">
           <!-- Header -->
           <div class="flex items-center gap-2 mb-1.5">
             <img v-if="msg.sender?.avatarUrl" :src="msg.sender.avatarUrl"

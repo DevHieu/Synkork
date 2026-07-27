@@ -81,8 +81,7 @@ export function useChatUtilsComposable() {
     const isImage = file?.type.startsWith("image/") ?? false;
     const isVideo = file?.type.startsWith("video/") ?? false;
     const user = userStore.user;
-    const memberStore = useRoomMemberStore();
-    const currentMember = memberStore.members.find(
+    const currentMember = roomMemberStore.members.find(
       (member) => member.username === user?.username,
     );
 
@@ -101,7 +100,7 @@ export function useChatUtilsComposable() {
         username: user?.username ?? "",
         displayName: user?.displayName ?? "",
         avatarUrl: user?.avatarUrl,
-        role: getOptimisticRole(memberStore.currentAuthority),
+        role: getOptimisticRole(roomMemberStore.currentAuthority),
         muted: false,
         deafen: false,
         chatDisableUntil: null,

@@ -7,6 +7,7 @@ import { useChatUtilsComposable } from "./chat-utils.composable";
 import { nextTick } from "vue";
 
 export function useChatComposable() {
+  const chatApi = chatService();
   const messageStore = useMessageStore();
   const {
     messages,
@@ -24,7 +25,7 @@ export function useChatComposable() {
 
   // Load lần đầu hoặc scroll lên
   const fetchMessages = async (spaceId: string, cursor: string | null) => {
-    const res = await chatService().getChatFromSpaceId(
+    const res = await chatApi.getChatFromSpaceId(
       spaceId,
       cursor,
       true,
@@ -44,7 +45,7 @@ export function useChatComposable() {
   // Scroll xuống (sau khi jump)
   const fetchNewerMessages = async (spaceId: string) => {
     if (!afterCursor.value || !afterHasMore.value) return;
-    const res = await chatService().getChatFromSpaceId(
+    const res = await chatApi.getChatFromSpaceId(
       spaceId,
       afterCursor.value,
       false,
@@ -76,7 +77,7 @@ export function useChatComposable() {
   const fetchPinnedList = async (spaceId: string, cursor: string | null) => {
     pinLoading.value = true;
     try {
-      const res = await chatService().getPinnedChatList(
+      const res = await chatApi.getPinnedChatList(
         spaceId,
         cursor,
         PINNED_SIZE,
@@ -95,6 +96,7 @@ export function useChatComposable() {
     formData: FormData | null,
     files: File[] | null,
   ) => {
+    const chatUtils = useChatUtilsComposable();
     // Cần các mảng này để lưu lại, khi lỗi thì báo lỗi tin nhắn dựa vào id này
     const tempMsgs: Message[] = [];
     const textTempIds: string[] = [];
@@ -102,7 +104,7 @@ export function useChatComposable() {
 
     if (files) {
       files.forEach((file) => {
-        const msg = useChatUtilsComposable().createTempMessage(
+        const msg = chatUtils.createTempMessage(
           file,
           spaceId,
           null,
@@ -116,7 +118,7 @@ export function useChatComposable() {
     }
 
     if (content.trim()) {
-      const msg = useChatUtilsComposable().createTempMessage(
+      const msg = chatUtils.createTempMessage(
         null,
         spaceId,
         content,
@@ -130,7 +132,7 @@ export function useChatComposable() {
 
     messages.value = [...tempMsgs, ...messages.value];
     await nextTick();
-    await useChatUtilsComposable().scrollToBottom(spaceId);
+    await chatUtils.scrollToBottom(spaceId);
 
     // Phải như này để t clear cái UI
     const replyId = replyingTo.value?.id ?? null;
@@ -142,14 +144,14 @@ export function useChatComposable() {
         messages.value = messages.value.filter(
           (m) => !textTempIds.includes(m.id),
         );
-        await chatService().sendMessage(spaceId, {
+        await chatApi.sendMessage(spaceId, {
           content,
           replyToId: replyId,
         });
       }
 
       if (files && formData) {
-        await chatService().sendFileMessage(spaceId, formData);
+        await chatApi.sendFileMessage(spaceId, formData);
         messages.value = messages.value.filter(
           (m) => !fileTempIds.includes(m.id),
         );
@@ -174,7 +176,7 @@ export function useChatComposable() {
     }
 
     // Fetch around
-    const res = await chatService().getAroundMessage(spaceId, messageId);
+    const res = await chatApi.getAroundMessage(spaceId, messageId);
 
     const {
       messages: newMessages,

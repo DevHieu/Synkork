@@ -23,6 +23,8 @@ const emit = defineEmits<{
 }>();
 
 const messageStore = useMessageStore();
+const chat = useChatComposable();
+const chatUtils = useChatUtilsComposable();
 
 const isLoading = ref(false);
 const container = ref<HTMLElement | null>(null);
@@ -64,7 +66,7 @@ const setupObserver = () => {
     ([entry]) => {
       if (entry?.isIntersecting && props.beforeHasMore && !isLoading.value) {
         isLoading.value = true;
-        useChatComposable().loadMore(props.spaceId, "later");
+        chat.loadMore(props.spaceId, "later");
       }
     },
     { root: container.value, rootMargin: "200px" },
@@ -74,7 +76,7 @@ const setupObserver = () => {
     ([entry]) => {
       if (entry?.isIntersecting && props.afterHasMore && !isLoading.value) {
         isLoading.value = true;
-        useChatComposable().loadMore(props.spaceId, "newer");
+        chat.loadMore(props.spaceId, "newer");
       }
     },
     { root: container.value, rootMargin: "200px" },
@@ -124,7 +126,7 @@ const processedMessages = computed(() => {
 
     <!-- Nút scroll to bottom -->
     <Transition name="fade">
-      <button v-if="messageStore.isScrollTop" @click="useChatUtilsComposable().scrollToBottom(props.spaceId)"
+      <button v-if="messageStore.isScrollTop" @click="chatUtils.scrollToBottom(props.spaceId)"
         class="absolute bottom-4 right-4 z-10 flex items-center justify-center w-9 h-9 rounded-full bg-background border border-border shadow-md hover:bg-muted transition-colors">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

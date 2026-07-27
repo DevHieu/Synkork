@@ -44,9 +44,10 @@ export const useMessageStore = defineStore("message", {
     },
 
     async changePinStatus(spaceId: string, messageId: string) {
+      const chatApi = chatService();
       this.pinLoading = true;
       try {
-        await chatService().changePinStatus(spaceId, messageId);
+        await chatApi.changePinStatus(spaceId, messageId);
       } finally {
         this.pinLoading = false;
       }
@@ -58,7 +59,9 @@ export const useMessageStore = defineStore("message", {
       this.beforeCursor = null;
       this.afterCursor = null;
       this.afterHasMore = false;
-      await useChatComposable().fetchMessages(spaceId, null);
+
+      const chat = useChatComposable();
+      await chat.fetchMessages(spaceId, null);
     },
 
     setReply(msg: Message | null) {
