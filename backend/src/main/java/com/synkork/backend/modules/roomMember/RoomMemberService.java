@@ -86,19 +86,37 @@ public class RoomMemberService {
         return roomMemberRepository.save(roomMemberEntity);
     }
 
-    public RoomMemberEntity changerAuthority(ChangeAuthorityDTO dto, UUID roomId, UUID requesterUserId) {
+    @Transactional
+    public List<RoomMemberEntity> changerAuthority(ChangeAuthorityDTO dto, UUID roomId, UUID requesterUserId) {
 
-        PermissionService.requirePermission(roomId, requesterUserId, RoomMemberRoleEnum.OWNER);
+        PermissionService.requirePermission(roomId, requesterUserId, RoomMemberRoleEnum.OWNER, RoomMemberRoleEnum.ADMIN);
 
         UUID memberUUID = UUID.fromString(dto.memberId());
-        RoomMemberEntity member = this.getRoomMemberById(memberUUID);
+        RoomMemberEntity member = this.getRoomMemberByRoomIdAndMemberId(roomId, memberUUID);
 
         if (member.getRole() == RoomMemberRoleEnum.OWNER) {
             throw new RuntimeException("Không thể đổi quyền chủ phòng");
         }
 
-        member.setRole(RoomMemberRoleEnum.valueOf(dto.newRole()));
-        return roomMemberRepository.save(member);
+        RoomMemberRoleEnum newRole = RoomMemberRoleEnum.valueOf(dto.newRole());
+
+        if (newRole == RoomMemberRoleEnum.OWNER) {
+            RoomMemberEntity currentOwner = this.getRoomMemberByRoomIdAndUserId(roomId, requesterUserId);
+            currentOwner.setRole(RoomMemberRoleEnum.ADMIN);
+            member.setRole(RoomMemberRoleEnum.OWNER);
+
+            RoomEntity room = member.getRoom();
+            room.setOwner(member.getUser());
+
+            roomMemberRepository.save(currentOwner);
+            RoomMemberEntity newOwner = roomMemberRepository.save(member);
+            roomRepository.save(room);
+
+            return List.of(currentOwner, newOwner);
+        }
+
+        member.setRole(newRole);
+        return List.of(roomMemberRepository.save(member));
     }
 
     @Transactional
