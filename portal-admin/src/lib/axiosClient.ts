@@ -38,7 +38,7 @@ axiosClient.interceptors.response.use(
     }
 
     // 403: FORBIDDEN: Không có quyền -> cút ra đăng nhập luôn
-    if (error.response?.status === 403) {
+    if (error.response?.status === 403 && !originalRequest.url.includes('/auth')) {
       removeCookie('accessToken')
       removeCookie('refreshToken')
       window.location.href = '/auth/sign-in'
