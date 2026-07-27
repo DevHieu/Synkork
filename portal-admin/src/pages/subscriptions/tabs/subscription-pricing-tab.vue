@@ -5,8 +5,9 @@ import { toast } from 'vue-sonner'
 
 import NumberField from '@/components/number-field.vue'
 import { Button as UiButton } from '@/components/ui/button'
+import { SelectContent, SelectItem, SelectTrigger, SelectValue, Select as UiSelect } from '@/components/ui/select'
 
-import type { BillingCycle, PaidPlanCode, PlanPricing } from '../types/invoiceTypes'
+import type { BillingCycle, DiscountType, PaidPlanCode, PlanPricing } from '../types/invoiceTypes'
 
 import { subscriptionService } from '../service/subscriptionService'
 
@@ -14,6 +15,10 @@ const pricingLoading = ref(false)
 const savingPriceKey = ref<string | null>(null)
 const planPricings = ref<PlanPricing[]>([])
 const priceDrafts = ref<Record<string, number | undefined>>({})
+const discountTypeDrafts = ref<Record<string, DiscountDraftType>>({})
+const discountValueDrafts = ref<Record<string, number | undefined>>({})
+
+type DiscountDraftType = DiscountType | 'NONE'
 
 const managedPriceCombos: Array<{
   key: string
@@ -40,17 +45,85 @@ function getPricing(plan: PaidPlanCode, billingCycle: BillingCycle) {
   return planPricings.value.find(item => item.plan === plan && item.billingCycle === billingCycle)
 }
 
+function normalizeNumber(value?: number | string | null) {
+  if (value === null || value === undefined || value === '')
+    return undefined
+
+  const numberValue = typeof value === 'string' ? Number(value) : value
+  return Number.isFinite(numberValue) ? numberValue : undefined
+}
+
+function currentDiscountType(pricing?: PlanPricing): DiscountDraftType {
+  return pricing?.discountType ?? 'NONE'
+}
+
+function currentDiscountValue(pricing?: PlanPricing) {
+  return pricing?.discountType ? normalizeNumber(pricing.discountValue) : undefined
+}
+
+function calculateDiscountAmount(amount?: number, discountType?: DiscountDraftType, discountValue?: number) {
+  if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0)
+    return 0
+
+  if (!discountType || discountType === 'NONE' || typeof discountValue !== 'number' || !Number.isFinite(discountValue))
+    return 0
+
+  const discountAmount = discountType === 'PERCENTAGE'
+    ? Math.round(amount * discountValue / 100)
+    : discountValue
+
+  return Math.min(Math.max(discountAmount, 0), amount)
+}
+
+function getDraftFinalAmount(key: string) {
+  const amount = priceDrafts.value[key] ?? 0
+  const discountAmount = calculateDiscountAmount(
+    amount,
+    discountTypeDrafts.value[key],
+    discountValueDrafts.value[key],
+  )
+
+  return Math.max(amount - discountAmount, 0)
+}
+
+function formatDiscount(pricing?: PlanPricing) {
+  if (!pricing?.discountType || !normalizeNumber(pricing.discountValue))
+    return 'Không giảm'
+
+  const discountValue = normalizeNumber(pricing.discountValue) ?? 0
+  if (pricing.discountType === 'PERCENTAGE')
+    return `${discountValue}% (${formatMoney(pricing.discountAmount)})`
+
+  return formatMoney(discountValue)
+}
+
 function isDirtyPrice(plan: PaidPlanCode, billingCycle: BillingCycle) {
   const key = pricingKey(plan, billingCycle)
-  const current = Number(getPricing(plan, billingCycle)?.amount ?? 0)
+  const currentPricing = getPricing(plan, billingCycle)
+  const current = Number(currentPricing?.amount ?? 0)
   const draft = priceDrafts.value[key]
-  return typeof draft === 'number' && Number.isFinite(draft) && draft !== current
+  const currentType = currentDiscountType(currentPricing)
+  const draftType = discountTypeDrafts.value[key] ?? 'NONE'
+  const currentValue = currentDiscountValue(currentPricing)
+  const draftValue = draftType === 'NONE' ? undefined : discountValueDrafts.value[key]
+
+  return (
+    typeof draft === 'number'
+    && Number.isFinite(draft)
+    && (
+      draft !== current
+      || draftType !== currentType
+      || (draftValue ?? undefined) !== (currentValue ?? undefined)
+    )
+  )
 }
 
 function syncPriceDrafts() {
   for (const combo of managedPriceCombos) {
     const current = getPricing(combo.plan, combo.billingCycle)
     priceDrafts.value[combo.key] = current ? Number(current.amount) : undefined
+    discountTypeDrafts.value[combo.key] = currentDiscountType(current)
+    discountValueDrafts.value[combo.key] = currentDiscountValue(current)
   }
 }
 
@@ -81,15 +154,35 @@ async function fetchPlanPricings() {
 async function savePlanPrice(plan: PaidPlanCode, billingCycle: BillingCycle) {
   const key = pricingKey(plan, billingCycle)
   const amount = priceDrafts.value[key]
+  const discountType = discountTypeDrafts.value[key] ?? 'NONE'
+  const discountValue = discountValueDrafts.value[key]
 
   if (typeof amount !== 'number' || !Number.isFinite(amount) || amount < 0) {
     toast.error('Giá gói phải là số lớn hơn hoặc bằng 0')
     return
   }
 
+  if (discountType !== 'NONE') {
+    if (typeof discountValue !== 'number' || !Number.isFinite(discountValue) || discountValue < 0) {
+      toast.error('Giá trị giảm giá phải là số lớn hơn hoặc bằng 0')
+      return
+    }
+
+    if (discountType === 'PERCENTAGE' && discountValue > 100) {
+      toast.error('Giảm giá phần trăm không được vượt quá 100%')
+      return
+    }
+  }
+
   savingPriceKey.value = key
   try {
-    const updated = await subscriptionService.updatePlanPricing({ plan, billingCycle, amount })
+    const updated = await subscriptionService.updatePlanPricing({
+      plan,
+      billingCycle,
+      amount,
+      discountType: discountType === 'NONE' ? null : discountType,
+      discountValue: discountType === 'NONE' ? null : discountValue!,
+    })
     const normalized = updated?.data ?? updated
     const index = planPricings.value.findIndex(item => item.plan === plan && item.billingCycle === billingCycle)
 
@@ -99,7 +192,7 @@ async function savePlanPrice(plan: PaidPlanCode, billingCycle: BillingCycle) {
       planPricings.value.push(normalized)
 
     syncPriceDrafts()
-    toast.success('Đã cập nhật giá gói')
+    toast.success('Đã cập nhật giá và giảm giá gói')
   }
   catch (err) {
     console.error('Failed to update plan pricing:', err)
@@ -121,7 +214,7 @@ onMounted(fetchPlanPricings)
           Bảng giá gói
         </h2>
         <p class="text-sm text-muted-foreground">
-          Chỉnh giá niêm yết cho TEAM và BUSINESS theo tháng hoặc năm.
+          Chỉnh giá niêm yết và giảm giá cho TEAM và BUSINESS theo tháng hoặc năm.
         </p>
       </div>
 
@@ -137,7 +230,7 @@ onMounted(fetchPlanPricings)
       </div>
 
       <div class="overflow-x-auto">
-        <table class="w-full min-w-[760px] caption-bottom text-sm">
+        <table class="w-full min-w-[1120px] caption-bottom text-sm">
           <thead class="border-b bg-muted/40">
             <tr>
               <th class="h-10 px-4 text-left font-medium text-muted-foreground">
@@ -151,6 +244,12 @@ onMounted(fetchPlanPricings)
               </th>
               <th class="h-10 px-4 text-left font-medium text-muted-foreground">
                 Giá mới
+              </th>
+              <th class="h-10 px-4 text-left font-medium text-muted-foreground">
+                Giảm giá
+              </th>
+              <th class="h-10 px-4 text-left font-medium text-muted-foreground">
+                Sau giảm
               </th>
               <th class="h-10 px-4 text-right font-medium text-muted-foreground">
                 Thao tác
@@ -168,7 +267,18 @@ onMounted(fetchPlanPricings)
                 {{ combo.cycleLabel }}
               </td>
               <td class="px-4 py-3">
-                {{ getPricing(combo.plan, combo.billingCycle) ? formatMoney(getPricing(combo.plan, combo.billingCycle)?.amount) : 'Chưa có giá' }}
+                <div v-if="getPricing(combo.plan, combo.billingCycle)" class="space-y-1">
+                  <div class="font-medium">
+                    {{ formatMoney(getPricing(combo.plan, combo.billingCycle)?.amount) }}
+                  </div>
+                  <div class="text-xs text-muted-foreground">
+                    Giảm: {{ formatDiscount(getPricing(combo.plan, combo.billingCycle)) }}
+                  </div>
+                  <div class="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                    Sau giảm: {{ formatMoney(getPricing(combo.plan, combo.billingCycle)?.finalAmount ?? getPricing(combo.plan, combo.billingCycle)?.amount) }}
+                  </div>
+                </div>
+                <span v-else>Chưa có giá</span>
               </td>
               <td class="px-4 py-3">
                 <div class="flex max-w-xs items-center gap-2">
@@ -180,6 +290,40 @@ onMounted(fetchPlanPricings)
                   />
                   <span class="whitespace-nowrap text-xs text-muted-foreground">VND</span>
                 </div>
+              </td>
+              <td class="px-4 py-3">
+                <div class="flex min-w-[320px] items-center gap-2">
+                  <UiSelect v-model="discountTypeDrafts[combo.key]">
+                    <SelectTrigger class="h-9 w-[128px] bg-background">
+                      <SelectValue placeholder="Kiểu giảm" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NONE">
+                        Không giảm
+                      </SelectItem>
+                      <SelectItem value="PERCENTAGE">
+                        Theo %
+                      </SelectItem>
+                      <SelectItem value="FIXED">
+                        Số tiền
+                      </SelectItem>
+                    </SelectContent>
+                  </UiSelect>
+
+                  <NumberField
+                    v-model="discountValueDrafts[combo.key]"
+                    :min="0"
+                    :max="discountTypeDrafts[combo.key] === 'PERCENTAGE' ? 100 : undefined"
+                    :placeholder="discountTypeDrafts[combo.key] === 'PERCENTAGE' ? 'Nhập %' : 'Nhập số tiền'"
+                    :class="discountTypeDrafts[combo.key] === 'NONE' ? 'w-[160px] opacity-50' : 'w-[160px]'"
+                  />
+                  <span class="w-8 text-xs text-muted-foreground">
+                    {{ discountTypeDrafts[combo.key] === 'PERCENTAGE' ? '%' : 'VND' }}
+                  </span>
+                </div>
+              </td>
+              <td class="px-4 py-3 font-medium text-emerald-600 dark:text-emerald-400">
+                {{ formatMoney(getDraftFinalAmount(combo.key)) }}
               </td>
               <td class="px-4 py-3 text-right">
                 <UiButton
