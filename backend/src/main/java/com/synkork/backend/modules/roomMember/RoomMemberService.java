@@ -86,19 +86,37 @@ public class RoomMemberService {
         return roomMemberRepository.save(roomMemberEntity);
     }
 
-    public RoomMemberEntity changerAuthority(ChangeAuthorityDTO dto, UUID roomId, UUID requesterUserId) {
+    @Transactional
+    public List<RoomMemberEntity> changerAuthority(ChangeAuthorityDTO dto, UUID roomId, UUID requesterUserId) {
 
-        PermissionService.requirePermission(roomId, requesterUserId, RoomMemberRoleEnum.OWNER);
+        PermissionService.requirePermission(roomId, requesterUserId, RoomMemberRoleEnum.OWNER, RoomMemberRoleEnum.ADMIN);
 
         UUID memberUUID = UUID.fromString(dto.memberId());
-        RoomMemberEntity member = this.getRoomMemberById(memberUUID);
+        RoomMemberEntity member = this.getRoomMemberByRoomIdAndMemberId(roomId, memberUUID);
 
         if (member.getRole() == RoomMemberRoleEnum.OWNER) {
             throw new RuntimeException("Không thể đổi quyền chủ phòng");
         }
 
-        member.setRole(RoomMemberRoleEnum.valueOf(dto.newRole()));
-        return roomMemberRepository.save(member);
+        RoomMemberRoleEnum newRole = RoomMemberRoleEnum.valueOf(dto.newRole());
+
+        if (newRole == RoomMemberRoleEnum.OWNER) {
+            RoomMemberEntity currentOwner = this.getRoomMemberByRoomIdAndUserId(roomId, requesterUserId);
+            currentOwner.setRole(RoomMemberRoleEnum.ADMIN);
+            member.setRole(RoomMemberRoleEnum.OWNER);
+
+            RoomEntity room = member.getRoom();
+            room.setOwner(member.getUser());
+
+            roomMemberRepository.save(currentOwner);
+            RoomMemberEntity newOwner = roomMemberRepository.save(member);
+            roomRepository.save(room);
+
+            return List.of(currentOwner, newOwner);
+        }
+
+        member.setRole(newRole);
+        return List.of(roomMemberRepository.save(member));
     }
 
     @Transactional
@@ -117,13 +135,8 @@ public class RoomMemberService {
             throw new RuntimeException("ADMIN cannot kick another ADMIN");
         }
 
-        target.setStatus(MemberStatusEnum.INACTIVE);
-        target.setInactiveByAdminLock(false);
+        target.setStatus(MemberStatusEnum.KICKED);
         roomMemberRepository.save(target);
-
-//        roomMemberRepository.removeFromCardAssignees(memberUUID);
-//        roomMemberRepository.removeFromCalendarEventRoomMembers(memberUUID);
-//        roomMemberRepository.deleteById(memberUUID);
 
         return target.getUser().getEmail();
     }
@@ -151,22 +164,6 @@ public class RoomMemberService {
         return roomMemberRepository.save(target);
     }
 
-    // public void toggleMuteMembers(UUID roomId, UUID memberId, UUID requesterId, MuteRequest muteRequest) {
-
-
-    //     PermissionService.requirePermission(roomId, requesterId, RoomMemberRoleEnum.OWNER, RoomMemberRoleEnum.ADMIN);
-
-    //     RoomMemberEntity member = this.getRoomMemberByRoomIdAndUserId(roomId, memberId);
-
-    //     if (muteRequest.muted() != null) {
-    //         member.setMuted(muteRequest.muted());
-    //     } else {
-    //         member.setDeafen(muteRequest.deafen());
-    //     }
-
-    //     roomMemberRepository.save(member);
-    // }
-    
     public RoomMemberEntity toggleMuteMembers(UUID roomId, UUID memberId, UUID requesterId, MuteRequest muteRequest) {
 
 
@@ -225,8 +222,7 @@ public class RoomMemberService {
     @Transactional
     public void leaveRoom(UUID roomUUID, UUID requesterId) {
         RoomMemberEntity member = this.getRoomMemberByRoomIdAndUserId(roomUUID, requesterId);
-        member.setStatus(MemberStatusEnum.INACTIVE);
-        member.setInactiveByAdminLock(false);
+        member.setStatus(MemberStatusEnum.KICKED);
         roomMemberRepository.save(member);
 
 //        roomMemberRepository.removeFromCardAssignees(member.getId());
@@ -236,8 +232,7 @@ public class RoomMemberService {
 
     public void deleteMember(UUID userId, UUID roomId) {
         RoomMemberEntity member = this.getRoomMemberByRoomIdAndUserId(roomId, userId);
-        member.setStatus(MemberStatusEnum.INACTIVE);
-        member.setInactiveByAdminLock(false);
+        member.setStatus(MemberStatusEnum.KICKED);
         roomMemberRepository.save(member);
     }
 
@@ -260,7 +255,6 @@ public class RoomMemberService {
         RoomMemberEntity ownerMember = newOwner.get();
         ownerMember.setRole(RoomMemberRoleEnum.OWNER);
         ownerMember.setStatus(MemberStatusEnum.ACTIVE);
-        ownerMember.setInactiveByAdminLock(false);
         room.setOwner(ownerMember.getUser());
         roomMemberRepository.save(ownerMember);
         roomRepository.save(room);

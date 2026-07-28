@@ -52,7 +52,6 @@ const planMeta = [
       { text: "Giới hạn file 10MB", included: true },
       { text: "Bộ Theme Pastel", included: true },
       { text: "AI tạo nhanh lịch/note/task từ tin nhắn", included: true },
-      { text: "Google Keep", included: true },
     ],
     buttonText: "Nâng cấp gói Team",
     accentColor: "var(--primary)",
@@ -74,7 +73,7 @@ const planMeta = [
       { text: "Theme Ombre & Tùy chỉnh", included: true },
       { text: "AI tạo nhanh lịch/note/task từ tin nhắn", included: true },
       { text: "AI tóm tắt cuộc họp", included: true },
-      { text: "Google Keep", included: true },
+      { text: "AI tóm tắt tài liệu", included: true },
       { text: "Google Calendar", included: true },
     ],
     buttonText: "Lên đời Business",
@@ -85,21 +84,43 @@ const planMeta = [
 ];
 
 // Tra giá theo plan + chu kỳ từ dữ liệu API. FREE mặc định 0đ (không cần có trong DB).
-function findPrice(planId: string, cycle: "MONTHLY" | "YEARLY"): number {
-  if (planId === "FREE") return 0;
-  const found = pricingList.value.find(
+function findPricing(planId: string, cycle: "MONTHLY" | "YEARLY"): PlanPricingItem | undefined {
+  if (planId === "FREE") return undefined;
+  return pricingList.value.find(
     (p) => p.plan === planId && p.billingCycle === cycle && p.active
   );
-  return found ? Number(found.amount) : 0;
+}
+
+function getOriginalPrice(pricing?: PlanPricingItem): number {
+  return pricing ? Number(pricing.amount) : 0;
+}
+
+function getFinalPrice(pricing?: PlanPricingItem): number {
+  if (!pricing) return 0;
+  const finalAmount = pricing.finalAmount ?? Number(pricing.amount) - Number(pricing.discountAmount ?? 0);
+  return Math.max(Number(finalAmount), 0);
+}
+
+function hasDiscount(pricing?: PlanPricingItem): boolean {
+  return !!pricing && Number(pricing.discountAmount ?? 0) > 0 && getFinalPrice(pricing) < getOriginalPrice(pricing);
 }
 
 // Ghép metadata tĩnh với giá động lấy từ API — component dùng "plans" y hệt trước đây.
 const plans = computed(() =>
-  planMeta.map((meta) => ({
-    ...meta,
-    monthlyPrice: findPrice(meta.id, "MONTHLY"),
-    yearlyPrice: findPrice(meta.id, "YEARLY"),
-  }))
+  planMeta.map((meta) => {
+    const monthlyPricing = findPricing(meta.id, "MONTHLY");
+    const yearlyPricing = findPricing(meta.id, "YEARLY");
+
+    return {
+      ...meta,
+      monthlyPrice: getFinalPrice(monthlyPricing),
+      yearlyPrice: getFinalPrice(yearlyPricing),
+      monthlyOriginalPrice: getOriginalPrice(monthlyPricing),
+      yearlyOriginalPrice: getOriginalPrice(yearlyPricing),
+      monthlyHasDiscount: hasDiscount(monthlyPricing),
+      yearlyHasDiscount: hasDiscount(yearlyPricing),
+    };
+  })
 );
 
 const activePlan = computed(() => {
@@ -283,6 +304,10 @@ onMounted(async () => {
 
           <!-- Price -->
           <div class="mb-10">
+            <p v-if="isYearly ? plan.yearlyHasDiscount : plan.monthlyHasDiscount"
+              class="text-sm text-muted-foreground font-bold line-through mb-1">
+              {{ (isYearly ? plan.yearlyOriginalPrice : plan.monthlyOriginalPrice).toLocaleString('vi-VN') }}₫
+            </p>
             <div class="flex items-baseline gap-1">
               <span class="text-5xl font-black">
                 {{ (isYearly ? plan.yearlyPrice : plan.monthlyPrice).toLocaleString('vi-VN') }}₫

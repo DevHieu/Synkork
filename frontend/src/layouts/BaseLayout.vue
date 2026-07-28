@@ -11,16 +11,15 @@ import {
 import { getCookie } from "@/lib/cookies";
 import { socketService } from "@/services/websocket/socketService";
 import { useUserStore } from "@/stores/userStore";
-import { useMessageStore } from "@/stores/messageStore";
 import { storeToRefs } from "pinia";
 import { ref, provide, watch, onMounted } from "vue";
 import { useNotificationStore } from '@/stores/notificationStore'
 import { useFriendStore } from "@/stores/friendStore";
 import globalAudio from "@/utils/appAudioManager"
+import { useChatSocketComposable } from "@/features/chats/composable/chat-socket.compsable";
 
 const notificationStore = useNotificationStore()
 const userStore = useUserStore();
-const messageStore = useMessageStore();
 const friendStore = useFriendStore();
 const { user } = storeToRefs(userStore);
 
@@ -41,7 +40,7 @@ watch(
       friendStore.fetchPendingRequests();
       friendStore.fetchSentRequests();
 
-      messageStore.subscribeToSuggestions();
+      useChatSocketComposable().subscribeToSuggestions();
     }
   },
   { immediate: true },

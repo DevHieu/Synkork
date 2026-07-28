@@ -18,8 +18,9 @@ import SpaceGroup from "@/components/space/SpaceGroup.vue";
 import SpaceItem from "@/components/space/SpaceItem.vue";
 import VoiceSpaceItem from "@/components/space/VoiceSpaceItem.vue";
 import CreateSpaceDialog from "@/components/dialog/CreateSpaceDialog.vue";
-import RoomSettingDialog from "@/components/dialog/RoomSettingDialog/index.vue";
+import RoomSettingDialog from "@/features/room-settings/index.vue";
 import InviteDialog from "@/components/dialog/InviteMemberDialog.vue";
+import type { SpaceType } from "@/types/Space";
 
 
 const roomStore = useRoomsStore();
@@ -40,9 +41,9 @@ const {
 const showRoomSettingDialog = ref(false);
 const showInviteDialog = ref(false);
 const showAddSpaceDialog = ref(false);
-const selectedSpaceType = ref("CHAT");
+const selectedSpaceType = ref<SpaceType>("CHAT");
 
-const openAddSpaceDialog = (type: string) => {
+const openAddSpaceDialog = (type: SpaceType) => {
   selectedSpaceType.value = type;
   showAddSpaceDialog.value = true;
 };

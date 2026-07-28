@@ -85,7 +85,7 @@ public class VoiceSummaryController {
         FileUploaded uploaded = null;
         try {
             // 1) Lưu file upload trước để frontend nhận được URL ổn định.
-            uploaded = fileService.uploadFile(file, "synkork/voice-notes/" + roomId);
+            uploaded = fileService.handleUpload(file, "synkork/voice-notes/" + roomId, false);
             String fileUrl = uploaded.url();
             String publicId = uploaded.publicId();
 

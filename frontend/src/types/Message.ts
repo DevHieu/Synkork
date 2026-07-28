@@ -14,7 +14,7 @@ export interface Message {
   deleted: boolean;
   pinned: boolean;
   edited: boolean;
-  type: "TEXT" | "IMAGE" | "FILE";
+  type: "TEXT" | "IMAGE" | "VIDEO" | "FILE";
   sender: Member;
   replyTo: ReplyPreview | null;
   attachmentUrl: string | null;
@@ -23,9 +23,11 @@ export interface Message {
   failed?: boolean;
   createdAt: string;
   updatedAt: string;
+  version: number;
 }
 
 export interface MessageRequest {
   content: string;
+  version?: number;
   replyToId: string | null;
 }

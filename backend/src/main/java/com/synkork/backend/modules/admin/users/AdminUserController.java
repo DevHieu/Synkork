@@ -3,8 +3,6 @@ package com.synkork.backend.modules.admin.users;
 import com.synkork.backend.common.response.ApiResponse;
 import com.synkork.backend.common.response.PageMeta;
 import com.synkork.backend.modules.admin.users.dtos.*;
-import com.synkork.backend.modules.user.enums.UserStatusEnum;
-
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -79,7 +77,7 @@ public class AdminUserController {
 
     @PatchMapping("/{id}/status")
     public ApiResponse<AdminUserResponse> toggleLockUser(@PathVariable UUID id, @Valid @RequestBody UpdateUserRequest request){
-        return ApiResponse.success("Lock user successfully", adminUserService.toggleLockUser(id, UserStatusEnum.valueOf(request.status())));
+        return ApiResponse.success("Lock user successfully", adminUserService.toggleLockUser(id, request.status()));
     }
 
     @PatchMapping("/{id}/warn")

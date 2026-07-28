@@ -156,9 +156,11 @@ public class RoomService {
         // Check xem mmber đã trong phòng? Đã trong phòng thì statsu là gì
         if (alreadyMember.isPresent()) {
             RoomMemberEntity member = alreadyMember.get();
-            if (member.getStatus() == MemberStatusEnum.INACTIVE) {
+            if (member.getStatus() == MemberStatusEnum.KICKED) {
                 member.setStatus(MemberStatusEnum.ACTIVE);
                 roomMemberRepository.save(member);
+
+                return new RoomDto(room);
             } else {
                 throw new RuntimeException("Bạn đã là thành viên của phòng này");
             }
@@ -223,9 +225,25 @@ public class RoomService {
 
         RoomEntity room = this.findById(roomId);
 
-        boolean alreadyMember = roomMemberRepository.existsByRoom_IdAndUser_Id(roomId, friendId);
-        if (alreadyMember) {
-            throw new RuntimeException("Người này đã ở trong phòng");
+        Optional<RoomMemberEntity> alreadyMember = roomMemberRepository.findByRoom_IdAndUser_Id(room.getId(), friendId);
+
+        // Check xem mmber đã trong phòng? Đã trong phòng thì statsu là gì
+        if (alreadyMember.isPresent()) {
+            RoomMemberEntity member = alreadyMember.get();
+            System.out.println(member.getStatus());
+            if (member.getStatus() == MemberStatusEnum.KICKED) {
+                member.setStatus(MemberStatusEnum.ACTIVE);
+                roomMemberRepository.save(member);
+
+                RoomMemberDto dto = new RoomMemberDto(member);
+                messagingTemplate.convertAndSend("/topic/room/" + room.getId() + "/members/joined", dto);
+
+                messagingTemplate.convertAndSendToUser(member.getUser().getEmail(), "/queue/room/members/invited", "Đã thêm mới vào phòng");
+
+                return dto;
+            } else {
+                throw new RuntimeException("Người này đã ở trong phòng");
+            }
         }
 
         UserEntity friend = userRepository.findById(friendId)

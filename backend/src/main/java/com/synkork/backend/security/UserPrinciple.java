@@ -1,6 +1,7 @@
 package com.synkork.backend.security;
 
 import com.synkork.backend.modules.user.UserEntity;
+import com.synkork.backend.modules.user.enums.PlanEnum;
 import com.synkork.backend.modules.user.enums.UserStatusEnum;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
@@ -9,7 +10,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -47,5 +47,7 @@ public class UserPrinciple implements UserDetails {
     public boolean isAccountNonLocked() {
         return user.getStatus() != UserStatusEnum.BANNED;
     }
+
+    public PlanEnum getCurrentPlan() {return user.getCurrentPlan();}
 }
 

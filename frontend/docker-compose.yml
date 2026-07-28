@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: synkork-frontend
+    ports:
+      - "5173:5173"
+    restart: unless-stopped
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: synkork-ngrok
+    restart: unless-stopped
+    command:
+      - "http"
+      - "frontend:5173"
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    ports:
+      - "4041:4040" # ngrok inspector UI
+    depends_on:
+      - frontend

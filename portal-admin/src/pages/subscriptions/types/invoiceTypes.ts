@@ -16,6 +16,7 @@ export interface Invoice {
 export type PlanCode = 'FREE' | 'TEAM' | 'BUSINESS'
 export type PaidPlanCode = Exclude<PlanCode, 'FREE'>
 export type BillingCycle = 'MONTHLY' | 'YEARLY'
+export type DiscountType = 'PERCENTAGE' | 'FIXED'
 export type SubscriptionStatus = 'ACTIVE' | 'EXPIRED' | 'CANCELLED' | 'PENDING'
 
 export interface UserSubscription {
@@ -43,6 +44,10 @@ export interface PlanPricing {
   plan: PaidPlanCode
   billingCycle: BillingCycle
   amount: number | string
+  discountType?: DiscountType | null
+  discountValue?: number | string | null
+  discountAmount?: number | string | null
+  finalAmount?: number | string | null
   active: boolean
   createdAt?: string | null
 }
@@ -51,6 +56,8 @@ export interface PlanPricingRequest {
   plan: PaidPlanCode
   billingCycle: BillingCycle
   amount: number
+  discountType?: DiscountType | null
+  discountValue?: number | null
 }
 
 export interface InvoiceRequest {

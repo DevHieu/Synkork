@@ -215,20 +215,21 @@ public class AdminUserService {
                 .orElse("Tai khoan cua ban da bi khoa boi quan tri vien.");
 
         this.inactiveUserAccount(user);
-        user.setStatus(UserStatusEnum.INACTIVE);
+        user.setStatus(UserStatusEnum.BANNED);
         userAdminRepository.save(user);
         adminUserEmailService.sendUserDeletedEmail(user, reason);
         createLog(user, LogActionEnum.DELETE_USER, reason, Map.of(
-                "newStatus", UserStatusEnum.INACTIVE.name()
+                "newStatus", UserStatusEnum.BANNED.name()
         ));
 
-        return Map.of("message", "Da chuyen nguoi dung sang INACTIVE va xoa khoi cac room dang tham gia");
+        return Map.of("message", "Da chuyen nguoi dung sang BANNED va xoa khoi cac room dang tham gia");
     }
 
     @Transactional
-    public AdminUserResponse toggleLockUser(UUID userId, UserStatusEnum status) {
+    public AdminUserResponse toggleLockUser(UUID userId, String requestedStatus) {
         UserEntity user = findUserById(userId);
         UserStatusEnum oldStatus = user.getStatus();
+        UserStatusEnum status = UserStatusEnum.valueOf(requestedStatus.toUpperCase());
         applyStatusSideEffects(user, status);
         user.setStatus(status);
         UserEntity saved = userAdminRepository.save(user);
@@ -277,8 +278,8 @@ public class AdminUserService {
     }
 
     private void inactiveUserAccount(UserEntity user) {
-        roomMemberRepository.inactiveActiveMembersByAdminLock(user.getId());
-        roomMemberRepository.updateRoleByUserIdAndAdminLock(user.getId(), RoomMemberRoleEnum.MEMBER);
+        roomMemberRepository.deactivateActiveMembersByAdminLock(user.getId());
+        roomMemberRepository.updateRoleByUserIdAndInactiveStatus(user.getId(), RoomMemberRoleEnum.MEMBER);
 
         List<RoomEntity> ownedRooms = roomRepository.findAllByOwnerId(user.getId());
         for (RoomEntity room : ownedRooms) {
