@@ -44,7 +44,7 @@ const senderNameColor = computed(() => {
     case "OWNER":
       return "text-yellow-400";
     case "ADMIN":
-      return "text-red-400";
+      return "text-blue-500";
     default:
       return "text-foreground";
   }
