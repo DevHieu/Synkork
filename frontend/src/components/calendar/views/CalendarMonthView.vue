@@ -5,6 +5,8 @@ import type { CalendarEvent } from "@/types/CalendarEvent";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+import { toast } from "vue-sonner";
+
 const props = defineProps<{
   currentDate: dayjs.Dayjs;
   selectedDate: dayjs.Dayjs;
@@ -82,17 +84,63 @@ const getDisplayStartTime = (event: CalendarEvent) =>
 const getDisplayEndTime = (event: CalendarEvent) =>
   (event.displayEndTime || event.endTime).substring(0, 5);
 
+/**
+ * Nhóm các sự kiện liên tục theo scheduleId để tính toán ngày bắt đầu (min) và ngày kết thúc (max) của nhóm.
+ */
+const scheduleDateRanges = computed(() => {
+  const map: Record<string, { startDate: string; endDate: string }> = {};
+  for (const event of props.events) {
+    if (event.schedule && event.scheduleId) {
+      const sId = event.scheduleId;
+      const curDate = event.eventDate;
+      const curEnd = event.endDate || event.eventDate;
+      if (!map[sId]) {
+        map[sId] = { startDate: curDate, endDate: curEnd };
+      } else {
+        if (dayjs(curDate).isBefore(dayjs(map[sId].startDate))) {
+          map[sId].startDate = curDate;
+        }
+        if (dayjs(curEnd).isAfter(dayjs(map[sId].endDate))) {
+          map[sId].endDate = curEnd;
+        }
+        if (dayjs(curDate).isAfter(dayjs(map[sId].endDate))) {
+          map[sId].endDate = curDate;
+        }
+      }
+    }
+  }
+  return map;
+});
+
 const formatDateTimeLabel = (value: string | undefined, fallbackDate: string, fallbackTime: string) => {
   const dateTime = value ? dayjs(value) : dayjs(`${fallbackDate}T${fallbackTime}`);
   if (!dateTime.isValid()) return fallbackTime.substring(0, 5);
   return `${dateTime.format("HH:mm")} ${dateTime.format("DD/MM")}`;
 };
 
-const getOriginalStartLabel = (event: CalendarEvent) =>
-  formatDateTimeLabel(event.originalStartDateTime, event.eventDate, event.startTime);
+const getScheduleRange = (event: CalendarEvent) => {
+  if (event.schedule && event.scheduleId) {
+    return scheduleDateRanges.value[event.scheduleId];
+  }
+};
 
-const getOriginalEndLabel = (event: CalendarEvent) =>
-  formatDateTimeLabel(event.originalEndDateTime, event.endDate || event.eventDate, event.endTime);
+const getOriginalStartLabel = (event: CalendarEvent) => {
+  let startDate = event.eventDate;
+  const range = getScheduleRange(event);
+  if (range && dayjs(range.startDate).isBefore(dayjs(startDate))) {
+    startDate = range.startDate;
+  }
+  return formatDateTimeLabel(event.originalStartDateTime, startDate, event.startTime);
+};
+
+const getOriginalEndLabel = (event: CalendarEvent) => {
+  let endDate = event.endDate || event.eventDate;
+  const range = getScheduleRange(event);
+  if (range && dayjs(range.endDate).isAfter(dayjs(endDate))) {
+    endDate = range.endDate;
+  }
+  return formatDateTimeLabel(event.originalEndDateTime, endDate, event.endTime);
+};  
 
 const getContinuationLabel = (event: CalendarEvent) => {
   if (event.continuesFromPreviousDay && event.continuesToNextDay) {
@@ -107,7 +155,7 @@ const handleDeleteAllForDate = () => {
   const eventsToDelete = selectedDateEvents.value.filter(e => e.createdById === props.currentUserId);
   
   if (eventsToDelete.length === 0) {
-    alert("Bạn không có quyền xóa các sự kiện trong ngày này!");
+    toast.error("Bạn không có quyền xóa các sự kiện trong ngày này!");
     return;
   }
   
@@ -165,7 +213,12 @@ const handleDeleteAllForDate = () => {
                 v-for="event in getEventsForDate(date).slice(0, 2)"
                 :key="event.id"
                 @click.stop="emit('viewEvent', event)"
-                class="w-full truncate rounded-sm border-l-2 border-primary bg-primary/10 px-1.5 py-0.5 text-[10px] font-sans font-medium text-primary transition-all hover:bg-primary/15"
+                :class="[
+                  'w-full truncate rounded-sm border-l-2 px-1.5 py-0.5 text-[10px] font-sans font-medium transition-all',
+                  event.schedule
+                    ? 'border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/15'
+                    : 'border-primary bg-primary/10 text-primary hover:bg-primary/15',
+                ]"
                 :title="event.title"
               >
                 {{ event.title }}
@@ -216,8 +269,10 @@ const handleDeleteAllForDate = () => {
               <!-- Header Event -->
               <div class="flex items-center justify-between rounded-t-lg border-b border-border/60 bg-muted/30 px-3.5 py-2.5 transition-colors group-hover:bg-primary/5">
                 <div class="flex items-center gap-2">
-                  <div class="h-2 w-2 rounded-full bg-primary"></div>
+                  <div :class="['h-2 w-2 rounded-full', event.schedule ? 'bg-amber-500' : 'bg-primary']"></div>
                   <span class="text-[10px] font-sans font-semibold text-muted-foreground uppercase tracking-wider group-hover:text-primary transition-colors">ID: {{ event.id?.substring(0, 6) || 'SYS' }}</span>
+                  <!-- schedule label -->
+                  <!-- <span v-if="event.schedule" class="text-[9px] font-sans font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">LIÊN TỤC</span> -->
                 </div>
                 <span class="text-[10px] font-sans font-semibold text-primary uppercase tracking-wider">XEM CHI TIẾT</span>
               </div>

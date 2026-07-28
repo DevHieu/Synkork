@@ -44,11 +44,14 @@ export function useEventForm(
   };
 
   const isEndTimeAfterStartTime = (): boolean => {
-    const endDate = formData.value.endDate || formData.value.eventDate;
-    if (endDate !== formData.value.eventDate) {
-      return dayjs(endDate).isAfter(dayjs(formData.value.eventDate));
+    const startStr = `${formData.value.eventDate}T${formData.value.startTime}`;
+    const endStr = `${formData.value.endDate || formData.value.eventDate}T${formData.value.endTime}`;
+    const startDt = dayjs(startStr);
+    const endDt = dayjs(endStr);
+    if (startDt.isValid() && endDt.isValid()) {
+      return endDt.isAfter(startDt);
     }
-    return toMinutes(formData.value.endTime) > toMinutes(formData.value.startTime);
+    return false;
   };
 
   const isEventInFuture = (): boolean =>
@@ -86,16 +89,10 @@ export function useEventForm(
     return true;
   };
 
-  // Reset form
-  const resetForm = (data: EventFormData): void => {
-    formData.value = { ...data };
-  };
-
   return {
     formData,
     warningMessage,
     showWarning,
     validate,
-    resetForm,
   };
 }

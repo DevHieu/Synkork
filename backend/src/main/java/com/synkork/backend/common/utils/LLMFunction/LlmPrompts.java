@@ -11,11 +11,15 @@ public class LlmPrompts {
   //  Chat/Event Detection
   /** Danh sách model dự phòng cho phát hiện event/task/note, thử theo thứ tự. */
   public static final List<String> CHAT_EVENT_MODELS =
-      List.of(
-          "openai/gpt-oss-120b:free",
-          "poolside/laguna-m.1:free",
-          "nvidia/nemotron-3-super-120b-a12b:free",
-          "z-ai/glm-4.5-air:free");
+          List.of(
+                  "google/gemma-4-26b-a4b-it:free",       // Ưu tiên 1: Tốc độ tốt nhất, bám sát chỉ thị định dạng JSON [6, 11, 13]
+                  "google/gemma-4-31b-it:free",           // Ưu tiên 2: Độ thông minh cao hơn một chút, bám sát chỉ thị [7, 13]
+                  "z-ai/glm-4.5-air:free",                // Ưu tiên 3: Dòng Air tối ưu độ trễ cực tốt cho production [6, 14]
+                  "nvidia/nemotron-3-super-120b-a12b:free",// Ưu tiên 4: Khả năng suy luận mạnh mẽ hơn khi các bản nhẹ bị lỗi [6, 7]
+                  "nvidia/nemotron-3-ultra-550b-a55b:free",// Ưu tiên 5: Chỉ dùng khi thực sự cần xử lý ngữ cảnh cực kỳ phức tạp (chấp nhận chậm) [2, 6]
+                  "openrouter/free");                     // Ưu tiên 6: Chốt chặn cuối cùng phòng khi toàn bộ hệ thống trên quá tải [1]
+
+
 
   /** System prompt phân loại ý định. */
   public static final String CHAT_EVENT_SYSTEM_PROMPT =
@@ -179,12 +183,14 @@ Quy đổi ngày: hôm nay=%s | mai=%s | ngày mốt=%s
 
   /** Danh sách model dự phòng cho tóm tắt cuộc họp. */
   public static final List<String> MEETING_SUMMARY_MODELS =
-      List.of(
-          "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-          "openai/gpt-oss-120b:free",
-          "poolside/laguna-m.1:free",
-          "nvidia/nemotron-3-super-120b-a12b:free",
-          "z-ai/glm-4.5-air:free");
+          List.of(
+                  "google/gemma-4-26b-a4b-it:free",       // Ưu tiên 1: Tốc độ tốt nhất, bám sát chỉ thị định dạng JSON [6, 11, 13]
+                  "google/gemma-4-31b-it:free",           // Ưu tiên 2: Độ thông minh cao hơn một chút, bám sát chỉ thị [7, 13]
+                  "z-ai/glm-4.5-air:free",                // Ưu tiên 3: Dòng Air tối ưu độ trễ cực tốt cho production [6, 14]
+                  "nvidia/nemotron-3-super-120b-a12b:free",// Ưu tiên 4: Khả năng suy luận mạnh mẽ hơn khi các bản nhẹ bị lỗi [6, 7]
+                  "nvidia/nemotron-3-ultra-550b-a55b:free",// Ưu tiên 5: Chỉ dùng khi thực sự cần xử lý ngữ cảnh cực kỳ phức tạp (chấp nhận chậm) [2, 6]
+                  "openrouter/free");                     // Ưu tiên 6: Chốt chặn cuối cùng phòng khi toàn bộ hệ thống trên quá tải [1]
+
 
   /** Prompt tóm tắt cuộc họp; nhận 1 tham số: transcript. */
   public static final String MEETING_SUMMARY_PROMPT_TEMPLATE =

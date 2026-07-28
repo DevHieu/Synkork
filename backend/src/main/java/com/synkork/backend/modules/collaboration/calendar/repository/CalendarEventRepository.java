@@ -17,27 +17,33 @@ import java.util.UUID;
 public interface CalendarEventRepository extends JpaRepository<CalendarEventEntity, UUID> {
 
     @Override
-    @EntityGraph(attributePaths = {"space", "createdBy", "callRoomSpace", "attendees", "attendees.user"})
+    @EntityGraph(attributePaths = {"space", "space.room", "createdBy", "callRoomSpace", "attendees", "attendees.user"})
     Optional<CalendarEventEntity> findById(UUID id);
 
-    @EntityGraph(attributePaths = {"space", "createdBy", "callRoomSpace", "attendees", "attendees.user"})
+    @EntityGraph(attributePaths = {"space", "space.room", "createdBy", "callRoomSpace", "attendees", "attendees.user"})
     List<CalendarEventEntity> findBySpaceId(UUID spaceId);
 
-    @EntityGraph(attributePaths = {"space", "createdBy", "callRoomSpace", "attendees", "attendees.user"})
+    @EntityGraph(attributePaths = {"space", "space.room", "createdBy", "callRoomSpace", "attendees", "attendees.user"})
     List<CalendarEventEntity> findBySpaceIdAndEventDateBetween(UUID spaceId, LocalDate start, LocalDate end);
 
-    @EntityGraph(attributePaths = {"space", "createdBy", "callRoomSpace", "attendees", "attendees.user"})
+    @EntityGraph(attributePaths = {"space", "space.room", "createdBy", "callRoomSpace", "attendees", "attendees.user"})
     List<CalendarEventEntity> findBySpaceIdAndEventDateLessThanEqual(UUID spaceId, LocalDate endDate);
 
-    @EntityGraph(attributePaths = {"space", "createdBy", "callRoomSpace", "attendees", "attendees.user"})
+    @EntityGraph(attributePaths = {"space", "space.room", "createdBy", "callRoomSpace", "attendees", "attendees.user"})
     List<CalendarEventEntity> findBySpaceIdAndEventDate(UUID spaceId, LocalDate date);
 
 
-    @EntityGraph(attributePaths = {"space", "createdBy", "callRoomSpace", "attendees", "attendees.user"})
+    @EntityGraph(attributePaths = {"space", "space.room", "createdBy", "callRoomSpace", "attendees", "attendees.user"})
     @Query("SELECT e FROM CalendarEventEntity e WHERE e.eventDate >= :date OR (e.recurrenceType IS NOT NULL AND e.recurrenceType != 'NONE')")
     List<CalendarEventEntity> findUpcomingOrRecurringEvents(@Param("date") LocalDate date);
 
     List<CalendarEventEntity> findByCreatedByIdAndGoogleEventIdIsNull(UUID createdById);
+
+    // pick group
+    @EntityGraph(attributePaths = {"space", "createdBy", "callRoomSpace", "attendees", "attendees.user"})
+    List<CalendarEventEntity> findByScheduleId(UUID scheduleId);
+
+    void deleteByScheduleId(UUID scheduleId);
 
     void deleteBySpaceId(UUID spaceId);
 

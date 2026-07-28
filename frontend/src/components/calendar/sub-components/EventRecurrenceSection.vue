@@ -2,14 +2,11 @@
 import { ref, computed, watch } from "vue";
 import { Ban, RefreshCw, CalendarPlus, Calendar, Star, Info, CalendarIcon } from "lucide-vue-next";
 import dayjs from "dayjs";
-import "dayjs/locale/vi";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent, type LayoutTypes } from "@/components/ui/calendar";
 import { parseDate } from "@internationalized/date";
 import { cn } from "@/lib/utils";
-
-dayjs.locale("vi");
 
 const recurrenceOptions = [
   { val: "NONE",    label: "Không", icon: Ban },

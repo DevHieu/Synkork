@@ -38,6 +38,14 @@ public class CalendarEventDTO {
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate recurrenceEndDate;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate endDate;
+
+    // tính năng lịch liên tục
+    private boolean schedule;
+    private UUID scheduleId;
+
     private boolean allowEditAll;
     private Integer remindBeforeMinutes;
 
@@ -67,10 +75,13 @@ public class CalendarEventDTO {
         this.title = entity.getTitle();
         this.description = entity.getDescription();
         this.eventDate = entity.getEventDate();
+        this.endDate = entity.getEndDate() != null ? entity.getEndDate() : entity.getEventDate();
         this.startTime = entity.getStartTime();
         this.endTime = entity.getEndTime();
         this.recurrenceType = entity.getRecurrenceType();
         this.recurrenceEndDate = entity.getRecurrenceEndDate();
+        this.schedule = entity.isSchedule();
+        this.scheduleId = entity.getScheduleId();
         this.allowEditAll = entity.isAllowEditAll();
         this.remindBeforeMinutes = entity.getRemindBeforeMinutes();
         this.createdById = entity.getCreatedBy().getId().toString();
@@ -115,10 +126,13 @@ public class CalendarEventDTO {
         target.setTitle(this.title);
         target.setDescription(this.description);
         target.setEventDate(this.eventDate);
+        target.setEndDate(this.endDate != null ? this.endDate : this.eventDate);
         target.setStartTime(this.startTime);
         target.setEndTime(this.endTime);
         target.setRecurrenceType(this.recurrenceType != null ? this.recurrenceType : "NONE");
         target.setRecurrenceEndDate(this.recurrenceEndDate);
+        target.setSchedule(this.schedule);
+        target.setScheduleId(this.scheduleId);
         target.setAllowEditAll(this.allowEditAll);
         target.setRemindBeforeMinutes(this.remindBeforeMinutes);
     }

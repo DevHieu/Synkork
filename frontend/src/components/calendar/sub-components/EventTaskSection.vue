@@ -39,9 +39,7 @@ const fetchTasksForSpace = async (spaceId: string) => {
   loadingTasks.value = true;
   try {
     const res = await getAllColumns(spaceId);
-    console.log("getAllColumns response:", res);
     columns.value = res.data || [];
-    console.log("Loaded columns with tasks:", columns.value);
   } catch (error) {
     console.error("Lỗi khi tải danh sách task:", error);
     columns.value = [];

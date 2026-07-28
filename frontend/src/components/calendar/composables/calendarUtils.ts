@@ -28,14 +28,6 @@ export const calculateDateRange = (date: dayjs.Dayjs, mode: string) => {
 };
 
 /**
- * Chuẩn hóa link sự kiện: trim rồi trả về null nếu rỗng.
- */
-export const normalizeEventLink = (eventLink?: string) => {
-  const trimmedLink = eventLink?.trim();
-  return trimmedLink || null;
-};
-
-/**
  * Trích xuất các file mới (chưa upload) từ danh sách attachments.
  */
 export const extractNewFiles = (data: any): File[] => {
@@ -71,7 +63,7 @@ export const formatPayload = (
 
   const payload = {
     ...data,
-    eventLink: normalizeEventLink(data.eventLink),
+    eventLink: data.eventLink?.trim() || null,
     endDate: data.endDate || data.eventDate,
     startTime: data.startTime.length === 5 ? `${data.startTime}:00` : data.startTime,
     endTime: data.endTime.length === 5 ? `${data.endTime}:00` : data.endTime,

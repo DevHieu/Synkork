@@ -43,6 +43,8 @@ export interface CalendarEvent {
   attendeeIds?: string[];
   attendees?: CalendarEventAttendee[];
   attachments?: CalendarEventAttachment[];
+  schedule?: boolean;
+  scheduleId?: string;
   displayDate?: string;
   displayStartTime?: string;
   displayEndTime?: string;

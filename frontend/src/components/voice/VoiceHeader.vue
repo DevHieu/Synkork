@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import SidebarTrigger from "../ui/sidebar/SidebarTrigger.vue";
 import { FileText, Volume2, UploadCloud } from "lucide-vue-next";
 import { useUserStore } from "@/stores/userStore";
@@ -17,6 +17,8 @@ let chunks: Blob[] = [];
 const route = useRoute();
 const voiceSpaceStore = useVoiceSpaceStore();
 const userStore = useUserStore();
+
+const isBusinessPlan = computed(() => userStore.userPlan === "BUSINESS");
 
 const showPremiumDialog = ref(false);
 const showSummaryModal = ref(false);
@@ -67,23 +69,10 @@ const handleSummary = () => {
     return;
   }
 
-  // Testing
-  if (userStore.userPlan === "FREE") {
+  if (userStore.userPlan !== "BUSINESS") {
     showPremiumDialog.value = true;
     return;
   }
-  // 
-  // 
-  // 
-  // 
-  // 
-  // 
-  // 
-  // 
-  // 
-  // 
-  // 
-  // 
 
   const tracks = voiceSpaceStore.getAudioTracks();
   if (tracks.length === 0) {
@@ -153,18 +142,19 @@ const handleSummary = () => {
     <div class="flex items-center gap-2">
       <!-- Test upload button -->
       <input
+        v-if="isBusinessPlan"
         type="file"
         ref="testFileInput"
         class="hidden"
         accept="audio/*"
         @change="handleTestFileUpload"
       />
-      <button @click="triggerTestUpload" class="flex items-center gap-2 px-4 py-1 rounded-lg text-sm font-normal text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 transition-colors border border-amber-500/30 h-8">
+      <button v-if="isBusinessPlan" @click="triggerTestUpload" class="flex items-center gap-2 px-4 py-1 rounded-lg text-sm font-normal text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 transition-colors border border-amber-500/30 h-8">
         <UploadCloud class="h-4 w-4" />
         Test Tóm Tắt
       </button>
 
-      <button @click="handleSummary"
+      <button v-if="isBusinessPlan" @click="handleSummary"
         class="flex items-center gap-2 px-4 py-1 rounded-lg text-sm font-normal text-muted-foreground hover:text-foreground hover:bg-muted transition-colors border border-border h-8"
         :class="{ 'text-red-500 border-red-500': isRecording }">
         <FileText class="h-5 w-5" />
