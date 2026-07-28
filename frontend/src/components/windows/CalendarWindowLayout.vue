@@ -5,7 +5,9 @@ import { useUserStore } from "@/stores/userStore";
 import { useSuggestionStore } from "@/stores/calendarStore";
 import { useRoomMemberStore } from "@/stores/roomMemberStore";
 import { storeToRefs } from "pinia";
-import { useCalendar } from "@/components/calendar/composables/useCalendar";
+import { useCalendarDate } from "@/components/calendar/composables/useCalendarDate";
+import { useCalendarEvents } from "@/components/calendar/composables/useCalendarEvents";
+import { useCalendarRealtime } from "@/components/calendar/composables/useCalendarRealtime";
 import type { CalendarEvent } from "@/types/CalendarEvent";
 import type { SuggestedEventDraft } from "@/types/CalendarSuggestion";
 import dayjs from "dayjs";
@@ -38,28 +40,40 @@ const currentUserId = computed(() => (user.value as any)?.id || "");
 
 // Calendar logic
 const spaceIdRef = computed(() => currentSpace.value?.id);
-  const {
-    viewMode,
-    currentDate,
-    selectedDate,
-    events,
-    loading,
-    headerTitle,
-    relativeTimeText,
-    goNext,
-    goPrev,
-    goToday,
-    selectDate,
-    setYearMonth,
-    createEvent,
-    updateEvent,
-    deleteEvent,
-    checkConflicts,
-    fetchEvents,
-    dayNamesLong,
-    isToday,
-    isSelected,
-  } = useCalendar(spaceIdRef, currentUserId);
+const calendarDate = useCalendarDate();
+const calendarEvents = useCalendarEvents(
+  spaceIdRef,
+  currentUserId,
+  calendarDate.currentDate,
+  calendarDate.viewMode
+);
+useCalendarRealtime(spaceIdRef, calendarEvents.events, calendarEvents.fetchEvents);
+
+const {
+  viewMode,
+  currentDate,
+  selectedDate,
+  headerTitle,
+  relativeTimeText,
+  goNext,
+  goPrev,
+  goToday,
+  selectDate,
+  setYearMonth,
+  dayNamesLong,
+  isToday,
+  isSelected,
+} = calendarDate;
+
+const {
+  events,
+  loading,
+  createEvent,
+  updateEvent,
+  deleteEvent,
+  checkConflicts,
+  fetchEvents,
+} = calendarEvents;
 
 // Event modal state
 const showDialog = ref(false);

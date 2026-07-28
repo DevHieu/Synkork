@@ -2,17 +2,17 @@
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
   Plus,
   Link as LinkIcon
 } from "lucide-vue-next";
-import { ref } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import axiosClient from "@/lib/axiosClient";
 import { useUserStore } from "@/stores/userStore";
 import PremiumFeatureDialog from "@/components/dialog/PremiumFeatureDialog.vue";
+import CalendarNotificationDialog from "../dialogs/CalendarNotificationDialog.vue";
 
 const props = defineProps<{
   currentSpaceName?: string;
@@ -32,15 +32,31 @@ const emit = defineEmits<{
 
 const isConnecting = ref(false);
 const showPremiumDialog = ref(false);
+const showConfirmDialog = ref(false);
 const route = useRoute();
 const userStore = useUserStore();
 
-const connectGoogleCalendar = async () => {
-  if (userStore.userPlan === "FREE") {
+onMounted(() => {
+  userStore.getUserInfo();
+});
+
+// Nút kết nối Google Calendar chỉ dùng được cho gói BUSINESS:
+// 1. User ở gói FREE hoặc TEAM -> Nút hiển thị để click mở dialog Nâng cấp gói Business
+// 2. User ở gói BUSINESS -> Chỉ hiển thị khi chưa kết nối, tự động ẩn khi đã kết nối
+const isConnectButtonVisible = computed(() => {
+  if (userStore.userPlan !== "BUSINESS") return true;
+  return !userStore.isGoogleCalendarConnected;
+});
+
+const promptConnectGoogleCalendar = () => {
+  if (userStore.userPlan !== "BUSINESS") {
     showPremiumDialog.value = true;
     return;
   }
+  showConfirmDialog.value = true;
+};
 
+const executeConnectGoogleCalendar = async () => {
   try {
     isConnecting.value = true;
     const response = await axiosClient.get('/api/integrations/google-calendar/authorize-url', {
@@ -53,6 +69,7 @@ const connectGoogleCalendar = async () => {
     console.error("Failed to get Google Calendar auth URL", error);
   } finally {
     isConnecting.value = false;
+    showConfirmDialog.value = false;
   }
 };
 
@@ -128,7 +145,8 @@ const connectGoogleCalendar = async () => {
 
         <!-- Connect Google Calendar Button -->
         <button
-          @click="connectGoogleCalendar"
+          v-if="isConnectButtonVisible"
+          @click="promptConnectGoogleCalendar"
           :disabled="isConnecting"
           class="flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-3 font-sans text-xs font-semibold text-foreground shadow-sm transition-all hover:bg-accent"
         >
@@ -147,11 +165,24 @@ const connectGoogleCalendar = async () => {
       </div>
     </div>
 
+    <!-- Confirmation Dialog -->
+    <CalendarNotificationDialog
+      v-model:show="showConfirmDialog"
+      type="confirm"
+      title="Xác nhận kết nối"
+      message="Bạn có chắc chắn muốn kết nối với Google Calendar để đồng bộ lịch làm việc không?"
+      confirm-text="Đồng ý kết nối"
+      cancel-text="Hủy"
+      :is-loading="isConnecting"
+      @confirm="executeConnectGoogleCalendar"
+      @cancel="showConfirmDialog = false"
+    />
+
     <!-- Premium Feature Dialog -->
     <PremiumFeatureDialog 
       v-model:open="showPremiumDialog" 
       feature-name="Đồng bộ Google Calendar" 
-      :business-only="false" 
+      :business-only="true" 
     />
   </div>
 </template>

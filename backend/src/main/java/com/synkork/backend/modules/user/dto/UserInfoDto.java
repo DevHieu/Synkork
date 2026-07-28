@@ -7,7 +7,7 @@ import com.synkork.backend.modules.user.enums.RoleEnum;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public record UserInfoDto(UUID id, String username, String displayName, String email, String avatarUrl, String provider, RoleEnum role, boolean hasPassword, PlanEnum currentPlan, LocalDateTime planExpiresAt, UUID personalNoteId, UUID personalCalendarId) {
+public record UserInfoDto(UUID id, String username, String displayName, String email, String avatarUrl, String provider, RoleEnum role, boolean hasPassword, PlanEnum currentPlan, LocalDateTime planExpiresAt, UUID personalNoteId, UUID personalCalendarId, boolean isGoogleCalendarConnected) {
     public UserInfoDto(UserEntity user) {
         this(
                 user.getId(),
@@ -21,7 +21,9 @@ public record UserInfoDto(UUID id, String username, String displayName, String e
                 user.getCurrentPlan(),
                 user.getPlanExpiresAt(),
                 user.getPersonalNoteId(),
-                user.getPersonalCalendarId()
+                user.getPersonalCalendarId(),
+                (user.getGoogleCalendarRefreshToken() != null && !user.getGoogleCalendarRefreshToken().isBlank())
+                || (user.getGoogleCalendarAccessToken() != null && !user.getGoogleCalendarAccessToken().isBlank())
         );
     }
 }

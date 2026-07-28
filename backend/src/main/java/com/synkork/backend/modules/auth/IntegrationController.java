@@ -43,8 +43,8 @@ public class IntegrationController {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng với ID: " + userId));
 
-        if (user.getCurrentPlan() == PlanEnum.FREE) {
-            return ResponseEntity.status(403).body(Map.of("message", "Tính năng Đồng bộ Google Calendar chỉ dành cho các gói tài khoản trả phí."));
+        if (user.getCurrentPlan() != PlanEnum.BUSINESS) {
+            return ResponseEntity.status(403).body(Map.of("message", "Tính năng Đồng bộ Google Calendar chỉ dành cho gói Business."));
         }
 
         String state = jwtService.generateShortLivedState(userId.toString(), redirectPath);

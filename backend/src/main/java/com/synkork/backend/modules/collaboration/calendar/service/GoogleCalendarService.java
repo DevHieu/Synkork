@@ -15,6 +15,8 @@ import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.CalendarScopes;
 import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventDateTime;
+import com.google.api.services.calendar.model.EventAttendee;
+import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.modules.collaboration.calendar.entity.CalendarEventEntity;
 import com.synkork.backend.modules.collaboration.calendar.enums.SyncStatus;
@@ -28,12 +30,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -60,8 +65,8 @@ public class GoogleCalendarService {
     }
 
     private Calendar getCalendarClient(UserEntity user) throws Exception {
-        if (user == null || user.getCurrentPlan() == PlanEnum.FREE || user.getGoogleCalendarAccessToken() == null) {
-            return null; // Not connected or on FREE plan
+        if (user == null || user.getCurrentPlan() != PlanEnum.BUSINESS || user.getGoogleCalendarAccessToken() == null) {
+            return null;
         }
 
         // Auto refresh
@@ -84,7 +89,7 @@ public class GoogleCalendarService {
 
     private void refreshToken(UserEntity user) {
         try {
-            if (user == null || user.getCurrentPlan() == PlanEnum.FREE || user.getGoogleCalendarRefreshToken() == null) return;
+            if (user == null || user.getCurrentPlan() != PlanEnum.BUSINESS || user.getGoogleCalendarRefreshToken() == null) return;
 
             GoogleCredential credential = new GoogleCredential.Builder()
                     .setTransport(GoogleNetHttpTransport.newTrustedTransport())
@@ -103,10 +108,13 @@ public class GoogleCalendarService {
         }
     }
 
-    // --- Sync Methods ---
-
     public void syncEventToGoogleAsync(UUID eventId) {
         CompletableFuture.runAsync(() -> syncEventToGoogle(eventId));
+    }
+
+    public void deleteEventFromGoogleAsync(CalendarEventEntity entity) {
+        if (entity == null || entity.getGoogleEventId() == null) return;
+        CompletableFuture.runAsync(() -> deleteEventFromGoogle(entity));
     }
 
     public void syncEventToGoogle(UUID eventId) {
@@ -114,8 +122,8 @@ public class GoogleCalendarService {
         if (entity == null) return;
 
         UserEntity user = entity.getCreatedBy();
-        if (user == null || user.getCurrentPlan() == PlanEnum.FREE) {
-            log.info("Bỏ qua đồng bộ Google Calendar cho người dùng gói FREE");
+        if (user == null || user.getCurrentPlan() != PlanEnum.BUSINESS) {
+            log.info("Bỏ qua đồng bộ Google Calendar cho người dùng không phải gói BUSINESS");
             return;
         }
 
@@ -131,24 +139,51 @@ public class GoogleCalendarService {
             EventDateTime start = new EventDateTime().setDateTime(startDateTime).setTimeZone(ZoneId.systemDefault().getId());
             event.setStart(start);
 
-            DateTime endDateTime = new DateTime(java.util.Date.from(entity.getEventDate().atTime(entity.getEndTime()).atZone(ZoneId.systemDefault()).toInstant()));
+            LocalDate endDateVal = entity.getEndDate() != null ? entity.getEndDate() : entity.getEventDate();
+            DateTime endDateTime = new DateTime(java.util.Date.from(endDateVal.atTime(entity.getEndTime()).atZone(ZoneId.systemDefault()).toInstant()));
             EventDateTime end = new EventDateTime().setDateTime(endDateTime).setTimeZone(ZoneId.systemDefault().getId());
             event.setEnd(end);
+
+            // 1. Đồng bộ Quy luật lặp (RRULE)
+            if (entity.getRecurrenceType() != null && !entity.getRecurrenceType().trim().isEmpty() && !"NONE".equalsIgnoreCase(entity.getRecurrenceType())) {
+                StringBuilder rrule = new StringBuilder("RRULE:FREQ=").append(entity.getRecurrenceType().toUpperCase());
+                if (entity.getRecurrenceEndDate() != null) {
+                    String until = entity.getRecurrenceEndDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "T235959Z";
+                    rrule.append(";UNTIL=").append(until);
+                }
+                event.setRecurrence(Collections.singletonList(rrule.toString()));
+            }
+
+            // 2. Đồng bộ Danh sách người tham gia (Attendees)
+            if (entity.getAttendees() != null && !entity.getAttendees().isEmpty()) {
+                List<EventAttendee> googleAttendees = entity.getAttendees().stream()
+                        .map(RoomMemberEntity::getUser)
+                        .filter(u -> u != null && u.getEmail() != null && !u.getEmail().isBlank())
+                        .map(u -> new EventAttendee()
+                                .setEmail(u.getEmail())
+                                .setDisplayName(u.getDisplayName() != null ? u.getDisplayName() : u.getUsername()))
+                        .collect(Collectors.toList());
+                if (!googleAttendees.isEmpty()) {
+                    event.setAttendees(googleAttendees);
+                }
+            }
 
             if (entity.getGoogleEventId() != null) {
                 // PATCH (update)
                 Event updatedEvent = client.events().patch("primary", entity.getGoogleEventId(), event).execute();
                 entity.setSyncStatus(SyncStatus.SUCCESS);
                 entity.setLastSyncedAt(LocalDateTime.now());
+                log.info("Cập nhật thành công sự kiện lên Google Calendar: googleEventId={}", updatedEvent.getId());
             } else {
                 // POST (create)
                 Event createdEvent = client.events().insert("primary", event).execute();
                 entity.setGoogleEventId(createdEvent.getId());
                 entity.setSyncStatus(SyncStatus.SUCCESS);
                 entity.setLastSyncedAt(LocalDateTime.now());
+                log.info("Tạo mới thành công sự kiện lên Google Calendar: googleEventId={}", createdEvent.getId());
             }
         } catch (Exception e) {
-            log.error("Failed to sync event", e);
+            log.error("Failed to sync event to Google Calendar", e);
             entity.setSyncStatus(SyncStatus.FAILED);
         }
         calendarEventRepository.save(entity);
@@ -158,7 +193,7 @@ public class GoogleCalendarService {
         if (entity == null || entity.getGoogleEventId() == null) return;
 
         UserEntity user = entity.getCreatedBy();
-        if (user == null || user.getCurrentPlan() == PlanEnum.FREE) {
+        if (user == null || user.getCurrentPlan() != PlanEnum.BUSINESS) {
             return;
         }
 
@@ -166,15 +201,16 @@ public class GoogleCalendarService {
             Calendar client = getCalendarClient(user);
             if (client != null) {
                 client.events().delete("primary", entity.getGoogleEventId()).execute();
+                log.info("Xóa thành công sự kiện trên Google Calendar: googleEventId={}", entity.getGoogleEventId());
             }
         } catch (Exception e) {
-            log.error("Failed to delete event", e);
+            log.error("Failed to delete event from Google Calendar", e);
         }
     }
 
     public void syncOldEvents(UUID userId) {
         UserEntity user = userRepository.findById(userId).orElse(null);
-        if (user == null || user.getCurrentPlan() == PlanEnum.FREE) {
+        if (user == null || user.getCurrentPlan() != PlanEnum.BUSINESS) {
             return;
         }
         List<CalendarEventEntity> oldEvents = calendarEventRepository.findByCreatedByIdAndGoogleEventIdIsNull(userId);

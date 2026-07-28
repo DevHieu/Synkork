@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from "vue";
+import { ref, watch, computed } from "vue";
 import { useTimeSelector } from "../composables/useTimeSelector";
 import {
   Select,
@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon } from "lucide-vue-next";
-import { computed } from "vue";
 import dayjs from "dayjs";
 import { parseDate } from "@internationalized/date";
 import { cn } from "@/lib/utils";
@@ -32,23 +31,15 @@ const emit = defineEmits<{
 const eventDate = ref(props.initialDate);
 const endDate = ref(props.initialEndDate || props.initialDate);
 
+// Binding Date
 const dateValue = computed({
   get: () => eventDate.value ? parseDate(eventDate.value) : undefined,
   set: (val) => {
     if (val) {
       const newDateStr = val.toString();
-      const oldDateStr = eventDate.value;
       eventDate.value = newDateStr;
-
-      // Khi người dùng tương tác chọn ngày bắt đầu mới, duy trì khoảng cách số ngày của sự kiện sang endDate
-      if (oldDateStr && endDate.value) {
-        const diffDays = dayjs(endDate.value).diff(dayjs(oldDateStr), "day");
-        if (diffDays >= 0) {
-          endDate.value = dayjs(newDateStr).add(diffDays, "day").format("YYYY-MM-DD");
-        } else {
-          endDate.value = newDateStr;
-        }
-      } else {
+      // Nếu endDate ở trước eventDate mới thì tự đẩy endDate = eventDate mới
+      if (!endDate.value || dayjs(endDate.value).isBefore(dayjs(newDateStr))) {
         endDate.value = newDateStr;
       }
     }
@@ -58,46 +49,59 @@ const dateValue = computed({
 const endDateValue = computed({
   get: () => endDate.value ? parseDate(endDate.value) : undefined,
   set: (val) => {
-    if (val) endDate.value = val.toString();
+    if (val) {
+      const newEndDateStr = val.toString();
+      // Không cho phép endDate nằm trước eventDate
+      if (dayjs(newEndDateStr).isBefore(dayjs(eventDate.value))) {
+        endDate.value = eventDate.value;
+      } else {
+        endDate.value = newEndDateStr;
+      }
+    }
   }
 });
 
 const isStartDateOpen = ref(false);
 const isEndDateOpen = ref(false);
+watch(dateValue, () => { isStartDateOpen.value = false; });
+watch(endDateValue, () => { isEndDateOpen.value = false; });
 
-watch(dateValue, () => {
-  isStartDateOpen.value = false;
-});
-
-watch(endDateValue, () => {
-  isEndDateOpen.value = false;
-});
-
+// Time selector helpers
 const {
   timeFormat, hours24, hours12, minutes,
-  startHour, startMinute, startAmPm,
-  endHour, endMinute, endAmPm,
-  parseTimeString, buildTimeString, adjustEndTimeIfNeeded, syncDropdownsOnFormatChange,
+  parseTime, formatTime, adjustEndTimeIfNeeded
 } = useTimeSelector();
 
-// Gom logic đồng bộ giờ vào một hàm để dialog mở lại không bị lệch dropdown.
-// Đồng bộ trạng thái nội bộ với props khi dialog mở hoặc dữ liệu thay đổi
+// UI States
+const startHour = ref("09");
+const startMinute = ref("00");
+const startAmPm = ref("AM");
+
+const endHour = ref("10");
+const endMinute = ref("00");
+const endAmPm = ref("AM");
+
+// Đồng bộ trạng thái nội bộ với props
 const syncInternalState = () => {
   eventDate.value = props.initialDate;
   endDate.value = props.initialEndDate || props.initialDate;
-  parseTimeString(props.initialStartTime, true);
-  parseTimeString(props.initialEndTime, false);
+
+  const start = parseTime(props.initialStartTime, timeFormat.value);
+  startHour.value = start.hour;
+  startMinute.value = start.minute;
+  startAmPm.value = start.ampm;
+
+  const end = parseTime(props.initialEndTime, timeFormat.value);
+  endHour.value = end.hour;
+  endMinute.value = end.minute;
+  endAmPm.value = end.ampm;
 };
 
-watch(() => props.show, (isOpen) => {
-  if (isOpen) syncInternalState();
-}, { immediate: true });
+watch(() => props.show, (isOpen) => { if (isOpen) syncInternalState(); }, { immediate: true });
 
-// Thông báo các thay đổi cho component cha
 const notifyParent = () => {
-  const startTime = buildTimeString(startHour.value, startMinute.value, startAmPm.value);
-  const endTime = buildTimeString(endHour.value, endMinute.value, endAmPm.value);
-
+  const startTime = formatTime(startHour.value, startMinute.value, startAmPm.value, timeFormat.value);
+  const endTime = formatTime(endHour.value, endMinute.value, endAmPm.value, timeFormat.value);
   emit("change", {
     eventDate: eventDate.value,
     endDate: endDate.value || eventDate.value,
@@ -106,27 +110,48 @@ const notifyParent = () => {
   });
 };
 
-// Theo dõi để tự động gửi dữ liệu và điều chỉnh thời gian kết thúc
-watch([startHour, startMinute, startAmPm], () => {
-  const newStart = buildTimeString(startHour.value, startMinute.value, startAmPm.value);
-  const currentEnd = buildTimeString(endHour.value, endMinute.value, endAmPm.value);
+// Tự động đồng bộ AM/PM cho endAmPm khi đổi startAmPm ở định dạng 12h
+watch(startAmPm, (newAmPm) => {
+  if (timeFormat.value === "12h" && eventDate.value === endDate.value) {
+    endAmPm.value = newAmPm;
+  }
+});
 
-  const adjustedEnd = adjustEndTimeIfNeeded(newStart, currentEnd);
-  if (adjustedEnd !== currentEnd) {
-    parseTimeString(adjustedEnd, false);
+// Điều chỉnh endTime nếu <= startTime (chỉ áp dụng khi sự kiện ở CÙNG NGÀY)
+watch([startHour, startMinute, startAmPm], () => {
+  if (eventDate.value === endDate.value) {
+    const start = formatTime(startHour.value, startMinute.value, startAmPm.value, timeFormat.value);
+    const currentEnd = formatTime(endHour.value, endMinute.value, endAmPm.value, timeFormat.value);
+    const adjustedEnd = adjustEndTimeIfNeeded(start, currentEnd);
+    
+    if (adjustedEnd !== currentEnd) {
+      const parsedEnd = parseTime(adjustedEnd, timeFormat.value);
+      endHour.value = parsedEnd.hour;
+      endMinute.value = parsedEnd.minute;
+      endAmPm.value = parsedEnd.ampm;
+    }
   }
   notifyParent();
 });
 
 watch([endHour, endMinute, endAmPm, eventDate, endDate], notifyParent);
 
-watch(timeFormat, () => {
-  const start = buildTimeString(startHour.value, startMinute.value, startAmPm.value);
-  const end = buildTimeString(endHour.value, endMinute.value, endAmPm.value);
-  syncDropdownsOnFormatChange(start, end);
-});
+// Chuyển đổi định dạng 12h/24h giữ nguyên giờ
+watch(timeFormat, (newFormat) => {
+  const oldFormat = newFormat === "24h" ? "12h" : "24h";
+  const start = formatTime(startHour.value, startMinute.value, startAmPm.value, oldFormat);
+  const end = formatTime(endHour.value, endMinute.value, endAmPm.value, oldFormat);
+  
+  const parsedStart = parseTime(start, newFormat);
+  startHour.value = parsedStart.hour;
+  startMinute.value = parsedStart.minute;
+  startAmPm.value = parsedStart.ampm;
 
-onMounted(syncInternalState);
+  const parsedEnd = parseTime(end, newFormat);
+  endHour.value = parsedEnd.hour;
+  endMinute.value = parsedEnd.minute;
+  endAmPm.value = parsedEnd.ampm;
+});
 </script>
 
 <template>
@@ -145,7 +170,6 @@ onMounted(syncInternalState);
         ]">12H (AM/PM)</button>
       </div>
     </div>
-
     <!-- Ngày & Giờ -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
@@ -190,7 +214,6 @@ onMounted(syncInternalState);
           </PopoverContent>
         </Popover>
       </div>
-
       <!-- Giờ bắt đầu -->
       <div class="rounded-md border border-border/60 bg-muted/15 p-4 cursor-default">
         <label class="block text-[9px] font-sans font-semibold text-muted-foreground uppercase tracking-wider mb-2 cursor-default">GIỜ BẮT ĐẦU *</label>
@@ -227,7 +250,6 @@ onMounted(syncInternalState);
           </Select>
         </div>
       </div>
-
       <!-- Giờ kết thúc -->
       <div class="rounded-md border border-border/60 bg-muted/15 p-4 cursor-default">
         <label class="block text-[9px] font-sans font-semibold text-muted-foreground uppercase tracking-wider mb-2 cursor-default">GIỜ KẾT THÚC *</label>
@@ -267,6 +289,3 @@ onMounted(syncInternalState);
     </div>
   </div>
 </template>
-
-<style scoped>
-</style>

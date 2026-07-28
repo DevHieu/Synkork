@@ -125,8 +125,9 @@ public class CalendarEventService {
 
     private void addIfInRange(List<CalendarEventDTO> results, CalendarEventEntity event, LocalDate start,
             LocalDate end) {
-        LocalDate eventDate = event.getEventDate();
-        if (!eventDate.isBefore(start) && !eventDate.isAfter(end)) {
+        LocalDate eventStart = event.getEventDate();
+        LocalDate eventEnd = event.getEndDate() != null ? event.getEndDate() : eventStart;
+        if (!eventEnd.isBefore(start) && !eventStart.isAfter(end)) {
             results.add(new CalendarEventDTO(event));
         }
     }
@@ -222,10 +223,15 @@ public class CalendarEventService {
         if (request.getStartTime() == null) {
             throw new IllegalArgumentException("Thời gian bắt đầu không được để trống.");
         }
-        if (request.getEndTime() == null) {
-            throw new IllegalArgumentException("Thời gian kết thúc không được để trống.");
+        LocalDate endDate = request.getEndDate() != null ? request.getEndDate() : request.getEventDate();
+        boolean isOvernight = request.getEndTime().isBefore(request.getStartTime());
+        if (isOvernight && endDate.equals(request.getEventDate())) {
+            endDate = request.getEventDate().plusDays(1);
         }
-        if (!request.getEndTime().isAfter(request.getStartTime())) {
+        java.time.LocalDateTime startDateTime = java.time.LocalDateTime.of(request.getEventDate(), request.getStartTime());
+        java.time.LocalDateTime endDateTime = java.time.LocalDateTime.of(endDate, request.getEndTime());
+
+        if (!endDateTime.isAfter(startDateTime)) {
             throw new IllegalArgumentException("Thời gian kết thúc phải sau thời gian bắt đầu.");
         }
     }
@@ -246,23 +252,25 @@ public class CalendarEventService {
         SpaceEntity space = spaceRepository.findById(spaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy không gian với ID: " + spaceId));
 
-        // Kiểm tra sự kiện liên tục (nhiều ngày)
+        // Kiểm tra tạo chuỗi sự kiện liên tục theo ngày (Lịch liên tục Schedule)
         LocalDate endDate = eventRequest.getEndDate();
-        boolean isMultiDay = endDate != null && endDate.isAfter(eventRequest.getEventDate());
+        boolean isMultiDaySchedule = endDate != null && endDate.isAfter(eventRequest.getEventDate());
 
-        if (isMultiDay) {
+        if (isMultiDaySchedule) {
             return createScheduleEvents(eventRequest, creator, space);
         }
 
-        // Xử lý sự kiện thông thường (1 ngày)
+        // Xử lý sự kiện thông thường (1 ngày hoặc 1 ca qua đêm)
         CalendarEventEntity calendarEvent = new CalendarEventEntity();
         eventRequest.updateEntity(calendarEvent);
         calendarEvent.setCreatedBy(creator);
         calendarEvent.setSpace(space);
         calendarEvent.setSchedule(false);
         calendarEvent.setScheduleId(null);
-        if (calendarEvent.getEndDate() == null) {
-            calendarEvent.setEndDate(calendarEvent.getEventDate());
+        
+        boolean isOvernight = calendarEvent.getEndTime().isBefore(calendarEvent.getStartTime());
+        if (calendarEvent.getEndDate() == null || calendarEvent.getEndDate().equals(calendarEvent.getEventDate())) {
+            calendarEvent.setEndDate(isOvernight ? calendarEvent.getEventDate().plusDays(1) : calendarEvent.getEventDate());
         }
         applyRelations(calendarEvent, eventRequest);
         syncEventRelations(calendarEvent, eventRequest, creator);
@@ -280,18 +288,21 @@ public class CalendarEventService {
         return result;
     }
 
-    // Tạo danh sách các sự kiện liên tục cho từng ngày
+    // Tạo danh sách các sự kiện liên tục cho từng ngày (Lịch liên tục Schedule)
     private CalendarEventDTO createScheduleEvents(CalendarEventDTO eventRequest, UserEntity creator, SpaceEntity space) {
         UUID groupId = UUID.randomUUID();
         LocalDate current = eventRequest.getEventDate();
         LocalDate endDate = eventRequest.getEndDate();
         CalendarEventEntity firstSaved = null;
 
+        boolean isOvernight = eventRequest.getEndTime().isBefore(eventRequest.getStartTime());
+
         while (!current.isAfter(endDate)) {
             CalendarEventEntity instance = new CalendarEventEntity();
             eventRequest.updateEntity(instance);
             instance.setEventDate(current);
-            instance.setEndDate(endDate);
+            // Nếu là ca qua đêm, ngày kết thúc của ca là ngày tiếp theo
+            instance.setEndDate(isOvernight ? current.plusDays(1) : current);
             instance.setCreatedBy(creator);
             instance.setSpace(space);
             instance.setSchedule(true);
@@ -431,9 +442,8 @@ public class CalendarEventService {
             List<RoomMemberEntity> oldAttendees = new ArrayList<>(member.getAttendees());
             request.updateEntity(member);
             member.setEventDate(originalDate); // Khôi phục lại ngày ban đầu của ô
-            if (request.getEndDate() != null) {
-                member.setEndDate(request.getEndDate());
-            }
+            boolean isOvernight = member.getEndTime().isBefore(member.getStartTime());
+            member.setEndDate(isOvernight ? originalDate.plusDays(1) : originalDate);
             member.setSchedule(true);
             member.setScheduleId(scheduleId);
             applyRelations(member, request);
@@ -596,13 +606,13 @@ public class CalendarEventService {
             List<CalendarEventEntity> group = calendarEventRepository.findByScheduleId(entity.getScheduleId());
             for (CalendarEventEntity member : group) {
                 CalendarEventDTO dto = new CalendarEventDTO(member);
-                googleCalendarService.deleteEventFromGoogle(member);
+                googleCalendarService.deleteEventFromGoogleAsync(member);
                 broadcastCalendarUpdate(spaceIdStr, "DELETED", dto);
             }
             calendarEventRepository.deleteByScheduleId(entity.getScheduleId());
         } else {
             CalendarEventDTO deletedDto = new CalendarEventDTO(entity);
-            googleCalendarService.deleteEventFromGoogle(entity);
+            googleCalendarService.deleteEventFromGoogleAsync(entity);
             calendarEventRepository.delete(entity);
             broadcastCalendarUpdate(spaceIdStr, "DELETED", deletedDto);
         }

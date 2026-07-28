@@ -41,11 +41,9 @@ const fetchNotesForSpace = async (spaceId: string) => {
   loadingNotes.value = true;
   try {
     const res = await getAll(spaceId);
-    console.log("getAllNotes response:", res);
     notes.value = Array.isArray(res)
       ? res
       : (Array.isArray(res?.data) ? res.data : []);
-    console.log("Loaded notes:", notes.value);
   } catch (error) {
     console.error("Lỗi khi tải danh sách note:", error);
     notes.value = [];

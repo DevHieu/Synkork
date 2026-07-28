@@ -1,104 +1,63 @@
 import { ref } from "vue";
 
-// State & Utils thời gian
 export type TimeFormat = "24h" | "12h";
 
-// Mock data dropdown
-const buildHours24 = (): string[] =>
-  Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, "0"));
-
-const buildHours12 = (): string[] =>
-  Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, "0"));
-
-const buildMinutes = (): string[] =>
-  Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, "0"));
-
-/** Parse (HH:mm) -> số phút */
+/** Parse (HH:mm) -> số phút trong ngày */
 export const toMinutes = (time: string): number => {
-  const [hStr, mStr] = time.split(":");
-  if (!hStr || !mStr) return 0;
-  return parseInt(hStr, 10) * 60 + parseInt(mStr, 10);
+  const [hStr = "0", mStr = "0"] = (time || "").split(":");
+  return (parseInt(hStr, 10) || 0) * 60 + (parseInt(mStr, 10) || 0);
 };
 
-/** Format phút -> (HH:mm) */
-const fromMinutes = (totalMinutes: number): string => {
-  const clamped = Math.min(totalMinutes, 23 * 60 + 59);
+/** Format số phút -> (HH:mm) */
+export const fromMinutes = (totalMinutes: number): string => {
+  const clamped = Math.min(Math.max(0, totalMinutes), 23 * 60 + 59);
   const hh = Math.floor(clamped / 60).toString().padStart(2, "0");
   const mm = (clamped % 60).toString().padStart(2, "0");
   return `${hh}:${mm}`;
 };
 
+// Options cố định cho UI Select (module scope)
+export const hours24 = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, "0"));
+export const hours12 = Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, "0"));
+export const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, "0"));
+
 export function useTimeSelector() {
   const timeFormat = ref<TimeFormat>("24h");
 
-  const hours24 = buildHours24();
-  const hours12 = buildHours12();
-  const minutes = buildMinutes();
-
-  // State UI
-  const startHour = ref("09");
-  const startMinute = ref("00");
-  const startAmPm = ref("AM");
-
-  const endHour = ref("10");
-  const endMinute = ref("00");
-  const endAmPm = ref("AM");
-
-  // Parse (24h)
-  const parseInto24h = (timeStr: string): { h24: string; m: string; ampm: string } => {
+  // Tách chuỗi HH:mm thành { hour, minute, ampm }
+  const parseTime = (timeStr: string = "09:00", format: TimeFormat = "24h") => {
     const [hStr = "00", mStr = "00"] = timeStr.split(":");
-    const h = parseInt(hStr, 10);
+    let h = parseInt(hStr, 10) || 0;
     const ampm = h >= 12 ? "PM" : "AM";
-    const h24 = h.toString().padStart(2, "0");
-    return { h24, m: mStr, ampm };
-  };
-
-  // Parse (12h)
-  const parseInto12h = (timeStr: string): { h12: string; m: string; ampm: string } => {
-    const [hStr = "00", mStr = "00"] = timeStr.split(":");
-    let h = parseInt(hStr, 10);
-    const ampm = h >= 12 ? "PM" : "AM";
-    if (h > 12) h -= 12;
-    if (h === 0) h = 12;
-    return { h12: h.toString().padStart(2, "0"), m: mStr, ampm };
-  };
-
-  // Update refs từ chuỗi đầu vào
-  const parseTimeString = (timeStr: string | undefined, isStart: boolean): void => {
-    if (!timeStr) return;
-
-    if (timeFormat.value === "24h") {
-      const { h24, m, ampm } = parseInto24h(timeStr);
-      if (isStart) { startHour.value = h24; startMinute.value = m; startAmPm.value = ampm; }
-      else          { endHour.value   = h24; endMinute.value   = m; endAmPm.value   = ampm; }
-    } else {
-      const { h12, m, ampm } = parseInto12h(timeStr);
-      if (isStart) { startHour.value = h12; startMinute.value = m; startAmPm.value = ampm; }
-      else          { endHour.value   = h12; endMinute.value   = m; endAmPm.value   = ampm; }
+    
+    if (format === "12h") {
+      if (h > 12) h -= 12;
+      if (h === 0) h = 12;
     }
+    
+    return {
+      hour: h.toString().padStart(2, "0"),
+      minute: mStr,
+      ampm,
+    };
   };
 
-  // Format HH:mm string
-  const buildTimeString = (hour: string, minute: string, ampm: string): string => {
-    if (timeFormat.value === "24h") return `${hour}:${minute}`;
-    let h = parseInt(hour, 10);
-    if (ampm === "PM" && h < 12) h += 12;
-    if (ampm === "AM" && h === 12) h = 0;
-    return `${h.toString().padStart(2, "0")}:${minute}`;
+  // Gộp { hour, minute, ampm } thành chuỗi 24h HH:mm
+  const formatTime = (hour: string, minute: string, ampm: string = "AM", format: TimeFormat = "24h"): string => {
+    const m = (minute || "00").padStart(2, "0");
+    let h = parseInt(hour, 10) || 0;
+    if (format === "12h") {
+      if (ampm === "PM" && h < 12) h += 12;
+      if (ampm === "AM" && h === 12) h = 0;
+    }
+    return `${h.toString().padStart(2, "0")}:${m}`;
   };
 
-  // Validate End sau Start
+  // Tự động đẩy endTime lên +1h nếu endTime <= startTime
   const adjustEndTimeIfNeeded = (startTime: string, endTime: string): string => {
-    if (toMinutes(endTime) <= toMinutes(startTime)) {
-      return fromMinutes(toMinutes(startTime) + 60);
-    }
-    return endTime;
-  };
-
-  // Sync format chéo 12h/24h
-  const syncDropdownsOnFormatChange = (startTime: string, endTime: string) => {
-    parseTimeString(startTime, true);
-    parseTimeString(endTime, false);
+    return toMinutes(endTime) <= toMinutes(startTime)
+      ? fromMinutes(toMinutes(startTime) + 60)
+      : endTime;
   };
 
   return {
@@ -106,11 +65,8 @@ export function useTimeSelector() {
     hours24,
     hours12,
     minutes,
-    startHour, startMinute, startAmPm,
-    endHour,   endMinute,   endAmPm,
-    parseTimeString,
-    buildTimeString,
+    parseTime,
+    formatTime,
     adjustEndTimeIfNeeded,
-    syncDropdownsOnFormatChange,
   };
 }

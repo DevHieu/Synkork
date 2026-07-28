@@ -81,8 +81,8 @@ public class CalendarEmailService {
 
         String taskInfo = null;
         if (targetEvent.getTask() != null) {
-            String spaceId = targetEvent.getTask().getColumn() != null && targetEvent.getTask().getColumn().getBoard() != null && targetEvent.getTask().getColumn().getBoard().getSpace() != null
-                    ? targetEvent.getTask().getColumn().getBoard().getSpace().getId().toString()
+            String spaceId = targetEvent.getTask().getColumn() != null && targetEvent.getTask().getColumn().getSpace() != null
+                    ? targetEvent.getTask().getColumn().getSpace().getId().toString()
                     : targetEvent.getSpace().getId().toString();
             String taskUrl = frontendUrl + "/spaces/" + spaceId + "?cardId=" + targetEvent.getTask().getId();
             taskInfo = "<a href='" + taskUrl + "' style='color: #023c3d; font-weight: bold; text-decoration: underline;'>" + targetEvent.getTask().getTitle() + "</a>";

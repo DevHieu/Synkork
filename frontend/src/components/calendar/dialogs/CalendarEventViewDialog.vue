@@ -32,12 +32,21 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useVoiceSpaceStore } from "@/stores/voiceSpaceStore";
 import { useSpaceStore } from "@/stores/spaceStore";
+import { useUserStore } from "@/stores/userStore";
 
 const props = defineProps<{
   show: boolean;
   event: CalendarEvent | null;
   currentUserId: string;
 }>();
+
+const userStore = useUserStore();
+
+// Tóm tắt tài liệu chỉ dành cho gói TEAM và BUSINESS (Ẩn với gói FREE)
+const canSummarizeAttachment = computed(() => {
+  const plan = userStore.userPlan;
+  return plan === "TEAM" || plan === "BUSINESS";
+});
 
 const emit = defineEmits<{
   (e: "update:show", value: boolean): void;
@@ -391,11 +400,11 @@ const goToNoteSpace = async () => {
                     {{ displayEndDate }}
                   </p>
                 </div>
-                <div>
+                <div class="col-span-1">
                   <p class="font-sans text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80">
                     Lặp lại
                   </p>
-                  <p class="font-sans text-[11px] font-medium text-foreground mt-0.5 truncate" :title="recurrenceLabel">
+                  <p class="font-sans text-[11px] font-medium text-foreground mt-0.5 break-words" :title="recurrenceLabel">
                     {{ recurrenceLabel }}
                   </p>
                 </div>
@@ -493,7 +502,7 @@ const goToNoteSpace = async () => {
                     </div>
                     <div class="flex items-center gap-1 shrink-0">
                       <Button
-                        v-if="attachment.fileUrl"
+                        v-if="attachment.fileUrl && canSummarizeAttachment"
                         type="button"
                         variant="outline"
                         size="sm"
