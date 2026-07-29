@@ -9,7 +9,10 @@ import {
   togglePin,
   updatePosition,
   setReminder,
-  archiveNote
+  archiveNote,
+  copyToPersonal,
+  getArchivedNotes,
+  restoreNote
 } from '@/services/noteService'
 
 import type { Note, NoteRequest } from '@/types/NoteType'
@@ -20,6 +23,8 @@ import { socketService } from '@/services/websocket/socketService'
 export const useNoteStore = defineStore('notes', () => {
 
   const notes = ref<Note[]>([])
+  const archivedNotes = ref<Note[]>([])
+  const loadingArchived = ref(false)
   const loading = ref(false)
   const error = ref<string | null>(null)
   const searchQuery = ref('')
@@ -50,26 +55,62 @@ export const useNoteStore = defineStore('notes', () => {
     notes.value.unshift(note)
   }
 
-  // ARCHIVE
-async function archiveNoteStore(
-  spaceId: string,
-  id: string
-): Promise<void> {
-  try {
-    await archiveNote(spaceId, id)
-
-    // remove khỏi UI luôn
-    notes.value = notes.value.filter(
-      n => n.id !== id
-    )
-  } catch (e) {
-    error.value = 'Không thể lưu trữ ghi chú'
-    console.error(e)
+    // ARCHIVE
+  async function archiveNoteStore(
+    spaceId: string,
+    id: string
+  ): Promise<void> {
+    try {
+      await archiveNote(spaceId, id)
+      notes.value = notes.value.filter(
+        n => n.id !== id
+      )
+    } catch (e: any) {
+      error.value = e?.response?.status === 403
+        ? 'Bạn không có quyền lưu trữ ghi chú này'
+        : 'Không thể lưu trữ ghi chú'
+      console.error(e)
+    }
   }
-}
+
+  // FETCH ARCHIVED
+  async function fetchArchivedNotes(spaceId: string): Promise<void> {
+    loadingArchived.value = true
+    try {
+      const res = await getArchivedNotes(spaceId)
+      archivedNotes.value = Array.isArray(res)
+        ? res
+        : (Array.isArray(res?.data) ? res.data : [])
+    } catch (e: any) {
+      error.value = e?.response?.status === 403
+        ? 'Bạn không có quyền xem ghi chú đã lưu trữ'
+        : 'Không thể tải ghi chú đã lưu trữ'
+      console.error(e)
+    } finally {
+      loadingArchived.value = false
+    }
+  }
+
+  // RESTORE
+  async function restoreNoteStore(
+    spaceId: string,
+    id: string
+  ): Promise<void> {
+    try {
+      const restored = await restoreNote(spaceId, id)
+      archivedNotes.value = archivedNotes.value.filter(n => n.id !== id)
+      // Thêm lại vào danh sách note đang hoạt động luôn (nếu đang cùng space)
+      if (currentSpaceId.value === spaceId) {
+        notes.value.unshift(restored)
+      }
+    } catch (e) {
+      error.value = 'Không thể khôi phục ghi chú'
+      console.error(e)
+    }
+  }
+
   // FETCH
   async function fetchNotes(spaceId: string) {
-    // ── Guard: không fetch lại nếu đang xem cùng space và đã có notes
     if (currentSpaceId.value === spaceId && notes.value.length > 0) return
 
     if (currentSpaceId.value && currentSpaceId.value !== spaceId) {
@@ -204,28 +245,48 @@ async function archiveNoteStore(
     }
   }
 
+  // COPY TO PERSONAL
+  async function copyNoteToPersonal(
+    spaceId: string,
+    id: string
+  ): Promise<Note> {
+    try {
+      const res = await copyToPersonal(spaceId, id)
+      return res
+    } catch (e) {
+      error.value = 'Không thể lưu ghi chú vào không gian cá nhân'
+      console.error(e)
+      throw e
+    }
+  }
+
   return {
     notes,
+    archivedNotes,
     loading,
+    loadingArchived,
     error,
     searchQuery,
-  
+
     filteredNotes,
     pinnedNotes,
     unpinnedNotes,
-  
+
     fetchNotes,
+    fetchArchivedNotes,
     createNote,
     updateNote,
-  
+
     deleteNote: deletedNote,
-  
+
     changePinStatus,
     disconnectSocket,
-  
+
     updateNotePosition,
     setNoteReminder,
-  
-    archiveNote: archiveNoteStore
+
+    archiveNote: archiveNoteStore,
+    restoreNote: restoreNoteStore,
+    copyNoteToPersonal
   }
 })
