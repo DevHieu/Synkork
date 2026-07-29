@@ -87,3 +87,13 @@ export const copyToPersonal = async (
   )
   return res.data
 }
+
+export const getArchivedNotes = async (spaceId: string) => {
+  const res = await axiosClient.get(`/api/spaces/${spaceId}/notes/archived`);
+  return res.data;
+}
+
+export const restoreNote = async (spaceId: string, id: string) => {
+  const res = await axiosClient.patch(`/api/spaces/${spaceId}/notes/${id}/archive`);
+  return res.data;
+}

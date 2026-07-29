@@ -28,40 +28,41 @@
             </div>
 
             <!-- Footer -->
-            <div class="flex items-center justify-between mt-5 pt-4 border-t border-border/50">
-              <div class="text-xs text-muted-foreground space-y-0.5">
-                <p>Tạo lúc: {{ formatDate(note?.createdAt) }}</p>
-                <p>Cập nhật: {{ formatDate(note?.updatedAt) }}</p>
-              </div>
-              <div class="flex gap-2">
-                <!-- Save to personal -->
-                <button
-                  v-if="showSavePersonal"
-                  @click="handleSavePersonal"
-                  :disabled="savingPersonal"
-                  title="Lưu vào ghi chú cá nhân"
-                  class="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-teal-500/50 text-teal-600 hover:bg-teal-500/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <BookmarkPlus :size="14" />
-                  {{ savingPersonal ? 'Đang lưu...' : 'Lưu cá nhân' }}
-                </button>
+<div class="mt-5 pt-4 border-t border-border/50 space-y-3">
+  <div class="text-xs text-muted-foreground space-y-0.5">
+    <p>Tạo lúc: {{ formatDate(note?.createdAt) }}</p>
+    <p>Cập nhật: {{ formatDate(note?.updatedAt) }}</p>
+  </div>
 
-                <button
-                  @click="$emit('delete', note!.id)"
-                  class="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-destructive/50 text-destructive hover:bg-destructive/10 transition-colors"
-                >
-                  <Trash2 :size="14" />
-                  Xóa
-                </button>
-                <button
-                  @click="$emit('edit', note!)"
-                  class="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                >
-                  <Pencil :size="14" />
-                  Chỉnh sửa
-                </button>
-              </div>
+            <div class="flex items-center gap-2">
+              <!-- Save to personal -->
+              <button
+                v-if="showSavePersonal"
+                @click="handleSavePersonal"
+                :disabled="savingPersonal"
+                title="Lưu vào ghi chú cá nhân"
+                class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm whitespace-nowrap rounded-lg border border-teal-500/50 text-teal-600 hover:bg-teal-500/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <BookmarkPlus :size="14" class="shrink-0" />
+                {{ savingPersonal ? 'Đang lưu...' : 'Lưu cá nhân' }}
+              </button>
+
+              <button
+                @click="$emit('delete', note!.id)"
+                class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm whitespace-nowrap rounded-lg border border-destructive/50 text-destructive hover:bg-destructive/10 transition-colors"
+              >
+                <Trash2 :size="14" class="shrink-0" />
+                Xóa
+              </button>
+              <button
+                @click="$emit('edit', note!)"
+                class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm whitespace-nowrap rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                <Pencil :size="14" class="shrink-0" />
+                Chỉnh sửa
+              </button>
             </div>
+          </div>
 
             <!-- Feedback -->
             <Transition name="fade">
@@ -140,7 +141,7 @@ function formatDate(dateStr?: string | null): string {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit'
   })
-}
+} 
 </script>
 
 <style scoped>

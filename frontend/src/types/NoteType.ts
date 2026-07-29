@@ -14,6 +14,7 @@ export interface Note {
   height: number
   reminderAt: string | null     
   reminderSent: boolean | null  
+  archived?: boolean 
 }
 
 export interface NoteRequest {

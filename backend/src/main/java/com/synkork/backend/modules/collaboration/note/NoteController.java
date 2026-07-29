@@ -85,11 +85,17 @@ public class NoteController {
 
     @PatchMapping("/{id}/archive")
     public ResponseEntity<NoteResponse> toggleArchive(@PathVariable String id, @PathVariable String spaceId) {
+        UUID userId = AuthUtils.getCurrentUserId();
+        noteService.checkCanManageArchive(spaceId, userId);
+    
         NoteResponse response = noteService.toggleArchive(id);
-
-        // Báo cho các client khác để remove note khỏi danh sách hiện tại
-        messageTemplate.convertAndSend("/topic/space/" + spaceId + "/notes/delete", id);
-
+    
+        if (Boolean.TRUE.equals(response.getArchived())) {
+            messageTemplate.convertAndSend("/topic/space/" + spaceId + "/notes/delete", id);
+        } else {
+            messageTemplate.convertAndSend("/topic/space/" + spaceId + "/notes/create", response);
+        }
+    
         return ResponseEntity.ok(response);
     }
 
@@ -137,5 +143,13 @@ public class NoteController {
             );
 
             return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/archived")
+    public ResponseEntity<List<NoteResponse>> getArchivedNotes(@PathVariable String spaceId) {
+        UUID userId = AuthUtils.getCurrentUserId();
+        noteService.checkCanManageArchive(spaceId, userId);
+
+        return ResponseEntity.ok(noteService.getArchivedNotesBySpaceId(spaceId));
     }
 }

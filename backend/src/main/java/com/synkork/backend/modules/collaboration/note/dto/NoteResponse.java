@@ -30,12 +30,14 @@ public class NoteResponse {
     private Integer height;
     private Instant reminderAt;
     private Boolean reminderSent;
+    private Boolean archived;
 
     public NoteResponse(NoteEntity note) {
         this.id = note.getId();
         this.spaceId = note.getSpace().getId();
         this.title = note.getTitle();
         this.note = note.getNote();
+        this.archived = note.getArchived(); 
         this.pinned = note.getPinned();
         this.color = note.getColor();
         this.createdAt = note.getCreatedAt();

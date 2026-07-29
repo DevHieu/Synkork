@@ -7,6 +7,9 @@ import org.springframework.http.HttpStatus;
 
 import com.synkork.backend.modules.collaboration.note.dto.NoteRequest;
 import com.synkork.backend.modules.collaboration.note.dto.NoteResponse;
+import com.synkork.backend.modules.roomMember.RoomMemberEntity;
+import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
+import com.synkork.backend.modules.roomMember.RoomMemberRepository;
 
 import java.time.Instant;
 import java.util.List;
@@ -30,6 +33,9 @@ public class NoteService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private RoomMemberRepository roomMemberRepository;
 
     public List<NoteResponse> getAllNotesBySpaceId(String spaceId) {
         UUID spaceUuid = UUID.fromString(spaceId);
@@ -181,5 +187,26 @@ public class NoteService {
             .build();
     
         return new NoteResponse(noteRepository.save(clone));
+    }
+
+    public List<NoteResponse> getArchivedNotesBySpaceId(String spaceId) {
+        UUID spaceUuid = UUID.fromString(spaceId);
+        List<NoteEntity> notes = noteRepository.findBySpaceIdAndArchived(spaceUuid, true);
+        return notes.stream().map(NoteResponse::new).collect(Collectors.toList());
+    }
+
+    public void checkCanManageArchive(String spaceId, UUID userId) {
+        UUID spaceUuid = UUID.fromString(spaceId);
+        SpaceEntity space = spaceRepository.findById(spaceUuid)
+            .orElseThrow(() -> new IllegalArgumentException("Space not found"));
+    
+        UUID roomId = space.getRoom().getId();
+    
+        RoomMemberEntity member = roomMemberRepository.findByRoom_IdAndUser_Id(roomId, userId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không phải thành viên của room này"));
+    
+        if (member.getRole() != RoomMemberRoleEnum.OWNER && member.getRole() != RoomMemberRoleEnum.ADMIN) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Chỉ Owner hoặc Admin mới được quản lý ghi chú lưu trữ");
+        }
     }
 }
