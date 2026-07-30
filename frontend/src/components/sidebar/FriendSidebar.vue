@@ -38,9 +38,9 @@ const jumpToPersonalRoom = async (type: "NOTE" | "CALENDAR") => {
 
 <template>
   <SidebarHeader class="gap-3.5 border-b px-4 py-3">
-    <div class="flex w-full items-center justify-between">
-      <input type="text" placeholder="Tìm bạn..."
-        class="w-full rounded-lg border px-2 py-1 pb-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+    <div class="flex w-full items-center justify-between px-2 py-4">
+      <!-- <input type="text" placeholder="Tìm bạn..."
+        class="w-full rounded-lg border px-2 py-1 pb-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary" /> -->
     </div>
   </SidebarHeader>
 
