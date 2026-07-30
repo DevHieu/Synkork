@@ -36,9 +36,21 @@ const taskStore = useTaskStore();
 const searchQuery = ref("");
 const showDropdown = ref(false);
 
+const status = computed(() => getStatus(form.value.dueDate));
+
+const props = defineProps<{
+  open: boolean;
+  card: CardEvent;
+  columnName: string;
+}>();
+
+const emit = defineEmits(["update:open", "save", "archive"]);
+
 const form = ref({ title: "", description: "", dueDate: "" });
 
 const localAssignees = ref<MemberSummary[]>([]);
+
+const baseVersion = ref<number | undefined>(props.card.version);
 
 const getStatus = (dueDate?: string) => {
   if (!dueDate) return null;
@@ -64,15 +76,6 @@ const clearDueDate = () => {
   handleSave()
 };
 
-const status = computed(() => getStatus(form.value.dueDate));
-
-const props = defineProps<{
-  open: boolean;
-  card: CardEvent;
-  columnName: string;
-}>();
-
-const emit = defineEmits(["update:open", "save", "archive"]);
 
 const emitSave = () => {
   if (!form.value.title.trim()) return;
@@ -85,6 +88,7 @@ const emitSave = () => {
     description: form.value.description.trim(),
     assignees: localAssignees.value,
     dueDate: formattedDueDate,
+    version: baseVersion.value,
   });
 };
 
@@ -151,11 +155,26 @@ watch(
         description: props.card.description || "",
         dueDate: formattedDate,
       };
+      baseVersion.value = props.card.version;
     }
     searchQuery.value = "";
     showDropdown.value = false;
   },
   { immediate: true },
+);
+
+watch(
+  () => props.card.version,
+  (newVersion) => {
+    if (!props.open) return;
+
+    if (
+      form.value.title === props.card.title &&
+      form.value.description === props.card.description
+    ) {
+      baseVersion.value = newVersion;
+    }
+  }
 );
 </script>
 

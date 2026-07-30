@@ -1,4 +1,6 @@
 import axiosClient from "@/lib/axiosClient"
+import type { CardEvent, CardRequest } from "@/types/Task"
+import axios from "axios"
 
 export const getCards = async (columnId: string, cardId: string) => {
     const res = await axiosClient.get(`/api/column/${columnId}/card/${cardId}`)
@@ -10,9 +12,16 @@ export const createCard = async (spaceId: string, data: { columnId: string; titl
     return res.data;
 }
 
-export const updateCard = async (spaceId: string | null, cardId: string | null, data: { title: string | null; description: string | null; assigneeIds?: string[], dueDate?: string }) => {
-    const res = await axiosClient.put(`/api/space/${spaceId}/card/${cardId}`, data);
-    return res.data;
+export const updateCard = async (spaceId: string, cardId: string, data: CardRequest) => {
+    try {
+        const res = await axiosClient.put(`/api/space/${spaceId}/card/${cardId}`, data)
+        return res.data
+    } catch (e: any) {
+        if (axios.isAxiosError(e) && e.response?.status === 409) {
+            throw new VersionConflictError(e.response.data?.latest)
+        }
+        throw e
+    }
 }
 
 export const deleteCard = async (spaceId: string, cardId: string) => {
@@ -48,4 +57,15 @@ export const getArchivedCards = async (spaceId: string) => {
 export const deleteAllArchivedCards = async (spaceId: string) => {
     const res = await axiosClient.delete(`/api/space/${spaceId}/card/archived/all`);
     return res.data;
+}
+
+export class VersionConflictError extends Error {
+    public latest: CardEvent
+
+    constructor(latest: CardEvent) {
+        super("VERSION_CONFLICT")
+        this.name = "VersionConflictError"
+        this.latest = latest
+        Object.setPrototypeOf(this, VersionConflictError.prototype)
+    }
 }

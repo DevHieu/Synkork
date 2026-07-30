@@ -20,6 +20,7 @@ public class ColumnDTO {
     private List<CardDTO> cards;
     private Boolean archived;
     private LocalDateTime archivedAt;
+    private Integer version;
 
     public ColumnDTO(ColumnEntity e){
         this.id = e.getId();
@@ -35,5 +36,6 @@ public class ColumnDTO {
             .collect(Collectors.toList());
         this.archived = e.getArchived();
         this.archivedAt = e.getArchivedAt();
+        this.version = e.getVersion();
     }
 }

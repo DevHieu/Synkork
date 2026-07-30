@@ -11,6 +11,15 @@ import { storeToRefs } from "pinia";
 
 import type { CardEvent, ColumnEvent, TaskMoveEvent } from "@/types/Task";
 
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+} from '@/components/ui/dialog'
+
 import TaskColumn from '@/components/windows/task/TaskColumn.vue'
 import ColumnFormDialog from '@/components/dialog/TaskDialog/ColumnFormDialog.vue'
 import DeleteConfirmDialog from '@/components/dialog/DeleteConfirmDialog.vue'
@@ -18,6 +27,9 @@ import CardFormDialog from '@/components/dialog/TaskDialog/CardFormDialog.vue'
 import ArchiveTask from '@/components/dialog/TaskDialog/ArchiveTask.vue'
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { toast } from "vue-sonner"
+import { VersionConflictError } from '@/services/task/cardService'
+import { ColumnVersionConflictError } from '@/services/task/columnService'
 
 const spaceStore = useSpaceStore();
 const { currentSpace } = storeToRefs(spaceStore);
@@ -31,6 +43,10 @@ const isSocketConnected = ref(false)
 
 const isColumnDialogOpen = ref(false)
 const editingCol = ref<ColumnEvent | null>(null)
+
+const isColumnConflictOpen = ref(false)
+const columnConflictAttempted = ref<{ title: string } | null>(null) // nội dung user vừa nhập, bị conflict
+const isCreatingColumnCopy = ref(false)
 
 const isCardDialogOpen = ref(false)
 const editingCard = ref<CardEvent | null>(null)
@@ -60,13 +76,47 @@ const handleSaveColumn = async (data: { title: string }) => {
     if (!currentSpace.value?.id) return;
     isSaving.value = true
     try {
-        await taskStore.saveColumn(currentSpace.value.id, editingCol.value?.id ?? '', data.title)
+        await taskStore.saveColumn(currentSpace.value.id, editingCol.value?.id ?? '', data.title, editingCol.value?.version)
         isColumnDialogOpen.value = false
     } catch (e) {
-        console.error("Lỗi:", e)
+        if (e instanceof ColumnVersionConflictError) {
+            toast.error("Cột này vừa được người khác cập nhật. Vui lòng kiểm tra lại nội dung mới nhất.")
+            columnConflictAttempted.value = { title: data.title }
+            isColumnDialogOpen.value = false   
+            isColumnConflictOpen.value = true
+        } else {
+            console.error("Lỗi:", e)
+            toast.error("Có lỗi xảy ra, vui lòng thử lại.")
+        }
     } finally {
         isSaving.value = false
     }
+}
+
+const handleCreateColumnCopy = async () => {
+    if (!currentSpace.value?.id || !columnConflictAttempted.value) return
+    isCreatingColumnCopy.value = true
+    try {
+        const attempted = columnConflictAttempted.value
+        await taskStore.saveColumn(
+            currentSpace.value.id,
+            '',                
+            attempted.title
+        )
+        toast.success("Đã tạo cột mới với nội dung bạn vừa nhập.")
+    } catch (e) {
+        console.error("Lỗi tạo cột mới:", e)
+        toast.error("Không thể tạo cột mới, vui lòng thử lại.")
+    } finally {
+        isCreatingColumnCopy.value = false
+        isColumnConflictOpen.value = false
+        columnConflictAttempted.value = null
+    }
+}
+
+const handleDiscardColumnConflict = () => {
+    isColumnConflictOpen.value = false
+    columnConflictAttempted.value = null
 }
 
 const confirmDeleteColumn = (colId: string) => {
@@ -91,7 +141,6 @@ const onColumnMove = async (event: TaskMoveEvent) => {
     }
 }
 
-
 const openCardDialog = (columnId: string) => {
     targetColumnId.value = columnId
     editingCard.value = null
@@ -103,11 +152,16 @@ const handleSaveCard = async (data: { title: string, description: string }) => {
     try {
         await taskStore.saveCard(
             currentSpace.value.id, editingCard.value?.id ?? '',
-            targetColumnId.value, data.title, data.description
+            targetColumnId.value, data.title, data.description, [], undefined, editingCard.value?.version
         )
         isCardDialogOpen.value = false
-    } catch (error) {
-        console.error("Lỗi:", error)
+    } catch (e) {
+        if (e instanceof VersionConflictError) {
+            toast.error("Thẻ này vừa được người khác cập nhật. Vui lòng kiểm tra lại nội dung mới nhất.")
+        } else {
+            console.error("Lỗi:", e)
+            toast.error("Có lỗi xảy ra, vui lòng thử lại.")
+        }
     } finally {
         isSaving.value = false
     }
@@ -276,6 +330,28 @@ watch(
         :title="deleteAllType === 'columns' ? 'Xóa tất cả cột?' : 'Xóa tất cả thẻ?'"
         :description="deleteAllType === 'columns' ? 'Toàn bộ các cột và thẻ bên trong sẽ bị xóa vĩnh viễn.' : 'Toàn bộ thẻ đã lưu trữ sẽ bị xóa vĩnh viễn.'"
         @confirm="handleDeleteAllArchived" />
+
+        <Dialog v-model:open="isColumnConflictOpen">
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Cột đã bị thay đổi bởi người khác</DialogTitle>
+                    <DialogDescription>
+                        Trong lúc bạn chỉnh sửa, một người khác đã lưu thay đổi cho cột
+                        <strong>"{{ editingCol?.name }}"</strong>. Nếu lưu đè, nội dung của họ sẽ bị mất.
+                        Bạn có muốn tạo một cột mới chứa nội dung bạn vừa nhập, để không mất dữ liệu không?
+                    </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                    <Button variant="outline" :disabled="isCreatingColumnCopy" @click="handleDiscardColumnConflict">
+                        Bỏ qua, xem bản mới nhất
+                    </Button>
+                    <Button :disabled="isCreatingColumnCopy" @click="handleCreateColumnCopy">
+                        {{ isCreatingColumnCopy ? 'Đang tạo...' : 'Tạo cột mới với nội dung của tôi' }}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
 </template>
 
 <style scoped></style>

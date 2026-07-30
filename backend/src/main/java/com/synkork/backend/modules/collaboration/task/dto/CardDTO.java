@@ -32,6 +32,8 @@ public class CardDTO {
     private Boolean isArchived;
     private LocalDateTime archivedAt;
 
+    private Integer version;
+
     public CardDTO(CardEntity e) {
         this.id = e.getId();
         this.title = e.getTitle();
@@ -54,5 +56,7 @@ public class CardDTO {
         
         this.isArchived = e.getArchived();
         this.archivedAt = e.getArchivedAt();
+
+        this.version = e.getVersion();
     }
 }

@@ -106,4 +106,7 @@ public class CardEntity extends BaseEntity {
 
         return CardStatus.NORMAL;
     }
+
+    @Version
+    private Integer version;
 }

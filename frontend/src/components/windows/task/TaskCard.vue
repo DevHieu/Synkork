@@ -4,6 +4,14 @@ import { Archive, Calendar, AlignLeft } from 'lucide-vue-next'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+} from '@/components/ui/dialog'
 
 import { useSpaceStore } from "@/stores/spaceStore";
 import { storeToRefs } from "pinia";
@@ -12,6 +20,8 @@ import type { CardEvent } from '@/types/Task'
 
 import CardDetailDialog from '@/components/dialog/TaskDialog/CardDetailDialog.vue'
 import { useTaskStore } from '@/stores/taskStore';
+import { VersionConflictError } from '@/services/task/cardService'
+import { toast } from 'vue-sonner'
 
 const spaceStore = useSpaceStore();
 const { currentSpace } = storeToRefs(spaceStore);
@@ -19,6 +29,9 @@ const { currentSpace } = storeToRefs(spaceStore);
 const taskStore = useTaskStore();
 
 const isCardDetailOpen = ref(false)
+const isConflictDialogOpen = ref(false)
+const conflictAttempted = ref<CardEvent | null>(null)
+const isCreatingCopy = ref(false)
 
 const props = defineProps<{ card: CardEvent, columnName: string, columnId: string }>()
 
@@ -40,11 +53,52 @@ const saveInDetail = async (updatedCard: CardEvent) => {
             updatedCard.title,
             updatedCard.description,
             updatedCard.assignees?.map(a => a.id) ?? [],
-            updatedCard.dueDate
+            updatedCard.dueDate,
+            updatedCard.version
         )
-    } catch (error) {
-        console.error("Lỗi:", error)
+    } catch (e) {
+        console.log("CARD SAVE ERROR", e)
+    console.log("instanceof VersionConflictError:", e instanceof VersionConflictError)
+        if (e instanceof VersionConflictError) {
+            toast.error("Thẻ này vừa được người khác cập nhật. Vui lòng kiểm tra lại nội dung mới nhất.")
+            conflictAttempted.value = updatedCard
+            isCardDetailOpen.value = false   // đóng dialog sửa, tránh user tưởng vẫn đang edit bản cũ
+            isConflictDialogOpen.value = true
+            return
+        } else {
+            console.error("Lỗi:", e)
+            toast.error("Có lỗi xảy ra, vui lòng thử lại.")
+        }
     }
+}
+
+const handleCreateCopy = async () => {
+    if (!currentSpace.value || !conflictAttempted.value) return
+    isCreatingCopy.value = true
+    try {
+        const attempted = conflictAttempted.value
+        await taskStore.saveCard(
+            currentSpace.value.id,
+            '',                 // cardId rỗng => tạo mới, không phải update
+            props.columnId,
+            attempted.title,
+            attempted.description,
+            [],
+            attempted.dueDate
+        )
+        toast.success("Đã tạo thẻ mới với nội dung bạn vừa nhập.")
+    } catch (e) {
+        console.error("Lỗi tạo thẻ mới:", e)
+        toast.error("Không thể tạo thẻ mới, vui lòng thử lại.")
+    } finally {
+        isCreatingCopy.value = false
+        isConflictDialogOpen.value = false
+        conflictAttempted.value = null
+    }
+}
+
+const handleDiscard = () => {
+    isConflictDialogOpen.value = false
 }
 
 const getInitials = (name?: string) => {
@@ -174,6 +228,26 @@ const isOverdue = computed(() => {
             :column-id="props.columnId"
             @save="saveInDetail"
         />
+        <Dialog v-model:open="isConflictDialogOpen">
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Thẻ đã bị thay đổi bởi người khác</DialogTitle>
+                    <DialogDescription>
+                        Trong lúc bạn chỉnh sửa, một người khác đã lưu thay đổi cho thẻ
+                        <strong>"{{ card.title }}"</strong>. Nếu lưu đè, nội dung của họ sẽ bị mất.
+                        Bạn có muốn tạo một thẻ mới chứa nội dung bạn vừa nhập, để không mất dữ liệu không?
+                    </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                    <Button variant="outline" :disabled="isCreatingCopy" @click="handleDiscard">
+                        Bỏ qua, xem bản mới nhất
+                    </Button>
+                    <Button :disabled="isCreatingCopy" @click="handleCreateCopy">
+                        {{ isCreatingCopy ? 'Đang tạo...' : 'Tạo thẻ mới với nội dung của tôi' }}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </div>
 </template>
 

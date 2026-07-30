@@ -7,6 +7,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -47,7 +48,7 @@ public class CardService {
 
     @Transactional
     public CardDTO createCard(UUID spaceId, String creatorEmail, CardRequest req) {
-        UUID columnId = req.getColumnId();
+        UUID columnId = req.columnId();
         ColumnEntity column = columnRepository.findById(columnId)
                 .orElseThrow(() -> new RuntimeException("Cột không tồn tại"));
 
@@ -55,9 +56,9 @@ public class CardService {
 
         CardEntity card = new CardEntity();
         card.setColumn(column);
-        card.setTitle(req.getTitle());
+        card.setTitle(req.title());
         card.setPosition(nextPosition);
-        card.setDescription(req.getDescription() != null ? req.getDescription() : "");
+        card.setDescription(req.description() != null ? req.description() : "");
         card.setCreatedAt(LocalDateTime.now());
 
         UUID roomId = column.getSpace().getRoom().getId();
@@ -65,12 +66,12 @@ public class CardService {
                 roomMemberRepository.findByUser_EmailAndRoom_Id(creatorEmail, roomId)
                         .orElseThrow(() -> new RuntimeException("User không phải member của room này")));
 
-        if (req.getAssigneeIds() != null && !req.getAssigneeIds().isEmpty()) {
-            List<RoomMemberEntity> assignees = roomMemberRepository.findAllById(req.getAssigneeIds());
+        if (req.assigneeIds() != null && !req.assigneeIds().isEmpty()) {
+            List<RoomMemberEntity> assignees = roomMemberRepository.findAllById(req.assigneeIds());
             card.setAssignees(assignees);
         }
 
-        card.setDueDate(req.getDueDate());
+        card.setDueDate(req.dueDate());
 
         CardEntity savedCard = cardRepository.save(card);
         return new CardDTO(savedCard);
@@ -80,23 +81,31 @@ public class CardService {
         CardEntity card = cardRepository.findById(cardId)
                 .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
 
-        if (req.getTitle() != null) {
-            card.setTitle(req.getTitle());
+                if (!card.getVersion().equals(req.version())) {
+                    System.out.println("REQUEST VERSION = " + req.version());
+System.out.println("DB VERSION = " + card.getVersion());
+            throw new ObjectOptimisticLockingFailureException(CardEntity.class, card.getId());
         }
 
-        if (req.getDescription() != null) {
-            card.setDescription(req.getDescription());
+        
+
+        if (req.title() != null) {
+            card.setTitle(req.title());
         }
 
-        card.setDueDate(req.getDueDate());
+        if (req.description() != null) {
+            card.setDescription(req.description());
+        }
 
-        if (req.getAssigneeIds() != null) {
+        card.setDueDate(req.dueDate());
+
+        if (req.assigneeIds() != null) {
             // Lấy danh sách assignee cũ
             Set<UUID> oldAssigneeIds = card.getAssignees().stream()
                     .map(RoomMemberEntity::getId)
                     .collect(Collectors.toSet());
 
-            List<RoomMemberEntity> newAssignees = roomMemberRepository.findAllById(req.getAssigneeIds());
+            List<RoomMemberEntity> newAssignees = roomMemberRepository.findAllById(req.assigneeIds());
 
             // Tìm người mới được assign (có trong new nhưng không có trong old)
             List<RoomMemberEntity> justAssigned = newAssignees.stream()
