@@ -106,6 +106,7 @@
 
         <!-- Archive -->
         <button
+          v-if="canArchive"
           title="Lưu trữ"
           @click.stop="$emit('archive', note.id)"
           class="p-1 rounded hover:bg-black/10 transition-colors"
@@ -175,6 +176,7 @@ const COLORS = [
 
 const props = defineProps<{
   note: any
+  canArchive?: boolean
 }>()
 
 const emit = defineEmits([

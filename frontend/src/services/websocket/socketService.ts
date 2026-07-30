@@ -16,7 +16,10 @@ const createStompClient = (token: string, onConnected?: () => void): Client => {
     connectHeaders: {
       Authorization: `Bearer ${token}`,
     },
-    reconnectDelay: 0,
+    heartbeatIncoming: 10000, // mong nhận heartbeat từ server mỗi 10s
+    heartbeatOutgoing: 10000, // gửi heartbeat cho server mỗi 10s
+    reconnectDelay: 5000, // tự động reconnect sau 5s nếu mất kết nối
+
     onConnect: () => {
       onConnected?.();
     },
@@ -119,7 +122,6 @@ export const socketService = {
       subscriptions.delete(destination);
     }
 
-
     const sub = stompClient!.subscribe(destination, (msg) => {
       try {
         callback(JSON.parse(msg.body));
@@ -140,7 +142,6 @@ export const socketService = {
 
   // unsubscribeAll bỏ qua persistent
   unsubscribeAll() {
-
     subscriptions.forEach((sub, destination) => {
       if (!persistentDestinations.has(destination)) {
         sub.unsubscribe();

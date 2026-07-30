@@ -75,7 +75,7 @@ onUnmounted(() => {
 // Đồng bộ với component cha khi danh sách người tham gia thay đổi
 watch(selectedIds, (newList) => {
   emit("change", newList);
-}, { deep: true });
+});
 
 // Làm mới khi Dialog mở ra
 watch(() => props.show, (isOpened) => {

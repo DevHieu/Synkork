@@ -77,3 +77,23 @@ export const setReminder = async (
   )
   return res.data
 }
+
+export const copyToPersonal = async (
+  spaceId: string,
+  noteId: string
+) => {
+  const res = await axiosClient.post(
+    `/api/spaces/${spaceId}/notes/${noteId}/copy-to-personal`
+  )
+  return res.data
+}
+
+export const getArchivedNotes = async (spaceId: string) => {
+  const res = await axiosClient.get(`/api/spaces/${spaceId}/notes/archived`);
+  return res.data;
+}
+
+export const restoreNote = async (spaceId: string, id: string) => {
+  const res = await axiosClient.patch(`/api/spaces/${spaceId}/notes/${id}/archive`);
+  return res.data;
+}

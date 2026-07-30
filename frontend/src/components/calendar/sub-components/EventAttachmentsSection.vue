@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { watch } from "vue";
-import { useAttachments, type Attachment } from "../composables/useAttachments";
+import { ref, watch } from "vue";
 import { X } from "lucide-vue-next";
+import type { CalendarEventAttachment } from "@/types/CalendarEvent";
+
+export interface Attachment extends CalendarEventAttachment {
+  file?: File;
+}
 
 const props = defineProps<{
   initialAttachments?: Attachment[];
@@ -12,18 +16,25 @@ const emit = defineEmits<{
   (e: "change", attachments: Attachment[]): void;
 }>();
 
-const { attachments, addFromFileInput, removeAttachment, resetAttachments } =
-  useAttachments(props.initialAttachments || []);
+const attachments = ref<Attachment[]>([...(props.initialAttachments || [])]);
 
-// Section này chỉ giữ state tạm rồi đẩy ngược lên form cha.
-// Đồng bộ với component cha khi danh sách tệp đính kèm thay đổi
-watch(attachments, (newList) => {
-  emit("change", newList);
-}, { deep: true });
+const addFromFileInput = (event: Event): void => {
+  const target = event.target as HTMLInputElement;
+  if (!target.files) return;
+  for (const file of Array.from(target.files)) {
+    attachments.value.push({ name: file.name, size: file.size, file });
+  }
+  target.value = "";
+  emit("change", attachments.value);
+};
 
-// Làm mới khi Dialog mở ra
+const removeAttachment = (index: number): void => {
+  attachments.value.splice(index, 1);
+  emit("change", attachments.value);
+};
+
 watch(() => props.show, (isOpen) => {
-  if (isOpen) resetAttachments(props.initialAttachments || []);
+  if (isOpen) attachments.value = [...(props.initialAttachments || [])];
 });
 </script>
 

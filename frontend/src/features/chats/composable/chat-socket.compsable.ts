@@ -5,7 +5,6 @@ import { useMessageStore } from "@/features/chats/stores/messageStore";
 import { storeToRefs } from "pinia";
 import { nextTick } from "vue";
 import { socketService } from "@/services/websocket/socketService";
-import type { MessageEventSuggestion } from "@/types/CalendarSuggestion";
 import { useChatUtilsComposable } from "./chat-utils.composable";
 
 export function useChatSocketComposable() {
@@ -20,9 +19,7 @@ export function useChatSocketComposable() {
       // Nếu đang jump mode thì không push tin mới vào (tránh lộn xộn)
       if (!isJumpMode.value) {
         messages.value = messages.value.filter(
-          (m) =>
-            m.id !== msg.id &&
-            !chatUtils.isSameOptimisticMessage(m, msg),
+          (m) => m.id !== msg.id && !chatUtils.isSameOptimisticMessage(m, msg),
         );
         messages.value.unshift(msg);
 

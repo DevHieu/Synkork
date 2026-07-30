@@ -66,6 +66,15 @@
             </span>
 
             <button
+              v-if="canManage"
+              @click="archivedOpen = true"
+              class="px-3 py-1.5 text-sm rounded-lg border flex items-center gap-1 cursor-pointer hover:bg-muted transition-colors"
+            >
+              <Archive class="w-4 h-4" />
+              Lưu trữ
+            </button>
+
+            <button
               @click="openCreate"
               class="px-3 py-1.5 text-sm rounded-lg bg-primary text-white flex items-center gap-1 cursor-pointer hover:bg-primary/90 transition-colors"
             >
@@ -139,6 +148,7 @@
                   v-for="note in store.pinnedNotes"
                   :key="note.id"
                   :note="note"
+                  :can-archive="canManage"
                   @view="openDetail"
                   @edit="openEdit"
                   @delete="confirmDelete"
@@ -183,6 +193,7 @@
                   <NoteCard
                     v-if="getNoteById(item.i)"
                     :note="getNoteById(item.i)!"
+                    :can-archive="canManage"
                     @view="openDetail"
                     @edit="openEdit"
                     @delete="confirmDelete"
@@ -210,6 +221,8 @@
       <NoteDetailDialog
         :open="detailOpen"
         :note="selectedNote"
+        :space-id="spaceId"
+        :personal-space-id="userPersonalSpace.noteId"
         @close="detailOpen = false"
         @edit="openEdit"
         @delete="confirmDelete"
@@ -227,6 +240,12 @@
         @close="reminderOpen = false"
         @confirm="handleReminderConfirm"
       />
+
+      <ArchivedNotesDialog
+        :open="archivedOpen"
+        :space-id="spaceId"
+        @close="archivedOpen = false"
+      />
     </div>
   </div>
 </template>
@@ -236,14 +255,17 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useNoteStore } from '@/stores/noteStore'
+import { useUserStore } from '@/stores/userStore'
+import { useRoomMemberStore } from '@/stores/roomMemberStore'
 import { GridLayout, GridItem } from 'vue3-grid-layout-next'
-import { NotebookPen, Plus, Search, X, Pin, Loader2, AlertCircle, Hash } from 'lucide-vue-next'
+import { NotebookPen, Plus, Search, X, Pin, Loader2, AlertCircle, Hash, Archive } from 'lucide-vue-next'
 
 import NoteCard from '@/components/note/NoteCard.vue'
 import NoteDialog from '@/components/dialog/NoteDialog/NoteDialog.vue'
 import NoteDetailDialog from '@/components/dialog/NoteDialog/NoteDetailDialog.vue'
 import ConfirmDialog from '@/components/dialog/NoteDialog/ConfirmDialog.vue'
 import ReminderDialog from '@/components/dialog/NoteDialog/ReminderDialog.vue'
+import ArchivedNotesDialog from '@/components/dialog/NoteDialog/ArchivedNotesDialog.vue'
 
 import type { Note, NoteRequest } from '@/types/NoteType'
 import { useSpaceStore } from '@/stores/spaceStore'
@@ -256,6 +278,14 @@ const spaceStore = useSpaceStore()
 const store = useNoteStore()
 const { currentSpace, isPersonalSpace } = storeToRefs(spaceStore)
 
+// ── User store (để lấy personalNoteId cho nút "Lưu cá nhân") ──
+const userStore = useUserStore()
+const { userPersonalSpace } = storeToRefs(userStore)
+
+// ── RoomMember store (để lấy quyền OWNER/ADMIN cho nút "Lưu trữ") ──
+const roomMemberStore = useRoomMemberStore()
+const { canManage } = storeToRefs(roomMemberStore)
+
 const dialogOpen     = ref(false)
 const detailOpen     = ref(false)
 const selectedNote   = ref<Note | null>(null)
@@ -264,6 +294,7 @@ const deleteTargetId = ref<string | null>(null)
 const reminderOpen   = ref(false)
 const reminderNote   = ref<Note | null>(null)
 const layout         = ref<any[]>([])
+const archivedOpen   = ref(false)
 
 let layoutUpdateCount = 0
 let debounceTimer: ReturnType<typeof setTimeout>

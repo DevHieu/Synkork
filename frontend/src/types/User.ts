@@ -10,4 +10,5 @@ export interface User {
   planExpiresAt: Date | null;
   personalNoteId: string;
   personalCalendarId: string;
+  isGoogleCalendarConnected?: boolean;
 }

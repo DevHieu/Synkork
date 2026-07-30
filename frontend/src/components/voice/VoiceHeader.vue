@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import SidebarTrigger from "../ui/sidebar/SidebarTrigger.vue";
 import { FileText, Volume2, UploadCloud } from "lucide-vue-next";
 import { useUserStore } from "@/stores/userStore";
@@ -17,6 +17,8 @@ let chunks: Blob[] = [];
 const route = useRoute();
 const voiceSpaceStore = useVoiceSpaceStore();
 const userStore = useUserStore();
+
+const isBusinessPlan = computed(() => userStore.userPlan === "BUSINESS");
 
 const showPremiumDialog = ref(false);
 const showSummaryModal = ref(false);
@@ -67,23 +69,10 @@ const handleSummary = () => {
     return;
   }
 
-  // Testing
-  if (userStore.userPlan === "FREE") {
+  if (userStore.userPlan !== "BUSINESS") {
     showPremiumDialog.value = true;
     return;
   }
-  // 
-  // 
-  // 
-  // 
-  // 
-  // 
-  // 
-  // 
-  // 
-  // 
-  // 
-  // 
 
   const tracks = voiceSpaceStore.getAudioTracks();
   if (tracks.length === 0) {
@@ -143,28 +132,40 @@ const handleSummary = () => {
 
 <template>
   <div class="flex items-center justify-between px-4 py-3.5 border-b border-border shrink-0">
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-2.5">
       <SidebarTrigger class="-ml-1" />
+      <div class="h-4 w-px bg-border/60" />
       <span class="font-semibold text-base flex gap-2 items-center">
-        <Volume2 class="h-5 w-5" />
+        <div class="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center">
+          <Volume2 class="h-4.5 w-4.5 text-primary" />
+        </div>
+
         {{ route.params.spaceName ?? "Voice" }}
       </span>
     </div>
+
+    <!-- <div class="flex items-center gap-3">
+        <SidebarTrigger class="-ml-1 shrink-0 text-muted-foreground hover:text-foreground" />
+        
+        <span class="flex items-center gap-2 font-sans text-sm font-semibold text-foreground">
+          <div class="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center">
+            <CalendarDays class="h-4.5 w-4.5 text-primary" />
+          </div>
+          {{ currentSpaceName }}
+        </span>
+      </div> -->
+
     <div class="flex items-center gap-2">
       <!-- Test upload button -->
-      <input
-        type="file"
-        ref="testFileInput"
-        class="hidden"
-        accept="audio/*"
-        @change="handleTestFileUpload"
-      />
-      <button @click="triggerTestUpload" class="flex items-center gap-2 px-4 py-1 rounded-lg text-sm font-normal text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 transition-colors border border-amber-500/30 h-8">
+      <input v-if="isBusinessPlan" type="file" ref="testFileInput" class="hidden" accept="audio/*"
+        @change="handleTestFileUpload" />
+      <button v-if="isBusinessPlan" @click="triggerTestUpload"
+        class="flex items-center gap-2 px-4 py-1 rounded-lg text-sm font-normal text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 transition-colors border border-amber-500/30 h-8">
         <UploadCloud class="h-4 w-4" />
         Test Tóm Tắt
       </button>
 
-      <button @click="handleSummary"
+      <button v-if="isBusinessPlan" @click="handleSummary"
         class="flex items-center gap-2 px-4 py-1 rounded-lg text-sm font-normal text-muted-foreground hover:text-foreground hover:bg-muted transition-colors border border-border h-8"
         :class="{ 'text-red-500 border-red-500': isRecording }">
         <FileText class="h-5 w-5" />

@@ -40,6 +40,7 @@ export const useUserStore = defineStore("users", {
     userEmail: (state) => state.user?.email || "",
     userPlan: (state) => state.user?.currentPlan || "FREE",
     planExpiresAt: (state) => state.user?.planExpiresAt || null,
+    isGoogleCalendarConnected: (state) => !!state.user?.isGoogleCalendarConnected,
     userPersonalSpace: (state) => ({
       calendarId: state.user?.personalCalendarId ?? "",
       noteId: state.user?.personalNoteId ?? "",

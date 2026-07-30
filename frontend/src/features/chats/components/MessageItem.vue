@@ -44,7 +44,7 @@ const senderNameColor = computed(() => {
     case "OWNER":
       return "text-yellow-400";
     case "ADMIN":
-      return "text-red-400";
+      return "text-blue-500";
     default:
       return "text-foreground";
   }
@@ -111,9 +111,15 @@ const messageSuggestion = computed<MessageEventSuggestion | null>(() => {
   return messageStore.suggestionsByMessageId[props.message.id] ?? null;
 });
 
-// Nếu message có suggestion hợp lệ thì coi như đang ở trạng thái hover.
+// Nhận biết tin nhắn chỉ dành cho gói TEAM và BUSINESS (Ẩn hoàn toàn với gói FREE)
+const canUseMessageIntelligence = computed(() => {
+  const plan = userStore.userPlan;
+  return plan === "TEAM" || plan === "BUSINESS";
+});
+
+// Nếu message có suggestion hợp lệ và user thuộc gói TEAM/BUSINESS thì hiển thị nút Tạo nhanh.
 const shouldHighlightSuggestion = computed(
-  () => !!messageSuggestion.value && messageSuggestion.value.suggestionType !== "NONE",
+  () => canUseMessageIntelligence.value && !!messageSuggestion.value && messageSuggestion.value.suggestionType !== "NONE",
 );
 
 // Đổi nhãn nút sang "Tạo nhanh" chung cho các loại nội dung.
