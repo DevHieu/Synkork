@@ -6,6 +6,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
 import com.synkork.backend.modules.collaboration.task.dto.ColumnDTO;
@@ -42,7 +43,7 @@ public class ColumnService {
 
         ColumnEntity col = new ColumnEntity();
         col.setSpace(space);
-        col.setName(req.getName());
+        col.setName(req.name());
         col.setPosition(nextPosition);
 
         ColumnEntity saveCol = columnRepository.save(col);
@@ -55,7 +56,13 @@ public class ColumnService {
         ColumnEntity col = columnRepository.findById(columnId)
                 .orElseThrow(() -> new RuntimeException("Cột không tồn tại!"));
 
-        col.setName(req.getName());
+        
+                if (!col.getVersion().equals(req.version())) {
+            throw new ObjectOptimisticLockingFailureException(ColumnEntity.class, col.getId());
+        }
+        col.setName(req.name());
+
+        
 
         ColumnEntity updatedCol = columnRepository.save(col);
         return new ColumnDTO(updatedCol);

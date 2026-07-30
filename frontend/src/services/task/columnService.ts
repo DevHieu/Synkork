@@ -1,4 +1,6 @@
 import axiosClient from "@/lib/axiosClient"
+import type { ColumnEvent, ColumnRequest } from "@/types/Task"
+import axios from "axios"
 
 export const getColumns = async (spaceId: string, columnId: string) => {
     const res = await axiosClient.get(`/api/space/${spaceId}/column/${columnId}`);
@@ -22,11 +24,16 @@ export const createColumn = async (spaceId: string, columnName: string) => {
     return res;
 }
 
-export const updateColumn = async (spaceId: string, columnId: string, title: string) => {
-    const res = await axiosClient.put(`/api/space/${spaceId}/column/${columnId}`, {
-        name: title
-    });
-    return res;
+export const updateColumn = async (spaceId: string, columnId: string, data : ColumnRequest) => {
+    try {
+        const res = await axiosClient.put(`/api/space/${spaceId}/column/${columnId}`, data);
+        return res;
+    } catch (e: any) {
+        if(axios.isAxiosError(e) && e.response?.status === 409) {
+           throw new ColumnVersionConflictError(e.response.data?.latest)
+        }
+        throw e;
+    } 
 }
 
 export const deleteColumn = async (spaceId: string, columnId: string) => {
@@ -57,5 +64,15 @@ export const getArchivedColumns = (spaceId: string) => {
 export const deleteAllArchivedColumns = (spaceId: string) => {
     const res = axiosClient.delete(`/api/space/${spaceId}/column/archived/all`);
     return res;
+}
+
+export class ColumnVersionConflictError extends Error {
+    public latest: ColumnEvent
+    constructor(latest: ColumnEvent) {
+        super("VERSION_CONFLICT")
+        this.name = "ColumnVersionConflictError"
+        this.latest = latest
+        Object.setPrototypeOf(this, ColumnVersionConflictError.prototype)
+    }
 }
 

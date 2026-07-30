@@ -49,5 +49,7 @@ public class ColumnEntity {
     @OneToMany(mappedBy = "column", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC")
     private List<CardEntity> cards = new ArrayList<>();
-    
+
+    @Version
+    private Integer version;
 }

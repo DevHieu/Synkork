@@ -1,7 +1,7 @@
 import type { CardEvent, CardMovePayload, ColumnEvent, TaskMoveEvent } from "@/types/Task";
 import { defineStore } from "pinia";
-import { getAllColumns, createColumn, updateColumn, deleteColumn, moveColumn, unarchiveColumn, archiveColumn, getArchivedColumns, deleteAllArchivedColumns } from '@/services/task/columnService'
-import { archiveCard, createCard, deleteAllArchivedCards, deleteCard, getArchivedCards, moveCard, unarchiveCard, updateCard } from "@/services/task/cardService";
+import { getAllColumns, createColumn, updateColumn, deleteColumn, moveColumn, unarchiveColumn, archiveColumn, getArchivedColumns, deleteAllArchivedColumns, ColumnVersionConflictError } from '@/services/task/columnService'
+import { archiveCard, createCard, deleteAllArchivedCards, deleteCard, getArchivedCards, moveCard, unarchiveCard, updateCard, VersionConflictError } from "@/services/task/cardService";
 import { socketService } from "@/services/websocket/socketService";
 import { taskSocket } from "@/services/websocket/taskSocket";
 
@@ -184,9 +184,22 @@ export const useTaskStore = defineStore("task", {
             }
         },
 
-        async saveColumn(spaceId: string, columnId: string, title: string) {
-            if (columnId) await updateColumn(spaceId, columnId, title)
-            else await createColumn(spaceId, title)
+        async saveColumn(spaceId: string, columnId: string, title: string, version?: number) {
+            if (!columnId) {
+                await createColumn(spaceId, title)
+                return
+            }
+            try {
+                await updateColumn(spaceId, columnId, { name: title, version })
+            } catch (e) {
+                if (e instanceof ColumnVersionConflictError) {
+                    const idx = this.columns.findIndex(c => c.id === columnId)
+                    if (idx !== -1 && e.latest) {
+                        this.columns[idx] = e.latest
+                    }
+                }
+                throw e
+            }
         },
 
         async moveColumn(spaceId: string, event: TaskMoveEvent) {
@@ -204,10 +217,21 @@ export const useTaskStore = defineStore("task", {
             }
         },
 
-        async saveCard(spaceId: string, cardId: string, columnId: string, title: string, description: string, assigneeIds: string[] = [], dueDate?: string) {
-            if (cardId) await updateCard(spaceId, cardId, { title, description, assigneeIds, dueDate })
-            else await createCard(spaceId, { columnId, title, description })
-        },
+        // taskStore.ts
+async saveCard(spaceId: string, cardId: string, columnId: string, title: string, description: string, assigneeIds: string[] = [], dueDate?: string, version?: number) {
+    if (!cardId) {
+        await createCard(spaceId, { columnId, title, description })
+        return
+    }
+    try {
+        await updateCard(spaceId, cardId, {
+            title, description, assigneeIds, dueDate,
+            version   // ✅ dùng đúng version được truyền vào từ lúc mở form, không tra lại store
+        })
+    } catch (e) {
+        throw e
+    }
+},
 
         async moveCard(spaceId: string, columnId: string, event: TaskMoveEvent) {
             const movedCard = event.moved || event.added
