@@ -229,7 +229,8 @@ export const useSpaceStore = defineStore("spaces", {
       this.calendarSpaces = this.calendarSpaces.filter((s) => s.id !== spaceId);
       this.taskSpaces = this.taskSpaces.filter((s) => s.id !== spaceId);
 
-      const { useVoiceSpaceStore } = await import("@/stores/voiceSpaceStore");
+      const { useVoiceSpaceStore } =
+        await import("@/features/voice-chat/stores/voiceSpaceStore");
       const { currentSpaceId } = storeToRefs(useVoiceSpaceStore());
 
       if (currentSpaceId.value === spaceId) {

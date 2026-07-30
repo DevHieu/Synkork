@@ -12,7 +12,7 @@ import OtpPage from "@/pages/auth/OtpPage.vue";
 import PasswordResetSuccessPage from "@/pages/auth/PasswordResetSuccessPage.vue";
 
 import ChatWindow from "@/features/chats/index.vue";
-import VoiceWindow from "@/components/windows/VoiceWindow.vue";
+import VoiceWindow from "@/features/voice-chat/index.vue";
 import NoteWindow from "@/components/windows/NoteWindow.vue";
 import TaskWindow from "@/components/windows/TaskWindow.vue";
 import CalendarWindowLayout from "@/components/windows/CalendarWindowLayout.vue";
