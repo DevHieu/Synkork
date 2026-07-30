@@ -98,7 +98,7 @@ watch(currentSpace, (space, prevSpace) => {
   if (!space?.id) return;
   if (space.id === prevSpace?.id) return; // không re-join nếu cùng space
   joinSpace(space.id, prevSpace?.id ?? spaceId.value);
-});
+}, { immediate: true });
 </script>
 
 <template>
