@@ -6,7 +6,7 @@ import type { RegisterData } from "@/types/RegisterData";
 export const login = async (loginData: LoginData) => {
   try {
     const res = await axiosClient.post("/api/auth/login", loginData);
-    setCookie("accessToken", res.data.accessToken, 60 * 60 * 15); // 15 minutes
+    setCookie("accessToken", res.data.accessToken);
     return res.data;
   } catch (error: any) {
     throw error;
@@ -47,7 +47,9 @@ export type PasswordResetRequest = {
 };
 
 export const requestPasswordReset = async (email: string) => {
-  const res = await axiosClient.post("/api/auth/request-password-reset", { email });
+  const res = await axiosClient.post("/api/auth/request-password-reset", {
+    email,
+  });
   return res.data;
 };
 
@@ -63,7 +65,6 @@ export const verifyOtp = async (
   });
   return res.data;
 };
-
 
 export const checkIsLogin = async () => {
   const res = await axiosClient.get("/api/auth/check-login");

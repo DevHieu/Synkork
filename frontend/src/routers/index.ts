@@ -150,7 +150,7 @@ router.beforeEach(async (to) => {
         { withCredentials: true },
       );
       const newToken = response.data;
-      setCookie("accessToken", newToken, 60 * 60 * 15); // 15 minutes
+      setCookie("accessToken", newToken);
       return;
     } catch {
       return { path: "/auth" };

@@ -59,7 +59,7 @@ const createStompClient = (token: string, onConnected?: () => void): Client => {
         try {
           const freshToken = await getFreshToken();
 
-          stompClient = createStompClient(freshToken);
+          stompClient = createStompClient(freshToken, onConnected);
           stompClient.activate();
         } catch {
           window.location.href = "/auth";
