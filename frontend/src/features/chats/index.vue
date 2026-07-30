@@ -58,12 +58,6 @@ const togglePins = () => {
 
 const isDM = computed(() => currentSpace.value?.roomType === "DM");
 
-onMounted(() => {
-  if (currentSpace.value?.id) {
-    joinSpace(currentSpace.value.id);
-  }
-});
-
 onUnmounted(() => {
   if (spaceId.value) {
     chatSocket.leaveSpace(spaceId.value);
@@ -75,6 +69,7 @@ const joinSpace = async (id: string, previousId?: string) => {
   if (previousId && previousId !== id) {
     chatSocket.leaveSpace(previousId);
   }
+
   spaceId.value = id;
   messageStore.clearAll();
   await chat.fetchMessages(id, null);
@@ -103,7 +98,7 @@ watch(currentSpace, (space, prevSpace) => {
   if (!space?.id) return;
   if (space.id === prevSpace?.id) return; // không re-join nếu cùng space
   joinSpace(space.id, prevSpace?.id ?? spaceId.value);
-});
+}, { immediate: true });
 </script>
 
 <template>

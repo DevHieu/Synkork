@@ -5,6 +5,7 @@ import { friendSocket } from "@/services/websocket/friendSocket";
 import FriendListTab from "@/components/sidebar/friend/FriendListTab.vue";
 import FriendPendingTab from "@/components/sidebar/friend/FriendPendingTab.vue";
 import FriendAddTab from "@/components/sidebar/friend/FriendAddTab.vue";
+import { Users } from "lucide-vue-next";
 
 const store = useFriendStore();
 
@@ -97,21 +98,23 @@ watch(
     <!-- TOP NAV -->
     <div class="h-12 border-b border-border flex items-center px-4 gap-4 flex-shrink-0">
       <div class="flex items-center gap-2">
-        <span class="text-xl">👥</span>
+        <span class="text-xl">
+          <Users class="w-4 h-4" />
+        </span>
         <span class="font-semibold">Bạn bè</span>
       </div>
 
       <div class="flex gap-1 bg-muted rounded-md p-0.5">
         <button @click="activeTab = 'all'" :class="activeTab === 'all'
-            ? 'bg-card text-foreground'
-            : 'text-muted-foreground hover:text-foreground'
+          ? 'bg-card text-foreground'
+          : 'text-muted-foreground hover:text-foreground'
           " class="px-5 py-1.5 text-sm font-medium rounded transition">
           Tất cả
         </button>
 
         <button v-if="totalPending() > 0" @click="activeTab = 'pending'" :class="activeTab === 'pending'
-            ? 'bg-card text-foreground'
-            : 'text-muted-foreground hover:text-foreground'
+          ? 'bg-card text-foreground'
+          : 'text-muted-foreground hover:text-foreground'
           " class="px-5 py-1.5 text-sm font-medium rounded transition flex items-center gap-1.5">
           Đang chờ xử lý
           <span
@@ -121,8 +124,8 @@ watch(
         </button>
 
         <button @click="activeTab = 'add'" :class="activeTab === 'add'
-            ? 'bg-primary text-primary-foreground'
-            : 'text-muted-foreground hover:text-foreground'
+          ? 'bg-primary text-primary-foreground'
+          : 'text-muted-foreground hover:text-foreground'
           " class="px-5 py-1.5 text-sm font-medium rounded transition">
           Thêm Bạn
         </button>
