@@ -1,4 +1,4 @@
-import { useVoiceSpaceStore } from "@/stores/voiceSpaceStore";
+import { useVoiceSpaceStore } from "@/features/voice-chat/stores/voiceSpaceStore";
 import { useLocalStorage } from "@vueuse/core";
 
 const audio = useLocalStorage("app-audio-settings", {

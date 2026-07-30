@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { useVoiceSpaceStore } from "@/stores/voiceSpaceStore";
+import { useVoiceSpaceStore } from "@/features/voice-chat/stores/voiceSpaceStore";
 import { useSpaceStore } from "@/stores/spaceStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -198,28 +198,22 @@ const goToNoteSpace = async () => {
 <template>
   <Dialog :open="show" @update:open="emit('update:show', $event)">
     <DialogContent
-      class="overflow-hidden rounded-md border border-border/60 bg-background p-0 text-foreground shadow-lg sm:max-w-2xl cursor-default flex flex-col max-h-[90vh]"
-    >
+      class="overflow-hidden rounded-md border border-border/60 bg-background p-0 text-foreground shadow-lg sm:max-w-2xl cursor-default flex flex-col max-h-[90vh]">
       <!-- Dialog Header -->
       <DialogHeader class="border-b border-border/60 bg-muted/30 px-6 py-4 cursor-default shrink-0">
         <div class="flex flex-col gap-3">
           <div class="flex flex-wrap items-center gap-2">
-            <Badge variant="default" class="font-sans text-[9px] font-bold uppercase tracking-wider bg-primary text-primary-foreground rounded-sm px-1.5 py-0.5">
+            <Badge variant="default"
+              class="font-sans text-[9px] font-bold uppercase tracking-wider bg-primary text-primary-foreground rounded-sm px-1.5 py-0.5">
               Sự kiện
             </Badge>
             <!-- schedule badge -->
-            <Badge
-              v-if="event?.schedule"
-              variant="outline"
-              class="font-sans text-[9px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 rounded-sm px-1.5 py-0.5 border-amber-400/60"
-            >
+            <Badge v-if="event?.schedule" variant="outline"
+              class="font-sans text-[9px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 rounded-sm px-1.5 py-0.5 border-amber-400/60">
               Sự kiện liên tục
             </Badge>
-            <Badge
-              v-if="event?.allowEditAll"
-              variant="outline"
-              class="font-sans text-[9px] font-bold uppercase tracking-wider text-muted-foreground rounded-sm px-1.5 py-0.5 border-border/60"
-            >
+            <Badge v-if="event?.allowEditAll" variant="outline"
+              class="font-sans text-[9px] font-bold uppercase tracking-wider text-muted-foreground rounded-sm px-1.5 py-0.5 border-border/60">
               Mọi người cùng sửa
             </Badge>
           </div>
@@ -239,7 +233,7 @@ const goToNoteSpace = async () => {
       <!-- Scrollable content -->
       <ScrollArea class="flex-1 overflow-y-auto min-h-0">
         <div class="grid grid-cols-1 md:grid-cols-5 gap-5 p-5">
-          
+
           <!-- Column Trái: Nội dung chính (Mô tả, Link, Room) - Chiếm 3/5 cột -->
           <div class="md:col-span-3 space-y-4">
             <!-- Mô tả -->
@@ -250,7 +244,8 @@ const goToNoteSpace = async () => {
                   Mô tả chi tiết
                 </h3>
               </div>
-              <div class="p-3.5 font-sans text-xs leading-relaxed text-foreground whitespace-pre-wrap break-words min-h-[100px] cursor-default">
+              <div
+                class="p-3.5 font-sans text-xs leading-relaxed text-foreground whitespace-pre-wrap break-words min-h-[100px] cursor-default">
                 {{ event?.description || "Không có mô tả cho sự kiện này." }}
               </div>
             </div>
@@ -272,19 +267,15 @@ const goToNoteSpace = async () => {
                     Click tham gia cuộc họp bằng âm thanh và hình ảnh
                   </p>
                 </div>
-                <Button
-                  @click="joinVoiceRoom"
-                  size="sm"
-                  class="rounded-sm bg-primary font-sans text-[10px] font-bold text-primary-foreground px-3.5 py-1.5 shadow-sm hover:bg-primary/95 shrink-0"
-                >
+                <Button @click="joinVoiceRoom" size="sm"
+                  class="rounded-sm bg-primary font-sans text-[10px] font-bold text-primary-foreground px-3.5 py-1.5 shadow-sm hover:bg-primary/95 shrink-0">
                   Vào phòng call
                 </Button>
               </div>
             </div>
 
             <!-- Task liên kết -->
-            <div v-if="event?.taskId" 
-              @click="goToTaskSpace"
+            <div v-if="event?.taskId" @click="goToTaskSpace"
               class="rounded-md border border-border/60 bg-card overflow-hidden cursor-pointer hover:bg-muted/10 transition-colors">
               <div class="flex items-center gap-2 border-b border-border/60 bg-muted/20 px-3.5 py-2">
                 <CheckSquare class="text-primary h-3.5 w-3.5" />
@@ -301,18 +292,15 @@ const goToNoteSpace = async () => {
                     Click để chuyển đến kênh task chứa công việc này
                   </p>
                 </div>
-                <Button
-                  size="sm"
-                  class="rounded-sm bg-primary font-sans text-[10px] font-bold text-primary-foreground px-3.5 py-1.5 shadow-sm hover:bg-primary/95 shrink-0 animate-none pointer-events-none"
-                >
+                <Button size="sm"
+                  class="rounded-sm bg-primary font-sans text-[10px] font-bold text-primary-foreground px-3.5 py-1.5 shadow-sm hover:bg-primary/95 shrink-0 animate-none pointer-events-none">
                   Mở Task Space
                 </Button>
               </div>
             </div>
 
             <!-- Note liên kết -->
-            <div v-if="event?.noteId" 
-              @click="goToNoteSpace"
+            <div v-if="event?.noteId" @click="goToNoteSpace"
               class="rounded-md border border-border/60 bg-card overflow-hidden cursor-pointer hover:bg-muted/10 transition-colors">
               <div class="flex items-center gap-2 border-b border-border/60 bg-muted/20 px-3.5 py-2">
                 <FileText class="text-primary h-3.5 w-3.5" />
@@ -329,10 +317,8 @@ const goToNoteSpace = async () => {
                     Click để chuyển đến kênh note chứa ghi chú này
                   </p>
                 </div>
-                <Button
-                  size="sm"
-                  class="rounded-sm bg-primary font-sans text-[10px] font-bold text-primary-foreground px-3.5 py-1.5 shadow-sm hover:bg-primary/95 shrink-0 animate-none pointer-events-none"
-                >
+                <Button size="sm"
+                  class="rounded-sm bg-primary font-sans text-[10px] font-bold text-primary-foreground px-3.5 py-1.5 shadow-sm hover:bg-primary/95 shrink-0 animate-none pointer-events-none">
                   Mở Note Space
                 </Button>
               </div>
@@ -350,12 +336,8 @@ const goToNoteSpace = async () => {
                 <p class="min-w-0 break-all font-sans text-xs text-foreground/90 font-medium">
                   {{ eventLink }}
                 </p>
-                <a
-                  :href="eventLink"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-sm border border-border bg-background px-3 py-1.5 font-sans text-[10px] font-semibold text-muted-foreground transition-colors hover:bg-accent"
-                >
+                <a :href="eventLink" target="_blank" rel="noopener noreferrer"
+                  class="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-sm border border-border bg-background px-3 py-1.5 font-sans text-[10px] font-semibold text-muted-foreground transition-colors hover:bg-accent">
                   <LinkIcon class="h-3 w-3" />
                   Mở link
                 </a>
@@ -378,7 +360,8 @@ const goToNoteSpace = async () => {
                 <p class="font-sans text-[9px] text-muted-foreground/80 mt-1">
                   Múi giờ: {{ originalStartLabel }} - {{ originalEndLabel }}
                 </p>
-                <p v-if="continuationLabel" class="mt-1 font-sans text-[9px] font-medium text-warning-foreground bg-warning/10 px-2 py-0.5 rounded-sm inline-block uppercase tracking-wider">
+                <p v-if="continuationLabel"
+                  class="mt-1 font-sans text-[9px] font-medium text-warning-foreground bg-warning/10 px-2 py-0.5 rounded-sm inline-block uppercase tracking-wider">
                   {{ continuationLabel }}
                 </p>
               </div>
@@ -404,7 +387,8 @@ const goToNoteSpace = async () => {
                   <p class="font-sans text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80">
                     Lặp lại
                   </p>
-                  <p class="font-sans text-[11px] font-medium text-foreground mt-0.5 break-words" :title="recurrenceLabel">
+                  <p class="font-sans text-[11px] font-medium text-foreground mt-0.5 break-words"
+                    :title="recurrenceLabel">
                     {{ recurrenceLabel }}
                   </p>
                 </div>
@@ -422,11 +406,7 @@ const goToNoteSpace = async () => {
               <div class="p-3.5 space-y-3">
                 <div class="flex items-center gap-3">
                   <Avatar class="size-8 border border-border/60 shrink-0 rounded-sm">
-                    <AvatarImage
-                      v-if="event?.createdByAvatarUrl"
-                      :src="event.createdByAvatarUrl"
-                      :alt="creatorLabel"
-                    />
+                    <AvatarImage v-if="event?.createdByAvatarUrl" :src="event.createdByAvatarUrl" :alt="creatorLabel" />
                     <AvatarFallback />
                   </Avatar>
                   <div class="min-w-0">
@@ -438,14 +418,16 @@ const goToNoteSpace = async () => {
                     </p>
                   </div>
                 </div>
-                
+
                 <div class="pt-2.5 border-t border-border/40 grid grid-cols-2 gap-2 text-[9px] text-muted-foreground">
                   <div>
-                    <span class="block text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80">Tạo ngày</span>
+                    <span class="block text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80">Tạo
+                      ngày</span>
                     <span class="font-medium mt-0.5 block">{{ formattedCreatedAt }}</span>
                   </div>
                   <div>
-                    <span class="block text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80">Cập nhật</span>
+                    <span class="block text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80">Cập
+                      nhật</span>
                     <span class="font-medium mt-0.5 block">{{ formattedUpdatedAt }}</span>
                   </div>
                 </div>
@@ -462,12 +444,8 @@ const goToNoteSpace = async () => {
               </div>
               <div class="p-3.5">
                 <div v-if="attendees.length > 0" class="flex flex-wrap gap-1.5">
-                  <Badge
-                    v-for="attendee in attendees"
-                    :key="attendee.memberId"
-                    variant="secondary"
-                    class="font-sans text-[9px] font-medium rounded-sm px-1.5 py-0.5"
-                  >
+                  <Badge v-for="attendee in attendees" :key="attendee.memberId" variant="secondary"
+                    class="font-sans text-[9px] font-medium rounded-sm px-1.5 py-0.5">
                     {{ attendee.displayName || attendee.username }}
                   </Badge>
                 </div>
@@ -486,12 +464,10 @@ const goToNoteSpace = async () => {
                 </h4>
               </div>
               <div class="p-3.5">
-                <div v-if="attachments.length > 0" class="flex flex-col gap-2 max-h-[150px] overflow-y-auto calendar-scrollbar">
-                  <div
-                    v-for="attachment in attachments"
-                    :key="`${attachment.name}-${attachment.fileUrl}`"
-                    class="flex items-center justify-between gap-2 p-2 rounded-sm border border-border/60 bg-muted/15"
-                  >
+                <div v-if="attachments.length > 0"
+                  class="flex flex-col gap-2 max-h-[150px] overflow-y-auto calendar-scrollbar">
+                  <div v-for="attachment in attachments" :key="`${attachment.name}-${attachment.fileUrl}`"
+                    class="flex items-center justify-between gap-2 p-2 rounded-sm border border-border/60 bg-muted/15">
                     <div class="min-w-0">
                       <p class="truncate font-sans text-xs font-semibold text-foreground" :title="attachment.name">
                         {{ attachment.name }}
@@ -501,25 +477,15 @@ const goToNoteSpace = async () => {
                       </p>
                     </div>
                     <div class="flex items-center gap-1 shrink-0">
-                      <Button
-                        v-if="attachment.fileUrl && canSummarizeAttachment"
-                        type="button"
-                        variant="outline"
+                      <Button v-if="attachment.fileUrl && canSummarizeAttachment" type="button" variant="outline"
                         size="sm"
                         class="h-auto py-1 px-2 text-[9px] font-sans font-semibold rounded-sm bg-background hover:bg-accent hover:text-primary transition-colors border-border shadow-none"
-                        @click="emit('summarizeAttachment', attachment, event!)"
-                        title="Tóm tắt nội dung file bằng AI"
-                      >
+                        @click="emit('summarizeAttachment', attachment, event!)" title="Tóm tắt nội dung file bằng AI">
                         <Sparkles class="h-2.5 w-2.5 mr-1" />
                         AI Tóm tắt
                       </Button>
-                      <a
-                        v-if="attachment.fileUrl"
-                        :href="attachment.fileUrl"
-                        target="_blank"
-                        rel="noreferrer"
-                        class="inline-flex items-center gap-1 rounded-sm border border-border bg-background px-2 py-1 font-sans text-[9px] font-semibold text-muted-foreground hover:bg-accent shrink-0 transition-colors"
-                      >
+                      <a v-if="attachment.fileUrl" :href="attachment.fileUrl" target="_blank" rel="noreferrer"
+                        class="inline-flex items-center gap-1 rounded-sm border border-border bg-background px-2 py-1 font-sans text-[9px] font-semibold text-muted-foreground hover:bg-accent shrink-0 transition-colors">
                         <LinkIcon class="h-2.5 w-2.5" />
                         Mở
                       </a>
@@ -532,53 +498,35 @@ const goToNoteSpace = async () => {
               </div>
             </div>
           </div>
-          
+
         </div>
       </ScrollArea>
 
       <!-- Footer Buttons -->
-      <div class="flex flex-wrap items-center justify-end gap-2 border-t border-border/60 bg-background px-6 py-3.5 shrink-0">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
+      <div
+        class="flex flex-wrap items-center justify-end gap-2 border-t border-border/60 bg-background px-6 py-3.5 shrink-0">
+        <Button type="button" variant="outline" size="sm"
           class="rounded-sm border border-border/60 bg-background font-sans text-xs font-semibold px-4 py-2 hover:bg-accent"
-          @click="emit('update:show', false)"
-        >
+          @click="emit('update:show', false)">
           Đóng
         </Button>
 
-        <Button
-          v-if="event"
-          type="button"
-          variant="secondary"
-          size="sm"
+        <Button v-if="event" type="button" variant="secondary" size="sm"
           class="rounded-sm font-sans text-xs font-semibold px-4 py-2 border border-border/60 shadow-sm"
-          @click="emit('addToPersonalCalendar', event)"
-        >
+          @click="emit('addToPersonalCalendar', event)">
           <CalendarPlus class="mr-1.5 h-3.5 w-3.5" />
           Lưu lịch cá nhân
         </Button>
 
-        <Button
-          v-if="canDelete"
-          type="button"
-          variant="destructive"
-          size="sm"
-          class="rounded-sm font-sans text-xs font-semibold px-4 py-2"
-          @click="openDelete"
-        >
+        <Button v-if="canDelete" type="button" variant="destructive" size="sm"
+          class="rounded-sm font-sans text-xs font-semibold px-4 py-2" @click="openDelete">
           <Trash2 class="mr-1.5 h-3.5 w-3.5" />
           Xóa sự kiện
         </Button>
 
-        <Button
-          v-if="canEdit"
-          type="button"
-          size="sm"
+        <Button v-if="canEdit" type="button" size="sm"
           class="rounded-sm bg-primary font-sans text-xs font-semibold text-primary-foreground px-4 py-2 shadow-sm hover:bg-primary/95"
-          @click="openEdit"
-        >
+          @click="openEdit">
           <Pencil class="mr-1.5 h-3.5 w-3.5" />
           Chỉnh sửa
         </Button>
