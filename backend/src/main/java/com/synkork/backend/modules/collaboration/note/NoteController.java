@@ -1,18 +1,22 @@
 package com.synkork.backend.modules.collaboration.note;
 
-import com.synkork.backend.common.utils.AuthUtils;
+import org.springframework.http.HttpStatus;import com.synkork.backend.common.utils.AuthUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 
 import com.synkork.backend.security.UserPrinciple;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.synkork.backend.modules.collaboration.note.dto.NoteResponse;
@@ -56,52 +60,66 @@ public class NoteController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<NoteResponse> updateNote(@PathVariable String id,@PathVariable String spaceId, @RequestBody NoteRequest request) {
+    public ResponseEntity<?> updateNote(@PathVariable String id, @PathVariable String spaceId, @RequestBody NoteRequest request) {
+        try {
+            NoteResponse response = noteService.updateNote(id, request);
 
-        NoteResponse response = noteService.updateNote(id, request);
+            messageTemplate.convertAndSend("/topic/space/" + spaceId + "/notes/update", response);
 
-        messageTemplate.convertAndSend("/topic/space/" + spaceId + "/notes/update",  response );
-
-        return ResponseEntity.ok(response);
+            return ResponseEntity.ok(response);
+        } catch (ObjectOptimisticLockingFailureException ex) {
+            NoteResponse current = noteService.getNoteById(id);
+            Map<String, Object> body = new HashMap<>();
+            body.put("error", "NOTE_CONFLICT");
+            body.put("message", "Ghi chú đã bị người khác chỉnh sửa");
+            body.put("currentNote", current);
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+        }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void>deleteNote(@PathVariable String id, @PathVariable String spaceId) {
-        noteService.deleteNote(id);
+    public ResponseEntity<?> deleteNote(
+            @PathVariable String id,
+            @PathVariable String spaceId,
+            @RequestParam(required = false) Integer version
+    ) {
+        UUID userId = AuthUtils.getCurrentUserId();
+        noteService.checkCanManageArchive(spaceId, userId);
 
-        messageTemplate.convertAndSend("/topic/space/" + spaceId + "/notes/delete" ,id );
+        try {
+            noteService.deleteNote(id, version);
 
-        return ResponseEntity.noContent().build();
+            messageTemplate.convertAndSend("/topic/space/" + spaceId + "/notes/delete", id);
+
+            return ResponseEntity.noContent().build();
+        } catch (ObjectOptimisticLockingFailureException ex) {
+            NoteResponse current = noteService.getNoteById(id);
+            Map<String, Object> body = new HashMap<>();
+            body.put("error", "NOTE_CONFLICT");
+            body.put("message", "Ghi chú đã bị người khác chỉnh sửa");
+            body.put("currentNote", current);
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+        }
     }
 
     @PatchMapping("/{id}/pin")
     public ResponseEntity<NoteResponse> togglePin(@PathVariable String id,@PathVariable String spaceId) {
         NoteResponse response = noteService.togglePin(id);
-
         messageTemplate.convertAndSend("/topic/space/" + spaceId + "/notes/pin" , response);
-
         return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/{id}/archive")
     public ResponseEntity<NoteResponse> toggleArchive(@PathVariable String id, @PathVariable String spaceId) {
-        UUID userId = AuthUtils.getCurrentUserId();
-        noteService.checkCanManageArchive(spaceId, userId);
-    
         NoteResponse response = noteService.toggleArchive(id);
-    
+
         if (Boolean.TRUE.equals(response.getArchived())) {
             messageTemplate.convertAndSend("/topic/space/" + spaceId + "/notes/delete", id);
         } else {
             messageTemplate.convertAndSend("/topic/space/" + spaceId + "/notes/create", response);
         }
-    
-        return ResponseEntity.ok(response);
-    }
 
-    @GetMapping("/search")
-    public ResponseEntity<List<NoteResponse>> search(@RequestParam String keyword) {
-        return ResponseEntity.ok(noteService.searchNotes(keyword));
+        return ResponseEntity.ok(response);
     }
     
     @PatchMapping("/{id}/position")
@@ -147,9 +165,6 @@ public class NoteController {
 
     @GetMapping("/archived")
     public ResponseEntity<List<NoteResponse>> getArchivedNotes(@PathVariable String spaceId) {
-        UUID userId = AuthUtils.getCurrentUserId();
-        noteService.checkCanManageArchive(spaceId, userId);
-
         return ResponseEntity.ok(noteService.getArchivedNotesBySpaceId(spaceId));
     }
 }

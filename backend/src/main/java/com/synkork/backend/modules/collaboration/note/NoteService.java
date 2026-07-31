@@ -86,16 +86,23 @@ public class NoteService {
         if (request.getNote()  != null) note.setNote(request.getNote());
         if (request.getPinned() != null) note.setPinned(request.getPinned());
         if (request.getColor() != null) note.setColor(request.getColor());
+        if (request.getVersion() != null) {
+            note.setVersion(request.getVersion());
+        }
 
         return new NoteResponse(noteRepository.save(note));
     }
 
-    public void deleteNote(String id) {
+    public void deleteNote(String id, Integer version) {
         UUID uuid = UUID.fromString(id);
-        if (!noteRepository.existsById(uuid)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Note not found");
+        NoteEntity note = noteRepository.findById(uuid)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Note not found"));
+
+        if (version != null) {
+            note.setVersion(version);
         }
-        noteRepository.deleteById(uuid);
+
+        noteRepository.delete(note);
     }
 
     public NoteResponse togglePin(String id) {
@@ -206,7 +213,8 @@ public class NoteService {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không phải thành viên của room này"));
     
         if (member.getRole() != RoomMemberRoleEnum.OWNER && member.getRole() != RoomMemberRoleEnum.ADMIN) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Chỉ Owner hoặc Admin mới được quản lý ghi chú lưu trữ");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Chỉ Owner hoặc Admin mới được xóa ghi chú");
         }
     }
+    
 }

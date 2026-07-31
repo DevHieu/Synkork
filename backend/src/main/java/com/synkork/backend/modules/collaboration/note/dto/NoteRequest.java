@@ -19,4 +19,5 @@ public class NoteRequest {
     private Integer width;
     private Integer height;
     private Instant reminderAt;
+    private Integer version;
 }

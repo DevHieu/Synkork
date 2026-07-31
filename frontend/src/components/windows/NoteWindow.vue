@@ -66,7 +66,6 @@
             </span>
 
             <button
-              v-if="canManage"
               @click="archivedOpen = true"
               class="px-3 py-1.5 text-sm rounded-lg border flex items-center gap-1 cursor-pointer hover:bg-muted transition-colors"
             >
@@ -148,7 +147,6 @@
                   v-for="note in store.pinnedNotes"
                   :key="note.id"
                   :note="note"
-                  :can-archive="canManage"
                   @view="openDetail"
                   @edit="openEdit"
                   @delete="confirmDelete"
@@ -193,7 +191,6 @@
                   <NoteCard
                     v-if="getNoteById(item.i)"
                     :note="getNoteById(item.i)!"
-                    :can-archive="canManage"
                     @view="openDetail"
                     @edit="openEdit"
                     @delete="confirmDelete"
@@ -246,6 +243,9 @@
         :space-id="spaceId"
         @close="archivedOpen = false"
       />
+
+      <ConflictDialog :space-id="spaceId" />
+      
     </div>
   </div>
 </template>
@@ -256,7 +256,6 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useNoteStore } from '@/stores/noteStore'
 import { useUserStore } from '@/stores/userStore'
-import { useRoomMemberStore } from '@/stores/roomMemberStore'
 import { GridLayout, GridItem } from 'vue3-grid-layout-next'
 import { NotebookPen, Plus, Search, X, Pin, Loader2, AlertCircle, Hash, Archive } from 'lucide-vue-next'
 
@@ -266,6 +265,7 @@ import NoteDetailDialog from '@/components/dialog/NoteDialog/NoteDetailDialog.vu
 import ConfirmDialog from '@/components/dialog/NoteDialog/ConfirmDialog.vue'
 import ReminderDialog from '@/components/dialog/NoteDialog/ReminderDialog.vue'
 import ArchivedNotesDialog from '@/components/dialog/NoteDialog/ArchivedNotesDialog.vue'
+import ConflictDialog from '@/components/dialog/NoteDialog/ConflictDialog.vue'
 
 import type { Note, NoteRequest } from '@/types/NoteType'
 import { useSpaceStore } from '@/stores/spaceStore'
@@ -282,10 +282,6 @@ const { currentSpace, isPersonalSpace } = storeToRefs(spaceStore)
 const userStore = useUserStore()
 const { userPersonalSpace } = storeToRefs(userStore)
 
-// ── RoomMember store (để lấy quyền OWNER/ADMIN cho nút "Lưu trữ") ──
-const roomMemberStore = useRoomMemberStore()
-const { canManage } = storeToRefs(roomMemberStore)
-
 const dialogOpen     = ref(false)
 const detailOpen     = ref(false)
 const selectedNote   = ref<Note | null>(null)
@@ -295,6 +291,8 @@ const reminderOpen   = ref(false)
 const reminderNote   = ref<Note | null>(null)
 const layout         = ref<any[]>([])
 const archivedOpen   = ref(false)
+const deleteTargetVersion = ref<number | undefined>(undefined)
+
 
 let layoutUpdateCount = 0
 let debounceTimer: ReturnType<typeof setTimeout>
@@ -394,8 +392,10 @@ function openEdit(note: Note) {
 
 function confirmDelete(id: string) {
   deleteTargetId.value = id
-  detailOpen.value     = false
-  confirmOpen.value    = true
+  const note = store.notes.find(n => n.id === id)
+  deleteTargetVersion.value = note?.version
+  detailOpen.value  = false
+  confirmOpen.value = true
 }
 
 async function handleArchive(id: string) {
@@ -406,9 +406,10 @@ async function handleArchive(id: string) {
 
 async function handleDelete() {
   if (!deleteTargetId.value) return
-  await store.deleteNote(spaceId.value, deleteTargetId.value)
+  await store.deleteNote(spaceId.value, deleteTargetId.value, deleteTargetVersion.value)
   confirmOpen.value    = false
   deleteTargetId.value = null
+  deleteTargetVersion.value = undefined
 }
 
 async function handleTogglePin(id: string) {

@@ -66,4 +66,7 @@ public class NoteEntity extends BaseEntity {
     @Builder.Default
     @Column(name = "archived")
     private Boolean archived = false;
+
+    @Version
+    private Integer version;
 }
