@@ -10,6 +10,7 @@ import com.synkork.backend.modules.collaboration.note.dto.NoteResponse;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import java.time.Instant;
 import java.util.List;
@@ -81,27 +82,24 @@ public class NoteService {
         UUID noteId = UUID.fromString(id);
         NoteEntity note = noteRepository.findById(noteId)
             .orElseThrow(() -> new RuntimeException("Note not found: " + id));
-
+        if (request.getVersion() != null && !request.getVersion().equals(note.getVersion())) {
+            throw new ObjectOptimisticLockingFailureException(NoteEntity.class, note.getId());
+        }
         if (request.getTitle() != null) note.setTitle(request.getTitle());
         if (request.getNote()  != null) note.setNote(request.getNote());
         if (request.getPinned() != null) note.setPinned(request.getPinned());
         if (request.getColor() != null) note.setColor(request.getColor());
-        if (request.getVersion() != null) {
-            note.setVersion(request.getVersion());
-        }
-
+    
         return new NoteResponse(noteRepository.save(note));
     }
-
+    
     public void deleteNote(String id, Integer version) {
         UUID uuid = UUID.fromString(id);
         NoteEntity note = noteRepository.findById(uuid)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Note not found"));
-
-        if (version != null) {
-            note.setVersion(version);
+        if (version != null && !version.equals(note.getVersion())) {
+            throw new ObjectOptimisticLockingFailureException(NoteEntity.class, note.getId());
         }
-
         noteRepository.delete(note);
     }
 
