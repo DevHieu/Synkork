@@ -2,7 +2,7 @@ import { MESSAGE_SIZE, PINNED_SIZE } from "../utils/chat.utils";
 import { chatService } from "../services/chatService";
 import { useMessageStore } from "@/features/chats/stores/messageStore";
 import { storeToRefs } from "pinia";
-import type { Message } from "@/types/Message";
+import type { Message } from "@/features/chats/types/MessageTypes";
 import { useChatUtilsComposable } from "./chat-utils.composable";
 import { nextTick } from "vue";
 
@@ -77,11 +77,7 @@ export function useChatComposable() {
   const fetchPinnedList = async (spaceId: string, cursor: string | null) => {
     pinLoading.value = true;
     try {
-      const res = await chatApi.getPinnedChatList(
-        spaceId,
-        cursor,
-        PINNED_SIZE,
-      );
+      const res = await chatApi.getPinnedChatList(spaceId, cursor, PINNED_SIZE);
       pinnedMessages.value = [...pinnedMessages.value, ...res.data.messages];
       pinnedHasMore.value = res.data.beforeHasMore;
       pinnedCursor.value = res.data.beforeCursor ?? null;

@@ -1,5 +1,5 @@
-import type { Participant } from "@/types/VoiceSpaceParticipant";
-import type { ZegoState } from "@/types/ZegoType";
+import type { Participant } from "@/features/voice-chat/types/VoiceTypes";
+import type { ZegoState } from "@/features/voice-chat/types/ZegoTypes";
 import type { Ref } from "vue";
 import { zegoUtils } from "./zegoUtils";
 import globalAudio from "@/utils/appAudioManager";

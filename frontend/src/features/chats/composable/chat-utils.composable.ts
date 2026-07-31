@@ -4,7 +4,7 @@ import { useMessageStore } from "@/features/chats/stores/messageStore";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, onMounted, ref } from "vue";
 import { parseValidDate, formatVNDateTime } from "@/utils/date";
-import type { Message } from "@/types/Message";
+import type { Message } from "@/features/chats/types/MessageTypes";
 
 export function useChatUtilsComposable() {
   const userStore = useUserStore();

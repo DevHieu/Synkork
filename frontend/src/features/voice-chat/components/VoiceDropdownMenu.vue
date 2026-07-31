@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { VoiceItemType } from "@/types/VoiceSpaceParticipant";
+import type { VoiceItemType } from "@/features/voice-chat/types/VoiceTypes";
 import {
   MicOff,
   VolumeX,

@@ -1,5 +1,5 @@
 import axiosClient from "@/lib/axiosClient";
-import type { MessageRequest } from "@/types/Message";
+import type { MessageRequest } from "@/features/chats/types/MessageTypes";
 import axios from "axios";
 import { toast } from "vue-sonner";
 

@@ -3,7 +3,7 @@ import { useSpaceStore } from "@/stores/spaceStore";
 import { useRoomMemberStore } from "../../../stores/roomMemberStore";
 import { ref, computed, watch, reactive } from "vue";
 import { ZegoExpressEngine } from "zego-express-engine-webrtc";
-import type { Participant } from "@/types/VoiceSpaceParticipant";
+import type { Participant } from "@/features/voice-chat/types/VoiceTypes";
 import { useUserStore } from "@/stores/userStore";
 import { getZegoToken } from "@/services/spaceService";
 import router from "@/routers";

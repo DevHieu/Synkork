@@ -6,7 +6,7 @@ import { zegoRemoteStream } from "./zegoRemoteStream";
 import { zegoLocalStream } from "./zegoLocalStream";
 import { useVoiceSpaceStore } from "@/features/voice-chat/stores/voiceSpaceStore";
 import { toast } from "vue-sonner";
-import type { ZegoServiceOptions } from "@/types/ZegoType";
+import type { ZegoServiceOptions } from "@/features/voice-chat/types/ZegoTypes";
 
 export function useZego({
   state,
@@ -35,14 +35,7 @@ export function useZego({
     isDeafen,
   );
   const remote = zegoRemoteStream(state, remoteStreams, participants);
-  const local = zegoLocalStream(
-    state,
-    videoOn,
-    micOn,
-    audioOn,
-    screenOn,
-    participants,
-  );
+  const local = zegoLocalStream(state, videoOn, micOn, screenOn, participants);
 
   const initEngine = () => {
     if (state.zg) return;

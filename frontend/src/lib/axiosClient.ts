@@ -1,4 +1,4 @@
-import { getFreshToken } from "@/utils/auth";
+import { getFreshToken } from "@/features/auth/utils/auth";
 import axios from "axios";
 import type { AxiosInstance, InternalAxiosRequestConfig } from "axios";
 import { getCookie, removeCookie } from "./cookies";

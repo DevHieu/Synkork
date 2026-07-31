@@ -1,5 +1,5 @@
 import { chatSocket } from "../services/chatSocket";
-import type { Message } from "@/types/Message";
+import type { Message } from "@/features/chats/types/MessageTypes";
 import { useUserStore } from "@/stores/userStore";
 import { useMessageStore } from "@/features/chats/stores/messageStore";
 import { storeToRefs } from "pinia";

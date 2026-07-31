@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { MonitorUp, MoreHorizontal } from "lucide-vue-next";
 import type { User } from "@/types/User";
-import type { VoiceItemType } from "@/types/VoiceSpaceParticipant";
+import type { VoiceItemType } from "@/features/voice-chat/types/VoiceTypes.ts";
 import DropdownMenu from "@/components/ui/dropdown-menu/DropdownMenu.vue";
 import DropdownMenuTrigger from "@/components/ui/dropdown-menu/DropdownMenuTrigger.vue";
 import VoiceDropdownMenu from "./VoiceDropdownMenu.vue";

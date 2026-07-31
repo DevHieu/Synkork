@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { User } from "@/types/User";
-import type { VoiceItemType } from "@/types/VoiceSpaceParticipant";
+import type { VoiceItemType } from "@/features/voice-chat/types/VoiceTypes.ts";
 import { MicOff, VolumeX, MonitorUp, MoreHorizontal } from "lucide-vue-next";
 import {
   DropdownMenu,

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { MonitorUp } from "lucide-vue-next";
-import type { VoiceItemType } from "@/types/VoiceSpaceParticipant";
+import type { VoiceItemType } from "@/features/voice-chat/types/VoiceTypes";
 import Avatar from "@/components/ui/avatar/Avatar.vue";
 import AvatarFallback from "@/components/ui/avatar/AvatarFallback.vue";
 

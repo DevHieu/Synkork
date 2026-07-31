@@ -1,6 +1,6 @@
 import { useUserStore } from "@/stores/userStore";
-import type { Participant } from "@/types/VoiceSpaceParticipant";
-import type { ZegoState } from "@/types/ZegoType";
+import type { Participant } from "@/features/voice-chat/types/VoiceTypes";
+import type { ZegoState } from "@/features/voice-chat/types/ZegoTypes";
 import { type Ref } from "vue";
 
 import { zegoUtils } from "./zegoUtils";
@@ -10,7 +10,6 @@ export function zegoLocalStream(
   state: ZegoState,
   videoOn: Ref<boolean>,
   micOn: Ref<boolean>,
-  audioOn: Ref<boolean>,
   screenOn: Ref<boolean>,
   participants: Ref<Map<string, Participant>>,
 ) {
@@ -83,7 +82,9 @@ export function zegoLocalStream(
     } catch (e) {
       console.warn("Không mở được mic:", e);
       micOn.value = false;
-      toast.error("Bạn đã tắt quyền truy cập micro. Hãy bật lại để sử dụng mic");
+      toast.error(
+        "Bạn đã tắt quyền truy cập micro. Hãy bật lại để sử dụng mic",
+      );
       return null;
     }
   };

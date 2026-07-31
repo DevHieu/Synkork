@@ -3,7 +3,7 @@ import { computed, ref, watch, onUnmounted, nextTick } from "vue";
 import { useMessageStore } from "@/features/chats/stores/messageStore.ts";
 import MessageItem from "./MessageItem.vue";
 import dayjs from "dayjs";
-import type { Message } from "@/types/Message";
+import type { Message } from "@/features/chats/types/MessageTypes.ts";
 import WelcomeSpace from "./WelcomeSpace.vue";
 import { useChatComposable } from "../composable/chat.composable.ts";
 import { useChatUtilsComposable } from "../composable/chat-utils.composable.ts";

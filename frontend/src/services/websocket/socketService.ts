@@ -1,6 +1,6 @@
 import { Client, type StompSubscription } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
-import { getFreshToken } from "@/utils/auth";
+import { getFreshToken } from "@/features/auth/utils/auth";
 import { getCookie, removeCookie } from "@/lib/cookies";
 
 let stompClient: Client | null = null;

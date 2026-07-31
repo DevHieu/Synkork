@@ -3,7 +3,7 @@ import { ref, watch } from "vue";
 import { chatService } from "../../services/chatService";
 import { ArrowRight, Search, X } from "lucide-vue-next";
 import { refDebounced } from "@vueuse/core";
-import type { Message } from "@/types/Message";
+import type { Message } from "@/features/chats/types/MessageTypes";
 import dayjs from "dayjs";
 import {
   Card,

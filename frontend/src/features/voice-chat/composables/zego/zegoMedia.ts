@@ -1,7 +1,7 @@
 import { zegoUtils } from "./zegoUtils";
-import type { ZegoState } from "@/types/ZegoType";
+import type { ZegoState } from "@/features/voice-chat/types/ZegoTypes";
 import type { Ref } from "vue";
-import type { Participant } from "@/types/VoiceSpaceParticipant";
+import type { Participant } from "@/features/voice-chat/types/VoiceTypes";
 
 export function zegoMedia(
   state: ZegoState,

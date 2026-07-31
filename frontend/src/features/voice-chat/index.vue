@@ -2,7 +2,7 @@
 import { useUserStore } from "@/stores/userStore";
 import { useSpaceStore } from "@/stores/spaceStore";
 import { useVoiceSpaceStore } from "@/features/voice-chat/stores/voiceSpaceStore.ts";
-import type { VoiceItemType } from "@/types/VoiceSpaceParticipant";
+import type { VoiceItemType } from "@/features/voice-chat/types/VoiceTypes.ts";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, ref, nextTick, watch } from "vue";
 import { useRoute } from "vue-router";
