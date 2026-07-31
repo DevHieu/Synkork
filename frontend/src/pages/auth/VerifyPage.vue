@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { verifyAccount } from "@/services/authService";
+import { verifyAccount } from "@/features/auth/services/authService";
 
 const router = useRouter();
 const route = useRoute();

@@ -141,6 +141,11 @@ router.beforeEach(async (to) => {
   // Route public (invite, auth) → không cần check auth
   if (to.meta.public) return;
 
+  // Đã login rồi mà vào auth pages
+  if (token !== null && to.path.includes("/auth")) {
+    return { path: "/me" };
+  }
+
   // Nếu không có accessToken, thử refresh
   if (!token && !to.path.includes("/auth")) {
     try {
@@ -155,11 +160,6 @@ router.beforeEach(async (to) => {
     } catch {
       return { path: "/auth" };
     }
-  }
-
-  // Đã login rồi mà vào auth pages
-  if (token && to.path.includes("/auth")) {
-    return { path: "/me" };
   }
 
   if (to.path === "/") {
