@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
-import { useTimeSelector } from "../composables/useTimeSelector";
+import { useTimeSelector } from "../../composable/useTimeSelector";
 import {
   Select,
   SelectContent,

@@ -179,7 +179,7 @@ Quy đổi ngày: hôm nay=%s | mai=%s | ngày mốt=%s
 
   // Meeting (OpenRouter)
   /** Model chuyển âm thanh cuộc họp thành văn bản (dùng OpenRouter, nếu cần). */
-  public static final String MODEL_TRANSCRIPTION = "google/gemini-2.5-flash";
+  public static final String MODEL_TRANSCRIPTION = "google/gemini-2.5-flash-lite";
 
   /** Danh sách model dự phòng cho tóm tắt cuộc họp. */
   public static final List<String> MEETING_SUMMARY_MODELS =

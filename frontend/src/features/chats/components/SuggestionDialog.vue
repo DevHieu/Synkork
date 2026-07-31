@@ -14,7 +14,7 @@ import CardFormDialog from "@/components/dialog/TaskDialog/CardFormDialog.vue";
 
 import { useSpaceStore } from "@/stores/spaceStore";
 import { useTaskStore } from "@/stores/taskStore";
-import { useSuggestionStore } from "@/stores/calendarStore";
+import { useSuggestionStore } from "@/features/calendar/stores/calendarStore";
 
 const spaceStore = useSpaceStore();
 const suggestionStore = useSuggestionStore();

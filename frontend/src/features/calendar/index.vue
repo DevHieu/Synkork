@@ -2,29 +2,29 @@
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useSpaceStore } from "@/stores/spaceStore";
 import { useUserStore } from "@/stores/userStore";
-import { useSuggestionStore } from "@/stores/calendarStore";
+import { useSuggestionStore } from "@/features/calendar/stores/calendarStore";
 import { useRoomMemberStore } from "@/stores/roomMemberStore";
 import { storeToRefs } from "pinia";
-import { useCalendarDate } from "@/components/calendar/composables/useCalendarDate";
-import { useCalendarEvents } from "@/components/calendar/composables/useCalendarEvents";
-import { useCalendarRealtime } from "@/components/calendar/composables/useCalendarRealtime";
+import { useCalendarDate } from "@/features/calendar/composable/useCalendarDate";
+import { useCalendarEvents } from "@/features/calendar/composable/useCalendarEvents";
+import { useCalendarRealtime } from "@/features/calendar/composable/useCalendarRealtime";
 import type { CalendarEvent } from "@/types/CalendarEvent";
 import type { SuggestedEventDraft } from "@/types/CalendarSuggestion";
 import dayjs from "dayjs";
 
-import CalendarMonthView from "@/components/calendar/views/CalendarMonthView.vue";
-import CalendarWeekView from "@/components/calendar/views/CalendarWeekView.vue";
-import CalendarYearView from "@/components/calendar/views/CalendarYearView.vue";
-import CalendarEventDialog from "@/components/calendar/dialogs/CalendarEventDialog.vue";
-import CalendarEventViewDialog from "@/components/calendar/dialogs/CalendarEventViewDialog.vue";
-import CalendarToolbar from "@/components/calendar/sub-components/CalendarToolbar.vue";
-import CalendarNotificationDialog from "@/components/calendar/dialogs/CalendarNotificationDialog.vue";
-import type { NotificationType } from "@/components/calendar/dialogs/CalendarNotificationDialog.vue";
-import type { EventFormData } from "@/components/calendar/composables/useEventForm";
+import CalendarMonthView from "@/features/calendar/components/views/CalendarMonthView.vue";
+import CalendarWeekView from "@/features/calendar/components/views/CalendarWeekView.vue";
+import CalendarYearView from "@/features/calendar/components/views/CalendarYearView.vue";
+import CalendarEventDialog from "@/features/calendar/components/dialogs/CalendarEventDialog.vue";
+import CalendarEventViewDialog from "@/features/calendar/components/dialogs/CalendarEventViewDialog.vue";
+import CalendarToolbar from "@/features/calendar/components/sub-components/CalendarToolbar.vue";
+import CalendarNotificationDialog from "@/features/calendar/components/dialogs/CalendarNotificationDialog.vue";
+import type { NotificationType } from "@/features/calendar/components/dialogs/CalendarNotificationDialog.vue";
+import type { EventFormData } from "@/features/calendar/composable/useEventForm";
 import { PlanLimitUtils } from "@/utils/PlanLimitUtils";
 import PremiumFeatureDialog from "@/components/dialog/PremiumFeatureDialog.vue";
-import { extractNewFiles, formatPayload } from "@/components/calendar/composables/calendarUtils";
-import { createEvent as apiCreateEvent, deleteEvent as apiDeleteEvent, checkConflicts as apiCheckConflicts, summarizeAttachment as apiSummarizeAttachment } from "@/services/calendarService";
+import { extractNewFiles, formatPayload } from "@/features/calendar/utils/calendar.utils";
+import { createEvent as apiCreateEvent, deleteEvent as apiDeleteEvent, checkConflicts as apiCheckConflicts, summarizeAttachment as apiSummarizeAttachment } from "@/features/calendar/services/calendarService";
 
 // Store state
 const spaceStore = useSpaceStore();
