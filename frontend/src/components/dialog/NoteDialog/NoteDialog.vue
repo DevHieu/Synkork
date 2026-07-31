@@ -177,6 +177,7 @@ const form = ref<NoteRequest>({
   color: '',
   pinned: false,
   reminderAt: null,
+  version: undefined,
 })
 
 // ── helpers ──────────────────────────────────────────────
@@ -244,6 +245,7 @@ function syncFormFromProps() {
       color:      props.note.color || '',
       pinned:     props.note.pinned,
       reminderAt: reminder ? reminder.toISOString() : null,
+      version:    props.note.version,
     }
     customDatetime.value = reminder ? reminder.toISOString().slice(0, 16) : ''
     if (reminder) showReminder.value = true
@@ -284,15 +286,18 @@ async function handleSubmit() {
       color:      form.value.color || '',
       pinned:     form.value.pinned ?? false,
       reminderAt: form.value.reminderAt ?? null,
+      version:    form.value.version,
     }
 
     if (props.note?.id) {
-      await store.updateNote(props.spaceId, props.note.id, data)
+      const success = await store.updateNote(props.spaceId, props.note.id, data)
+      if (success) {
+        emit('close')
+      }
     } else {
       await store.createNote(props.spaceId, data)
+      emit('close')
     }
-
-    emit('close')
   } finally {
     submitting.value = false
   }
