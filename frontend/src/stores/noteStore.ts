@@ -20,6 +20,12 @@ import type { Note, NoteRequest } from '@/types/NoteType'
 import { noteSocket } from '@/services/websocket/noteSocket'
 import { socketService } from '@/services/websocket/socketService'
 
+export interface ConflictInfo {
+  type: 'update' | 'delete'
+  currentNote: Note
+  pendingData?: NoteRequest
+}
+
 export const useNoteStore = defineStore('notes', () => {
 
   const notes = ref<Note[]>([])
@@ -29,6 +35,7 @@ export const useNoteStore = defineStore('notes', () => {
   const error = ref<string | null>(null)
   const searchQuery = ref('')
   const currentSpaceId = ref<string | null>(null)
+  const conflict = ref<ConflictInfo | null>(null)
 
   // FILTER
   const filteredNotes = computed(() => {
@@ -55,7 +62,7 @@ export const useNoteStore = defineStore('notes', () => {
     notes.value.unshift(note)
   }
 
-    // ARCHIVE
+  // ARCHIVE
   async function archiveNoteStore(
     spaceId: string,
     id: string
@@ -65,10 +72,8 @@ export const useNoteStore = defineStore('notes', () => {
       notes.value = notes.value.filter(
         n => n.id !== id
       )
-    } catch (e: any) {
-      error.value = e?.response?.status === 403
-        ? 'Bạn không có quyền lưu trữ ghi chú này'
-        : 'Không thể lưu trữ ghi chú'
+    } catch (e) {
+      error.value = 'Không thể lưu trữ ghi chú'
       console.error(e)
     }
   }
@@ -81,10 +86,8 @@ export const useNoteStore = defineStore('notes', () => {
       archivedNotes.value = Array.isArray(res)
         ? res
         : (Array.isArray(res?.data) ? res.data : [])
-    } catch (e: any) {
-      error.value = e?.response?.status === 403
-        ? 'Bạn không có quyền xem ghi chú đã lưu trữ'
-        : 'Không thể tải ghi chú đã lưu trữ'
+    } catch (e) {
+      error.value = 'Không thể tải ghi chú đã lưu trữ'
       console.error(e)
     } finally {
       loadingArchived.value = false
@@ -99,7 +102,6 @@ export const useNoteStore = defineStore('notes', () => {
     try {
       const restored = await restoreNote(spaceId, id)
       archivedNotes.value = archivedNotes.value.filter(n => n.id !== id)
-      // Thêm lại vào danh sách note đang hoạt động luôn (nếu đang cùng space)
       if (currentSpaceId.value === spaceId) {
         notes.value.unshift(restored)
       }
@@ -185,24 +187,44 @@ export const useNoteStore = defineStore('notes', () => {
   }
 
   // UPDATE
-  async function updateNote(spaceId: string, id: string, data: NoteRequest) {
+  async function updateNote(spaceId: string, id: string, data: NoteRequest): Promise<boolean> {
     try {
       await update(spaceId, id, data)
-    } catch (e) {
-      error.value = 'Không thể cập nhật ghi chú'
-      console.error(e)
-      return null
+      return true
+    } catch (e: any) {
+      if (e?.response?.status === 409) {
+        const body = e.response.data
+        conflict.value = {
+          type: 'update',
+          currentNote: body.currentNote,
+          pendingData: data
+        }
+      } else {
+        error.value = 'Không thể cập nhật ghi chú'
+        console.error(e)
+      }
+      return false
     }
   }
 
   // DELETE
-  async function deletedNote(spaceId: string, id: string): Promise<boolean> {
+  async function deletedNote(spaceId: string, id: string, version?: number): Promise<boolean> {
     try {
-      await deleteNote(spaceId, id)
+      await deleteNote(spaceId, id, version)
       return true
-    } catch (e) {
-      error.value = 'Không thể xóa ghi chú'
-      console.error(e)
+    } catch (e: any) {
+      if (e?.response?.status === 409) {
+        const body = e.response.data
+        conflict.value = {
+          type: 'delete',
+          currentNote: body.currentNote
+        }
+      } else if (e?.response?.status === 403) {
+        error.value = 'Chỉ Owner hoặc Admin mới được xóa ghi chú'
+      } else {
+        error.value = 'Không thể xóa ghi chú'
+        console.error(e)
+      }
       return false
     }
   }
@@ -260,6 +282,10 @@ export const useNoteStore = defineStore('notes', () => {
     }
   }
 
+  function clearConflict() {
+    conflict.value = null
+  }
+
   return {
     notes,
     archivedNotes,
@@ -267,6 +293,7 @@ export const useNoteStore = defineStore('notes', () => {
     loadingArchived,
     error,
     searchQuery,
+    conflict,
 
     filteredNotes,
     pinnedNotes,
@@ -287,6 +314,7 @@ export const useNoteStore = defineStore('notes', () => {
 
     archiveNote: archiveNoteStore,
     restoreNote: restoreNoteStore,
-    copyNoteToPersonal
+    copyNoteToPersonal,
+    clearConflict
   }
 })

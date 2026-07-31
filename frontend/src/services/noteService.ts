@@ -37,9 +37,10 @@ export const update = async (spaceId: string, id: string, request: NoteRequest  
   return res.data;
 }
 
-export const deleteNote = async ( spaceId: string, id: string   ) => {
-  const res = await axiosClient.delete(`/api/spaces/${spaceId}/notes/${id}`);
-
+export const deleteNote = async (spaceId: string, id: string, version?: number) => {
+  const res = await axiosClient.delete(`/api/spaces/${spaceId}/notes/${id}`, {
+    params: version !== undefined && version !== null ? { version } : {}
+  });
   return res.data;
 }
 

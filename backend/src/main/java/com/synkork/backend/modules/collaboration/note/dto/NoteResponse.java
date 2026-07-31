@@ -31,6 +31,7 @@ public class NoteResponse {
     private Instant reminderAt;
     private Boolean reminderSent;
     private Boolean archived;
+    private Integer version;
 
     public NoteResponse(NoteEntity note) {
         this.id = note.getId();
@@ -50,5 +51,6 @@ public class NoteResponse {
         this.reminderSent = note.getReminderSent();
         this.displayName = note.getCreatedBy().getDisplayName();
         this.avatarUrl = note.getCreatedBy().getAvatarUrl();
+        this.version = note.getVersion();
     }
 }
