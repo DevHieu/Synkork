@@ -18,15 +18,17 @@ import { storeToRefs } from "pinia";
 
 import type { CardEvent } from '@/types/Task'
 
-import CardDetailDialog from '@/components/dialog/TaskDialog/CardDetailDialog.vue'
-import { useTaskStore } from '@/stores/taskStore';
-import { VersionConflictError } from '@/services/task/cardService'
+import CardDetailDialog from './dialog/CardDetailDialog.vue'
+import { useTaskStore } from '@/features/tasks/stores/taskStore';
+import { VersionConflictError } from '@/features/tasks/services/cardService'
 import { toast } from 'vue-sonner'
+import { useTaskAction } from '../composables/task-api.ts'
 
 const spaceStore = useSpaceStore();
 const { currentSpace } = storeToRefs(spaceStore);
 
 const taskStore = useTaskStore();
+const taskAction = useTaskAction();
 
 const isCardDetailOpen = ref(false)
 const isConflictDialogOpen = ref(false)
@@ -46,7 +48,7 @@ const openDetail = () => {
 const saveInDetail = async (updatedCard: CardEvent) => {
     if (!currentSpace.value) return
     try {
-        await taskStore.saveCard(
+        await taskAction.saveCard(
             currentSpace.value.id,
             updatedCard.id,
             props.columnId,
@@ -77,7 +79,7 @@ const handleCreateCopy = async () => {
     isCreatingCopy.value = true
     try {
         const attempted = conflictAttempted.value
-        await taskStore.saveCard(
+        await taskAction.saveCard(
             currentSpace.value.id,
             '',                 // cardId rỗng => tạo mới, không phải update
             props.columnId,

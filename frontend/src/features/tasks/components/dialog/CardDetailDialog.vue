@@ -22,16 +22,19 @@ import {
 import type { CardEvent, MemberSummary } from "@/types/Task";
 import type { Member } from "@/types/Member";
 
-import { useTaskStore } from "@/stores/taskStore";
+import { useTaskStore } from "@/features/tasks/stores/taskStore";
 import { useSpaceStore } from "@/stores/spaceStore";
 import { useRoomMemberStore } from "@/stores/roomMemberStore";
 import { storeToRefs } from "pinia";
+import { useTaskAction } from "../../composables/task-api";
 
 const spaceStore = useSpaceStore();
 const { currentSpace } = storeToRefs(spaceStore);
 
 const roomMemberStore = useRoomMemberStore();
 const taskStore = useTaskStore();
+
+const taskAction = useTaskAction();
 
 const searchQuery = ref("");
 const showDropdown = ref(false);
@@ -108,7 +111,7 @@ const filteredMembers = computed(() =>
 const handleArchive = () => {
   if (!currentSpace.value) return;
 
-  taskStore.archiveCard(currentSpace.value.id, props.card.id);
+  taskAction.archiveCardEvent(currentSpace.value.id, props.card.id);
 
   emit("archive", props.card.id);
   emit("update:open", false);

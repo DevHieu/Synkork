@@ -14,7 +14,7 @@ import PasswordResetSuccessPage from "@/pages/auth/PasswordResetSuccessPage.vue"
 import ChatWindow from "@/features/chats/index.vue";
 import VoiceWindow from "@/components/windows/VoiceWindow.vue";
 import NoteWindow from "@/components/windows/NoteWindow.vue";
-import TaskWindow from "@/components/windows/TaskWindow.vue";
+import TaskWindow from "@/features/tasks/index.vue";
 import CalendarWindowLayout from "@/components/windows/CalendarWindowLayout.vue";
 
 import FriendPage from "@/pages/FriendPage.vue";

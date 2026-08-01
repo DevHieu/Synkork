@@ -8,9 +8,10 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover'
 
-import { useTaskStore } from '@/stores/taskStore'
+import { useTaskStore } from '@/features/tasks/stores/taskStore'
 import { useSpaceStore } from '@/stores/spaceStore'
 import { useRoomMemberStore } from '@/stores/roomMemberStore'
+import { useTaskAction } from '../../composables/task-api'
 
 const props = defineProps<{
     open: boolean
@@ -30,6 +31,8 @@ const { currentSpace } = storeToRefs(spaceStore)
 const taskStore = useTaskStore()
 const { archivedColumns, archivedCards, columns } = storeToRefs(taskStore)
 
+const taskAction = useTaskAction();
+
 const memberStore = useRoomMemberStore();
 const { canManage } = storeToRefs(memberStore)
 
@@ -39,7 +42,7 @@ const unarchiveError = ref<string | null>(null)
 const loadArchive = async () => {
     if (!currentSpace.value?.id) return
     try {
-        await taskStore.fetchArchivedItems(currentSpace.value.id)
+        await taskAction.fetchArchivedItems(currentSpace.value.id)
     } catch (err) {
         console.error(err)
     }
@@ -55,7 +58,7 @@ watch(() => props.open, async (open) => {
 const handleUnarchiveColumn = async (columnId: string) => {
     if (!currentSpace.value?.id) return
     try {
-        await taskStore.unarchiveColumn(currentSpace.value.id, columnId)
+        await taskAction.unarchiveColumnEvent(currentSpace.value.id, columnId)
         await loadArchive()
     } catch (error: any) {
         unarchiveError.value = error?.response?.data?.message ?? 'Lỗi khôi phục cột'
@@ -65,7 +68,7 @@ const handleUnarchiveColumn = async (columnId: string) => {
 const handleUnarchiveCard = async (cardId: string) => {
     if (!currentSpace.value?.id) return
     try {
-        await taskStore.unarchiveCard(currentSpace.value.id, cardId)
+        await taskAction.unarchiveCardEvent(currentSpace.value.id, cardId)
         await loadArchive()
     } catch (error: any) {
         unarchiveError.value = error?.response?.data?.message ?? 'Lỗi khôi phục thẻ'
