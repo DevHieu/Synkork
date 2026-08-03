@@ -88,9 +88,7 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     isJoining.value = true;
     if (isInRoom.value && currentSpaceId.value === spaceId) {
       isExpanded.value = true;
-      router.push(
-        `/rooms/voice/${router.currentRoute.value.params.roomId}/${spaceId}`,
-      );
+      router.push(`/rooms/voice/${currentRoomId.value}/${spaceId}`);
       return;
     }
 
@@ -355,7 +353,7 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     zego.media.stopUserVideo(currentSpaceId.value, userId);
   };
 
-  // User A ko muốn nghe tiếng của User B -> Ý là vậy á. Mà ko biết đặt tên sao cho hợp lí
+  // User A ko muốn nghe tiếng của User B -> Ý là vậy á. Mà ko biết đặt tên hàm sao cho hợp lí
   const toggleAudioUser = (audioId: string) => {
     if (!zegoState.zg || !currentSpaceId.value) return;
 

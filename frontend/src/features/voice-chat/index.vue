@@ -12,6 +12,7 @@ import VoiceStripFocus from "./components/VoiceStripFocus.vue";
 import VoiceGrid from "./components/VoiceGrid.vue";
 import ControlBar from "./components/ControlBar.vue";
 import VoiceHeader from "./components/VoiceHeader.vue";
+import { generateParticipantItem, generateScreenItem, getVideoContainerId } from "./utils/voiceUtils.ts";
 
 const route = useRoute();
 const spaceId = ref(route.params.spaceId as string);
@@ -24,7 +25,6 @@ const { participantList } = storeToRefs(voiceSpaceStore);
 
 const { user } = storeToRefs(useUserStore());
 
-// Cái element
 const focusedId = ref<string | null>(null);
 const itemRefs = ref<Record<string, HTMLElement | null>>({});
 
@@ -32,33 +32,9 @@ const voiceList = computed((): VoiceItemType[] => {
   //Lọc ra máy cái stream là screen
   const screens = participantList.value
     .filter((p) => p.screenOn)
-    .map((p) => ({
-      id: `screen-${p.userID}`,
-      audioId: p.audioStreamID,
-      type: "screen" as const,
-      userID: p.userID,
-      isLocal: p.isLocal,
-      userName: p.userName,
-      videoOn: false,
-      micOn: true,
-      audioOn: true,
-      muted: p.muted,
-      deafen: p.deafen,
-    }));
+    .map((p) => generateScreenItem(p));
 
-  const participants = participantList.value.map((p) => ({
-    id: `participant-${p.userID}`,
-    audioId: p.audioStreamID,
-    type: "participant" as const,
-    userID: p.userID,
-    isLocal: p.isLocal,
-    userName: p.userName,
-    videoOn: p.videoOn,
-    micOn: p.micOn,
-    audioOn: p.audioOn,
-    muted: p.muted,
-    deafen: p.deafen,
-  }));
+  const participants = participantList.value.map((p) => generateParticipantItem(p));
 
   // Xếp screen lên trước để ưu tiên screen sẽ ưu tiên hiện trước
   return [...screens, ...participants];
@@ -146,13 +122,6 @@ const handleStreamReady = (e: Event) => {
   });
 };
 
-const getVideoContainerId = (item: VoiceItemType) => {
-  if (item.type === "screen")
-    return item.isLocal
-      ? "screen-sharing-container"
-      : `remote-screen-${item.userID}`;
-  return item.isLocal ? "local-video-container" : `remote-video-${item.userID}`;
-};
 
 onMounted(async () => {
   window.addEventListener("zego:stream-ready", handleStreamReady);
@@ -218,9 +187,7 @@ watch(
   <div class="flex flex-col h-full bg-background text-foreground select-none overflow-hidden">
     <VoiceHeader />
 
-    <!-- ── Video Area ── -->
     <div class="flex-1 min-h-0 p-3 overflow-hidden flex flex-col gap-3">
-      <!-- FOCUS MODE -->
       <template v-if="focusItem">
         <VoiceFocusItem :focusedTile="focusItem" :user="user" @minimize="focusedId = null"
           @register-ref="(id, el) => (itemRefs[id] = el)" />
@@ -229,7 +196,6 @@ watch(
           @register-ref="(id, el) => (itemRefs[id] = el)" />
       </template>
 
-      <!-- NORMAL MODE -->
       <template v-else>
         <VoiceGrid :list="voiceList" :user="user" @focus="focusedId = $event"
           @register-ref="(id, el) => (itemRefs[id] = el)" />

@@ -17,10 +17,6 @@ public class ZegoController {
 
     @GetMapping("/token/{userId}")
     public ResponseEntity<?> getToken(@PathVariable String userId) {
-        System.out.println("appId: " + appId );
-        System.out.println("serverSecret: " + serverSecret);
-        System.out.println("userId BE: " + userId);
-
         TokenServerAssistant.TokenInfo tokenInfo =
                 TokenServerAssistant.generateToken04(
                         appId, userId, serverSecret, 3600, ""
