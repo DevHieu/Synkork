@@ -3,14 +3,11 @@ import { ref, onMounted, onUnmounted, watch } from 'vue'
 import draggable from 'vuedraggable'
 import { useRoute } from 'vue-router'
 import { Plus, Hash, Archive } from 'lucide-vue-next'
-
 import { taskSocket } from '@/features/tasks/services/taskSocket.ts'
 import { useSpaceStore } from "@/stores/spaceStore";
 import { useTaskStore } from "@/features/tasks/stores/taskStore";
 import { storeToRefs } from "pinia";
-
 import type { CardEvent, ColumnEvent, TaskMoveEvent } from "@/types/Task";
-
 import {
     Dialog,
     DialogContent,
@@ -19,19 +16,18 @@ import {
     DialogDescription,
     DialogFooter,
 } from '@/components/ui/dialog'
-
 import TaskColumn from '@/features/tasks/components/TaskColumn.vue'
 import ColumnFormDialog from '@/features/tasks/components/dialog/ColumnFormDialog.vue'
 import DeleteConfirmDialog from '@/components/dialog/DeleteConfirmDialog.vue'
 import CardFormDialog from '@/features/tasks/components/dialog/CardFormDialog.vue'
 import ArchiveTask from '@/features/tasks/components/dialog/ArchiveTask.vue'
-
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { toast } from "vue-sonner"
 import { VersionConflictError } from '@/features/tasks/services/cardService'
 import { ColumnVersionConflictError } from '@/features/tasks/services/columnService'
 import { subscribeToSpace } from './composables/task-subscriptions'
 import { useTaskAction } from './composables/task-api'
+import { useVersionConflict } from './composables/version-conflict'
 
 const spaceStore = useSpaceStore();
 const { currentSpace } = storeToRefs(spaceStore);
@@ -39,6 +35,13 @@ const taskStore = useTaskStore();
 const { columns } = storeToRefs(taskStore);
 
 const taskAction = useTaskAction();
+const taskConflict = useVersionConflict({
+    entityLabel: 'cột',
+    createCopy: async (attempted) => {
+        if (!currentSpace.value?.id) return
+        await taskAction.saveColumn(currentSpace.value.id, '', attempted.title)
+    }
+});
 
 const route = useRoute();
 const spaceId = route.params.spaceId as string;
@@ -47,10 +50,6 @@ const isSocketConnected = ref(false)
 
 const isColumnDialogOpen = ref(false)
 const editingCol = ref<ColumnEvent | null>(null)
-
-const isColumnConflictOpen = ref(false)
-const columnConflictAttempted = ref<{ title: string } | null>(null) // nội dung user vừa nhập, bị conflict
-const isCreatingColumnCopy = ref(false)
 
 const isCardDialogOpen = ref(false)
 const editingCard = ref<CardEvent | null>(null)
@@ -85,9 +84,7 @@ const handleSaveColumn = async (data: { title: string }) => {
     } catch (e) {
         if (e instanceof ColumnVersionConflictError) {
             toast.error("Cột này vừa được người khác cập nhật. Vui lòng kiểm tra lại nội dung mới nhất.")
-            columnConflictAttempted.value = { title: data.title }
-            isColumnDialogOpen.value = false   
-            isColumnConflictOpen.value = true
+            taskConflict.openConflict({ title: data.title })
         } else {
             console.error("Lỗi:", e)
             toast.error("Có lỗi xảy ra, vui lòng thử lại.")
@@ -97,31 +94,6 @@ const handleSaveColumn = async (data: { title: string }) => {
     }
 }
 
-const handleCreateColumnCopy = async () => {
-    if (!currentSpace.value?.id || !columnConflictAttempted.value) return
-    isCreatingColumnCopy.value = true
-    try {
-        const attempted = columnConflictAttempted.value
-        await taskAction.saveColumn(
-            currentSpace.value.id,
-            '',                
-            attempted.title
-        )
-        toast.success("Đã tạo cột mới với nội dung bạn vừa nhập.")
-    } catch (e) {
-        console.error("Lỗi tạo cột mới:", e)
-        toast.error("Không thể tạo cột mới, vui lòng thử lại.")
-    } finally {
-        isCreatingColumnCopy.value = false
-        isColumnConflictOpen.value = false
-        columnConflictAttempted.value = null
-    }
-}
-
-const handleDiscardColumnConflict = () => {
-    isColumnConflictOpen.value = false
-    columnConflictAttempted.value = null
-}
 
 const confirmDeleteColumn = (colId: string) => {
     console.log("CLICK DELETE", colId)
@@ -192,33 +164,6 @@ const onCardMove = async (event: TaskMoveEvent, currentColumnId: string) => {
     }
 }
 
-// lưu trữ
-const loadArchive = async () => {
-    if (!currentSpace.value?.id) return
-
-    try {
-        await Promise.all([
-            taskAction.fetchArchivedItems(currentSpace.value.id)
-        ])
-    } catch (error) {
-        console.error("Lỗi load archive:", error)
-    }
-}
-
-const archive = async (columnId: string, cardId?: string) => {
-    if (!currentSpace.value?.id) return
-
-    try {
-        if (cardId) {
-            await taskAction.archiveCardEvent(currentSpace.value.id, cardId)
-        } else {
-            await taskAction.archiveColumnEvent(currentSpace.value.id, columnId)
-        }
-    } catch (error) {
-        console.error("Lỗi archive:", error)
-    }
-}
-
 const handleDeleteArchived = async () => {
     await taskAction.deleteTask(deleteType.value, spaceId, deleteData.value)
     isDeleteOpen.value = false
@@ -232,12 +177,9 @@ const handleDeleteAllArchived = async () => {
     isArchiveOpen.value = true
 }
 
-
 const clearAll = async () => {
     columns.value = []
 }
-
-
 
 const joinspace = async (spaceId: string) => {
     if (!spaceId) return;
@@ -251,7 +193,7 @@ const joinspace = async (spaceId: string) => {
 
 watch(isArchiveOpen, async (open) => {
     if (open) {
-        await loadArchive()
+        await taskAction.fetchArchivedItems(spaceId)
     }
 })
 
@@ -306,7 +248,7 @@ watch(
                     @change="onColumnMove" class="flex gap-6 items-start h-full">
                     <template #item="{ element: col }">
                         <TaskColumn :column="col" :space-name="currentSpace?.name ?? ''" @edit-column="openColumnDialog"
-                            @archive-column="archive(col.id)" @add-card="openCardDialog" @archive-card="archive"
+                            @archive-column="taskAction.archiveColumnEvent(spaceId, col.id)" @add-card="openCardDialog" @archive-card="taskAction.archiveCardEvent(spaceId, $event)"
                             @card-move="onCardMove" />
                     </template>
                 </draggable>
@@ -337,7 +279,7 @@ watch(
         :description="deleteAllType === 'columns' ? 'Toàn bộ các cột và thẻ bên trong sẽ bị xóa vĩnh viễn.' : 'Toàn bộ thẻ đã lưu trữ sẽ bị xóa vĩnh viễn.'"
         @confirm="handleDeleteAllArchived" />
 
-        <Dialog v-model:open="isColumnConflictOpen">
+        <Dialog v-model:open="taskConflict.isConflictOpen">
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Cột đã bị thay đổi bởi người khác</DialogTitle>
@@ -348,11 +290,11 @@ watch(
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
-                    <Button variant="outline" :disabled="isCreatingColumnCopy" @click="handleDiscardColumnConflict">
+                    <Button variant="outline" :disabled="taskConflict.isCreatingCopy" @click="taskConflict.handleDiscard">
                         Bỏ qua, xem bản mới nhất
                     </Button>
-                    <Button :disabled="isCreatingColumnCopy" @click="handleCreateColumnCopy">
-                        {{ isCreatingColumnCopy ? 'Đang tạo...' : 'Tạo cột mới với nội dung của tôi' }}
+                    <Button :disabled="taskConflict.isCreatingCopy" @click="taskConflict.handleCreateCopy">
+                        {{ taskConflict.isCreatingCopy ? 'Đang tạo...' : 'Tạo cột mới với nội dung của tôi' }}
                     </Button>
                 </DialogFooter>
             </DialogContent>

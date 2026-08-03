@@ -1,4 +1,4 @@
-import type { CardEvent, TaskMoveEvent } from "@/types/Task";
+import type { TaskMoveEvent } from "@/types/Task";
 import { useTaskStore } from "../stores/taskStore";
 import { storeToRefs } from "pinia";
 import {
@@ -14,9 +14,12 @@ import {
     unarchiveColumn,
 } from "../services/columnService";
 import { archiveCard, createCard, deleteAllArchivedCards, deleteCard, getArchivedCards, moveCard, unarchiveCard, updateCard, VersionConflictError } from "../services/cardService";
+import { useSpaceStore } from "@/stores/spaceStore";
 
 export function useTaskAction() {
     const taskStore = useTaskStore();
+    const spaceStore = useSpaceStore();
+    const { currentSpace } = storeToRefs(spaceStore);
     const { tasks, columns, archivedCards, archivedColumns, loading } = storeToRefs(taskStore);
 
     const fetchTasks = async (spaceId: string) => {
@@ -69,7 +72,6 @@ export function useTaskAction() {
         }
         try {
             await updateCard(spaceId, cardId, { title, description, assigneeIds, dueDate, version });
-
         } catch (e) {
             if (e instanceof VersionConflictError) {
                 const i = tasks.value.findIndex(c => c.id === cardId);
@@ -123,14 +125,21 @@ export function useTaskAction() {
     }
 
     const fetchArchivedItems = async (spaceId: string) => {
-        const [cardsRes, colsRes] = await Promise.all([
-            getArchivedCards(spaceId),
-            getArchivedColumns(spaceId)
-        ])
+        if(!spaceId) return
 
-        archivedCards.value = cardsRes
-        archivedColumns.value = colsRes.data
-        return { cards: cardsRes.data, columns: colsRes.data }
+        try {
+            const [cardsRes, colsRes] = await Promise.all([
+                getArchivedCards(spaceId),
+                getArchivedColumns(spaceId)
+            ])
+
+            archivedCards.value = cardsRes
+            archivedColumns.value = colsRes.data
+            return { cards: cardsRes.data, columns: colsRes.data }
+        } catch (error) {
+            console.error("Lỗi load archive:", error)
+        }
+        
     }
 
     const deleteAllArchived = async (deleteAllType: "columns" | "cards", spaceId: string) => {
@@ -159,7 +168,8 @@ export function useTaskAction() {
         unarchiveCardEvent,
         unarchiveColumnEvent,
         fetchArchivedItems,
-        deleteAllArchived
+        deleteAllArchived,
     }
 
 }
+

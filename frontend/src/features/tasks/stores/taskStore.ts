@@ -253,21 +253,21 @@ export const useTaskStore = defineStore("task", {
 //             await moveCard(spaceId, movedCard.element.id, payload);
 //         },
 
-        async delete(deleteType: "column" | "card", spaceId: string, deleteData: { columnId?: string, cardId?: string } | null) {
-            try {
-                if (deleteType === 'column' && deleteData?.columnId) {
-                    await deleteColumn(spaceId, deleteData.columnId)
-                    this.columns = this.columns.filter(c => c.id !== deleteData.columnId)
-                    this.archivedColumns = this.archivedColumns.filter(c => c.id !== deleteData.columnId)
-                } else if (deleteType === 'card' && deleteData?.cardId) {
-                    await deleteCard(spaceId, deleteData.cardId)
-                    this.archivedCards = this.archivedCards.filter(c => c.id !== deleteData.cardId)
-                }
+        // async delete(deleteType: "column" | "card", spaceId: string, deleteData: { columnId?: string, cardId?: string } | null) {
+        //     try {
+        //         if (deleteType === 'column' && deleteData?.columnId) {
+        //             await deleteColumn(spaceId, deleteData.columnId)
+        //             this.columns = this.columns.filter(c => c.id !== deleteData.columnId)
+        //             this.archivedColumns = this.archivedColumns.filter(c => c.id !== deleteData.columnId)
+        //         } else if (deleteType === 'card' && deleteData?.cardId) {
+        //             await deleteCard(spaceId, deleteData.cardId)
+        //             this.archivedCards = this.archivedCards.filter(c => c.id !== deleteData.cardId)
+        //         }
 
-            } catch (e) {
-                console.error("Lỗi:", e)
-            }
-        },
+        //     } catch (e) {
+        //         console.error("Lỗi:", e)
+        //     }
+        // },
 
 //         async archiveCard(spaceId: string, cardId: string) {
 //             await archiveCard(spaceId, cardId)
@@ -297,19 +297,19 @@ export const useTaskStore = defineStore("task", {
             
 //         },
 
-        async deleteAllArchived(deleteAllType: "columns" | "cards", spaceId: string) {
-            try {
-                if (deleteAllType === 'columns') {
-                    await deleteAllArchivedColumns(spaceId)
-                    this.archivedColumns = []
-                } else if (deleteAllType === 'cards') {
-                    await deleteAllArchivedCards(spaceId)
-                    this.archivedCards = []
-                }
-            } catch (e) {
-                console.error("Lỗi:", e)
-            }
-        },
+        // async deleteAllArchived(deleteAllType: "columns" | "cards", spaceId: string) {
+        //     try {
+        //         if (deleteAllType === 'columns') {
+        //             await deleteAllArchivedColumns(spaceId)
+        //             this.archivedColumns = []
+        //         } else if (deleteAllType === 'cards') {
+        //             await deleteAllArchivedCards(spaceId)
+        //             this.archivedCards = []
+        //         }
+        //     } catch (e) {
+        //         console.error("Lỗi:", e)
+        //     }
+        // },
     }
 });
                     

@@ -1,13 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 
@@ -19,20 +12,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:open', 'save'])
 
-const form = ref({
-  title: ''
-})
-
-
-watch(() => props.open, (newVal) => {
-  if (newVal) {
-    if (props.columnData) {
-      form.value.title = props.columnData.name || ''
-    } else {
-      form.value.title = ''
-    }
-  }
-})
+const form = ref({ title: '' })
 
 const closeDialog = () => emit('update:open', false)
 
@@ -46,6 +26,15 @@ const handleSave = () => {
   closeDialog()
 }
 
+watch(() => props.open, (newVal) => {
+  if (newVal) {
+    if (props.columnData) {
+      form.value.title = props.columnData.name || ''
+    } else {
+      form.value.title = ''
+    }
+  }
+})
 </script>
 
 <template>

@@ -5,41 +5,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Calendar as CalendarIcon,
-  UserPlus,
-  Archive,
-  AlignLeft,
-  CreditCard,
-  X,
-  Check,
-} from "lucide-vue-next";
-import type { CardEvent, MemberSummary } from "@/types/Task";
-import type { Member } from "@/types/Member";
-
-import { useTaskStore } from "@/features/tasks/stores/taskStore";
-import { useSpaceStore } from "@/stores/spaceStore";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarIcon, UserPlus, Archive, AlignLeft, CreditCard, X, Check } from "lucide-vue-next";
+import type { CardEvent } from "@/types/Task";
 import { useRoomMemberStore } from "@/stores/roomMemberStore";
-import { storeToRefs } from "pinia";
-import { useTaskAction } from "../../composables/task-api";
-
-const spaceStore = useSpaceStore();
-const { currentSpace } = storeToRefs(spaceStore);
-
-const roomMemberStore = useRoomMemberStore();
-const taskStore = useTaskStore();
-
-const taskAction = useTaskAction();
-
-const searchQuery = ref("");
-const showDropdown = ref(false);
-
-const status = computed(() => getStatus(form.value.dueDate));
+import { useCardDetail } from "../../composables/card-detail";
 
 const props = defineProps<{
   open: boolean;
@@ -49,99 +19,36 @@ const props = defineProps<{
 
 const emit = defineEmits(["update:open", "save", "archive"]);
 
-const form = ref({ title: "", description: "", dueDate: "" });
+const {
+  form,
+  localAssignees,
+  baseVersion,
+  getStatus,
+  handleSave,
+  handleArchive,
+  toggleAssignee,
+  removeAssignee,
+} = useCardDetail(props, emit);
 
-const localAssignees = ref<MemberSummary[]>([]);
+const roomMemberStore = useRoomMemberStore();
 
-const baseVersion = ref<number | undefined>(props.card.version);
+const searchQuery = ref("");
+const showDropdown = ref(false);
 
-const getStatus = (dueDate?: string) => {
-  if (!dueDate) return null;
-
-  const now = new Date();
-  const due = new Date(dueDate);
-
-  const diff = due.getTime() - now.getTime();
-
-  if (diff < 0) {
-    return "OVERDUE";
-  }
-
-  if (diff <= 24 * 60 * 60 * 1000) {
-    return "DUE_SOON";
-  }
-
-  return "NORMAL";
-};
+const status = computed(() => getStatus(form.value.dueDate));
 
 const clearDueDate = () => {
   form.value.dueDate = ""
   handleSave()
 };
 
-
-const emitSave = () => {
-  if (!form.value.title.trim()) return;
-  const formattedDueDate = form.value.dueDate
-    ? `${form.value.dueDate}:00`
-    : null;
-  emit("save", {
-    ...props.card,
-    title: form.value.title.trim(),
-    description: form.value.description.trim(),
-    assignees: localAssignees.value,
-    dueDate: formattedDueDate,
-    version: baseVersion.value,
-  });
-};
-
-const handleSave = () => {
-  if (!form.value.title.trim()) return;
-  emitSave();
-};
-
 const handleTitleKeydown = (e: KeyboardEvent) => {
   if (e.key === "Enter") (e.target as HTMLInputElement).blur();
 };
 
-const filteredMembers = computed(() =>
-  roomMemberStore.searchMembers(searchQuery.value),
-);
+const filteredMembers = computed(() => roomMemberStore.searchMembers(searchQuery.value));
 
-const handleArchive = () => {
-  if (!currentSpace.value) return;
-
-  taskAction.archiveCardEvent(currentSpace.value.id, props.card.id);
-
-  emit("archive", props.card.id);
-  emit("update:open", false);
-};
-
-const toggleAssignee = (member: Member) => {
-  const exists = localAssignees.value.some((a) => a.id === member.memberId);
-
-  if (exists) {
-    localAssignees.value = localAssignees.value.filter(
-      (a) => a.id !== member.memberId,
-    );
-  } else {
-    localAssignees.value.push({
-      id: member.memberId,
-      name: member.displayName,
-      avatarUrl: member.avatarUrl,
-    });
-  }
-
-  emitSave();
-};
-
-const removeAssignee = (id: string) => {
-  localAssignees.value = localAssignees.value.filter((a) => a.id !== id);
-  emitSave();
-};
-
-const isAssigned = (memberId: string) =>
-  localAssignees.value.some((a) => a.id === memberId);
+const isAssigned = (memberId: string) => localAssignees.value.some((a) => a.id === memberId);
 
 watch(
   () => props.open,

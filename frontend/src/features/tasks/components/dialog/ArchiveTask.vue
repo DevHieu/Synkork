@@ -39,19 +39,11 @@ const { canManage } = storeToRefs(memberStore)
 const archiveTab = ref<'columns' | 'cards'>('columns')
 const unarchiveError = ref<string | null>(null)
 
-const loadArchive = async () => {
-    if (!currentSpace.value?.id) return
-    try {
-        await taskAction.fetchArchivedItems(currentSpace.value.id)
-    } catch (err) {
-        console.error(err)
-    }
-}
-
 watch(() => props.open, async (open) => {
+    if (!currentSpace.value?.id) return
     if (open) {
         unarchiveError.value = null
-        await loadArchive()
+        await taskAction.fetchArchivedItems(currentSpace.value.id)
     }
 })
 
@@ -59,7 +51,7 @@ const handleUnarchiveColumn = async (columnId: string) => {
     if (!currentSpace.value?.id) return
     try {
         await taskAction.unarchiveColumnEvent(currentSpace.value.id, columnId)
-        await loadArchive()
+        await taskAction.fetchArchivedItems(currentSpace.value.id)
     } catch (error: any) {
         unarchiveError.value = error?.response?.data?.message ?? 'Lỗi khôi phục cột'
     }
@@ -69,7 +61,7 @@ const handleUnarchiveCard = async (cardId: string) => {
     if (!currentSpace.value?.id) return
     try {
         await taskAction.unarchiveCardEvent(currentSpace.value.id, cardId)
-        await loadArchive()
+        await taskAction.fetchArchivedItems(currentSpace.value.id)
     } catch (error: any) {
         unarchiveError.value = error?.response?.data?.message ?? 'Lỗi khôi phục thẻ'
     }
