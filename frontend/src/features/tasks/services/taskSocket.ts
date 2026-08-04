@@ -1,5 +1,5 @@
 import type { CardEvent, ColumnEvent } from "@/types/Task"
-import { socketService } from "./socketService"
+import { socketService } from "../../../services/websocket/socketService"
 
 const subscribedColumns = new Set<string>()
 export const taskSocket = {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { MoreHorizontal, Pencil, Trash2, Plus, GripVertical, Archive } from 'lucide-vue-next'
+import { MoreHorizontal, Pencil, Plus, GripVertical, Archive } from 'lucide-vue-next'
 import draggable from 'vuedraggable'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -18,7 +18,7 @@ const emit = defineEmits<{
     editColumn: [column: ColumnEvent]
     archiveColumn: [columnId: string]
     addCard: [columnId: string]
-    archiveCard: [columnId: string, cardId: string]
+    archiveCard: [ cardId: string]
     cardMove: [event: TaskMoveEvent, columnId: string]
 }>()
 
@@ -93,7 +93,7 @@ const localCards = computed<CardEvent[]>({
                 <TaskCard
                     :card="card"
                     :column-name="column.name"
-                    @archive="emit('archiveCard', column.id, card.id)"
+                    @archive="emit('archiveCard', card.id)"
                     :column-id="column.id"
                 />
             </template>

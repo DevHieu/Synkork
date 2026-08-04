@@ -14,7 +14,11 @@ export interface CardEvent {
 }
 
 export interface CardRequest {
-  title: string | null; description: string | null; assigneeIds?: string[], dueDate?: string, version?: number
+  title: string | null; 
+  description: string | null; 
+  assigneeIds?: string[], 
+  dueDate?: string, 
+  version?: number
 }
 
 export interface UserSummary {

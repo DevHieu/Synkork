@@ -5,140 +5,54 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Calendar as CalendarIcon,
-  UserPlus,
-  Archive,
-  AlignLeft,
-  CreditCard,
-  X,
-  Check,
-} from "lucide-vue-next";
-import type { CardEvent, MemberSummary } from "@/types/Task";
-import type { Member } from "@/types/Member";
-
-import { useTaskStore } from "@/stores/taskStore";
-import { useSpaceStore } from "@/stores/spaceStore";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarIcon, UserPlus, Archive, AlignLeft, CreditCard, X, Check } from "lucide-vue-next";
+import type { CardEvent } from "@/types/Task";
 import { useRoomMemberStore } from "@/stores/roomMemberStore";
-import { storeToRefs } from "pinia";
+import { useCardDetail } from "../../composables/card-detail";
 
-const spaceStore = useSpaceStore();
-const { currentSpace } = storeToRefs(spaceStore);
+const props = withDefaults(defineProps<{
+  open: boolean;
+  card: CardEvent;
+  columnName: string;
+  readOnly?: boolean;
+}>(), {
+  readOnly: false,
+});
+
+const emit = defineEmits(["update:open", "save", "archive"]);
+
+const {
+  form,
+  localAssignees,
+  baseVersion,
+  getStatus,
+  handleSave,
+  handleArchive,
+  toggleAssignee,
+  removeAssignee,
+  handleĐueDateChange
+} = useCardDetail(props, emit);
 
 const roomMemberStore = useRoomMemberStore();
-const taskStore = useTaskStore();
 
 const searchQuery = ref("");
 const showDropdown = ref(false);
 
 const status = computed(() => getStatus(form.value.dueDate));
 
-const props = defineProps<{
-  open: boolean;
-  card: CardEvent;
-  columnName: string;
-}>();
-
-const emit = defineEmits(["update:open", "save", "archive"]);
-
-const form = ref({ title: "", description: "", dueDate: "" });
-
-const localAssignees = ref<MemberSummary[]>([]);
-
-const baseVersion = ref<number | undefined>(props.card.version);
-
-const getStatus = (dueDate?: string) => {
-  if (!dueDate) return null;
-
-  const now = new Date();
-  const due = new Date(dueDate);
-
-  const diff = due.getTime() - now.getTime();
-
-  if (diff < 0) {
-    return "OVERDUE";
-  }
-
-  if (diff <= 24 * 60 * 60 * 1000) {
-    return "DUE_SOON";
-  }
-
-  return "NORMAL";
-};
-
 const clearDueDate = () => {
   form.value.dueDate = ""
   handleSave()
-};
-
-
-const emitSave = () => {
-  if (!form.value.title.trim()) return;
-  const formattedDueDate = form.value.dueDate
-    ? `${form.value.dueDate}:00`
-    : null;
-  emit("save", {
-    ...props.card,
-    title: form.value.title.trim(),
-    description: form.value.description.trim(),
-    assignees: localAssignees.value,
-    dueDate: formattedDueDate,
-    version: baseVersion.value,
-  });
-};
-
-const handleSave = () => {
-  if (!form.value.title.trim()) return;
-  emitSave();
 };
 
 const handleTitleKeydown = (e: KeyboardEvent) => {
   if (e.key === "Enter") (e.target as HTMLInputElement).blur();
 };
 
-const filteredMembers = computed(() =>
-  roomMemberStore.searchMembers(searchQuery.value),
-);
+const filteredMembers = computed(() => roomMemberStore.searchMembers(searchQuery.value));
 
-const handleArchive = () => {
-  if (!currentSpace.value) return;
-
-  taskStore.archiveCard(currentSpace.value.id, props.card.id);
-
-  emit("archive", props.card.id);
-  emit("update:open", false);
-};
-
-const toggleAssignee = (member: Member) => {
-  const exists = localAssignees.value.some((a) => a.id === member.memberId);
-
-  if (exists) {
-    localAssignees.value = localAssignees.value.filter(
-      (a) => a.id !== member.memberId,
-    );
-  } else {
-    localAssignees.value.push({
-      id: member.memberId,
-      name: member.displayName,
-      avatarUrl: member.avatarUrl,
-    });
-  }
-
-  emitSave();
-};
-
-const removeAssignee = (id: string) => {
-  localAssignees.value = localAssignees.value.filter((a) => a.id !== id);
-  emitSave();
-};
-
-const isAssigned = (memberId: string) =>
-  localAssignees.value.some((a) => a.id === memberId);
+const isAssigned = (memberId: string) => localAssignees.value.some((a) => a.id === memberId);
 
 watch(
   () => props.open,
@@ -188,7 +102,7 @@ watch(
           <CreditCard :size="16" />
           <span class="text-xs font-medium uppercase tracking-wider">Chi tiết thẻ</span>
         </div>
-        <Button variant="ghost" size="sm" @click.stop="handleArchive"
+        <Button v-if="!readOnly" variant="ghost" size="sm" @click.stop="handleArchive"
           class="h-8 text-muted-foreground hover:text-amber-500 hover:bg-amber-50 transition-colors mr-5">
           <Archive :size="14" class="mr-1" />
           <span class="text-xs">Lưu trữ thẻ</span>
@@ -223,14 +137,14 @@ watch(
                   </AvatarFallback>
                 </Avatar>
                 <span class="text-xs font-medium">{{ assignee.name }}</span>
-                <button @click="removeAssignee(assignee.id)" class="text-muted-foreground hover:text-red-500">
+                <button v-if="!readOnly" @click="removeAssignee(assignee.id)" class="text-muted-foreground hover:text-red-500">
                   <X :size="10" />
                 </button>
               </div>
             </div>
 
             <!-- Dropdown chọn assignee -->
-            <Popover v-model:open="showDropdown">
+            <Popover v-if="!readOnly" v-model:open="showDropdown">
               <PopoverTrigger as-child>
                 <div
                   class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-dashed border-border hover:border-primary cursor-pointer transition-colors">
@@ -281,7 +195,7 @@ watch(
               <CalendarIcon class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
               <input v-model="form.dueDate" type="datetime-local"
                 class="text-xs bg-transparent border-none outline-none text-foreground/80 cursor-pointer hover:text-primary transition-colors w-full"
-                @change="handleSave" />
+                @change="handleĐueDateChange" :disabled="readOnly" />
             </div>
 
             <!-- Status badge -->
@@ -294,7 +208,7 @@ watch(
                 class="text-[10px] px-1.5 py-0 h-4 gap-1 border-amber-300 bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800/40">
                 <Clock class="w-2.5 h-2.5" /> Sắp đến hạn
               </Badge>
-              <button v-if="form.dueDate" @click="clearDueDate"
+              <button v-if="form.dueDate && !readOnly" @click="clearDueDate"
                 class="text-[10px] text-muted-foreground/60 hover:text-destructive transition-colors flex items-center gap-0.5">
                 <X class="w-2.5 h-2.5" /> Xóa
               </button>
@@ -316,8 +230,11 @@ watch(
 
       <!-- Footer Info -->
       <div class="px-8 py-4 bg-muted/5 flex justify-between items-center border-t border-border/30">
-        <p class="text-[10px] text-muted-foreground italic">
+        <p v-if="!readOnly" class="text-[10px] text-muted-foreground italic">
           * Tự động lưu khi bạn hoàn tất chỉnh sửa
+        </p>
+        <p v-else class="text-[10px] text-muted-foreground italic">
+            * Chế độ chỉ xem
         </p>
       </div>
     </DialogContent>

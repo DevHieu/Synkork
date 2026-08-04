@@ -1,19 +1,9 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter
-} from '@/components/ui/dialog'
-
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-
 import type { CardEvent } from '@/types/Task'
 import type { SuggestedTaskDraft } from '@/types/CalendarSuggestion'
 
@@ -28,6 +18,19 @@ const props = defineProps<{
 const emit = defineEmits(['update:open', 'save'])
 
 const form = ref({ title: '', description: '' })
+
+const closeDialog = () => emit('update:open', false)
+
+const handleSave = () => {
+  if (!form.value.title?.trim()) return
+
+  emit('save', {
+    title: form.value.title.trim(),
+    description: form.value.description.trim() || ''
+  })
+
+  closeDialog()
+}
 
 watch(() => props.open, (newVal) => {
   if (newVal) {
@@ -46,19 +49,6 @@ watch(() => props.open, (newVal) => {
     }
   }
 })
-
-const closeDialog = () => emit('update:open', false)
-
-const handleSave = () => {
-  if (!form.value.title?.trim()) return
-
-  emit('save', {
-    title: form.value.title.trim(),
-    description: form.value.description.trim() || ''
-  })
-
-  closeDialog()
-}
 </script>
 
 <template>

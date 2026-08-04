@@ -9,11 +9,11 @@ import type {
   SuggestedTaskDraft,
 } from "@/types/CalendarSuggestion";
 import { buildSuggestedEventDraft, buildSuggestedNoteDraft, buildSuggestedTaskDraft } from "@/utils/calendarSuggestion";
-import ColumnListDialog from "@/components/dialog/TaskDialog/ColumnListDialog.vue";
-import CardFormDialog from "@/components/dialog/TaskDialog/CardFormDialog.vue";
+import ColumnListDialog from "@/features/tasks/components/dialog/ColumnListDialog.vue";
+import CardFormDialog from "@/features/tasks/components/dialog/CardFormDialog.vue";
 
 import { useSpaceStore } from "@/stores/spaceStore";
-import { useTaskStore } from "@/stores/taskStore";
+import { useTaskStore } from "@/features/tasks/stores/taskStore.ts";
 import { useSuggestionStore } from "@/stores/calendarStore";
 
 const spaceStore = useSpaceStore();

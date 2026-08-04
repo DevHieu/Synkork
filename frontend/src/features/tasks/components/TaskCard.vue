@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { Archive, Calendar, AlignLeft } from 'lucide-vue-next'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -12,26 +12,38 @@ import {
     DialogDescription,
     DialogFooter,
 } from '@/components/ui/dialog'
-
 import { useSpaceStore } from "@/stores/spaceStore";
 import { storeToRefs } from "pinia";
-
 import type { CardEvent } from '@/types/Task'
-
-import CardDetailDialog from '@/components/dialog/TaskDialog/CardDetailDialog.vue'
-import { useTaskStore } from '@/stores/taskStore';
-import { VersionConflictError } from '@/services/task/cardService'
+import CardDetailDialog from './dialog/CardDetailDialog.vue'
+import { VersionConflictError } from '@/features/tasks/services/cardService'
 import { toast } from 'vue-sonner'
+import { useTaskAction } from '../composables/task-api.ts'
+import { getAvatarColor, getInitials } from '@/features/tasks/utils/avatar'
+import { formattedDate, checkDueSoon, checkOverdue } from '@/features/tasks/utils/task-date'
+import { useVersionConflict } from '../composables/version-conflict.ts'
 
 const spaceStore = useSpaceStore();
 const { currentSpace } = storeToRefs(spaceStore);
 
-const taskStore = useTaskStore();
+const taskAction = useTaskAction();
+const taskConflict = useVersionConflict({
+    entityLabel: 'thẻ',
+    createCopy: async (attempted) => {
+        if (!currentSpace.value?.id) return
+        await taskAction.saveCard(
+            currentSpace.value.id,
+            '',
+            props.columnId,
+            attempted.title,
+            attempted.description,
+            [],
+            attempted.dueDate
+        )
+    }
+});
 
 const isCardDetailOpen = ref(false)
-const isConflictDialogOpen = ref(false)
-const conflictAttempted = ref<CardEvent | null>(null)
-const isCreatingCopy = ref(false)
 
 const props = defineProps<{ card: CardEvent, columnName: string, columnId: string }>()
 
@@ -46,7 +58,7 @@ const openDetail = () => {
 const saveInDetail = async (updatedCard: CardEvent) => {
     if (!currentSpace.value) return
     try {
-        await taskStore.saveCard(
+        await taskAction.saveCard(
             currentSpace.value.id,
             updatedCard.id,
             props.columnId,
@@ -57,13 +69,11 @@ const saveInDetail = async (updatedCard: CardEvent) => {
             updatedCard.version
         )
     } catch (e) {
-        console.log("CARD SAVE ERROR", e)
-    console.log("instanceof VersionConflictError:", e instanceof VersionConflictError)
         if (e instanceof VersionConflictError) {
             toast.error("Thẻ này vừa được người khác cập nhật. Vui lòng kiểm tra lại nội dung mới nhất.")
-            conflictAttempted.value = updatedCard
-            isCardDetailOpen.value = false   // đóng dialog sửa, tránh user tưởng vẫn đang edit bản cũ
-            isConflictDialogOpen.value = true
+            taskConflict.conflictData = updatedCard
+            isCardDetailOpen.value = false   
+            taskConflict.isConflictOpen = true
             return
         } else {
             console.error("Lỗi:", e)
@@ -72,76 +82,6 @@ const saveInDetail = async (updatedCard: CardEvent) => {
     }
 }
 
-const handleCreateCopy = async () => {
-    if (!currentSpace.value || !conflictAttempted.value) return
-    isCreatingCopy.value = true
-    try {
-        const attempted = conflictAttempted.value
-        await taskStore.saveCard(
-            currentSpace.value.id,
-            '',                 // cardId rỗng => tạo mới, không phải update
-            props.columnId,
-            attempted.title,
-            attempted.description,
-            [],
-            attempted.dueDate
-        )
-        toast.success("Đã tạo thẻ mới với nội dung bạn vừa nhập.")
-    } catch (e) {
-        console.error("Lỗi tạo thẻ mới:", e)
-        toast.error("Không thể tạo thẻ mới, vui lòng thử lại.")
-    } finally {
-        isCreatingCopy.value = false
-        isConflictDialogOpen.value = false
-        conflictAttempted.value = null
-    }
-}
-
-const handleDiscard = () => {
-    isConflictDialogOpen.value = false
-}
-
-const getInitials = (name?: string) => {
-    if (!name?.trim()) return '?'
-    const parts = name.trim().split(' ')
-    if (parts.length === 1) return parts[0]?.substring(0, 2).toUpperCase() ?? '?'
-    return ((parts[0]?.[0] ?? '') + (parts[parts.length - 1]?.[0] ?? '')).toUpperCase()
-}
-
-const avatarColors = [
-    'bg-rose-100 text-rose-600',
-    'bg-sky-100 text-sky-600',
-    'bg-violet-100 text-violet-600',
-    'bg-amber-100 text-amber-600',
-    'bg-emerald-100 text-emerald-600',
-    'bg-pink-100 text-pink-600',
-]
-
-const getAvatarColor = (name?: string) => {
-    if (!name) return avatarColors[0]
-    const idx = name.charCodeAt(0) % avatarColors.length
-    return avatarColors[idx]
-}
-
-const formattedDate = computed(() => {
-    if (!props.card.createdAt) return null
-    return new Date(props.card.createdAt).toLocaleDateString('vi-VN', {
-        day: '2-digit', month: '2-digit', year: 'numeric'
-    })
-})
-
-const isDueSoon = computed(() => {
-    if (!props.card.dueDate) return false
-    const due = new Date(props.card.dueDate)
-    const now = new Date()
-    const diff = (due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-    return diff <= 2 && diff >= 0
-})
-
-const isOverdue = computed(() => {
-    if (!props.card.dueDate) return false
-    return new Date(props.card.dueDate) < new Date()
-})
 </script>
 
 <template>
@@ -181,9 +121,9 @@ const isOverdue = computed(() => {
                             variant="outline"
                             :class="[
                                 'text-[10px] font-medium px-1.5 py-0 h-4 gap-0.5 rounded border',
-                                isOverdue
+                                checkOverdue(card.dueDate)
                                     ? 'bg-destructive/10 text-destructive border-destructive/20'
-                                    : isDueSoon
+                                    : checkDueSoon(card.dueDate)
                                         ? 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800/40'
                                         : 'bg-muted text-muted-foreground border-border/50'
                             ]"
@@ -215,7 +155,7 @@ const isOverdue = computed(() => {
                     </div>
 
                     <span v-if="formattedDate" class="text-[10px] text-muted-foreground/50 tabular-nums">
-                        {{ formattedDate }}
+                        {{ formattedDate(card.dueDate) }}
                     </span>
                 </div>
             </div>
@@ -227,8 +167,9 @@ const isOverdue = computed(() => {
             :column-name="props.columnName"
             :column-id="props.columnId"
             @save="saveInDetail"
+            
         />
-        <Dialog v-model:open="isConflictDialogOpen">
+        <Dialog v-model:open="taskConflict.isConflictOpen">
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Thẻ đã bị thay đổi bởi người khác</DialogTitle>
@@ -239,11 +180,11 @@ const isOverdue = computed(() => {
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
-                    <Button variant="outline" :disabled="isCreatingCopy" @click="handleDiscard">
+                    <Button variant="outline" :disabled="taskConflict.isCreatingCopy" @click="taskConflict.handleDiscard">
                         Bỏ qua, xem bản mới nhất
                     </Button>
-                    <Button :disabled="isCreatingCopy" @click="handleCreateCopy">
-                        {{ isCreatingCopy ? 'Đang tạo...' : 'Tạo thẻ mới với nội dung của tôi' }}
+                    <Button :disabled="taskConflict.isCreatingCopy" @click="taskConflict.handleCreateCopy">
+                        {{ taskConflict.isCreatingCopy ? 'Đang tạo...' : 'Tạo thẻ mới với nội dung của tôi' }}
                     </Button>
                 </DialogFooter>
             </DialogContent>

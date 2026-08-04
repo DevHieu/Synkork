@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import com.synkork.backend.modules.collaboration.task.dto.ColumnDTO;
 import com.synkork.backend.modules.collaboration.task.dto.ColumnRequest;
 import com.synkork.backend.modules.collaboration.task.dto.MoveColumnRequest;
+import com.synkork.backend.modules.collaboration.task.card.CardEntity;
 import com.synkork.backend.modules.collaboration.task.card.CardRepository;
 import com.synkork.backend.modules.space.SpaceEntity;
 import com.synkork.backend.modules.space.SpaceRepository;
@@ -174,7 +175,9 @@ public class ColumnService {
                 .orElseThrow(() -> new RuntimeException("Cột không tồn tại"));
 
         UUID spaceId = col.getSpace().getId();
-
+         
+        LocalDateTime colArchivedAt = col.getArchivedAt();
+    
         int nextPosition = columnRepository.findBySpaceIdAndArchivedFalseOrderByPositionAsc(spaceId).size();
 
         col.setArchived(false);
@@ -185,12 +188,16 @@ public class ColumnService {
         List<com.synkork.backend.modules.collaboration.task.card.CardEntity> archivedCards =
                 cardRepository.findByColumn_IdAndArchivedTrueOrderByPositionAsc(col.getId());
 
-        archivedCards.forEach(card -> {
+        List<CardEntity> cardsRestore = archivedCards.stream()
+                                                     .filter(c -> colArchivedAt != null && colArchivedAt.equals(c.getArchivedAt()))
+                                                     .toList();
+
+        cardsRestore.forEach(card -> {
             card.setArchived(false);
             card.setArchivedAt(null);
         });
 
-        cardRepository.saveAll(archivedCards);
+        cardRepository.saveAll(cardsRestore);
 
         entityManager.flush();
         entityManager.refresh(col);
@@ -205,6 +212,13 @@ public class ColumnService {
 
     @Transactional
     public void deleteAllArchivedColumns(UUID spaceId) {
+        List<ColumnEntity> archivedCols = columnRepository.findBySpaceIdAndArchivedTrueOrderByPositionAsc(spaceId);
+        List<UUID> columnIds = archivedCols.stream()    
+                                           .map(ColumnEntity::getId)
+                                           .toList();
+
+        if(!columnIds.isEmpty()) cardRepository.deleteByColumn_IdIn(columnIds);
+        
         columnRepository.deleteAllArchivedColumns(spaceId);
     }
 }

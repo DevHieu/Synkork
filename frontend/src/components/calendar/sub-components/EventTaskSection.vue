@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { useSpaceStore } from "@/stores/spaceStore";
-import { getAllColumns } from "@/services/task/columnService";
+import { getAllColumns } from "@/features/tasks/services/columnService";
 import { Label } from "@/components/ui/label";
 import {
   Select,
