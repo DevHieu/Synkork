@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, computed, nextTick } from "vue";
+import { ref, watch, onUnmounted, computed, nextTick } from "vue";
 import { chatSocket } from "./services/chatSocket";
 import { useRoute } from "vue-router";
 import { useSpaceStore } from "@/stores/spaceStore";
@@ -57,6 +57,12 @@ const togglePins = () => {
 };
 
 const isDM = computed(() => currentSpace.value?.roomType === "DM");
+const sidePanelOpen = computed(() => pinOpen.value || (!isDM.value && memberOpen.value));
+
+const closeSidePanel = () => {
+  pinOpen.value = false;
+  memberOpen.value = false;
+};
 
 onUnmounted(() => {
   if (spaceId.value) {
@@ -107,7 +113,7 @@ watch(currentSpace, (space, prevSpace) => {
       :dm-friend="dmFriend" :is-dm="isDM" @toggle-members="toggleMembers" @toggle-pins="togglePins"
       @search="(q) => console.log('search:', q)" />
 
-    <div class="flex flex-1 min-w-0 overflow-hidden">
+    <div class="relative flex flex-1 min-w-0 overflow-hidden">
       <div class="flex flex-col flex-1 min-w-0 overflow-hidden">
         <MessageList :key="currentSpace?.id" :messages="messages" :beforeHasMore="beforeHasMore"
           :afterHasMore="afterHasMore" :spaceId="currentSpace?.id ?? ''" :space-name="currentSpace?.name ?? ''"
@@ -115,19 +121,21 @@ watch(currentSpace, (space, prevSpace) => {
         <MessageInput :spaceId="currentSpace?.id ?? ''" :replying-to="replyingTo" />
       </div>
 
-      <div class="flex-none border-l h-full overflow-hidden transition-all duration-300 ease-in-out" :style="{
-        width: pinOpen ? '260px' : '0px',
-        opacity: pinOpen ? 1 : 0,
-        borderColor: 'var(--border)',
-      }">
+      <button v-if="sidePanelOpen" type="button" aria-label="Dong panel ben phai"
+        class="absolute inset-0 z-20 bg-background/50 backdrop-blur-[1px] lg:hidden" @click="closeSidePanel" />
+
+      <div v-if="pinOpen"
+        class="absolute inset-y-0 right-0 z-30 h-full w-[min(86vw,320px)] overflow-hidden border-l shadow-xl transition-transform duration-300 ease-in-out lg:relative lg:z-auto lg:w-65 lg:flex-none lg:shadow-none"
+        :style="{
+          borderColor: 'var(--border)',
+        }">
         <PinPanel :space-id="currentSpace?.id ?? ''" />
       </div>
 
       <!-- Member Sidebar -->
-      <div v-if="!isDM" class="flex-none border-l h-full overflow-hidden transition-all duration-300 ease-in-out"
+      <div v-if="!isDM && memberOpen"
+        class="absolute inset-y-0 right-0 z-30 h-full w-[min(86vw,320px)] overflow-hidden border-l shadow-xl transition-transform duration-300 ease-in-out lg:relative lg:z-auto lg:w-62.5 lg:flex-none lg:shadow-none"
         :style="{
-          width: memberOpen ? '250px' : '0px',
-          opacity: memberOpen ? 1 : 0,
           borderColor: 'var(--border)',
         }">
         <MemberPanel />

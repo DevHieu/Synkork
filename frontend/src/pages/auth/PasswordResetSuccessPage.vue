@@ -49,4 +49,4 @@ const router = useRouter();
   </div>
 </template>
 
-<style src="@/components/auth/auth.css"></style>
+<style src="@/features/auth/auth.css"></style>

@@ -4,7 +4,7 @@ import { useRouter } from "vue-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { requestPasswordReset } from "@/services/authService";
+import { requestPasswordReset } from "@/features/auth/services/authService";
 
 const router = useRouter();
 
@@ -115,4 +115,4 @@ const submitForgotPassword = async () => {
   </div>
 </template>
 
-<style src="@/components/auth/auth.css"></style>
+<style src="@/features/auth/auth.css"></style>

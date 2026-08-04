@@ -1,5 +1,5 @@
 import { socketService } from "@/services/websocket/socketService";
-import type { Message } from "@/types/Message";
+import type { Message } from "@/features/chats/types/MessageTypes";
 import type { MessageEventSuggestion } from "@/types/CalendarSuggestion";
 
 export const chatSocket = {

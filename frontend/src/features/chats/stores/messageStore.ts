@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { chatService } from "@/features/chats/services/chatService";
-import type { Message } from "@/types/Message";
+import type { Message } from "@/features/chats/types/MessageTypes";
 import type { MessageEventSuggestion } from "@/types/CalendarSuggestion";
 import { useChatComposable } from "@/features/chats/composable/chat.composable";
 

@@ -15,6 +15,7 @@ export interface Note {
   reminderAt: string | null     
   reminderSent: boolean | null  
   archived?: boolean 
+  version: number
 }
 
 export interface NoteRequest {
@@ -28,4 +29,5 @@ export interface NoteRequest {
   width?: number
   height?: number
   reminderAt?: string | null  
+  version?: number  
 }

@@ -11,6 +11,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import com.synkork.backend.modules.message.dto.*;
+import com.synkork.backend.modules.user.enums.PlanEnum;
 import com.synkork.backend.security.UserPrinciple;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -38,12 +39,16 @@ public class MessageService {
 
     @Autowired
     MessageRepository messageRepository;
+
     @Autowired
     SpaceRepository spaceRepository;
+
     @Autowired
     private ChatEventLlmService chatEventLlmService;
+
     @Autowired
     private ObjectMapper objectMapper;
+
     @Autowired
     private RoomMemberRepository roomMemberRepository;
 
@@ -79,6 +84,11 @@ public class MessageService {
         }
     }
 
+    public MessageEntity findById(UUID messageId) {
+        return messageRepository.findById(messageId)
+                .orElseThrow(() -> new IllegalArgumentException("Message not found"));
+    }
+
     @Transactional
     public MessageDTO saveMessage(String spaceId, MessageRequest request) {
         String senderId = AuthUtils.getCurrentUserId().toString();
@@ -91,7 +101,7 @@ public class MessageService {
                 .orElseThrow(() -> new IllegalArgumentException("Space not found"));
 
         RoomMemberEntity sender = resolveSender(space.getRoom().getId(), senderId, senderEmail);
-        requireChatEnabled(sender);
+        this.requireChatEnabled(sender);
 
         entity.setSender(sender);
         entity.setSpace(space);
@@ -109,10 +119,9 @@ public class MessageService {
         responseDto.setReplyToId(replyUUID);
 
         // Chỉ người có nạp VIP thì mới có cái suggestion này thôiiii
-//        if (sender.getUser().getCurrentPlan() != PlanEnum.FREE) {
-//            broadcastSuggestion(newMessage, sender);
-//        } dang test - thaihoc
-        broadcastSuggestion(newMessage, sender);
+        if (sender.getUser().getCurrentPlan() != PlanEnum.FREE) {
+            broadcastSuggestion(newMessage, sender);
+        }
 
         return responseDto;
     }
@@ -125,13 +134,10 @@ public class MessageService {
                 Optional<RoomMemberEntity> senderById = roomMemberRepository
                         .findByUserIdAndRoom_IdWithUser(userId, roomId);
                 if (senderById.isPresent()) {
-                    // System.out.println("[Tin nhan] Tim duoc sender theo userId=" + senderId + " trong roomId=" + roomId);
                     return senderById.get();
                 }
-                // System.out.println("[Tin nhan] Khong tim thay sender theo userId=" + senderId + " trong roomId=" + roomId);
             } catch (IllegalArgumentException ignored) {
                 // Bỏ qua để fallback sang email nếu userId trong session không hợp lệ.
-                // System.out.println("[Tin nhan] senderId khong phai UUID hop le: " + senderId);
             }
         }
 
@@ -140,10 +146,8 @@ public class MessageService {
             Optional<RoomMemberEntity> senderByEmail = roomMemberRepository
                     .findByUser_EmailAndRoom_Id(senderEmail, roomId);
             if (senderByEmail.isPresent()) {
-                // System.out.println("[Tin nhan] Tim duoc sender theo email=" + senderEmail + " trong roomId=" + roomId);
                 return senderByEmail.get();
             }
-            // System.out.println("[Tin nhan] Khong tim thay sender theo email=" + senderEmail + " trong roomId=" + roomId);
         }
 
         System.err.println("[Tin nhan] Khong the xac dinh sender. roomId=" + roomId + ", senderId=" + senderId + ", senderEmail=" + senderEmail);
@@ -151,8 +155,7 @@ public class MessageService {
     }
 
     public void deleteMessage(UUID messageId) {
-        MessageEntity message = messageRepository.findById(messageId)
-                .orElseThrow(() -> new IllegalArgumentException("Message not found"));
+        MessageEntity message = this.findById(messageId);
 
         message.setContent(null);
         message.setPinned(false);
@@ -173,15 +176,14 @@ public class MessageService {
     public MessageDTO updateMessage(String messageId, MessageRequest request) {
         UUID messageUUID =  UUID.fromString(messageId);
 
-        MessageEntity entity = messageRepository.findById(messageUUID)
-                .orElseThrow(() -> new IllegalArgumentException("Message not found"));
+        MessageEntity entity = this.findById(messageUUID);
 
         if (!entity.getVersion().equals(request.version())) {
             throw new ObjectOptimisticLockingFailureException(MessageEntity.class, entity.getId());
         }
 
         entity.setContent(request.content());
-        entity.setEdited(true); // thêm cái này vào là xong
+        entity.setEdited(true);
 
         MessageEntity saved = messageRepository.save(entity);
         saved.setUpdatedAt(saved.getUpdatedAt());
@@ -190,7 +192,7 @@ public class MessageService {
     }
 
     public MessageDTO changeMessagePinStatus(UUID messageUUID) {
-        MessageEntity entity = messageRepository.findById(messageUUID).orElseThrow(() -> new IllegalArgumentException("Message not found"));
+        MessageEntity entity = this.findById(messageUUID);
 
         entity.setPinned(!entity.isPinned());
         messageRepository.save(entity);
@@ -261,7 +263,7 @@ public class MessageService {
                 .findByUserIdAndRoom_IdWithUser(userId, space.getRoom().getId())
                 .orElseThrow(() -> new IllegalArgumentException("User is not a member of this room"));
 
-        requireChatEnabled(sender);
+        this.requireChatEnabled(sender);
 
         // Gửi từng file message
         for (MultipartFile file : fileList) {

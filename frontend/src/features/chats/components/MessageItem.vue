@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import MessageActions from "./sub-components/MessageActions.vue";
 import ReplyQuote from "./sub-components/ReplyQuote.vue";
 import FileAttachment from "./sub-components/FileAttachment.vue";
-import type { Message } from "@/types/Message";
+import type { Message } from "@/features/chats/types/MessageTypes.ts";
 
 import { computed, ref, watch } from "vue";
 import { useMessageStore } from "@/features/chats/stores/messageStore.ts";

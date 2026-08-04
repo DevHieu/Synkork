@@ -10,6 +10,7 @@ import com.synkork.backend.modules.collaboration.note.dto.NoteResponse;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import java.time.Instant;
 import java.util.List;
@@ -81,21 +82,25 @@ public class NoteService {
         UUID noteId = UUID.fromString(id);
         NoteEntity note = noteRepository.findById(noteId)
             .orElseThrow(() -> new RuntimeException("Note not found: " + id));
-
+        if (request.getVersion() != null && !request.getVersion().equals(note.getVersion())) {
+            throw new ObjectOptimisticLockingFailureException(NoteEntity.class, note.getId());
+        }
         if (request.getTitle() != null) note.setTitle(request.getTitle());
         if (request.getNote()  != null) note.setNote(request.getNote());
         if (request.getPinned() != null) note.setPinned(request.getPinned());
         if (request.getColor() != null) note.setColor(request.getColor());
-
+    
         return new NoteResponse(noteRepository.save(note));
     }
-
-    public void deleteNote(String id) {
+    
+    public void deleteNote(String id, Integer version) {
         UUID uuid = UUID.fromString(id);
-        if (!noteRepository.existsById(uuid)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Note not found");
+        NoteEntity note = noteRepository.findById(uuid)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Note not found"));
+        if (version != null && !version.equals(note.getVersion())) {
+            throw new ObjectOptimisticLockingFailureException(NoteEntity.class, note.getId());
         }
-        noteRepository.deleteById(uuid);
+        noteRepository.delete(note);
     }
 
     public NoteResponse togglePin(String id) {
@@ -206,7 +211,8 @@ public class NoteService {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không phải thành viên của room này"));
     
         if (member.getRole() != RoomMemberRoleEnum.OWNER && member.getRole() != RoomMemberRoleEnum.ADMIN) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Chỉ Owner hoặc Admin mới được quản lý ghi chú lưu trữ");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Chỉ Owner hoặc Admin mới được xóa ghi chú");
         }
     }
+    
 }

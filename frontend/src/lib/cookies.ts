@@ -15,11 +15,11 @@ export function getCookie(name: string): string | undefined {
 export function setCookie(
   name: string,
   value: string,
-  maxAge: number = DEFAULT_MAX_AGE,
+  maxAge?: number | null,
 ): void {
   if (typeof document === "undefined") return;
 
-  document.cookie = `${name}=${value}; path=/; max-age=${maxAge}`;
+  document.cookie = `${name}=${value}; path=/; max-age=${maxAge != null ? maxAge : DEFAULT_MAX_AGE}`;
 }
 
 export function removeCookie(name: string): void {

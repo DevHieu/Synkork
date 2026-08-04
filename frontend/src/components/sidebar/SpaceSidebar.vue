@@ -10,7 +10,7 @@ import { createSpace, updateSpace, deleteSpace } from "@/services/spaceService";
 import { useRoomsStore } from "@/stores/roomStore";
 import { useSpaceStore } from "@/stores/spaceStore";
 import { useRoomMemberStore } from "@/stores/roomMemberStore";
-import { useVoiceSpaceStore } from "@/stores/voiceSpaceStore";
+import { useVoiceSpaceStore } from "@/features/voice-chat/stores/voiceSpaceStore";
 import { storeToRefs } from "pinia";
 import { toast } from "vue-sonner";
 

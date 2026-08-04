@@ -46,7 +46,7 @@ public class MessageEntity extends BaseEntity {
     private String attachmentPublicId;  // cần để xóa trên Cloudinary
 
     @Column(name = "attachment_resource_type")
-    private String attachmentResourceType;  // "image" hoặc "raw" để xóa đúng
+    private String attachmentResourceType;  // "image", "video" hoặc "raw" để xóa đúng
 
     @Column(name = "attachment_name")
     private String attachmentName;  // tên file gốc để hiển thị cho user

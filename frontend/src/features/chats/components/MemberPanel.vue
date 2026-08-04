@@ -12,7 +12,7 @@ const { owners, admins, regularMembers, loading } =
 </script>
 
 <template>
-  <aside class="hidden lg:flex flex-col w-full h-full shrink-0 overflow-hidden" style="
+  <aside class="flex flex-col w-full h-full shrink-0 overflow-hidden" style="
       background: color-mix(in oklch, var(--sidebar) 40%, transparent);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);

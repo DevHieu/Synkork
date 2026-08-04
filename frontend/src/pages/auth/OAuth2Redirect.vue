@@ -42,7 +42,7 @@ onMounted(async () => {
   }
 
   try {
-    await setCookie("accessToken", token, 60 * 60 * 15); // 15 minutes
+    await setCookie("accessToken", token);
     await userStore.getUserInfo();
     if (!userStore.user) {
       setAuthFlashMessage(getOAuthErrorMessage("ACCOUNT_NOT_VERIFIED"));

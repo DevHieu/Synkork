@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import AuthOverlay from "@/components/auth/AuthOverlay.vue";
-import LoginForm from "@/components/auth/LoginForm.vue";
-import RegisterForm from "@/components/auth/RegisterForm.vue";
+import AuthOverlay from "@/features/auth/components/AuthOverlay.vue";
+import LoginForm from "@/features/auth/components/LoginForm.vue";
+import RegisterForm from "@/features/auth/components/RegisterForm.vue";
 
 const isRegister = ref(false);
 
@@ -32,7 +32,7 @@ const goToLogin = () => (isRegister.value = false);
     </div>
   </div>
 </template>
-<style src="@/components/auth/auth.css"></style>
+<style src="@/features/auth/auth.css"></style>
 
 <style scoped>
 .page-wrap {
@@ -46,9 +46,11 @@ const goToLogin = () => (isRegister.value = false);
   background: var(--auth-background);
   transition: background 1.2s ease;
 }
+
 .page-wrap.mode-login {
   background: var(--auth-login-background);
 }
+
 .page-wrap.mode-register {
   background: var(--auth-register-background);
 }
@@ -61,6 +63,7 @@ const goToLogin = () => (isRegister.value = false);
   pointer-events: none;
   animation: drift 18s ease-in-out infinite;
 }
+
 .orb-1 {
   width: 520px;
   height: 520px;
@@ -69,6 +72,7 @@ const goToLogin = () => (isRegister.value = false);
   left: -10%;
   animation-duration: 20s;
 }
+
 .orb-2 {
   width: 400px;
   height: 400px;
@@ -78,6 +82,7 @@ const goToLogin = () => (isRegister.value = false);
   animation-duration: 25s;
   animation-delay: -6s;
 }
+
 .orb-3 {
   width: 350px;
   height: 350px;
@@ -87,6 +92,7 @@ const goToLogin = () => (isRegister.value = false);
   animation-duration: 22s;
   animation-delay: -10s;
 }
+
 .orb-4 {
   width: 280px;
   height: 280px;
@@ -97,6 +103,7 @@ const goToLogin = () => (isRegister.value = false);
   animation-duration: 28s;
   animation-delay: -4s;
 }
+
 .orb-5 {
   width: 200px;
   height: 200px;
@@ -111,22 +118,27 @@ const goToLogin = () => (isRegister.value = false);
 .mode-register .orb-1 {
   transform: translate(30%, 40%);
 }
+
 .mode-register .orb-2 {
   transform: translate(-30%, -30%);
 }
+
 .mode-register .orb-3 {
   transform: translate(-20%, 20%);
   opacity: 0.7;
 }
 
 @keyframes drift {
+
   0%,
   100% {
     transform: translate(0, 0) scale(1);
   }
+
   33% {
     transform: translate(3%, -4%) scale(1.04);
   }
+
   66% {
     transform: translate(-2%, 3%) scale(0.97);
   }
@@ -166,6 +178,7 @@ const goToLogin = () => (isRegister.value = false);
     opacity var(--dur) var(--ease),
     transform var(--dur) var(--ease);
 }
+
 .half::-webkit-scrollbar {
   display: none;
 }
@@ -174,6 +187,7 @@ const goToLogin = () => (isRegister.value = false);
   transform: translateX(0);
   opacity: 1;
 }
+
 .half-register {
   position: absolute;
   right: 0;
@@ -189,6 +203,7 @@ const goToLogin = () => (isRegister.value = false);
   opacity: 0;
   pointer-events: none;
 }
+
 .auth-card.show-register .half-register {
   transform: translateX(0);
   opacity: 1;

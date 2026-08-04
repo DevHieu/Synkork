@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from "vue"
-import { useVoiceSpaceStore } from "@/stores/voiceSpaceStore"
+import { useVoiceSpaceStore } from "@/features/voice-chat/stores/voiceSpaceStore"
 import { Volume2, VolumeX, Mic, Headphones, Bell } from "lucide-vue-next"
 
 import { Slider } from "@/components/ui/slider"

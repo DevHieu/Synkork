@@ -33,7 +33,7 @@ const loadMore = async () => {
 </script>
 
 <template>
-  <aside class="hidden lg:flex flex-col w-full h-full shrink-0 overflow-hidden" style="
+  <aside class="flex flex-col w-full h-full shrink-0 overflow-hidden" style="
       background: color-mix(in oklch, var(--sidebar) 40%, transparent);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
@@ -51,9 +51,9 @@ const loadMore = async () => {
     <div class="px-3 pb-2">
       <div class="flex items-center gap-1.5 rounded-md px-2.5 h-7 bg-background/60 border"
         style="border-color: var(--border)">
-        <Search class="w-3.5 h-3.5 text-foreground" />
+        <Search class="w-3.5 h-3.5 shrink-0 text-foreground" />
         <input v-model="searchQuery" placeholder="Tìm trong ghim..."
-          class="flex-1 bg-transparent border-none outline-none text-[12px] text-foreground placeholder:text-muted-foreground" />
+          class="min-w-0 flex-1 bg-transparent border-none outline-none text-[12px] text-foreground placeholder:text-muted-foreground" />
       </div>
     </div>
 

@@ -12,7 +12,7 @@ import OtpPage from "@/pages/auth/OtpPage.vue";
 import PasswordResetSuccessPage from "@/pages/auth/PasswordResetSuccessPage.vue";
 
 import ChatWindow from "@/features/chats/index.vue";
-import VoiceWindow from "@/components/windows/VoiceWindow.vue";
+import VoiceWindow from "@/features/voice-chat/index.vue";
 import NoteWindow from "@/components/windows/NoteWindow.vue";
 import TaskWindow from "@/features/tasks/index.vue";
 import CalendarWindowLayout from "@/components/windows/CalendarWindowLayout.vue";
@@ -150,16 +150,11 @@ router.beforeEach(async (to) => {
         { withCredentials: true },
       );
       const newToken = response.data;
-      setCookie("accessToken", newToken, 60 * 60 * 15); // 15 minutes
+      setCookie("accessToken", newToken);
       return;
     } catch {
       return { path: "/auth" };
     }
-  }
-
-  // Đã login rồi mà vào auth pages
-  if (token && to.path.includes("/auth")) {
-    return { path: "/me" };
   }
 
   if (to.path === "/") {

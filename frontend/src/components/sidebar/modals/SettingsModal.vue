@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { logout } from "@/services/authService"
+import { logout } from "@/features/auth/services/authService"
 import { userService } from "@/services/userService"
 import { useUserStore } from "@/stores/userStore"
 import { ref, reactive, computed, onMounted, onUnmounted } from "vue"
@@ -252,7 +252,7 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
               <h2 class="text-base font-bold text-foreground">
                 <template v-if="activeTab === 'account'">Tài Khoản Của Tôi</template>
                 <template v-else>{{settingsTabs.flatMap(g => g.items).find(i => i.id === activeTab)?.label
-                }}</template>
+                  }}</template>
               </h2>
               <Button variant="ghost" size="sm" class="gap-1.5 text-muted-foreground text-[11px]"
                 @click="emit('close')">
@@ -299,16 +299,6 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
                     <Check class="size-4" /> {{ editSuccess }}
                   </div>
                 </Transition>
-
-                <!-- Sub tabs -->
-                <div class="flex border-b border-border mb-5">
-                  <button
-                    class="px-4 py-2 text-sm font-medium text-primary border-b-2 border-primary -mb-px transition-colors">Bảo
-                    mật</button>
-                  <button
-                    class="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground -mb-px transition-colors">Trạng
-                    thái</button>
-                </div>
 
                 <!-- Info fields -->
                 <div class="rounded-lg overflow-hidden bg-muted">
@@ -545,18 +535,6 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
               <!-- ──── AUDIO ──── -->
               <template v-else-if="activeTab === 'audio'">
                 <AudioSettingsTab />
-              </template>
-
-              <!-- ──── BILLING ──── -->
-              <template v-else-if="activeTab === 'billing'">
-                <p class="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-3">Nâng cấp lên Pro
-                </p>
-                <div class="rounded-lg bg-muted p-10 text-center">
-                  <Sparkles class="size-12 mx-auto mb-3 text-primary" />
-                  <p class="font-bold text-base text-foreground mb-1">Synkork Pro</p>
-                  <p class="text-sm text-muted-foreground mb-5">Mở khóa toàn bộ tính năng cao cấp</p>
-                  <Button>Nâng cấp ngay</Button>
-                </div>
               </template>
 
               <!-- ──── PLACEHOLDER ──── -->
