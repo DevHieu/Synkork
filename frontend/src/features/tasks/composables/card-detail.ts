@@ -4,9 +4,11 @@ import { useTaskAction } from "./task-api";
 import { ref, computed } from "vue";
 import type { MemberSummary } from "@/types/Task";
 import type { Member } from "@/types/Member";
+import { checkOverdue } from "../utils/task-date";
+import { toast } from "vue-sonner";
 
 export function useCardDetail(
-    props: { card: any; open: boolean },
+    props: { card: any; open: boolean; readOnly: boolean },
     emit: Function,
 ) {
     const spaceStore = useSpaceStore();
@@ -34,11 +36,6 @@ export function useCardDetail(
         return "NORMAL";
     }
 
-    const clearDueDate = () => {
-        form.value.dueDate = ""
-        handleSave()
-    };
-
     const emitSave = () => {
         if (!form.value.title.trim()) return;
         const formattedDueDate = form.value.dueDate
@@ -54,13 +51,29 @@ export function useCardDetail(
         });
     };
 
+    const handleĐueDateChange = () => {
+        if (props.readOnly) return;
+        if(form.value.dueDate) {
+            const formattedDueDate = `${form.value.dueDate}:00`;
+
+            if(checkOverdue(formattedDueDate)) {
+                toast.error("Không thể đặt ngày hết hạn trong quá khứ.");
+                form.value.dueDate = props.card.dueDate ? props.card.dueDate.slice(0, 16) : "";
+                return;
+            }
+        }
+        emitSave();
+    }
+
     const handleSave = () => {
+        if (props.readOnly) return;
         if (!form.value.title.trim()) return;
         emitSave();
     };
 
     const handleArchive = () => {
         if (!currentSpace.value) return;
+        if (props.readOnly) return;
 
         taskAction.archiveCardEvent(currentSpace.value.id, props.card.id);
 
@@ -69,6 +82,7 @@ export function useCardDetail(
     };
 
     const toggleAssignee = (member: Member) => {
+        if (props.readOnly) return;
         const exists = localAssignees.value.some((a) => a.id === member.memberId);
 
         if (exists) {
@@ -87,6 +101,7 @@ export function useCardDetail(
     };
 
     const removeAssignee = (id: string) => {
+        if (props.readOnly) return;
         localAssignees.value = localAssignees.value.filter((a) => a.id !== id);
         emitSave();
     };
@@ -97,10 +112,10 @@ export function useCardDetail(
         localAssignees,
         baseVersion,
         getStatus,
-        clearDueDate,
         handleSave,
         handleArchive,
         toggleAssignee,
-        removeAssignee
+        removeAssignee,
+        handleĐueDateChange
     }
 }

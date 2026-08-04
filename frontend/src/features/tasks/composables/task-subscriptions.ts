@@ -148,7 +148,12 @@ export const subscribeToSpace = async (spaceId: string) => {
         if (archivedIndex !== -1) {
             archivedColumns.splice(archivedIndex, 1)
         }
-        columns.push(col)
+
+        const archivedCardIds = new Set(archivedCards.map(c => c.id))
+        columns.push({
+            ...col,
+            cards: (col.cards ?? []).filter((c: CardEvent) => !archivedCardIds.has(c.id)),
+        })
         columns.sort((a, b) => a.position - b.position)
     });
 

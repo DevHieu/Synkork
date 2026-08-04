@@ -42,8 +42,9 @@ export function useTaskAction() {
             return;
         }
         try {
-            await updateColumn(spaceId, columnId, { name: title, version });
-
+            const res = await updateColumn(spaceId, columnId, { name: title, version });
+            const i = columns.value.findIndex(c => c.id === columnId);
+            if(i!== -1 && res?.data) columns.value[i] = { ...columns.value[i], ...res.data };
         } catch (e) {
             if (e instanceof ColumnVersionConflictError) {
                 const i = columns.value.findIndex(c => c.id === columnId);
@@ -71,7 +72,14 @@ export function useTaskAction() {
             return;
         }
         try {
-            await updateCard(spaceId, cardId, { title, description, assigneeIds, dueDate, version });
+            const res = await updateCard(spaceId, cardId, { title, description, assigneeIds, dueDate, version });
+            if (res) {
+                const col = columns.value.find(c => c.id === (res.columnId ?? columnId));
+                if (col?.cards) {
+                    const i = col.cards.findIndex(c => c.id === cardId);
+                    if (i !== -1) col.cards[i] = { ...col.cards[i], ...res };
+                }
+            }
         } catch (e) {
             if (e instanceof VersionConflictError) {
                 const i = tasks.value.findIndex(c => c.id === cardId);

@@ -7,7 +7,7 @@ import { taskSocket } from '@/features/tasks/services/taskSocket.ts'
 import { useSpaceStore } from "@/stores/spaceStore";
 import { useTaskStore } from "@/features/tasks/stores/taskStore";
 import { storeToRefs } from "pinia";
-import type { CardEvent, ColumnEvent, TaskMoveEvent } from "@/types/Task";
+import type { ColumnEvent, TaskMoveEvent } from "@/types/Task";
 import {
     Dialog,
     DialogContent,
@@ -28,6 +28,7 @@ import { ColumnVersionConflictError } from '@/features/tasks/services/columnServ
 import { subscribeToSpace } from './composables/task-subscriptions'
 import { useTaskAction } from './composables/task-api'
 import { useVersionConflict } from './composables/version-conflict'
+import { useTaskDialogs } from './composables/task-dialog'
 
 const spaceStore = useSpaceStore();
 const { currentSpace } = storeToRefs(spaceStore);
@@ -42,20 +43,14 @@ const taskConflict = useVersionConflict({
         await taskAction.saveColumn(currentSpace.value.id, '', attempted.title)
     }
 });
+const taskDialog = useTaskDialogs();
 
 const route = useRoute();
 const spaceId = route.params.spaceId as string;
 
 const isSocketConnected = ref(false)
 
-const isColumnDialogOpen = ref(false)
-const editingCol = ref<ColumnEvent | null>(null)
-
-const isCardDialogOpen = ref(false)
-const editingCard = ref<CardEvent | null>(null)
-
 const isSaving = ref(false)
-const targetColumnId = ref<string>('')
 
 const isDeleteOpen = ref(false)
 const deleteType = ref<'column' | 'card'>('column')
@@ -70,17 +65,14 @@ const props = defineProps<{
     roomId: String,
 }>()
 
-const openColumnDialog = (col: ColumnEvent | null) => {
-    editingCol.value = col
-    isColumnDialogOpen.value = true
-}
+const { isCardDialogOpen, isColumnDialogOpen, editingCard, editingCol, targetColumnId } = taskDialog
 
 const handleSaveColumn = async (data: { title: string }) => {
     if (!currentSpace.value?.id) return;
     isSaving.value = true
     try {
-        await taskAction.saveColumn(currentSpace.value.id, editingCol.value?.id ?? '', data.title, editingCol.value?.version)
-        isColumnDialogOpen.value = false
+        await taskAction.saveColumn(currentSpace.value.id, taskDialog.editingCol.value?.id ?? '', data.title, taskDialog.editingCol.value?.version)
+        taskDialog.isColumnDialogOpen.value = false
     } catch (e) {
         if (e instanceof ColumnVersionConflictError) {
             toast.error("Cột này vừa được người khác cập nhật. Vui lòng kiểm tra lại nội dung mới nhất.")
@@ -93,7 +85,6 @@ const handleSaveColumn = async (data: { title: string }) => {
         isSaving.value = false
     }
 }
-
 
 const confirmDeleteColumn = (colId: string) => {
     console.log("CLICK DELETE", colId)
@@ -117,20 +108,14 @@ const onColumnMove = async (event: TaskMoveEvent) => {
     }
 }
 
-const openCardDialog = (columnId: string) => {
-    targetColumnId.value = columnId
-    editingCard.value = null
-    isCardDialogOpen.value = true
-}
-
 const handleSaveCard = async (data: { title: string, description: string }) => {
     if (!currentSpace.value?.id) return;
     try {
         await taskAction.saveCard(
-            currentSpace.value.id, editingCard.value?.id ?? '',
-            targetColumnId.value, data.title, data.description, [], undefined, editingCard.value?.version
+            currentSpace.value.id, taskDialog.editingCard.value?.id ?? '',
+            taskDialog.targetColumnId.value, data.title, data.description, [], undefined, taskDialog.editingCard.value?.version
         )
-        isCardDialogOpen.value = false
+        taskDialog.isCardDialogOpen.value = false
     } catch (e) {
         if (e instanceof VersionConflictError) {
             toast.error("Thẻ này vừa được người khác cập nhật. Vui lòng kiểm tra lại nội dung mới nhất.")
@@ -169,12 +154,14 @@ const handleDeleteArchived = async () => {
     isDeleteOpen.value = false
     deleteData.value = null
     isArchiveOpen.value = true
+    taskAction.fetchArchivedItems(spaceId)
 }
 
 const handleDeleteAllArchived = async () => {
     await taskAction.deleteAllArchived(deleteAllType.value, spaceId)
     isDeleteAllOpen.value = false
     isArchiveOpen.value = true
+    taskAction.fetchArchivedItems(spaceId)
 }
 
 const clearAll = async () => {
@@ -247,13 +234,13 @@ watch(
                 <draggable v-model="columns" group="columns" item-key="id" handle=".column-handle"
                     @change="onColumnMove" class="flex gap-6 items-start h-full">
                     <template #item="{ element: col }">
-                        <TaskColumn :column="col" :space-name="currentSpace?.name ?? ''" @edit-column="openColumnDialog"
-                            @archive-column="taskAction.archiveColumnEvent(spaceId, col.id)" @add-card="openCardDialog" @archive-card="taskAction.archiveCardEvent(spaceId, $event)"
+                        <TaskColumn :column="col" :space-name="currentSpace?.name ?? ''" @edit-column="taskDialog.openColumnDialog"
+                            @archive-column="taskAction.archiveColumnEvent(spaceId, col.id)" @add-card="taskDialog.openCardDialog" @archive-card="taskAction.archiveCardEvent(spaceId, $event)"
                             @card-move="onCardMove" />
                     </template>
                 </draggable>
 
-                <div @click="openColumnDialog(null)"
+                <div @click="taskDialog.openColumnDialog(null)"
                     class="add-column-btn flex-shrink-0 w-72 h-28 border-2 border-dashed border-border/60 rounded-2xl flex flex-col items-center justify-center gap-2.5 group cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all duration-200">
                     <div
                         class="w-8 h-8 rounded-xl bg-muted group-hover:bg-primary/15 flex items-center justify-center transition-colors">

@@ -81,9 +81,9 @@ public class CardService {
         CardEntity card = cardRepository.findById(cardId)
                 .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
 
-                if (!card.getVersion().equals(req.version())) {
-                    System.out.println("REQUEST VERSION = " + req.version());
-System.out.println("DB VERSION = " + card.getVersion());
+            if (!card.getVersion().equals(req.version())) {
+                System.out.println("REQUEST VERSION = " + req.version());
+                System.out.println("DB VERSION = " + card.getVersion());
             throw new ObjectOptimisticLockingFailureException(CardEntity.class, card.getId());
         }
 

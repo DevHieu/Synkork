@@ -167,6 +167,7 @@ const saveInDetail = async (updatedCard: CardEvent) => {
             :column-name="props.columnName"
             :column-id="props.columnId"
             @save="saveInDetail"
+            
         />
         <Dialog v-model:open="taskConflict.isConflictOpen">
             <DialogContent>

@@ -65,4 +65,8 @@ public interface CardRepository extends JpaRepository<CardEntity, UUID> {
                         )
                   """)
       int deleteAllArchivedCards(@Param("spaceId") UUID spaceId);
+
+      @Modifying
+      @Query("DELETE FROM CardEntity c WHERE c.column.id IN :columnIds")
+      void deleteByColumn_IdIn(@Param("columnIds") List<UUID> columnIds);
 }

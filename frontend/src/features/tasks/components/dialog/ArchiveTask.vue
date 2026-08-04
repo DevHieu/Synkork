@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Archive, Trash2 } from 'lucide-vue-next'
 import { storeToRefs } from 'pinia'
 import {
@@ -12,6 +12,8 @@ import { useTaskStore } from '@/features/tasks/stores/taskStore'
 import { useSpaceStore } from '@/stores/spaceStore'
 import { useRoomMemberStore } from '@/stores/roomMemberStore'
 import { useTaskAction } from '../../composables/task-api'
+import type { CardEvent } from '@/types/Task'
+import CardDetailDialog from './CardDetailDialog.vue'
 
 const props = defineProps<{
     open: boolean
@@ -38,6 +40,19 @@ const { canManage } = storeToRefs(memberStore)
 
 const archiveTab = ref<'columns' | 'cards'>('columns')
 const unarchiveError = ref<string | null>(null)
+
+const isCardDetailOpen = ref(false)
+const selectedCard = ref<CardEvent | null>(null)
+
+const selectedColumnName = computed(() => {
+    if (!selectedCard.value) return ''
+    return columns.value.find(c => c.id === selectedCard.value?.columnId)?.name ?? '—'
+})
+
+const openCardDetail = (card: CardEvent) => {
+    selectedCard.value = card
+    isCardDetailOpen.value = true
+}
 
 watch(() => props.open, async (open) => {
     if (!currentSpace.value?.id) return
@@ -149,7 +164,7 @@ const handleUnarchiveCard = async (cardId: string) => {
 
                         <div v-for="card in archivedCards" :key="card.id" class="p-3 rounded-lg bg-muted">
                             <div class="flex items-center justify-between">
-                                <span class="text-sm font-medium truncate">
+                                <span class="text-sm font-medium truncate" @click="openCardDetail(card)" style="cursor: pointer;">
                                     {{ card.title }}
                                 </span>
                                 <div>
@@ -172,4 +187,7 @@ const handleUnarchiveCard = async (cardId: string) => {
             </div>
         </PopoverContent>
     </Popover>
+
+    <CardDetailDialog v-if="selectedCard" v-model:open="isCardDetailOpen" :card="selectedCard" :column-name="selectedColumnName"
+        :read-only="true" />
 </template>
