@@ -241,7 +241,6 @@ public class PaymentService {
 
             UserEntity user = userService.findByEmail(userEmail);
 
-            deactivateCurrentSubscription(user);
             createNewSubscription(user, plan, invoice, now, expireDate);
             updateUserPlanCache(user, plan, expireDate);
 
@@ -307,8 +306,11 @@ public class PaymentService {
                 });
     }
 
-    private void createNewSubscription(UserEntity user, String plan, InvoiceEntity invoice,
+    public void createNewSubscription(UserEntity user, String plan, InvoiceEntity invoice,
                                        LocalDateTime now, LocalDateTime expireDate) {
+
+        deactivateCurrentSubscription(user);
+
         UserSubscriptionEntity subscription = UserSubscriptionEntity.builder()
                 .user(user)
                 .plan(PlanEnum.valueOf(plan.toUpperCase()))

@@ -19,6 +19,7 @@ import com.synkork.backend.modules.admin.users.email.AdminUserEmailService;
 import com.synkork.backend.modules.admin.utils.AdminUtils;
 import com.synkork.backend.modules.collaboration.calendar.repository.CalendarEventRepository;
 import com.synkork.backend.modules.payment.service.ExpiredSubscriptionService;
+import com.synkork.backend.modules.payment.service.PaymentService;
 import com.synkork.backend.modules.report.ReportRepository;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.RoomRepository;
@@ -85,6 +86,9 @@ public class AdminUserService {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private PaymentService paymentService;
 
     public UserStatsResponse getUserStatsData(LocalDateTime dateFrom, LocalDateTime dateTo) {
         RoleEnum userRole = RoleEnum.USER;
@@ -178,6 +182,11 @@ public class AdminUserService {
                 : PlanEnum.FREE);
 
         UserEntity saved = userAdminRepository.save(user);
+
+        if (saved.getCurrentPlan() != PlanEnum.FREE) {
+            paymentService.createNewSubscription(saved, saved.getCurrentPlan().toString(), null, LocalDateTime.now(), LocalDateTime.now().plusMonths(1));
+        }
+
         adminUserEmailService.sendWelcomeEmail(saved.getEmail(), saved.getUsername(), tempPassword);
         createLog(saved, LogActionEnum.CREATE_USER, null, Map.of(
                 "status", saved.getStatus().name(),
@@ -212,7 +221,12 @@ public class AdminUserService {
 
             if (plan != oldPlan) {
                 user.setCurrentPlan(plan);
-                if (isPlanDowngrade(oldPlan, plan)) {
+
+                if (plan != PlanEnum.FREE) {
+                    paymentService.createNewSubscription(user, req.plan().toUpperCase(), null, LocalDateTime.now(), LocalDateTime.now().plusMonths(1));
+                }
+
+                if (AdminUtils.isPlanDowngrade(oldPlan, plan)) {
                     expiredSubscriptionService.pinPendingRemovalRoomAndSpace(List.of(user), plan);
                 } else {
                     expiredSubscriptionService.changePendingRoomAndSpace(user.getId());
@@ -346,21 +360,6 @@ public class AdminUserService {
                 roomMemberService.transferOwnerBeforeRemoving(room, remainingMembers);
             }
         }
-    }
-
-    private boolean isPlanDowngrade(PlanEnum oldPlan, PlanEnum newPlan) {
-        return planRank(newPlan) < planRank(oldPlan);
-    }
-
-    private int planRank(PlanEnum plan) {
-        if (plan == null) {
-            return 1;
-        }
-        return switch (plan) {
-            case FREE -> 1;
-            case TEAM -> 2;
-            case BUSINESS -> 3;
-        };
     }
 
     private Map<String, Object> metadata(Object... keyValues) {
