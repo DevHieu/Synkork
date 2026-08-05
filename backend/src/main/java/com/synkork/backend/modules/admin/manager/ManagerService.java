@@ -137,7 +137,7 @@ public class ManagerService {
     }
 
     private boolean isLockedStatus(UserStatusEnum status) {
-        return status == UserStatusEnum.INACTIVE || status == UserStatusEnum.BANNED;
+        return status == UserStatusEnum.NOT_VERIFIED || status == UserStatusEnum.BANNED;
     }
 
     private UserEntity findManagedAccount(UUID id) {

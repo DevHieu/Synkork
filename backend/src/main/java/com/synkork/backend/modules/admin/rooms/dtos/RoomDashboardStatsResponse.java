@@ -1,4 +1,4 @@
-package com.synkork.backend.modules.admin.rooms.dashboardroom;
+package com.synkork.backend.modules.admin.rooms.dtos;
 
 import lombok.Builder;
 import lombok.Data;

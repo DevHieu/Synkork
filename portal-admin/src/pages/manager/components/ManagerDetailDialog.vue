@@ -53,23 +53,23 @@ const form = reactive({
   displayName: '',
   username: '',
   email: '',
-  status: 'active' as ManagerStatus,
-  role: 'manager' as ManagementRole,
+  status: 'ACTIVE' as ManagerStatus,
+  role: 'MANAGER' as ManagementRole,
   plan: 'FREE' as ManagerPlan,
 })
 
 const displayAccount = computed(() => accountDetail.value || props.account || null)
 
 const statusOptions = [
-  { value: 'active', label: 'Hoạt động' },
-  { value: 'inactive', label: 'Ngừng hoạt động' },
-  { value: 'banned', label: 'Bị khóa' },
+  { value: 'ACTIVE', label: 'Hoạt động' },
+  { value: 'BANNED', label: 'Bị khóa' },
+  { value: 'NOT_VERIFIED', label: 'Chưa xác minh', disabled: true },
 ] as const
 
 const roleOptions = [
-  { value: 'user', label: 'Người dùng' },
-  { value: 'manager', label: 'Quản lý' },
-  { value: 'admin', label: 'Quản trị viên' },
+  { value: 'USER', label: 'Người dùng' },
+  { value: 'MANAGER', label: 'Quản lý' },
+  { value: 'ADMIN', label: 'Quản trị viên' },
 ] as const
 
 const planOptions = ['FREE', 'TEAM', 'BUSINESS'] as const
@@ -78,8 +78,8 @@ function syncForm(account: ManagerAccount) {
   form.displayName = account.displayName || ''
   form.username = account.username || ''
   form.email = account.email || ''
-  form.status = account.status || 'active'
-  form.role = account.role || 'manager'
+  form.status = account.status || 'ACTIVE'
+  form.role = account.role || 'MANAGER'
   form.plan = account.plan || 'FREE'
 }
 
@@ -218,9 +218,9 @@ watch(
               <Badge
                 variant="outline"
                 class="px-2.5"
-                :class="form.status === 'active'
+                :class="form.status === 'ACTIVE'
                   ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                  : form.status === 'banned'
+                  : form.status === 'BANNED'
                     ? 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-300'
                     : 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300'"
               >
@@ -281,7 +281,7 @@ watch(
                   <SelectValue placeholder="Chọn trạng thái" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem v-for="status in statusOptions" :key="status.value" :value="status.value">
+                  <SelectItem v-for="status in statusOptions" :key="status.value" :value="status.value" :disabled="'disabled' in status && status.disabled">
                     {{ status.label }}
                   </SelectItem>
                 </SelectContent>

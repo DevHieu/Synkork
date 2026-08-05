@@ -68,8 +68,8 @@ const canChangeRole = computed(() => authStore.user?.role === 'ADMIN')
 
 const statusOptions = [
   { value: 'ACTIVE', label: 'Hoạt động' },
-  { value: 'INACTIVE', label: 'Ngừng hoạt động' },
   { value: 'BANNED', label: 'Bị chặn' },
+  { value: 'NOT_VERIFIED', label: 'Chưa xác minh', disabled: true },
 ] as const
 
 const planOptions = ['FREE', 'TEAM', 'BUSINESS'] as const
@@ -257,7 +257,7 @@ watch(
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem v-for="status in statusOptions" :key="status.value" :value="status.value">
+                    <SelectItem v-for="status in statusOptions" :key="status.value" :value="status.value" :disabled="'disabled' in status && status.disabled">
                       {{ status.label }}
                     </SelectItem>
                   </SelectGroup>
@@ -292,13 +292,13 @@ watch(
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value="user">
+                    <SelectItem value="USER">
                       User
                     </SelectItem>
-                    <SelectItem value="manager">
+                    <SelectItem value="MANAGER">
                       Manager
                     </SelectItem>
-                    <SelectItem value="admin">
+                    <SelectItem value="ADMIN">
                       Admin
                     </SelectItem>
                   </SelectGroup>

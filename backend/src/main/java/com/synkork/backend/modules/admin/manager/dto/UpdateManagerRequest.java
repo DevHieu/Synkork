@@ -15,8 +15,8 @@ public class UpdateManagerRequest {
     private String email;
 
     @Pattern(
-            regexp = "(?i)active|inactive|banned",
-            message = "Trang thai phai la active, inactive hoac banned"
+            regexp = "(?i)active|banned|not_verified",
+            message = "Trang thai phai la active, banned hoac not_verified"
     )
     private String status;
 

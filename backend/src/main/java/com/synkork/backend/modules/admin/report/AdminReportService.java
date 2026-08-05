@@ -12,13 +12,19 @@ import com.synkork.backend.modules.admin.report.dtos.ReportFilterRequest;
 import com.synkork.backend.modules.admin.report.dtos.ReportResponse;
 import com.synkork.backend.modules.admin.report.dtos.ReportUpdateStatusRequest;
 import com.synkork.backend.modules.admin.report.email.AdminReportEmailService;
+import com.synkork.backend.modules.admin.statistics.dtos.ReportChartResponse;
+import com.synkork.backend.modules.admin.statistics.dtos.ReportReasonStatsResponse;
+import com.synkork.backend.modules.admin.statistics.dtos.ReportStatsResponse;
 import com.synkork.backend.modules.report.ReportEntity;
 import com.synkork.backend.modules.report.enums.ReportStatusEnums;
+import com.synkork.backend.modules.report.enums.ReportTypeEnums;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -39,6 +45,45 @@ public class AdminReportService {
 
     @Autowired 
     private FileService fileService;
+
+    public ReportStatsResponse getReportStatsData(LocalDateTime dateFrom, LocalDateTime dateTo) {
+        boolean hasRange = dateFrom != null && dateTo != null;
+
+        long total = hasRange
+                ? adminReportRepository.countByCreatedAtBetween(dateFrom, dateTo)
+                : adminReportRepository.count();
+        long pending = hasRange
+                ? adminReportRepository.countByStatusAndCreatedAtBetween(ReportStatusEnums.PENDING, dateFrom, dateTo)
+                : adminReportRepository.countByStatus(ReportStatusEnums.PENDING);
+        long resolved = hasRange
+                ? adminReportRepository.countByStatusAndCreatedAtBetween(ReportStatusEnums.RESOLVED, dateFrom, dateTo)
+                : adminReportRepository.countByStatus(ReportStatusEnums.RESOLVED);
+        long dismissed = hasRange
+                ? adminReportRepository.countByStatusAndCreatedAtBetween(ReportStatusEnums.DISMISSED, dateFrom, dateTo)
+                : adminReportRepository.countByStatus(ReportStatusEnums.DISMISSED);
+        long userReports = hasRange
+                ? adminReportRepository.countByReportTypeAndCreatedAtBetween(ReportTypeEnums.USER, dateFrom, dateTo)
+                : adminReportRepository.countByReportType(ReportTypeEnums.USER);
+        long roomReports = hasRange
+                ? adminReportRepository.countByReportTypeAndCreatedAtBetween(ReportTypeEnums.ROOM, dateFrom, dateTo)
+                : adminReportRepository.countByReportType(ReportTypeEnums.ROOM);
+
+        return new ReportStatsResponse(total, pending, resolved, dismissed, userReports, roomReports);
+    }
+
+    public List<ReportChartResponse> getReportChart(LocalDateTime dateFrom, LocalDateTime dateTo) {
+        return adminReportRepository.findDailyReportCounts(dateFrom, dateTo)
+                .stream()
+                .map(row -> new ReportChartResponse(
+                        (LocalDate) row[0],
+                        ((Number) row[1]).longValue(),
+                        ((Number) row[2]).longValue()))
+                .toList();
+    }
+
+    public List<ReportReasonStatsResponse> getReportReasonStats(LocalDateTime dateFrom, LocalDateTime dateTo) {
+        return adminReportRepository.findReasonCountsGroupedByType(dateFrom, dateTo);
+    }
 
     public ReportResponse getReportById(UUID id) {
         ReportEntity entity = adminReportRepository.findById(id).orElseThrow(() -> new RuntimeException("Report không tồn tại"));
