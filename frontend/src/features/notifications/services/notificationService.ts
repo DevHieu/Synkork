@@ -1,4 +1,3 @@
-// services/notificationService.ts
 import axiosClient from "@/lib/axiosClient"
 
 export const getNotifications = async () => {

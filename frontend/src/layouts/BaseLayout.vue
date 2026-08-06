@@ -13,7 +13,7 @@ import { socketService } from "@/services/websocket/socketService";
 import { useUserStore } from "@/stores/userStore";
 import { storeToRefs } from "pinia";
 import { ref, provide, watch, onMounted, onUnmounted } from "vue";
-import { useNotificationStore } from '@/stores/notificationStore'
+import { useNotificationStore } from '@/features/notifications/stores/notificationStore'
 import { useFriendStore } from "@/stores/friendStore";
 import globalAudio from "@/utils/appAudioManager"
 import { useChatSocketComposable } from "@/features/chats/composable/chat-socket.compsable";

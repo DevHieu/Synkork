@@ -1,3 +1,17 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { Bell } from 'lucide-vue-next'
+import { useNotificationStore } from '@/features/notifications/stores/notificationStore'
+import NotificationDropdown from './NotificationDropDown.vue'
+
+import { Button } from '@/components/ui/button'
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
+
+const store = useNotificationStore()
+const { unreadCount } = storeToRefs(store)
+const isOpen = ref(false)
+</script>
 <template>
   <Popover v-model:open="isOpen">
     <PopoverTrigger as-child>
@@ -27,18 +41,3 @@
     </PopoverContent>
   </Popover>
 </template>
-
-<script setup lang="ts">
-import { ref } from 'vue'
-import { storeToRefs } from 'pinia'
-import { Bell } from 'lucide-vue-next'
-import { useNotificationStore } from '@/stores/notificationStore'
-import NotificationDropdown from '@/components/notification/NotificationDropDown.vue'
-
-import { Button } from '@/components/ui/button'
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
-
-const store = useNotificationStore()
-const { unreadCount } = storeToRefs(store)
-const isOpen = ref(false)
-</script>

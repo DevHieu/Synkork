@@ -1,4 +1,4 @@
-import { socketService } from "./socketService"
+import { socketService } from "@/services/websocket/socketService"
 
 export const notificationSocket = {
 
