@@ -63,20 +63,6 @@ public class CalendarNotificationScheduler {
 
             if (shouldNotify) {
                 calendarEmailService.sendEventNotificationEmail(event, event.getAttendees(), true);
-                System.out.println("noti nè mày=================================================================" + event.getAttendees());
-                for (RoomMemberEntity member : event.getAttendees()) {
-                    System.out.println("noti nè=================================================================" + event.getAttendees());
-                    notificationService.sendNotification(
-                        member.getUser(), 
-                        member.getUser(), 
-                        event.getId(), 
-                        event.getSpace().getRoom().getId(), 
-                        event.getSpace().getId(), 
-                        NotificationTypeEnum.CALENDAR, 
-                        NotificationRefTypeEnum.EVENT_REMINDER
-                    );
-                }
-                
             }
         }
     }
