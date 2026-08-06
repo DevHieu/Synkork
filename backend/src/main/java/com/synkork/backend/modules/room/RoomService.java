@@ -44,9 +44,6 @@ public class RoomService {
     UserRepository userRepository;
 
     @Autowired
-    RoomMemberService roomMemberService;
-
-    @Autowired
     RoomMemberRepository roomMemberRepository;
 
     @Autowired

@@ -222,6 +222,20 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/manager/tabs/manager-accounts': RouteRecordInfo<
+      '/manager/tabs/manager-accounts',
+      '/manager/tabs/manager-accounts',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/manager/tabs/password-reset-requests': RouteRecordInfo<
+      '/manager/tabs/password-reset-requests',
+      '/manager/tabs/password-reset-requests',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/report/': RouteRecordInfo<
       '/report/',
       '/report',
@@ -533,6 +547,22 @@ declare module 'vue-router/auto-routes' {
     'src/pages/manager/index.vue': {
       routes:
         | '/manager/'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/manager/tabs/manager-accounts.vue': {
+      routes:
+        | '/manager/tabs/manager-accounts'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/manager/tabs/password-reset-requests.vue': {
+      routes:
+        | '/manager/tabs/password-reset-requests'
       views:
         | never
       pathParamNames:

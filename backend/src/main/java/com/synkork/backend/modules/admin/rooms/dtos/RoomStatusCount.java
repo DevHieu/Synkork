@@ -1,4 +1,4 @@
-package com.synkork.backend.modules.admin.rooms.dashboardroom;
+package com.synkork.backend.modules.admin.rooms.dtos;
 
 import com.synkork.backend.modules.room.enums.RoomStatusEnum;
 

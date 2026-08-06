@@ -3,8 +3,8 @@ import { ref } from 'vue'
 
 import { BasicPage } from '@/components/global-layout'
 
-import ManagerAccounts from './components/manager-accounts.vue'
-import PasswordResetRequests from './components/password-reset-requests.vue'
+import ManagerAccounts from './tabs/manager-accounts.vue'
+import PasswordResetRequests from './tabs/password-reset-requests.vue'
 
 const tabs = ref([
   { name: 'Quản lý tài khoản', value: 'accounts' },

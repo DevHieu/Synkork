@@ -21,7 +21,6 @@ import { defaultDateRange, formatToISODateTime } from '@/utils/date.utils'
 
 import type { User, UserParams, UserPlan, UserStatus } from './types/userTypes'
 
-import UserCreate from './components/user-create.vue'
 import UserDetailDialog from './components/UserDetailDialog.vue'
 import { userService } from './services/userService'
 
@@ -54,8 +53,8 @@ const showActionDialog = ref(false)
 const statusOptions = [
   { value: 'ALL', label: 'Tất cả trạng thái' },
   { value: 'ACTIVE', label: 'Hoạt động' },
-  { value: 'INACTIVE', label: 'Ngừng hoạt động' },
   { value: 'BANNED', label: 'Bị chặn' },
+  { value: 'NOT_VERIFIED', label: 'Chưa xác minh'},
 ] as const
 
 const planOptions = [
@@ -181,15 +180,15 @@ function renderPlan(plan: string) {
 }
 
 function renderStatus(status: string) {
-  const normalized = (status?.toUpperCase() || 'INACTIVE') as UserStatus
+  const normalized = (status?.toUpperCase() || 'NOT_VERIFIED') as UserStatus
 
   const config = {
     ACTIVE: {
       label: 'Hoạt động',
       class: 'border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
     },
-    INACTIVE: {
-      label: 'Ngừng hoạt động',
+    NOT_VERIFIED: {
+      label: 'Chưa xác minh',
       class: 'border-slate-200 bg-slate-100 text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300',
     },
     BANNED: {
@@ -343,10 +342,6 @@ const isLockingUser = computed(() => isUserActive(actionTarget.value))
       <div>
         <DateRangePicker v-model="dateRange" />
       </div>
-
-      <!-- <div class="ml-auto">
-        <UserCreate @saved="fetchData" />
-      </div> -->
     </div>
 
     <div class="relative rounded-md border border-neutral-200 dark:border-neutral-800">

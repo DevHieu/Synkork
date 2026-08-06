@@ -31,8 +31,8 @@ import type {
 } from '../types/managerTypes'
 
 import { managerService } from '../services/managerService'
-import ManagerResource from './manager-resource.vue'
-import ManagerDetailDialog from './ManagerDetailDialog.vue'
+import ManagerResource from '../components/manager-resource.vue'
+import ManagerDetailDialog from '../components/ManagerDetailDialog.vue'
 
 const loading = ref(false)
 const accounts = ref<ManagerAccount[]>([])
@@ -57,15 +57,15 @@ const showLockModal = ref(false)
 
 const statusOptions = [
   { value: 'ALL', label: 'Tất cả trạng thái' },
-  { value: 'active', label: 'Hoạt động' },
-  { value: 'inactive', label: 'Ngừng hoạt động' },
-  { value: 'banned', label: 'Bị khóa' },
+  { value: 'ACTIVE', label: 'Hoạt động' },
+  { value: 'BANNED', label: 'Bị khóa' },
+  { value: 'NOT_VERIFIED', label: 'Chưa xác minh' },
 ] as const
 
 const roleOptions = [
   { value: 'ALL', label: 'Tất cả vai trò' },
-  { value: 'admin', label: 'Quản trị viên' },
-  { value: 'manager', label: 'Quản lý' },
+  { value: 'ADMIN', label: 'Quản trị viên' },
+  { value: 'MANAGER', label: 'Quản lý' },
 ] as const
 
 async function fetchData() {
@@ -129,7 +129,7 @@ function refreshAfterChange() {
   fetchData()
 }
 
-const isLockingManager = computed(() => lockTarget.value?.status === 'active')
+const isLockingManager = computed(() => lockTarget.value?.status === 'ACTIVE')
 
 async function confirmManagerStatusAction(reason: string) {
   if (!lockTarget.value)
@@ -142,7 +142,7 @@ async function confirmManagerStatusAction(reason: string) {
       toast.success(`Đã khóa tài khoản ${lockTarget.value.username}`)
     }
     else {
-      await managerService.update(lockTarget.value.id, { status: 'active' })
+      await managerService.update(lockTarget.value.id, { status: 'ACTIVE' })
       toast.success(`Đã mở khóa tài khoản ${lockTarget.value.username}`)
     }
 
@@ -161,12 +161,12 @@ async function confirmManagerStatusAction(reason: string) {
   }
 }
 
-function renderStatus(status: ManagerStatus) {
+function renderRole(role: ManagementRole) {
   const config = {
-    active: { label: 'Hoạt động', class: 'border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300' },
-    inactive: { label: 'Ngừng hoạt động', class: 'border-slate-200 bg-slate-100 text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300' },
-    banned: { label: 'Bị khóa', class: 'border-rose-200 bg-rose-100 text-rose-800 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-300' },
-  }[status]
+    ADMIN: { label: 'Quản trị viên', class: 'border-purple-200 bg-purple-100 text-purple-800 dark:border-purple-800 dark:bg-purple-900/30 dark:text-purple-300' },
+    MANAGER: { label: 'Quản lý', class: 'border-blue-200 bg-blue-100 text-blue-800 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300' },
+    USER: { label: 'Người dùng', class: 'border-slate-200 bg-slate-100 text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300' },
+  }[role] ?? { label: role ?? 'Không xác định', class: 'border-slate-200 bg-slate-100 text-slate-800' }
 
   return h(Badge, {
     variant: 'outline',
@@ -174,11 +174,13 @@ function renderStatus(status: ManagerStatus) {
   }, () => config.label)
 }
 
-function renderRole(role: ManagementRole) {
+function renderStatus(status: ManagerStatus) {
+  console.log('status value:', status, typeof status)
   const config = {
-    admin: { label: 'Quản trị viên', class: 'border-purple-200 bg-purple-100 text-purple-800 dark:border-purple-800 dark:bg-purple-900/30 dark:text-purple-300' },
-    manager: { label: 'Quản lý', class: 'border-blue-200 bg-blue-100 text-blue-800 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300' },
-  }[role]
+    ACTIVE: { label: 'Hoạt động', class: 'border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300' },
+    BANNED: { label: 'Bị khóa', class: 'border-rose-200 bg-rose-100 text-rose-800 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-300' },
+    NOT_VERIFIED: { label: 'Chưa xác minh', class: 'border-slate-200 bg-slate-100 text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300' },
+  }[status] ?? { label: status ?? 'Không xác định', class: 'border-slate-200 bg-slate-100 text-slate-800' }
 
   return h(Badge, {
     variant: 'outline',
@@ -218,13 +220,13 @@ const columns = computed<TableColumn<ManagerAccount>[]>(() => [
       h(UiButton, {
         variant: 'outline',
         size: 'sm',
-        class: row.status === 'active'
+        class: row.status === 'ACTIVE'
           ? 'h-8 gap-1 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20 hover:border-destructive/30'
           : 'h-8 gap-1 px-2 text-xs text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-900/20',
         onClick: () => openLockModal(row),
       }, () => [
-        h(row.status === 'active' ? LockKeyhole : Unlock, { class: 'h-3.5 w-3.5' }),
-        row.status === 'active' ? 'Khóa' : 'Mở',
+        h(row.status === 'ACTIVE' ? LockKeyhole : Unlock, { class: 'h-3.5 w-3.5' }),
+        row.status === 'ACTIVE' ? 'Khóa' : 'Mở',
       ]),
     ]),
   },
