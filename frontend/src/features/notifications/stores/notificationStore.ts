@@ -7,6 +7,7 @@ import {
   getNotifications,
   markNotificationAsRead,
   deleteNotification,
+  markAllAsRead
 } from "@/features/notifications/services/notificationService";
 
 import globalAudio from "@/utils/appAudioManager";
@@ -46,7 +47,7 @@ export const useNotificationStore = defineStore("notification", {
 
       const path = getNotificationPath(notification);
 
-      toast(notificationMessage(notification), {
+      toast(notificationMessage(notification, 'toast'), {
         description: notification.actorName
           ? `từ ${notification.actorName}`
           : "Thông báo hệ thống",
@@ -74,10 +75,13 @@ export const useNotificationStore = defineStore("notification", {
       }
     },
 
-    markAllAsRead() {
-      this.notifications.forEach((n) => {
-        n.read = true;
-      });
+    markAllNotiAsRead() {
+      try {
+        markAllAsRead();
+        this.notifications.forEach((n) => (n.read = true));
+      } catch (error) {
+        console.error("Lỗi đánh dấu đã đọc:", error);
+      }
     },
 
     async removeNotification(id: string) {

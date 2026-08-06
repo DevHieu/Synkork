@@ -25,8 +25,8 @@ const isDeleteOpen = ref(false)
 onMounted(async () => {
   isLoading.value = true
   try {
+    notiStore.connect()
     await notiStore.fetchNotifications()
-    await notiStore.connect()
   } finally {
     isLoading.value = false
   }
@@ -72,8 +72,8 @@ async function handleClick(notification: NotificationDTO) {
           v-if="unreadCount > 0"
           variant="ghost"
           size="sm"
-          class="text-xs text-muted-foreground hover:text-foreground h-7 px-2"
-          @click="notiStore.markAllAsRead()"
+          class="text-xs text-muted-foreground hover:text-foreground h-7 px-2 cursor-pointer"
+          @click="notiStore.markAllNotiAsRead()"
         >
           Đánh dấu đã đọc
         </Button>
@@ -82,7 +82,7 @@ async function handleClick(notification: NotificationDTO) {
           v-if="notifications.length > 0"
           variant="ghost"
           size="icon"
-          class="h-7 w-7 text-muted-foreground hover:text-destructive"
+          class="h-7 w-7 text-muted-foreground hover:text-destructive cursor-pointer"
           @click="confirmDelete"
         >
           <Trash2 class="w-4 h-4" />
@@ -119,10 +119,10 @@ async function handleClick(notification: NotificationDTO) {
           </Avatar>
 
           <!-- Content -->
-          <div class="flex-1 min-w-0 space-y-0.5">
+          <div class="flex-1 min-w-0 space-y-0.5 cursor-pointer">
             <p class="text-sm text-foreground leading-snug break-words">
               <span class="font-semibold">{{ n.actorName }}</span>
-              {{ ' ' }}{{ notificationMessage(n) }}
+              {{ ' ' }}{{ notificationMessage(n, 'dropdown') }}
             </p>
             <p class="text-xs text-muted-foreground">{{ timeAgo(n.createdAt) }}</p>
           </div>
@@ -134,7 +134,7 @@ async function handleClick(notification: NotificationDTO) {
             <Button
               variant="ghost"
               size="icon"
-              class="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
+              class="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity cursor-pointer"
               @click.stop="notiStore.removeNotification(n.id)"
             >
               <Trash2 class="w-4 h-4" />

@@ -17,8 +17,8 @@ const isOpen = ref(false)
     <PopoverTrigger as-child>
       <Button
         variant="ghost"
-        size="icon"
-        class="relative w-9 h-9 rounded-full"
+        size="icon" 
+        class="relative w-9 h-9 rounded-full cursor-pointer"
       >
         <Bell class="w-7 h-7 text-foreground" />
 

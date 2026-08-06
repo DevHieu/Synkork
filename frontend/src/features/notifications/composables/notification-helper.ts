@@ -1,30 +1,52 @@
 import type { NotificationDTO } from "@/types/Notification";
 
-export function notificationMessage(n: NotificationDTO) {
-  switch (n.refType) {
-    case "CARD_ASSIGNED":
-      return "Bạn vừa được assign vào một task";
-    case "CARD_DUE_SOON":
-      return "Nhắc nhở: Task của bạn sắp đến hạn";
-    case "CARD_OVER_DUE":
-      return "Nhắc nhở: Task của bạn đã quá hạn";
+type NotificationContext = "dropdown" | "toast";
 
-    case "FRIEND_REQUEST":
-      return "Bạn có lời mời kết bạn mới";
-    case "FRIEND_REJECT":
-      return "Lời mời kết bạn của bạn đã bị từ chối";
-    case "FRIEND_ACCEPT":
-      return "Lời mời kết bạn của bạn đã được chấp nhận";
+const MESSAGES: Record<string, Record<NotificationContext, string>> = {
+  CARD_ASSIGNED: {
+    dropdown: "vừa assign bạn vào một task",
+    toast: "Bạn vừa được assign vào một task",
+  },
+  CARD_DUE_SOON: {
+    dropdown: "nhắc bạn: task sắp đến hạn",
+    toast: "Nhắc nhở: Task của bạn sắp đến hạn",
+  },
+  CARD_OVER_DUE: {
+    dropdown: "nhắc bạn: task đã quá hạn",
+    toast: "Nhắc nhở: Task của bạn đã quá hạn",
+  },
+  FRIEND_REQUEST: {
+    dropdown: "đã gửi cho bạn lời mời kết bạn",
+    toast: "Bạn có lời mời kết bạn mới",
+  },
+  FRIEND_REJECT: {
+    dropdown: "đã từ chối lời mời kết bạn của bạn",
+    toast: "Lời mời kết bạn của bạn đã bị từ chối",
+  },
+  FRIEND_ACCEPT: {
+    dropdown: "đã chấp nhận lời mời kết bạn của bạn",
+    toast: "Lời mời kết bạn của bạn đã được chấp nhận",
+  },
+  NOTE_REMINDER: {
+    dropdown: "Nhắc bạn: ghi chú sắp đến hạn",
+    toast: "Nhắc nhở: Ghi chú sắp đến hạn",
+  },
+  EVENT_REMINDER: {
+    dropdown: "Nhắc bạn: sự kiện sắp diễn ra",
+    toast: "Nhắc nhở: Sự kiện sắp diễn ra",
+  },
+};
 
-    case "NOTE_REMINDER":
-      return "Nhắc nhở: Ghi chú sắp đến hạn";
+const DEFAULT_MESSAGE: Record<NotificationContext, string> = {
+  dropdown: "có thông báo mới",
+  toast: "Bạn có thông báo mới",
+};
 
-    case "EVENT_REMINDER":
-      return "Nhắc nhở: Sự kiện sắp diễn ra";
-
-    default:
-      return "Bạn có thông báo mới";
-  }
+export function notificationMessage(
+  n: NotificationDTO,
+  context: NotificationContext = "dropdown"
+) {
+  return MESSAGES[n.refType]?.[context] ?? DEFAULT_MESSAGE[context];
 }
 
 export function getNotificationPath(n: NotificationDTO) {
