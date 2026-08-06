@@ -2,6 +2,11 @@ package com.synkork.backend.modules.collaboration.calendar.service;
 
 import com.synkork.backend.modules.collaboration.calendar.entity.CalendarEventEntity;
 import com.synkork.backend.modules.collaboration.calendar.repository.CalendarEventRepository;
+import com.synkork.backend.modules.notification.NotificationService;
+import com.synkork.backend.modules.notification.enums.NotificationRefTypeEnum;
+import com.synkork.backend.modules.notification.enums.NotificationTypeEnum;
+import com.synkork.backend.modules.roomMember.RoomMemberEntity;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -19,10 +24,11 @@ public class CalendarNotificationScheduler {
 
     private final CalendarEventRepository calendarEventRepository;
     private final CalendarEmailService calendarEmailService;
+    private final NotificationService notificationService;
 
 
     @Scheduled(cron = "0 * * * * *")
-    @Transactional(readOnly = true)
+    
     public void scanAndRemindUpcomingEvents() {
         LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
         List<CalendarEventEntity> events = calendarEventRepository.findUpcomingOrRecurringEvents(now.toLocalDate());
@@ -57,6 +63,20 @@ public class CalendarNotificationScheduler {
 
             if (shouldNotify) {
                 calendarEmailService.sendEventNotificationEmail(event, event.getAttendees(), true);
+                System.out.println("noti nè mày=================================================================" + event.getAttendees());
+                for (RoomMemberEntity member : event.getAttendees()) {
+                    System.out.println("noti nè=================================================================" + event.getAttendees());
+                    notificationService.sendNotification(
+                        member.getUser(), 
+                        member.getUser(), 
+                        event.getId(), 
+                        event.getSpace().getRoom().getId(), 
+                        event.getSpace().getId(), 
+                        NotificationTypeEnum.CALENDAR, 
+                        NotificationRefTypeEnum.EVENT_REMINDER
+                    );
+                }
+                
             }
         }
     }
