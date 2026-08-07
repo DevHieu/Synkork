@@ -4,7 +4,6 @@ package com.synkork.backend.modules.admin.auth;
 import com.synkork.backend.modules.auth.dto.LoginRequest;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
-import com.synkork.backend.modules.user.enums.ProviderEnum;
 import com.synkork.backend.modules.user.enums.RoleEnum;
 import com.synkork.backend.modules.user.enums.UserStatusEnum;
 import com.synkork.backend.security.JwtService;
@@ -40,8 +39,8 @@ public class AdminAuthService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tài khoản của bạn đã bị khóa do quản trị viên. Vui lòng liên hệ để được giải quyết");
         }
 
-        if (user.getStatus() == UserStatusEnum.INACTIVE) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tai khoan cua ban dang bi vo hieu hoa");
+        if (user.getStatus() == UserStatusEnum.NOT_VERIFIED) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tài khoản này chưa xác minh qua email. Vui lòng kiểm tra email của bạn để xác minh");
         }
 
         return true;

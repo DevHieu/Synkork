@@ -1,6 +1,6 @@
-export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'BANNED'
+export type UserStatus = 'ACTIVE' | 'BANNED' | 'NOT_VERIFIED'
 export type UserPlan = 'FREE' | 'TEAM' | 'BUSINESS'
-export type UserRole = 'user' | 'manager' | 'admin'
+export type UserRole = 'USER' | 'MANAGER' | 'ADMIN'
 
 export interface User {
   id: string

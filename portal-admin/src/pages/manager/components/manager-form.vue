@@ -37,8 +37,8 @@ const form = reactive({
   displayName: props.account?.displayName ?? '',
   username: props.account?.username ?? '',
   email: props.account?.email ?? '',
-  status: (props.account?.status ?? 'active') as ManagerStatus,
-  role: (props.account?.role ?? 'manager') as ManagementRole,
+  status: (props.account?.status ?? 'ACTIVE') as ManagerStatus,
+  role: (props.account?.role ?? 'MANAGER') as ManagementRole,
 })
 
 function getErrorMessage(error: any) {
@@ -119,15 +119,9 @@ async function onSubmit() {
             <SelectValue placeholder="Chọn vai trò" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem v-if="isEditing" value="user">
-              Người dùng
-            </SelectItem>
-            <SelectItem value="manager">
-              Quản lý
-            </SelectItem>
-            <SelectItem value="admin">
-              Quản trị viên
-            </SelectItem>
+            <SelectItem v-if="isEditing" value="USER">Người dùng</SelectItem>
+            <SelectItem value="MANAGER">Quản lý</SelectItem>
+            <SelectItem value="ADMIN">Quản trị viên</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -139,15 +133,8 @@ async function onSubmit() {
             <SelectValue placeholder="Chọn trạng thái" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="active">
-              Hoạt động
-            </SelectItem>
-            <SelectItem value="inactive">
-              Ngừng hoạt động
-            </SelectItem>
-            <SelectItem value="banned">
-              Bị khóa
-            </SelectItem>
+            <SelectItem value="ACTIVE">Hoạt động</SelectItem>
+            <SelectItem value="BANNED">Bị khóa</SelectItem>
           </SelectContent>
         </Select>
       </div>
