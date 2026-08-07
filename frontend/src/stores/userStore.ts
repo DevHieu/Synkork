@@ -1,7 +1,7 @@
 import { getUserInfo } from "@/services/userService";
 import type { User } from "@/types/User";
 import { defineStore } from "pinia";
-import { useNotificationStore } from "./notificationStore";
+import { useNotificationStore } from "../features/notifications/stores/notificationStore";
 import { userSocket } from "@/services/websocket/userSocket";
 
 export const useUserStore = defineStore("users", {

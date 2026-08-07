@@ -1,4 +1,3 @@
-// services/notificationService.ts
 import axiosClient from "@/lib/axiosClient"
 
 export const getNotifications = async () => {
@@ -8,6 +7,10 @@ export const getNotifications = async () => {
 
 export const markNotificationAsRead = async (id: string) => {
     await axiosClient.patch(`/api/notifications/${id}/read`)
+}
+
+export const markAllAsRead = async () => {
+    await axiosClient.patch(`/api/notifications/read-all`)
 }
 
 export const deleteNotification = async (id: string) => {

@@ -1,30 +1,32 @@
 package com.synkork.backend.modules.collaboration.calendar.service;
 
 import com.synkork.backend.common.utils.EmailService;
+import com.synkork.backend.modules.collaboration.calendar.dto.EventEmailInformation;
 import com.synkork.backend.modules.collaboration.calendar.entity.CalendarEventEntity;
 import com.synkork.backend.modules.collaboration.calendar.repository.CalendarEventRepository;
+import com.synkork.backend.modules.collaboration.calendar.utils.EventUtils;
+import com.synkork.backend.modules.notification.NotificationService;
+import com.synkork.backend.modules.notification.enums.NotificationRefTypeEnum;
+import com.synkork.backend.modules.notification.enums.NotificationTypeEnum;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
-import com.synkork.backend.modules.roomMember.RoomMemberRepository;
+import com.synkork.backend.modules.space.SpaceEntity;
+import com.synkork.backend.modules.user.UserEntity;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class CalendarEmailService {
 
     private final EmailService emailService;
-    private final RoomMemberRepository roomMemberRepository;
     private final CalendarEventRepository calendarEventRepository;
-
-    @Value("${frontend.client.url}")
-    private String frontendUrl;
+    private final NotificationService notificationService;
+    private final EventUtils eventUtils;
 
     @Async
     @Transactional(readOnly = true)
@@ -33,147 +35,37 @@ public class CalendarEmailService {
 
         // Re-fetch entity từ DB bằng EntityGraph để tải EAGER hoàn toàn (tránh LazyInitializationException trong thread ngầm)
         CalendarEventEntity targetEvent = calendarEventRepository.findById(event.getId()).orElse(event);
-        if (targetEvent == null || targetEvent.getSpace() == null || targetEvent.getSpace().getRoom() == null) return;
+        if (targetEvent.getSpace() == null || targetEvent.getSpace().getRoom() == null) return;
 
-        // Lấy tất cả thành viên trong phòng (room)
-        List<RoomMemberEntity> roomMembers = roomMemberRepository.findByRoom_Id(targetEvent.getSpace().getRoom().getId());
-        if (roomMembers == null || roomMembers.isEmpty()) return;
+        List<RoomMemberEntity> attendeeList = targetEvent.getAttendees();
+        if (attendeeList == null || attendeeList.isEmpty()) return;
 
-        // Trích xuất toàn bộ thông tin chi tiết sự kiện
-        String title = targetEvent.getTitle();
-        String description = (targetEvent.getDescription() != null && !targetEvent.getDescription().isBlank())
-                ? targetEvent.getDescription()
-                : "Không có mô tả";
+        for (RoomMemberEntity attendee : attendeeList) {
+            if (attendee.getUser() == null || attendee.getUser().getEmail() == null) continue;
 
-        String roomName = targetEvent.getSpace().getRoom().getName();
-        String spaceName = targetEvent.getSpace().getName();
-        String creatorName = targetEvent.getCreatedBy() != null ? targetEvent.getCreatedBy().getDisplayName() : "Hệ thống";
+            EventEmailInformation info = eventUtils.buildEventEmailInformation(targetEvent, attendee, isReminder);
+            this.sendEmailDirect(info);
 
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
-
-        String startTimeStr = targetEvent.getStartTime() != null ? targetEvent.getStartTime().format(timeFormatter) : "";
-        String endTimeStr = targetEvent.getEndTime() != null ? targetEvent.getEndTime().format(timeFormatter) : "";
-        String startDateStr = targetEvent.getEventDate() != null ? targetEvent.getEventDate().format(dateFormatter) : "";
-        String endDateStr = targetEvent.getEndDate() != null ? targetEvent.getEndDate().format(dateFormatter) : startDateStr;
-
-        String timeStr;
-        if (startDateStr.equals(endDateStr)) {
-            timeStr = String.format("%s - %s (%s)", startTimeStr, endTimeStr, startDateStr);
-        } else {
-            timeStr = String.format("%s (%s) đến %s (%s)", startTimeStr, startDateStr, endTimeStr, endDateStr);
+            SpaceEntity space = targetEvent.getSpace();
+            this.sendNotification(isReminder, attendee.getUser(), targetEvent.getCreatedBy(), targetEvent.getId(), space.getRoom().getId(), space.getId());
         }
-
-        String recurrenceStr = "Không lặp lại";
-        if (targetEvent.getRecurrenceType() != null) {
-            switch (targetEvent.getRecurrenceType()) {
-                case "DAILY" -> recurrenceStr = "Hàng ngày";
-                case "WEEKLY" -> recurrenceStr = "Hàng tuần";
-                case "MONTHLY" -> recurrenceStr = "Hàng tháng";
-                case "YEARLY" -> recurrenceStr = "Hàng năm";
-                default -> {
-                    if (!targetEvent.getRecurrenceType().equalsIgnoreCase("NONE")) {
-                        recurrenceStr = targetEvent.getRecurrenceType();
-                    }
-                }
-            }
-        }
-
-        String taskInfo = null;
-        if (targetEvent.getTask() != null) {
-            String spaceId = targetEvent.getTask().getColumn() != null && targetEvent.getTask().getColumn().getSpace() != null
-                    ? targetEvent.getTask().getColumn().getSpace().getId().toString()
-                    : targetEvent.getSpace().getId().toString();
-            String taskUrl = frontendUrl + "/spaces/" + spaceId + "?cardId=" + targetEvent.getTask().getId();
-            taskInfo = "<a href='" + taskUrl + "' style='color: #023c3d; font-weight: bold; text-decoration: underline;'>" + targetEvent.getTask().getTitle() + "</a>";
-        }
-
-        String noteInfo = null;
-        if (targetEvent.getNote() != null) {
-            String noteSpaceId = targetEvent.getNote().getSpace() != null
-                    ? targetEvent.getNote().getSpace().getId().toString()
-                    : targetEvent.getSpace().getId().toString();
-            String noteUrl = frontendUrl + "/spaces/" + noteSpaceId + "?noteId=" + targetEvent.getNote().getId();
-            noteInfo = "<a href='" + noteUrl + "' style='color: #023c3d; font-weight: bold; text-decoration: underline;'>" + targetEvent.getNote().getTitle() + "</a>";
-        }
-
-        String callRoomUrl = targetEvent.getCallRoomSpace() != null
-                ? frontendUrl + "/spaces/" + targetEvent.getCallRoomSpace().getId()
-                : null;
-        String callRoomName = targetEvent.getCallRoomSpace() != null
-                ? targetEvent.getCallRoomSpace().getName()
-                : null;
-
-        String attendeesList = roomMembers.stream()
-                .filter(a -> a.getUser() != null)
-                .map(a -> a.getUser().getDisplayName() + " (" + a.getUser().getEmail() + ")")
-                .collect(Collectors.joining("<br/>"));
-
-        // Tạo thẻ div cho mỗi file đính kèm để chắc chắn xuống dòng rõ ràng trong email client
-        String filesList = targetEvent.getAttachments() != null && !targetEvent.getAttachments().isEmpty() ? targetEvent.getAttachments().stream()
-                .map(a -> "<div style='margin-bottom: 6px;'><a href='" + a.getFileUrl() + "' style='color: #023c3d; font-weight: bold; text-decoration: underline;'>" + a.getFileName() + "</a></div>")
-                .collect(Collectors.joining()) : "Không có";
-
-        List<String> recipientEmails = roomMembers.stream()
-                .filter(member -> member.getUser() != null && member.getUser().getEmail() != null)
-                .map(member -> member.getUser().getEmail())
-                .toList();
-
-        // Gửi mail với mẫu HTML đầy đủ thông tin
-        sendEmailDirect(
-                title,
-                description,
-                roomName,
-                spaceName,
-                creatorName,
-                timeStr,
-                recurrenceStr,
-                taskInfo,
-                noteInfo,
-                callRoomUrl,
-                callRoomName,
-                attendeesList,
-                filesList,
-                roomMembers.size(),
-                recipientEmails,
-                isReminder
-        );
     }
 
-    private void sendEmailDirect(
-            String title,
-            String description,
-            String roomName,
-            String spaceName,
-            String creatorName,
-            String timeStr,
-            String recurrenceStr,
-            String taskInfo,
-            String noteInfo,
-            String callRoomUrl,
-            String callRoomName,
-            String attendeesList,
-            String filesList,
-            int totalAttendees,
-            List<String> recipientEmails,
-            boolean isReminder
-    ) {
-        if (recipientEmails.isEmpty()) return;
+    private void sendEmailDirect(EventEmailInformation info) {
+        String subject = info.isReminder()
+                ? "[Synkork] Nhắc nhở sự kiện sắp diễn ra: " + info.title()
+                : "[Synkork] Bạn được mời tham gia sự kiện: " + info.title();
 
-        String subject = isReminder
-                ? "[Synkork] Nhắc nhở sự kiện sắp diễn ra: " + title
-                : "[Synkork] Bạn được mời tham gia sự kiện: " + title;
-
-        String taskBlock = taskInfo != null
-                ? String.format("<p style=\"margin: 6px 0;\"><strong>Thẻ công việc liên kết:</strong> %s</p>", taskInfo)
+        String taskBlock = info.taskInfo() != null
+                ? String.format("<p style=\"margin: 6px 0;\"><strong>Thẻ công việc liên kết:</strong> %s</p>", info.taskInfo())
                 : "";
 
-        String noteBlock = noteInfo != null
-                ? String.format("<p style=\"margin: 6px 0;\"><strong>Ghi chú liên kết:</strong> %s</p>", noteInfo)
+        String noteBlock = info.noteInfo() != null
+                ? String.format("<p style=\"margin: 6px 0;\"><strong>Ghi chú liên kết:</strong> %s</p>", info.noteInfo())
                 : "";
 
-        String callRoomBlock = callRoomUrl != null
-                ? String.format("<p style=\"margin: 6px 0;\"><strong>Link phòng họp Voice:</strong> <a href=\"%s\" style=\"color: #023c3d; font-weight: bold;\">%s</a></p>", callRoomUrl, callRoomName)
+        String callRoomBlock = info.callRoomUrl() != null
+                ? String.format("<p style=\"margin: 6px 0;\"><strong>Link phòng họp Voice:</strong> <a href=\"%s\" style=\"color: #023c3d; font-weight: bold;\">%s</a></p>", info.callRoomUrl(), info.callRoomName())
                 : "";
 
         String body = """
@@ -207,15 +99,37 @@ public class CalendarEmailService {
                     <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">Đây là email tự động từ Synkork — vui lòng không reply.</p>
                 </div>
                 """.formatted(
-                        roomName, spaceName, title,
-                        creatorName, timeStr, recurrenceStr, description,
+                        info.roomName(), info.spaceName(), info.title(),
+                        info.creatorName(), info.timeStr(), info.recurrenceStr(), info.description(),
                         taskBlock, noteBlock, callRoomBlock,
-                        totalAttendees, attendeesList,
-                        filesList
+                        info.totalAttendees(), info.attendeeList(),
+                        info.fileList()
                 );
 
-        for (String email : recipientEmails) {
-            emailService.send(email, subject, body);
+        emailService.send(info.recipientEmail(), subject, body);
+    }
+
+    private void sendNotification(boolean isReminder, UserEntity target, UserEntity actor, UUID eventId, UUID roomId, UUID spaceId) {
+        if (isReminder) {
+            notificationService.sendNotification(
+                    target,
+                    actor,
+                    eventId,
+                    roomId,
+                    spaceId,
+                    NotificationTypeEnum.CALENDAR,
+                    NotificationRefTypeEnum.EVENT_REMINDER
+            );
+        } else {
+            notificationService.sendNotification(
+                    target,
+                    actor,
+                    eventId,
+                    roomId,
+                    spaceId,
+                    NotificationTypeEnum.CALENDAR,
+                    NotificationRefTypeEnum.EVENT_ASSIGNED
+            );
         }
     }
 }
