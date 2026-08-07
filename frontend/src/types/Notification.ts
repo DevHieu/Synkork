@@ -9,6 +9,7 @@ export interface NotificationDTO {
            | 'FRIEND_REJECT' 
            | 'FRIEND_ACCEPT'
            | 'EVENT_REMINDER' 
+           | 'EVENT_ASSIGNED'
            | 'NOTE_REMINDER'
            
   refId: string

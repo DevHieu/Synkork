@@ -35,6 +35,10 @@ const MESSAGES: Record<string, Record<NotificationContext, string>> = {
     dropdown: "Nhắc bạn: sự kiện sắp diễn ra",
     toast: "Nhắc nhở: Sự kiện sắp diễn ra",
   },
+  EVENT_ASSIGNED: {
+    dropdown: "vừa assign bạn vào một sự kiện",
+    toast: "Bạn vừa được assign vào một sự kiện",
+  },
 };
 
 const DEFAULT_MESSAGE: Record<NotificationContext, string> = {
