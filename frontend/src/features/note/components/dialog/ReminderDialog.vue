@@ -294,7 +294,7 @@ import {
   Clock
 } from 'lucide-vue-next'
 
-import type { Note } from '@/types/NoteType'
+import type { Note } from '@/features/note/types/NoteType'
 
 const props = defineProps<{
   open: boolean

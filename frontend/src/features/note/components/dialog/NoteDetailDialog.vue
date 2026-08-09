@@ -86,8 +86,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { X, Pin, Pencil, Trash2, BookmarkPlus } from 'lucide-vue-next'
-import type { Note } from '@/types/NoteType'
-import { useNoteStore } from '@/stores/noteStore'
+import type { Note } from '@/features/note/types/NoteType'
+import { useNoteStore } from '@/features/note/stores/noteStore'
 
 // spaceId: id của space đang xem note này (nhóm)
 // personalSpaceId: id không gian cá nhân của user hiện tại (nếu có, để so sánh ẩn nút khi trùng)

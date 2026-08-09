@@ -73,7 +73,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { X, Archive, Loader2, Undo2, Trash2 } from 'lucide-vue-next'
-import { useNoteStore } from '@/stores/noteStore'
+import { useNoteStore } from '@/features/note/stores/noteStore'
 import { useRoomMemberStore } from '@/stores/roomMemberStore'
 import { storeToRefs } from 'pinia'
 

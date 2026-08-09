@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from "vue";
 import ChooseSpaceDialog from "./sub-components/ChooseSpaceDialog.vue";
-import NoteDialog from "@/components/dialog/NoteDialog/NoteDialog.vue";
+import NoteDialog from "@/features/note/components/dialog/NoteDialog.vue";
 import type {
   CalendarChannelOption,
   MessageEventSuggestion,

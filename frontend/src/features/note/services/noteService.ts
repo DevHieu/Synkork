@@ -1,4 +1,4 @@
-import type { NoteRequest } from '@/types/NoteType'
+import type { NoteRequest } from '@/features/note/types/NoteType'
 
 import axiosClient from "@/lib/axiosClient";
 
