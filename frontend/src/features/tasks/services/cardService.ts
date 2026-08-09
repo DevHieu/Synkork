@@ -59,13 +59,12 @@ export const deleteAllArchivedCards = async (spaceId: string) => {
     return res.data;
 }
 
-export const completeCard = async (spaceId: string, cardId: string) => {
-    const res = await axiosClient.patch(`/api/space/${spaceId}/card/${cardId}/complete`);
-    return res.data;
-}
-
-export const uncompleteCard = async (spaceId: string, cardId: string) => {
-    const res = await axiosClient.patch(`/api/space/${spaceId}/card/${cardId}/uncomplete`);
+export const completeCard = async (spaceId: string, cardId: string, completed: boolean) => {
+    const res = await axiosClient.patch(`/api/space/${spaceId}/card/${cardId}/complete`, completed, {
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
     return res.data;
 }
 

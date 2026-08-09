@@ -78,8 +78,7 @@ public class CardService {
     }
 
     public CardDTO updateCard(UUID cardId, CardRequest req) {
-        CardEntity card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
+        CardEntity card = findCardById(cardId);
 
             if (!card.getVersion().equals(req.version())) {
                 System.out.println("REQUEST VERSION = " + req.version());
@@ -149,8 +148,7 @@ public class CardService {
 
     @Transactional
     public void deleteCard(UUID cardId) {
-        CardEntity card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
+        CardEntity card = findCardById(cardId);
 
         UUID columnId = card.getColumn().getId();
         int deletedPos = card.getPosition();
@@ -168,15 +166,13 @@ public class CardService {
 
     @Transactional
     public CardDTO getCardById(UUID cardUUID) {
-        CardEntity card = cardRepository.findById(cardUUID)
-                .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
+        CardEntity card = findCardById(cardUUID);
         return new CardDTO(card);
     }
 
     @Transactional
     public CardMovePayload moveCard(UUID cardId, MoveCardRequest req) {
-        CardEntity card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
+        CardEntity card = findCardById(cardId);
 
         ColumnEntity oldCol = card.getColumn();
         ColumnEntity newCol = columnRepository.findById(req.getTargetColumnId())
@@ -213,8 +209,7 @@ public class CardService {
 
     @Transactional
     public CardDTO archiveCard(UUID cardId) {
-        CardEntity card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
+        CardEntity card = findCardById(cardId);
 
         UUID columnId = card.getColumn().getId();
         int archivedPos = card.getPosition();
@@ -239,8 +234,7 @@ public class CardService {
 
     @Transactional
     public CardDTO unarchiveCard(UUID cardId) {
-        CardEntity card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
+        CardEntity card = findCardById(cardId);
 
         UUID columnId = card.getColumn().getId();
 
@@ -321,21 +315,15 @@ public class CardService {
         cardRepository.saveAll(newCards);
     }
 
-    public CardDTO completeCard(UUID cardId) {
-        CardEntity card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
-        card.setCompleted(true);
+    public CardDTO completeCard(UUID cardId, boolean completed) {
+        CardEntity card = findCardById(cardId);
+        card.setCompleted(completed);
         card.setCompletedAt(LocalDateTime.now());
 
         return new CardDTO(cardRepository.save(card));
     }
 
-    public CardDTO uncompleteCard(UUID cardId) {
-        CardEntity card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
-        card.setCompleted(false);
-        card.setCompletedAt(null);
-
-        return new CardDTO(cardRepository.save(card));
+    private CardEntity findCardById(UUID cardId) {
+        return cardRepository.findById(cardId).orElseThrow(() -> new RuntimeException("Card không tồn tại"));
     }
 }

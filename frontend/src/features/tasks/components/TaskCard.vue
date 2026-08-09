@@ -61,19 +61,15 @@ const isCompleted = ref(props.card.completed)
 const handleToggleComplete = () => {
     if (!currentSpace.value) return
 
-    isCompleted.value = !isCompleted.value
+    const newStatus = !isCompleted.value;
+    isCompleted.value = newStatus;
+    props.card.completed = newStatus;
 
-    props.card.completed = isCompleted.value
-
-    if (isCompleted.value) {
-        taskAction.completeCardEvent(currentSpace.value.id, props.card.id)
-    } else {
-        taskAction.uncompleteCardEvent(currentSpace.value.id, props.card.id)
-    }
-
+    taskAction.completeCardEvent(currentSpace.value.id, props.card.id, newStatus);
+    
     emit("toggleComplete", {
         id: props.card.id,
-        completed: isCompleted.value,
+        completed: newStatus,
     })
 }
 

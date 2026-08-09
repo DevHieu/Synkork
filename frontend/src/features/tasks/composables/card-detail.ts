@@ -110,16 +110,15 @@ export function useCardDetail(
 
     const handleToggleComplete = () => {
         if (props.readOnly || !currentSpace.value) return;
-        isCompleted.value = !isCompleted.value;
-        props.card.completed = isCompleted.value
-        if (isCompleted.value) {
-            taskAction.completeCardEvent(currentSpace.value.id, props.card.id);
-        } else {
-            taskAction.uncompleteCardEvent(currentSpace.value.id, props.card.id);
-        }
-        emit("toggle-complete", { id: props.card.id, completed: isCompleted.value });
+        const newStatus = !isCompleted.value;
+        isCompleted.value = newStatus;
+        props.card.completed = newStatus;
+  
+        taskAction.completeCardEvent(currentSpace.value.id, props.card.id, newStatus);
+        
+        emit("toggle-complete", { id: props.card.id, completed: newStatus });
     };
-
+    
     return {
         form,
         status,

@@ -13,13 +13,10 @@ import {
     deleteAllArchivedColumns,
     unarchiveColumn,
 } from "../services/columnService";
-import { archiveCard, completeCard, createCard, deleteAllArchivedCards, deleteCard, getArchivedCards, moveCard, unarchiveCard, uncompleteCard, updateCard, VersionConflictError } from "../services/cardService";
-import { useSpaceStore } from "@/stores/spaceStore";
+import { archiveCard, completeCard, createCard, deleteAllArchivedCards, deleteCard, getArchivedCards, moveCard, unarchiveCard, updateCard, VersionConflictError } from "../services/cardService";
 
 export function useTaskAction() {
     const taskStore = useTaskStore();
-    const spaceStore = useSpaceStore();
-    const { currentSpace } = storeToRefs(spaceStore);
     const { tasks, columns, archivedCards, archivedColumns, loading } = storeToRefs(taskStore);
 
     const fetchTasks = async (spaceId: string) => {
@@ -164,12 +161,8 @@ export function useTaskAction() {
         }
     }
 
-    const completeCardEvent = async (spaceId: string, cardId: string) => {
-        await completeCard(spaceId, cardId);
-    }
-    
-    const uncompleteCardEvent = async (spaceId: string, cardId: string) => {
-        await uncompleteCard(spaceId, cardId);
+    const completeCardEvent = async (spaceId: string, cardId: string, completed: boolean) => {
+        await completeCard(spaceId, cardId, completed);
     }
 
     return {
@@ -185,8 +178,7 @@ export function useTaskAction() {
         unarchiveColumnEvent,
         fetchArchivedItems,
         deleteAllArchived,
-        completeCardEvent,
-        uncompleteCardEvent
+        completeCardEvent
     }
 
 }
