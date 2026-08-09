@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { toast } from "vue-sonner";
+import { continuationLabel, displayTime, formatDateTimeLabel } from "@/features/calendar/utils/calendar-display.utils";
 
 const props = defineProps<{
   currentDate: dayjs.Dayjs;
@@ -78,45 +79,10 @@ const getCreatorLabel = (event: CalendarEvent) => {
   return event.createdByDisplayName || event.createdByUsername;
 };
 
-const getDisplayStartTime = (event: CalendarEvent) =>
-  (event.displayStartTime || event.startTime).substring(0, 5);
+const getDisplayStartTime = (event: CalendarEvent) => displayTime(event.displayStartTime || event.startTime);
+const getDisplayEndTime = (event: CalendarEvent) => displayTime(event.displayEndTime || event.endTime);
 
-const getDisplayEndTime = (event: CalendarEvent) =>
-  (event.displayEndTime || event.endTime).substring(0, 5);
-
-/**
- * Nhóm các sự kiện liên tục theo scheduleId để tính toán ngày bắt đầu (min) và ngày kết thúc (max) của nhóm.
- */
-const scheduleDateRanges = computed(() => {
-  const map: Record<string, { startDate: string; endDate: string }> = {};
-  for (const event of props.events) {
-    if (event.schedule && event.scheduleId) {
-      const sId = event.scheduleId;
-      const curDate = event.eventDate;
-      const curEnd = event.endDate || event.eventDate;
-      if (!map[sId]) {
-        map[sId] = { startDate: curDate, endDate: curEnd };
-      } else {
-        if (dayjs(curDate).isBefore(dayjs(map[sId].startDate))) {
-          map[sId].startDate = curDate;
-        }
-        if (dayjs(curEnd).isAfter(dayjs(map[sId].endDate))) {
-          map[sId].endDate = curEnd;
-        }
-        if (dayjs(curDate).isAfter(dayjs(map[sId].endDate))) {
-          map[sId].endDate = curDate;
-        }
-      }
-    }
-  }
-  return map;
-});
-
-const formatDateTimeLabel = (value: string | undefined, fallbackDate: string, fallbackTime: string) => {
-  const dateTime = value ? dayjs(value) : dayjs(`${fallbackDate}T${fallbackTime}`);
-  if (!dateTime.isValid()) return fallbackTime.substring(0, 5);
-  return `${dateTime.format("HH:mm")} ${dateTime.format("DD/MM")}`;
-};
+const scheduleDateRanges = computed(() => scheduleRanges(props.events));
 
 const getScheduleRange = (event: CalendarEvent) => {
   if (event.schedule && event.scheduleId) {
@@ -142,14 +108,7 @@ const getOriginalEndLabel = (event: CalendarEvent) => {
   return formatDateTimeLabel(event.originalEndDateTime, endDate, event.endTime);
 };  
 
-const getContinuationLabel = (event: CalendarEvent) => {
-  if (event.continuesFromPreviousDay && event.continuesToNextDay) {
-    return "BẮT ĐẦU TỪ NGÀY HÔM TRƯỚC VÀ TIẾP TỤC";
-  }
-  if (event.continuesFromPreviousDay) return "BẮT ĐẦU TỪ NGÀY HÔM TRƯỚC";
-  if (event.continuesToNextDay) return "TIẾP TỤC Ở NGÀY HÔM SAU";
-  return "";
-};
+const getContinuationLabel = (event: CalendarEvent) => continuationLabel(event, true);
 
 const handleDeleteAllForDate = () => {
   const eventsToDelete = selectedDateEvents.value.filter(e => e.createdById === props.currentUserId);
