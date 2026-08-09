@@ -24,6 +24,8 @@ export function useCardDetail(
 
     const baseVersion = ref<number | undefined>(props.card.version);
 
+    const isCompleted = ref<boolean>(props.card.completed ?? false);
+
     const getStatus = (dueDate?: string) => {
         if (!dueDate) return null;
         const now = new Date();
@@ -51,7 +53,7 @@ export function useCardDetail(
         });
     };
 
-    const handleĐueDateChange = () => {
+    const handleDueDateChange = () => {
         if (props.readOnly) return;
         if(form.value.dueDate) {
             const formattedDueDate = `${form.value.dueDate}:00`;
@@ -106,16 +108,30 @@ export function useCardDetail(
         emitSave();
     };
 
+    const handleToggleComplete = () => {
+        if (props.readOnly || !currentSpace.value) return;
+        isCompleted.value = !isCompleted.value;
+        props.card.completed = isCompleted.value
+        if (isCompleted.value) {
+            taskAction.completeCardEvent(currentSpace.value.id, props.card.id);
+        } else {
+            taskAction.uncompleteCardEvent(currentSpace.value.id, props.card.id);
+        }
+        emit("toggle-complete", { id: props.card.id, completed: isCompleted.value });
+    };
+
     return {
         form,
         status,
         localAssignees,
         baseVersion,
+        isCompleted,
         getStatus,
         handleSave,
         handleArchive,
         toggleAssignee,
         removeAssignee,
-        handleĐueDateChange
+        handleDueDateChange,
+        handleToggleComplete
     }
 }
