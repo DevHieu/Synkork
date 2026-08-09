@@ -115,18 +115,11 @@ public class CardController {
     }
 
     @PatchMapping("/{cardId}/complete")
-    public ResponseEntity<CardDTO> completeCard(@PathVariable String cardId, @PathVariable String spaceId) {
+    public ResponseEntity<CardDTO> completeCard(@PathVariable String cardId, @PathVariable String spaceId, @RequestBody boolean completed) {
         UUID cardUUID = UUID.fromString(cardId);
-        CardDTO result = cardService.completeCard(cardUUID);
+        CardDTO result = cardService.completeCard(cardUUID, completed);
         messagingTemplate.convertAndSend("/topic/space/" + spaceId + "/card/complete", result);
         return ResponseEntity.ok(result);
     }
 
-    @PatchMapping("/{cardId}/uncomplete")
-    public ResponseEntity<CardDTO> uncompleteCard(@PathVariable String cardId, @PathVariable String spaceId) {
-        UUID cardUUID = UUID.fromString(cardId);
-        CardDTO result = cardService.uncompleteCard(cardUUID);
-        messagingTemplate.convertAndSend("/topic/space/" + spaceId + "/card/uncomplete", result);
-        return ResponseEntity.ok(result);
-    }
 }

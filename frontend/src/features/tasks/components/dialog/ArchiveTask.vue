@@ -12,7 +12,7 @@ import { useTaskStore } from '@/features/tasks/stores/taskStore'
 import { useSpaceStore } from '@/stores/spaceStore'
 import { useRoomMemberStore } from '@/stores/roomMemberStore'
 import { useTaskAction } from '../../composables/task-api'
-import type { CardEvent } from '@/types/Task'
+import type { CardEvent } from '@/features/tasks/types/Task.ts'
 import CardDetailDialog from './CardDetailDialog.vue'
 
 const props = defineProps<{

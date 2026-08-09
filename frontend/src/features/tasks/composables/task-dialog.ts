@@ -1,4 +1,4 @@
-import type { ColumnEvent, CardEvent } from "@/types/Task"
+import type { ColumnEvent, CardEvent } from "@/features/tasks/types/Task"
 import { ref } from "vue"
 
 export function useTaskDialogs() {

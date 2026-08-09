@@ -1,4 +1,4 @@
-import type { CardEvent, ColumnEvent } from "@/types/Task"
+import type { CardEvent, ColumnEvent } from "@/features/tasks/types/Task"
 import { socketService } from "../../../services/websocket/socketService"
 
 const subscribedColumns = new Set<string>()
@@ -126,10 +126,6 @@ export const taskSocket = {
     return socketService.subscribe(`/topic/space/${spaceId}/card/complete`, callback);
   },
 
-  subscribeCardUncomplete(spaceId: string, callback: (card: CardEvent) => void) {
-      return socketService.subscribe(`/topic/space/${spaceId}/card/uncomplete`, callback);
-  },
-
   leaveSpace(spaceId: string) {
     socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/update`)
     socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/create`)
@@ -139,7 +135,6 @@ export const taskSocket = {
     socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/unarchive`)
     socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/deleteAllArchived`)
     socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/complete`)
-    socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/uncomplete`)
 
     socketService.unsubscribeByDestination(`/topic/space/${spaceId}/column/update`)
     socketService.unsubscribeByDestination(`/topic/space/${spaceId}/column/create`)

@@ -7,7 +7,7 @@ import { taskSocket } from '@/features/tasks/services/taskSocket.ts'
 import { useSpaceStore } from "@/stores/spaceStore";
 import { useTaskStore } from "@/features/tasks/stores/taskStore";
 import { storeToRefs } from "pinia";
-import type { ColumnEvent, TaskMoveEvent } from "@/types/Task";
+import type { ColumnEvent, TaskMoveEvent } from "@/features/tasks/types/Task";
 import {
     Dialog,
     DialogContent,

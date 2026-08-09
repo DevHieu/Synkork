@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import type { CardEvent } from '@/types/Task'
+import type { CardEvent } from '@/features/tasks/types/Task'
 import type { SuggestedTaskDraft } from '@/types/CalendarSuggestion'
 
 const props = defineProps<{

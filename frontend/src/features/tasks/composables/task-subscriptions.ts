@@ -1,5 +1,5 @@
 import { taskSocket } from "@/features/tasks/services/taskSocket";
-import type { CardEvent, CardMovePayload } from "@/types/Task";
+import type { CardEvent, CardMovePayload } from "@/features/tasks/types/Task";
 import { useTaskStore } from "../stores/taskStore";
 import { socketService } from "@/services/websocket/socketService";
 

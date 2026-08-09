@@ -3,7 +3,7 @@ import { computed, ref, watch } from "vue";
 import { ArrowRight, Columns3, LoaderCircle } from "lucide-vue-next";
 import { toast } from "vue-sonner";
 import { getAllColumnsWithoutCard } from "@/features/tasks/services/columnService";
-import type { ColumnEvent } from "@/types/Task";
+import type { ColumnEvent } from "@/features/tasks/types/Task";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

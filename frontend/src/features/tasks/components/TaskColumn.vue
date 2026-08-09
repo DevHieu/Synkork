@@ -10,7 +10,7 @@ import {
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import TaskCard from './TaskCard.vue'
-import type { CardEvent, ColumnEvent, TaskMoveEvent } from '@/types/Task'
+import type { CardEvent, ColumnEvent, TaskMoveEvent } from '@/features/tasks/types/Task.ts'
 
 const props = defineProps<{ column: ColumnEvent, spaceName?: string }>()
 

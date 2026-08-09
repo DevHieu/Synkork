@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { toast } from "vue-sonner";
 import { notificationSocket } from "../services/notificationSocket";
 
-import type { NotificationDTO } from "@/types/Notification";
+import type { NotificationDTO } from "@/features/notifications/types/Notification";
 import {
   getNotifications,
   markNotificationAsRead,
