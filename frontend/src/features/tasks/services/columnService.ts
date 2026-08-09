@@ -1,5 +1,5 @@
 import axiosClient from "@/lib/axiosClient"
-import type { ColumnEvent, ColumnRequest } from "@/types/Task"
+import type { ColumnEvent, ColumnRequest } from "@/features/tasks/types/Task"
 import axios from "axios"
 
 export const getColumns = async (spaceId: string, columnId: string) => {

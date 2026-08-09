@@ -1,4 +1,4 @@
-import type { CardEvent, ColumnEvent } from "@/types/Task"
+import type { CardEvent, ColumnEvent } from "@/features/tasks/types/Task"
 import { socketService } from "../../../services/websocket/socketService"
 
 const subscribedColumns = new Set<string>()

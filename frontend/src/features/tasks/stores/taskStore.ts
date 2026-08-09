@@ -1,4 +1,4 @@
-import type { CardEvent, CardMovePayload, ColumnEvent, TaskMoveEvent } from "@/types/Task";
+import type { CardEvent, CardMovePayload, ColumnEvent, TaskMoveEvent } from "@/features/tasks/types/Task";
 import { defineStore } from "pinia";
 import { getAllColumns, createColumn, updateColumn, deleteColumn, moveColumn, unarchiveColumn, archiveColumn, getArchivedColumns, deleteAllArchivedColumns, ColumnVersionConflictError } from '@/features/tasks/services/columnService'
 import { archiveCard, createCard, deleteAllArchivedCards, deleteCard, getArchivedCards, moveCard, unarchiveCard, updateCard, VersionConflictError } from "@/features/tasks/services/cardService";

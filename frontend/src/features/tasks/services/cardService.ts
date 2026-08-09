@@ -1,5 +1,5 @@
 import axiosClient from "@/lib/axiosClient"
-import type { CardEvent, CardRequest } from "@/types/Task"
+import type { CardEvent, CardRequest } from "@/features/tasks/types/Task"
 import axios from "axios"
 
 export const getCards = async (columnId: string, cardId: string) => {

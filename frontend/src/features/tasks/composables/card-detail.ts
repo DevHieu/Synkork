@@ -2,7 +2,7 @@ import { useSpaceStore } from "@/stores/spaceStore";
 import { storeToRefs } from "pinia";
 import { useTaskAction } from "./task-api";
 import { ref, computed } from "vue";
-import type { MemberSummary } from "@/types/Task";
+import type { MemberSummary } from "@/features/tasks/types/Task";
 import type { Member } from "@/types/Member";
 import { checkOverdue } from "../utils/task-date";
 import { toast } from "vue-sonner";

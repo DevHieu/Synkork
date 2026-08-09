@@ -1,4 +1,4 @@
-import type { NotificationDTO } from "@/types/Notification";
+import type { NotificationDTO } from "@/features/notifications/types/Notification";
 
 type NotificationContext = "dropdown" | "toast";
 

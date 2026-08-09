@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarIcon, UserPlus, Archive, AlignLeft, CreditCard, X, Check, AlertCircle, Clock } from "lucide-vue-next";
-import type { CardEvent } from "@/types/Task";
+import type { CardEvent } from "@/features/tasks/types/Task";
 import { useRoomMemberStore } from "@/stores/roomMemberStore";
 import { useCardDetail } from "../../composables/card-detail";
 import DateTimePicker from "@/components/DateTimePicker.vue";

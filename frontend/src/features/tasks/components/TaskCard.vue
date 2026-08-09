@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog'
 import { useSpaceStore } from "@/stores/spaceStore";
 import { storeToRefs } from "pinia";
-import type { CardEvent } from '@/types/Task'
+import type { CardEvent } from '@/features/tasks/types/Task.ts'
 import CardDetailDialog from './dialog/CardDetailDialog.vue'
 import { VersionConflictError } from '@/features/tasks/services/cardService'
 import { toast } from 'vue-sonner'

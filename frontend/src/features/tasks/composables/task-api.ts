@@ -1,4 +1,4 @@
-import type { TaskMoveEvent } from "@/types/Task";
+import type { TaskMoveEvent } from "@/features/tasks/types/Task";
 import { useTaskStore } from "../stores/taskStore";
 import { storeToRefs } from "pinia";
 import {

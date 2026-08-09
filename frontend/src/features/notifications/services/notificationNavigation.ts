@@ -1,7 +1,7 @@
 import router from "@/routers";
 import { useRoomsStore } from "@/stores/roomStore";
 import { useSpaceStore } from "@/stores/spaceStore";
-import type { NotificationDTO } from "@/types/Notification";
+import type { NotificationDTO } from "@/features/notifications/types/Notification";
 
 export async function navigateFromNotification(notification: NotificationDTO, path: string) {
     if (notification.roomId && notification.spaceId) {
