@@ -20,7 +20,7 @@ import {
 import { UserPlus, UserMinus, MessageCircle, Flag, Clock3, TicketCheck, TicketX, Ban } from "lucide-vue-next";
 import { useUserStore } from "@/stores/userStore";
 import { useSpaceStore } from "@/stores/spaceStore";
-import ReportDialog from "./ReportDialog.vue";
+import ReportDialog from "../../features/reports/ReportDialog.vue";
 import { storeToRefs } from "pinia";
 import { useRoomMemberStore } from "@/stores/roomMemberStore";
 import {

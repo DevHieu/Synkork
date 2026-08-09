@@ -25,8 +25,8 @@ import AvatarFallback from "@/components/ui/avatar/AvatarFallback.vue"
 import { Flag } from 'lucide-vue-next'
 import type { User } from "@/types/User"
 import type { Room } from "@/types/Room"
-import { createRoomReport, createUserReport } from '@/services/reportService'
-import type { ReportReason, ReportRequest } from '@/types/Report'
+import { createRoomReport, createUserReport } from '@/features/reports/services/reportService'
+import type { ReportReason, ReportRequest } from '@/features/reports/types/Report'
 import { toast } from 'vue-sonner'
 
 const props = defineProps<{

@@ -14,7 +14,7 @@ import DeleteTab from "./components/DeleteTab.vue";
 import { useRoomMemberStore } from "@/stores/roomMemberStore";
 import DeleteConfirmDialog from "@/components/dialog/DeleteConfirmDialog.vue";
 import { leaveRoom } from "@/services/roomMemberService";
-import ReportDialog from "@/components/dialog/ReportDialog.vue";
+import ReportDialog from "@/features/reports/ReportDialog.vue";
 
 const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{
