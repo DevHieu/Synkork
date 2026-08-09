@@ -13,7 +13,7 @@ import {
     deleteAllArchivedColumns,
     unarchiveColumn,
 } from "../services/columnService";
-import { archiveCard, createCard, deleteAllArchivedCards, deleteCard, getArchivedCards, moveCard, unarchiveCard, updateCard, VersionConflictError } from "../services/cardService";
+import { archiveCard, completeCard, createCard, deleteAllArchivedCards, deleteCard, getArchivedCards, moveCard, unarchiveCard, uncompleteCard, updateCard, VersionConflictError } from "../services/cardService";
 import { useSpaceStore } from "@/stores/spaceStore";
 
 export function useTaskAction() {
@@ -164,6 +164,14 @@ export function useTaskAction() {
         }
     }
 
+    const completeCardEvent = async (spaceId: string, cardId: string) => {
+        await completeCard(spaceId, cardId);
+    }
+    
+    const uncompleteCardEvent = async (spaceId: string, cardId: string) => {
+        await uncompleteCard(spaceId, cardId);
+    }
+
     return {
         fetchTasks,
         saveColumn,
@@ -177,6 +185,8 @@ export function useTaskAction() {
         unarchiveColumnEvent,
         fetchArchivedItems,
         deleteAllArchived,
+        completeCardEvent,
+        uncompleteCardEvent
     }
 
 }

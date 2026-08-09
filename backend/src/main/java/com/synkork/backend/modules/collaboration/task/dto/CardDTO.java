@@ -34,6 +34,9 @@ public class CardDTO {
 
     private Integer version;
 
+    private Boolean completed;
+    private LocalDateTime completedAt;
+
     public CardDTO(CardEntity e) {
         this.id = e.getId();
         this.title = e.getTitle();
@@ -58,5 +61,8 @@ public class CardDTO {
         this.archivedAt = e.getArchivedAt();
 
         this.version = e.getVersion();
+
+        this.completed = e.getCompleted();
+        this.completedAt = e.getCompletedAt();
     }
 }

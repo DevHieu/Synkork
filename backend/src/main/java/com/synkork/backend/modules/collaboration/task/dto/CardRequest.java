@@ -16,6 +16,8 @@ public record CardRequest(
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
         LocalDateTime dueDate,
 
-        Integer version
+        Integer version,
+
+        Boolean completed
 ) {
 }

@@ -122,6 +122,14 @@ export const taskSocket = {
     })
   },
 
+  subscribeCardComplete(spaceId: string, callback: (card: CardEvent) => void) {
+    return socketService.subscribe(`/topic/space/${spaceId}/card/complete`, callback);
+  },
+
+  subscribeCardUncomplete(spaceId: string, callback: (card: CardEvent) => void) {
+      return socketService.subscribe(`/topic/space/${spaceId}/card/uncomplete`, callback);
+  },
+
   leaveSpace(spaceId: string) {
     socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/update`)
     socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/create`)
@@ -130,6 +138,8 @@ export const taskSocket = {
     socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/archive`)
     socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/unarchive`)
     socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/deleteAllArchived`)
+    socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/complete`)
+    socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/uncomplete`)
 
     socketService.unsubscribeByDestination(`/topic/space/${spaceId}/column/update`)
     socketService.unsubscribeByDestination(`/topic/space/${spaceId}/column/create`)

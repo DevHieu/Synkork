@@ -87,8 +87,6 @@ public class CardService {
             throw new ObjectOptimisticLockingFailureException(CardEntity.class, card.getId());
         }
 
-        
-
         if (req.title() != null) {
             card.setTitle(req.title());
         }
@@ -98,6 +96,8 @@ public class CardService {
         }
 
         card.setDueDate(req.dueDate());
+
+        if(req.completed() != null) card.setCompleted(req.completed());
 
         if (req.assigneeIds() != null) {
             // Lấy danh sách assignee cũ
@@ -319,5 +319,23 @@ public class CardService {
             }
         }
         cardRepository.saveAll(newCards);
+    }
+
+    public CardDTO completeCard(UUID cardId) {
+        CardEntity card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
+        card.setCompleted(true);
+        card.setCompletedAt(LocalDateTime.now());
+
+        return new CardDTO(cardRepository.save(card));
+    }
+
+    public CardDTO uncompleteCard(UUID cardId) {
+        CardEntity card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
+        card.setCompleted(false);
+        card.setCompletedAt(null);
+
+        return new CardDTO(cardRepository.save(card));
     }
 }

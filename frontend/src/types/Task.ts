@@ -11,6 +11,8 @@ export interface CardEvent {
   dueDate?: string | undefined
   
   version?: number
+
+  completed?: boolean
 }
 
 export interface CardRequest {
@@ -18,7 +20,8 @@ export interface CardRequest {
   description: string | null; 
   assigneeIds?: string[], 
   dueDate?: string, 
-  version?: number
+  version?: number,
+  completed?: boolean
 }
 
 export interface UserSummary {
