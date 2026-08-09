@@ -54,7 +54,7 @@
   <script setup lang="ts">
   import { ref } from 'vue'
   import { AlertTriangle } from 'lucide-vue-next'
-  import { useNoteStore } from '@/stores/noteStore'
+  import { useNoteStore } from '@/features/note/stores/noteStore'
   import { storeToRefs } from 'pinia'
   
   const props = defineProps<{
