@@ -17,6 +17,7 @@ export interface CalendarEventAttendee {
 export interface CalendarEvent {
   id: string;
   spaceId: string;
+  version?: number;
   title: string;
   description: string;
   eventLink?: string;

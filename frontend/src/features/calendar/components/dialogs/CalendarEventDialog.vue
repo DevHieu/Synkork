@@ -27,7 +27,7 @@ import EventAttendeesSection from "../sub-components/EventAttendeesSection.vue";
 import EventAttachmentsSection from "../sub-components/EventAttachmentsSection.vue";
 import EventTaskSection from "../sub-components/EventTaskSection.vue";
 import EventNoteSection from "../sub-components/EventNoteSection.vue";
-import { useEventForm, type EventFormData } from "../composables/useEventForm";
+import { useEventForm, type EventFormData } from "../../composable/useEventForm";
 import type { Member } from "@/types/Member";
 import { useSpaceStore } from "@/stores/spaceStore";
 import { useRoomsStore } from "@/stores/roomStore";

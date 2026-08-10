@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -293,7 +294,7 @@ public class CalendarEventService {
         UUID groupId = UUID.randomUUID();
         LocalDate current = eventRequest.getEventDate();
         LocalDate endDate = eventRequest.getEndDate();
-        CalendarEventEntity firstSaved = null;
+        List<CalendarEventEntity> savedEvents = new ArrayList<>();
 
         boolean isOvernight = eventRequest.getEndTime().isBefore(eventRequest.getStartTime());
 
@@ -312,17 +313,20 @@ public class CalendarEventService {
 
             CalendarEventEntity saved = calendarEventRepository.save(instance);
             googleCalendarService.syncEventToGoogleAsync(saved.getId());
-            if (firstSaved == null) firstSaved = saved;
+            savedEvents.add(saved);
             current = current.plusDays(1);
         }
 
         // Phát sóng cập nhật qua WebSocket và gửi email thông báo
-        CalendarEventDTO result = new CalendarEventDTO(Objects.requireNonNull(firstSaved));
-        broadcastCalendarUpdate(eventRequest.getSpaceId(), "CREATED", result);
-        if (!firstSaved.getAttendees().isEmpty()) {
-            calendarEmailService.sendEventNotificationEmail(firstSaved, firstSaved.getAttendees(), false);
+        for (CalendarEventEntity saved : savedEvents) {
+            CalendarEventDTO dto = new CalendarEventDTO(saved);
+            broadcastCalendarUpdate(eventRequest.getSpaceId(), "CREATED", dto);
         }
-        return result;
+        
+        if (!savedEvents.isEmpty() && !savedEvents.get(0).getAttendees().isEmpty()) {
+            calendarEmailService.sendEventNotificationEmail(savedEvents.get(0), savedEvents.get(0).getAttendees(), false);
+        }
+        return new CalendarEventDTO(savedEvents.get(0));
     }
 
     // Cập nhật sự kiện (kiểm tra quyền: người tạo hoặc cho phép mọi người sửa)
@@ -332,6 +336,12 @@ public class CalendarEventService {
 
         CalendarEventEntity calendarEvent = calendarEventRepository.findById(Objects.requireNonNull(eventId))
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sự kiện"));
+
+        // Optimistic Locking: reject stale version
+        if (eventRequest.getVersion() != null && calendarEvent.getVersion() != null
+                && !calendarEvent.getVersion().equals(eventRequest.getVersion())) {
+            throw new ObjectOptimisticLockingFailureException(CalendarEventEntity.class, eventId);
+        }
 
         if (!hasPermissionToEdit(calendarEvent, userId)) {
             throw new SecurityException("Bạn không có quyền chỉnh sửa sự kiện này! Vui lòng liên hệ đến người tạo sự kiện");
@@ -359,6 +369,11 @@ public class CalendarEventService {
             // Xóa sự kiện đơn cũ và tạo nhóm sự kiện liên tục mới
             String spaceIdStr = calendarEvent.getSpace().getId().toString();
             googleCalendarService.deleteEventFromGoogle(calendarEvent);
+            
+            // Broadcast DELETED for the old single event
+            CalendarEventDTO deletedDto = new CalendarEventDTO(calendarEvent);
+            broadcastCalendarUpdate(spaceIdStr, "DELETED", deletedDto);
+
             calendarEventRepository.delete(calendarEvent);
             calendarEventRepository.flush();
             return createScheduleEvents(eventRequest, actor, calendarEvent.getSpace());
@@ -399,6 +414,8 @@ public class CalendarEventService {
         List<CalendarEventEntity> oldGroup = calendarEventRepository.findByScheduleId(scheduleId);
         for (CalendarEventEntity old : oldGroup) {
             googleCalendarService.deleteEventFromGoogle(old);
+            CalendarEventDTO dto = new CalendarEventDTO(old);
+            broadcastCalendarUpdate(spaceIdStr, "DELETED", dto);
         }
         calendarEventRepository.deleteByScheduleId(scheduleId);
         calendarEventRepository.flush();
@@ -435,7 +452,7 @@ public class CalendarEventService {
     private CalendarEventDTO updateScheduleGroupTime(CalendarEventEntity triggering, CalendarEventDTO request, UserEntity actor) {
         UUID scheduleId = triggering.getScheduleId();
         List<CalendarEventEntity> group = calendarEventRepository.findByScheduleId(scheduleId);
-        CalendarEventEntity lastSaved = null;
+        List<CalendarEventEntity> savedEvents = new ArrayList<>();
 
         for (CalendarEventEntity member : group) {
             LocalDate originalDate = member.getEventDate(); // Giữ nguyên ngày diễn ra của từng ô sự kiện
@@ -448,13 +465,17 @@ public class CalendarEventService {
             member.setScheduleId(scheduleId);
             applyRelations(member, request);
             syncEventRelations(member, request, actor);
-            lastSaved = calendarEventRepository.save(member);
-            googleCalendarService.syncEventToGoogleAsync(lastSaved.getId());
+            CalendarEventEntity saved = calendarEventRepository.save(member);
+            googleCalendarService.syncEventToGoogleAsync(saved.getId());
+            savedEvents.add(saved);
         }
 
-        CalendarEventDTO result = new CalendarEventDTO(Objects.requireNonNull(lastSaved));
-        broadcastCalendarUpdate(result.getSpaceId(), "UPDATED", result);
-        return result;
+        for (CalendarEventEntity saved : savedEvents) {
+            CalendarEventDTO dto = new CalendarEventDTO(saved);
+            broadcastCalendarUpdate(dto.getSpaceId(), "UPDATED", dto);
+        }
+        
+        return new CalendarEventDTO(savedEvents.get(0));
     }
 
     // Thiết lập mối liên kết (phòng họp, công việc, ghi chú)

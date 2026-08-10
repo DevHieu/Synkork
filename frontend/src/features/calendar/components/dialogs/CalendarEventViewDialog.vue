@@ -33,6 +33,7 @@ import { Separator } from "@/components/ui/separator";
 import { useVoiceSpaceStore } from "@/features/voice-chat/stores/voiceSpaceStore";
 import { useSpaceStore } from "@/stores/spaceStore";
 import { useUserStore } from "@/stores/userStore";
+import { continuationLabel, displayTime, formatDateTimeLabel } from "@/features/calendar/utils/calendar-display.utils";
 
 const props = defineProps<{
   show: boolean;
@@ -114,16 +115,11 @@ const attachments = computed(() => props.event?.attachments ?? []);
 const attendees = computed(() => props.event?.attendees ?? []);
 const eventLink = computed(() => props.event?.eventLink?.trim() ?? "");
 const displayStartTime = computed(() =>
-  props.event ? (props.event.displayStartTime || props.event.startTime).substring(0, 5) : "",
+  props.event ? displayTime(props.event.displayStartTime || props.event.startTime) : "",
 );
 const displayEndTime = computed(() =>
-  props.event ? (props.event.displayEndTime || props.event.endTime).substring(0, 5) : "",
+  props.event ? displayTime(props.event.displayEndTime || props.event.endTime) : "",
 );
-const formatDateTimeLabel = (value: string | undefined, fallbackDate: string, fallbackTime: string) => {
-  const dateTime = value ? dayjs(value) : dayjs(`${fallbackDate}T${fallbackTime}`);
-  if (!dateTime.isValid()) return fallbackTime.substring(0, 5);
-  return `${dateTime.format("HH:mm")} ${dateTime.format("DD/MM")}`;
-};
 const originalStartLabel = computed(() =>
   props.event
     ? formatDateTimeLabel(props.event.originalStartDateTime, props.event.eventDate, props.event.startTime)
@@ -134,15 +130,9 @@ const originalEndLabel = computed(() =>
     ? formatDateTimeLabel(props.event.originalEndDateTime, props.event.endDate || props.event.eventDate, props.event.endTime)
     : "",
 );
-const continuationLabel = computed(() => {
-  if (!props.event) return "";
-  if (props.event.continuesFromPreviousDay && props.event.continuesToNextDay) {
-    return "Event này bắt đầu từ ngày hôm trước và tiếp tục ở ngày hôm sau";
-  }
-  if (props.event.continuesFromPreviousDay) return "Event này bắt đầu từ ngày hôm trước";
-  if (props.event.continuesToNextDay) return "Event này tiếp tục ở ngày hôm sau";
-  return "";
-});
+const continuationText = computed(() =>
+  props.event ? continuationLabel(props.event, true) : "",
+);
 
 const openEdit = () => {
   if (props.event) {
@@ -360,9 +350,9 @@ const goToNoteSpace = async () => {
                 <p class="font-sans text-[9px] text-muted-foreground/80 mt-1">
                   Múi giờ: {{ originalStartLabel }} - {{ originalEndLabel }}
                 </p>
-                <p v-if="continuationLabel"
+                <p v-if="continuationText"
                   class="mt-1 font-sans text-[9px] font-medium text-warning-foreground bg-warning/10 px-2 py-0.5 rounded-sm inline-block uppercase tracking-wider">
-                  {{ continuationLabel }}
+                  {{ continuationText }}
                 </p>
               </div>
 

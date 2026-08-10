@@ -1,4 +1,5 @@
 import axiosClient from "@/lib/axiosClient";
+import axios from "axios";
 
 // Lấy tất cả event theo spaceId
 export const getEventsBySpaceId = async (spaceId: string) => {
@@ -28,7 +29,14 @@ export const createEvent = async (data: any) => {
 
 // Cập nhật event
 export const updateEvent = async (eventId: string, data: any) => {
-  return await axiosClient.put(`/api/calendar-events/${eventId}`, data);
+  try {
+    return await axiosClient.put(`/api/calendar-events/${eventId}`, data);
+  } catch (e: any) {
+    if (axios.isAxiosError(e) && e.response?.status === 409) {
+      throw new CalendarVersionConflictError();
+    }
+    throw e;
+  }
 };
 
 export const uploadEventAttachments = async (eventId: string, files: File[]) => {
@@ -65,3 +73,11 @@ export const summarizeAttachment = async (eventId: string, attachmentId: string)
     { timeout: 60000 } // Tăng timeout lên 60s cho xử lý AI
   );
 };
+
+export class CalendarVersionConflictError extends Error {
+  constructor() {
+    super("CALENDAR_VERSION_CONFLICT");
+    this.name = "CalendarVersionConflictError";
+    Object.setPrototypeOf(this, CalendarVersionConflictError.prototype);
+  }
+}

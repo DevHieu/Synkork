@@ -3,6 +3,7 @@ import { computed } from "vue";
 import dayjs from "dayjs";
 import type { CalendarEvent } from "@/types/CalendarEvent";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { continuationLabel, displayTime, formatDateTimeLabel } from "@/features/calendar/utils/calendar-display.utils";
 
 const props = defineProps<{
   currentDate: dayjs.Dayjs;
@@ -48,23 +49,12 @@ const getEventsForDate = (date: dayjs.Dayjs) => {
 };
 
 // View tuần render trực tiếp từ mảng event đã được store đồng bộ sẵn.
-const getDisplayStartTime = (event: CalendarEvent) =>
-  (event.displayStartTime || event.startTime).substring(0, 5);
+const getDisplayStartTime = (event: CalendarEvent) => displayTime(event.displayStartTime || event.startTime);
 
-const getOriginalStartLabel = (event: CalendarEvent) => {
-  const dateTime = event.originalStartDateTime
-    ? dayjs(event.originalStartDateTime)
-    : dayjs(`${event.eventDate}T${event.startTime}`);
-  if (!dateTime.isValid()) return event.startTime.substring(0, 5);
-  return `${dateTime.format("HH:mm")} ${dateTime.format("DD/MM")}`;
-};
+const getOriginalStartLabel = (event: CalendarEvent) =>
+  formatDateTimeLabel(event.originalStartDateTime, event.eventDate, event.startTime);
 
-const getContinuationLabel = (event: CalendarEvent) => {
-  if (event.continuesFromPreviousDay && event.continuesToNextDay) return "TIẾP TỤC";
-  if (event.continuesFromPreviousDay) return "TỪ HÔM TRƯỚC";
-  if (event.continuesToNextDay) return "SANG HÔM SAU";
-  return "";
-};
+const getContinuationLabel = (event: CalendarEvent) => continuationLabel(event);
 </script>
 <template>
   <ScrollArea class="calendar-scroll-area min-h-0 flex-1">

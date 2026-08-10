@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 public class CalendarEventDTO {
     private UUID id;
     private String spaceId;
+    private Integer version;
     private String title;
     private String description;
 
@@ -72,6 +73,7 @@ public class CalendarEventDTO {
     public CalendarEventDTO(CalendarEventEntity entity) {
         this.id = entity.getId();
         this.spaceId = entity.getSpace().getId().toString();
+        this.version = entity.getVersion();
         this.title = entity.getTitle();
         this.description = entity.getDescription();
         this.eventDate = entity.getEventDate();
