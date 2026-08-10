@@ -13,12 +13,12 @@ import ColumnListDialog from "@/features/tasks/components/dialog/ColumnListDialo
 import CardFormDialog from "@/features/tasks/components/dialog/CardFormDialog.vue";
 
 import { useSpaceStore } from "@/stores/spaceStore";
-import { useTaskStore } from "@/features/tasks/stores/taskStore.ts";
-import { useSuggestionStore } from "@/stores/calendarStore";
+import { useSuggestionStore } from "@/features/calendar/stores/calendarStore";
+import { useTaskAction } from "@/features/tasks/composables/task-api.ts";
 
 const spaceStore = useSpaceStore();
 const suggestionStore = useSuggestionStore();
-const taskStore = useTaskStore();
+const taskAction = useTaskAction();
 
 const props = defineProps<{
   open: boolean;
@@ -140,7 +140,7 @@ const handleSelectTaskColumn = async (columnId: string) => {
 };
 
 const handleSaveTaskCard = async (data: { title: string; description: string }) => {
-  await taskStore.saveCard(
+  await taskAction.saveCard(
     spaceChoosenId.value,
     "",
     columnChoosenId.value,

@@ -5,9 +5,25 @@ import { getCookie, removeCookie } from "@/lib/cookies";
 
 let stompClient: Client | null = null;
 const subscriptions = new Map<string, StompSubscription>();
+const activeSubscriptions = new Map<string, { callback: (payload: any) => void; options?: { persistent?: boolean } }>();
 let connectingPromise: Promise<void> | null = null;
 // Giữ lại các kênh cần sống lâu hơn vòng đời của từng space.
 const persistentDestinations = new Set<string>();
+
+const doSubscribe = (destination: string, callback: (payload: any) => void) => {
+  if (!stompClient?.connected) return;
+  if (subscriptions.has(destination)) {
+    subscriptions.get(destination)!.unsubscribe();
+  }
+  const sub = stompClient.subscribe(destination, (msg) => {
+    try {
+      callback(JSON.parse(msg.body));
+    } catch {
+      callback(msg.body);
+    }
+  });
+  subscriptions.set(destination, sub);
+};
 
 const createStompClient = (token: string, onConnected?: () => void): Client => {
   const client = new Client({
@@ -22,6 +38,10 @@ const createStompClient = (token: string, onConnected?: () => void): Client => {
 
     onConnect: () => {
       onConnected?.();
+      // Khôi phục tất cả đăng ký sau khi kết nối lại
+      activeSubscriptions.forEach(({ callback }, destination) => {
+        doSubscribe(destination, callback);
+      });
     },
     onWebSocketClose: async (event) => {
       //bắt 401 và refresh token
@@ -113,39 +133,32 @@ export const socketService = {
     callback: (payload: any) => void,
     options?: { persistent?: boolean },
   ) {
-    if (!this.isConnected()) {
-      return null;
-    }
+    activeSubscriptions.set(destination, { callback, options });
 
-    if (subscriptions.has(destination)) {
-      subscriptions.get(destination)!.unsubscribe();
-      subscriptions.delete(destination);
-    }
-
-    const sub = stompClient!.subscribe(destination, (msg) => {
-      try {
-        callback(JSON.parse(msg.body));
-      } catch {
-        callback(msg.body);
-      }
-    });
-
-    subscriptions.set(destination, sub);
-
-    // Đánh dấu persistent nếu có
     if (options?.persistent) {
       persistentDestinations.add(destination);
     }
 
-    return sub;
+    if (this.isConnected()) {
+      doSubscribe(destination, callback);
+    }
+
+    return {
+      unsubscribe: () => {
+        this.unsubscribeByDestination(destination);
+      }
+    };
   },
 
   // unsubscribeAll bỏ qua persistent
   unsubscribeAll() {
-    subscriptions.forEach((sub, destination) => {
+    activeSubscriptions.forEach((_, destination) => {
       if (!persistentDestinations.has(destination)) {
-        sub.unsubscribe();
-        subscriptions.delete(destination);
+        if (subscriptions.has(destination)) {
+          subscriptions.get(destination)!.unsubscribe();
+          subscriptions.delete(destination);
+        }
+        activeSubscriptions.delete(destination);
       }
     });
   },
@@ -153,6 +166,7 @@ export const socketService = {
   unsubscribeAllForce() {
     subscriptions.forEach((sub) => sub.unsubscribe());
     subscriptions.clear();
+    activeSubscriptions.clear();
     persistentDestinations.clear();
   },
 
@@ -160,8 +174,9 @@ export const socketService = {
     if (subscriptions.has(destination)) {
       subscriptions.get(destination)!.unsubscribe();
       subscriptions.delete(destination);
-      persistentDestinations.delete(destination);
     }
+    activeSubscriptions.delete(destination);
+    persistentDestinations.delete(destination);
   },
 
   publish(destination: string, body: any) {

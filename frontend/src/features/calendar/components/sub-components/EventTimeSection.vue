@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
-import { useTimeSelector } from "../composables/useTimeSelector";
+import { useTimeSelector } from "../../composable/useTimeSelector";
 import {
   Select,
   SelectContent,
@@ -118,7 +118,7 @@ watch(startAmPm, (newAmPm) => {
 });
 
 // Điều chỉnh endTime nếu <= startTime (chỉ áp dụng khi sự kiện ở CÙNG NGÀY)
-watch([startHour, startMinute, startAmPm], () => {
+watch([startHour, startMinute, startAmPm, endHour, endMinute, endAmPm, eventDate, endDate], () => {
   if (eventDate.value === endDate.value) {
     const start = formatTime(startHour.value, startMinute.value, startAmPm.value, timeFormat.value);
     const currentEnd = formatTime(endHour.value, endMinute.value, endAmPm.value, timeFormat.value);
@@ -133,8 +133,6 @@ watch([startHour, startMinute, startAmPm], () => {
   }
   notifyParent();
 });
-
-watch([endHour, endMinute, endAmPm, eventDate, endDate], notifyParent);
 
 // Chuyển đổi định dạng 12h/24h giữ nguyên giờ
 watch(timeFormat, (newFormat) => {

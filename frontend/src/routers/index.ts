@@ -15,7 +15,7 @@ import ChatWindow from "@/features/chats/index.vue";
 import VoiceWindow from "@/features/voice-chat/index.vue";
 import NoteWindow from "@/features/note/index.vue";
 import TaskWindow from "@/features/tasks/index.vue";
-import CalendarWindowLayout from "@/components/windows/CalendarWindowLayout.vue";
+import CalendarWindowLayout from "@/features/calendar/index.vue";
 
 import FriendPage from "@/pages/FriendPage.vue";
 import MePage from "@/pages/MePage.vue";

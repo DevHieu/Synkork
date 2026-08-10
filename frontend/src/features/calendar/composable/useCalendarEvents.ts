@@ -6,11 +6,11 @@ import {
   uploadEventAttachments as apiUploadEventAttachments,
   deleteEvent as apiDeleteEvent,
   checkConflicts as apiCheckConflicts,
-} from "@/services/calendarService";
+} from "@/features/calendar/services/calendarService";
 import type { CalendarEvent } from "@/types/CalendarEvent";
 import type { Ref } from "vue";
 import type dayjs from "dayjs";
-import { calculateDateRange, formatPayload, extractNewFiles } from "./calendarUtils";
+import { calculateDateRange, formatPayload, extractNewFiles } from "@/features/calendar/utils/calendar.utils";
 
 // Quản lý fetch và thay đổi event qua API
 export function useCalendarEvents(
