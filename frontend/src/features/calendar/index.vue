@@ -24,6 +24,7 @@ import type { EventFormData } from "@/features/calendar/composable/useEventForm"
 import { PlanLimitUtils } from "@/utils/PlanLimitUtils";
 import PremiumFeatureDialog from "@/components/dialog/PremiumFeatureDialog.vue";
 import { extractNewFiles, formatPayload } from "@/features/calendar/utils/calendar.utils";
+import { CalendarVersionConflictError } from "@/features/calendar/services/calendarService";
 import { buildAttachmentSummaryHtml } from "@/features/calendar/utils/calendar-summary.utils";
 import {
   buildConflictMessage,
@@ -90,6 +91,8 @@ const showPremiumDialog = ref(false);
 const isEditing = ref(false);
 const editingEventId = ref<string | undefined>(undefined);
 const selectedEvent = ref<CalendarEvent | null>(null);
+const isConflictDialogOpen = ref(false);
+const conflictPayload = ref<{ isEditing: boolean; eventId?: string; data: EventFormData } | null>(null);
 const initialFormData = ref<EventFormData>({
   title: "",
   description: "",
@@ -249,10 +252,17 @@ const persistEvent = async (payload: { isEditing: boolean; eventId?: string; dat
       isSaveSuccess.value = false;
     }, 1200);
   } catch (err: any) {
-    console.error("Lỗi khi lưu sự kiện:", err);
-    pendingSavePayload.value = null;
-    const msg = err.response?.data || "CÓ LỖI XẢY RA KHI LƯU SỰ KIỆN!";
-    showNotification("error", "LỖI LƯU SỰ KIỆN", msg);
+    if (err instanceof CalendarVersionConflictError) {
+      conflictPayload.value = payload;
+      showDialog.value = false;
+      pendingSavePayload.value = null;
+      isConflictDialogOpen.value = true;
+    } else {
+      console.error("Lỗi khi lưu sự kiện:", err);
+      pendingSavePayload.value = null;
+      const msg = err.response?.data || "CÓ LỖI XẢY RA KHI LƯU SỰ KIỆN!";
+      showNotification("error", "LỖI LƯU SỰ KIỆN", msg);
+    }
   } finally {
     isSavingEvent.value = false;
   }
@@ -542,6 +552,27 @@ watch(
   },
   { immediate: true },
 );
+
+// Conflict dialog handlers
+const handleConflictDiscard = () => {
+  isConflictDialogOpen.value = false;
+  conflictPayload.value = null;
+  fetchEvents();
+};
+
+const handleConflictCreateCopy = async () => {
+  if (!conflictPayload.value) return;
+  isConflictDialogOpen.value = false;
+  const copyData = { ...conflictPayload.value.data };
+  delete (copyData as any).version;
+  try {
+    await createEvent(copyData);
+    showNotification("success", "THÀNH CÔNG", "Đã tạo sự kiện mới từ nội dung của bạn.");
+  } catch (err: any) {
+    showNotification("error", "LỖI", err.response?.data || "Có lỗi khi tạo sự kiện mới!");
+  }
+  conflictPayload.value = null;
+};
 </script>
 
 <template>
@@ -582,6 +613,18 @@ watch(
       :require-input="notificationState.requireInput"
       :is-loading="isDeletingEvent || isSavingEvent" @confirm="handleNotificationConfirm"
       @cancel="handleNotificationCancel" />
+
+    <!-- Conflict Dialog -->
+    <CalendarNotificationDialog
+      v-model:show="isConflictDialogOpen"
+      type="confirm"
+      title="SỰ KIỆN ĐÃ BỊ THAY ĐỔI BỞI NGƯỜI KHÁC"
+      message="Trong lúc bạn chỉnh sửa, một người khác đã lưu thay đổi cho sự kiện này. Nếu lưu đè, nội dung của họ sẽ bị mất.<br/><br/>Bạn có muốn tạo một sự kiện mới chứa nội dung bạn vừa nhập không?"
+      confirm-text="Tạo sự kiện mới"
+      cancel-text="Bỏ qua, xem bản mới nhất"
+      @confirm="handleConflictCreateCopy"
+      @cancel="handleConflictDiscard"
+    />
 
     <PremiumFeatureDialog
       v-model:open="showPremiumDialog"

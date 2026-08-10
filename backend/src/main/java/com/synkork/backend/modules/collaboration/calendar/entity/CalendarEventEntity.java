@@ -27,6 +27,9 @@ import java.time.LocalTime;
 @AllArgsConstructor
 public class CalendarEventEntity extends BaseEntity {
 
+    @Version
+    private Integer version;
+
     @ManyToOne( fetch = FetchType.LAZY)
     @JoinColumn(name= "space_id", nullable = false, columnDefinition = "BINARY(16)")
     private SpaceEntity space;

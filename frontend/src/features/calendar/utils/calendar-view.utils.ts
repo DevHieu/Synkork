@@ -45,6 +45,7 @@ export const createFormDataFromEvent = (event: CalendarEvent): EventFormData =>
     taskId: event.taskId,
     noteSpaceId: event.noteSpaceId,
     noteId: event.noteId,
+    version: event.version,
   });
 
 export const resolveScheduleEvent = (

@@ -25,6 +25,7 @@ export interface EventFormData {
   taskId?: string;
   noteSpaceId?: string;
   noteId?: string;
+  version?: number;
 }
 
 // Quản lý data/validate form
@@ -45,9 +46,17 @@ export function useEventForm(
 
   const isEndTimeAfterStartTime = (): boolean => {
     const startStr = `${formData.value.eventDate}T${formData.value.startTime}`;
-    const endStr = `${formData.value.endDate || formData.value.eventDate}T${formData.value.endTime}`;
+    let endStr = `${formData.value.endDate || formData.value.eventDate}T${formData.value.endTime}`;
+    
     const startDt = dayjs(startStr);
-    const endDt = dayjs(endStr);
+    let endDt = dayjs(endStr);
+
+    // Xử lý ca qua đêm (overnight event): Nếu endDate bằng eventDate và endTime < startTime
+    if ((!formData.value.endDate || formData.value.endDate === formData.value.eventDate) &&
+        formData.value.endTime < formData.value.startTime) {
+      endDt = endDt.add(1, 'day');
+    }
+
     if (startDt.isValid() && endDt.isValid()) {
       return endDt.isAfter(startDt);
     }
@@ -89,10 +98,17 @@ export function useEventForm(
     return true;
   };
 
+  const resetForm = (data: EventFormData) => {
+    formData.value = { ...data };
+    warningMessage.value = "";
+    showWarning.value = false;
+  };
+
   return {
     formData,
     warningMessage,
     showWarning,
     validate,
+    resetForm,
   };
 }
