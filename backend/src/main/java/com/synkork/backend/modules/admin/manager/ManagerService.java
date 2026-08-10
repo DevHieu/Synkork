@@ -3,6 +3,9 @@ package com.synkork.backend.modules.admin.manager;
 import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.modules.admin.manager.dto.*;
 import com.synkork.backend.modules.admin.manager.email.ManagerEmailService;
+import com.synkork.backend.modules.admin.utils.AdminUtils;
+import com.synkork.backend.modules.payment.service.ExpiredSubscriptionService;
+import com.synkork.backend.modules.payment.service.PaymentService;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.enums.PlanEnum;
 import com.synkork.backend.modules.user.enums.RoleEnum;
@@ -16,6 +19,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -31,6 +36,12 @@ public class ManagerService {
 
     @Autowired
     private ManagerEmailService managerEmailService;
+
+    @Autowired
+    private PaymentService paymentService;
+
+    @Autowired
+    private ExpiredSubscriptionService expiredSubscriptionService;
 
     public Page<UserEntity> getManagers(ManagerFilterRequest request) {
         request.validate();
@@ -68,6 +79,11 @@ public class ManagerService {
         account.setStatus(parseRequiredStatus(request.getStatus()));
 
         UserEntity saved = managerRepository.save(account);
+
+        if (saved.getCurrentPlan() != PlanEnum.FREE) {
+            paymentService.createNewSubscription(saved, saved.getCurrentPlan().toString(), null, LocalDateTime.now(), LocalDateTime.now().plusMonths(1));
+        }
+
         managerEmailService.sendManagerAccessEmail(saved, temporaryPassword);
         return ManagerResponse.from(saved);
     }
@@ -79,6 +95,7 @@ public class ManagerService {
         String oldEmail = account.getEmail();
         UserStatusEnum oldStatus = account.getStatus();
         RoleEnum oldRole = account.getRole();
+        PlanEnum oldPlan = account.getCurrentPlan();
 
         if (request.getDisplayName() != null) {
             account.setDisplayName(request.getDisplayName().trim());
@@ -105,6 +122,24 @@ public class ManagerService {
 
         if (request.getPlan() != null) {
             account.setCurrentPlan(parsePlan(request.getPlan()));
+        }
+
+        if (request.getPlan() != null) {
+            PlanEnum plan = PlanEnum.valueOf(request.getPlan().toUpperCase());
+
+            if (plan != oldPlan) {
+                account.setCurrentPlan(plan);
+
+                if (plan != PlanEnum.FREE) {
+                    paymentService.createNewSubscription(account, request.getPlan().toUpperCase(), null, LocalDateTime.now(), LocalDateTime.now().plusMonths(1));
+                }
+
+                if (AdminUtils.isPlanDowngrade(oldPlan, plan)) {
+                    expiredSubscriptionService.pinPendingRemovalRoomAndSpace(List.of(account), plan);
+                } else {
+                    expiredSubscriptionService.changePendingRoomAndSpace(account.getId());
+                }
+            }
         }
 
         UserEntity saved = managerRepository.save(account);
@@ -137,7 +172,7 @@ public class ManagerService {
     }
 
     private boolean isLockedStatus(UserStatusEnum status) {
-        return status == UserStatusEnum.INACTIVE || status == UserStatusEnum.BANNED;
+        return status == UserStatusEnum.NOT_VERIFIED || status == UserStatusEnum.BANNED;
     }
 
     private UserEntity findManagedAccount(UUID id) {

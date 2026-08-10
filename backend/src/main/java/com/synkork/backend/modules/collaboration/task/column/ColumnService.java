@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import com.synkork.backend.modules.collaboration.task.dto.ColumnDTO;
 import com.synkork.backend.modules.collaboration.task.dto.ColumnRequest;
 import com.synkork.backend.modules.collaboration.task.dto.MoveColumnRequest;
+import com.synkork.backend.modules.collaboration.task.card.CardEntity;
 import com.synkork.backend.modules.collaboration.task.card.CardRepository;
 import com.synkork.backend.modules.space.SpaceEntity;
 import com.synkork.backend.modules.space.SpaceRepository;
@@ -53,25 +54,21 @@ public class ColumnService {
 
     @Transactional
     public ColumnDTO updateColumn(UUID columnId, ColumnRequest req) {
-        ColumnEntity col = columnRepository.findById(columnId)
-                .orElseThrow(() -> new RuntimeException("Cột không tồn tại!"));
+        ColumnEntity col = findColumnById(columnId);
 
         
                 if (!col.getVersion().equals(req.version())) {
             throw new ObjectOptimisticLockingFailureException(ColumnEntity.class, col.getId());
         }
         col.setName(req.name());
-
         
-
         ColumnEntity updatedCol = columnRepository.save(col);
         return new ColumnDTO(updatedCol);
     }
 
     @Transactional
     public void deleteColumn(UUID columnId) {
-        ColumnEntity col = columnRepository.findById(columnId)
-                .orElseThrow(() -> new RuntimeException("Cột không tồn tại!"));
+        ColumnEntity col = findColumnById(columnId);
 
         UUID spaceId = col.getSpace().getId();
         int deletePos = col.getPosition();
@@ -89,8 +86,7 @@ public class ColumnService {
 
     @Transactional
     public ColumnDTO moveColumn(UUID columnId, MoveColumnRequest req) {
-        ColumnEntity movingCol = columnRepository.findById(columnId)
-                .orElseThrow(() -> new RuntimeException("Cột không tồn tại!"));
+        ColumnEntity movingCol = findColumnById(columnId);
 
         UUID spaceId = movingCol.getSpace().getId();
 
@@ -111,8 +107,7 @@ public class ColumnService {
 
     @Transactional
     public ColumnDTO getColumnById(UUID columnId) {
-        ColumnEntity col = columnRepository.findById(columnId)
-                .orElseThrow(() -> new RuntimeException("Cột không tồn tại!"));
+        ColumnEntity col = findColumnById(columnId);
 
         return new ColumnDTO(col);
     }
@@ -132,8 +127,7 @@ public class ColumnService {
 
     @Transactional
     public ColumnDTO archiveColumn(UUID columnId) {
-        ColumnEntity col = columnRepository.findById(columnId)
-                .orElseThrow(() -> new RuntimeException("Cột không tồn tại"));
+        ColumnEntity col = findColumnById(columnId);
 
         UUID spaceId = col.getSpace().getId();
         int archivedPos = col.getPosition();
@@ -170,11 +164,12 @@ public class ColumnService {
 
     @Transactional
     public ColumnDTO unarchiveColumn(UUID columnId) {
-        ColumnEntity col = columnRepository.findById(columnId)
-                .orElseThrow(() -> new RuntimeException("Cột không tồn tại"));
+        ColumnEntity col = findColumnById(columnId);
 
         UUID spaceId = col.getSpace().getId();
-
+         
+        LocalDateTime colArchivedAt = col.getArchivedAt();
+    
         int nextPosition = columnRepository.findBySpaceIdAndArchivedFalseOrderByPositionAsc(spaceId).size();
 
         col.setArchived(false);
@@ -185,12 +180,16 @@ public class ColumnService {
         List<com.synkork.backend.modules.collaboration.task.card.CardEntity> archivedCards =
                 cardRepository.findByColumn_IdAndArchivedTrueOrderByPositionAsc(col.getId());
 
-        archivedCards.forEach(card -> {
+        List<CardEntity> cardsRestore = archivedCards.stream()
+                                                     .filter(c -> colArchivedAt != null && colArchivedAt.equals(c.getArchivedAt()))
+                                                     .toList();
+
+        cardsRestore.forEach(card -> {
             card.setArchived(false);
             card.setArchivedAt(null);
         });
 
-        cardRepository.saveAll(archivedCards);
+        cardRepository.saveAll(cardsRestore);
 
         entityManager.flush();
         entityManager.refresh(col);
@@ -205,6 +204,17 @@ public class ColumnService {
 
     @Transactional
     public void deleteAllArchivedColumns(UUID spaceId) {
+        List<ColumnEntity> archivedCols = columnRepository.findBySpaceIdAndArchivedTrueOrderByPositionAsc(spaceId);
+        List<UUID> columnIds = archivedCols.stream()    
+                                           .map(ColumnEntity::getId)
+                                           .toList();
+
+        if(!columnIds.isEmpty()) cardRepository.deleteByColumn_IdIn(columnIds);
+        
         columnRepository.deleteAllArchivedColumns(spaceId);
+    }
+
+    private ColumnEntity findColumnById(UUID columnId) {
+        return columnRepository.findById(columnId).orElseThrow(() -> new RuntimeException("Cột không tồn tại"));
     }
 }

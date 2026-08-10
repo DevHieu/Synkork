@@ -113,4 +113,13 @@ public class CardController {
 
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/{cardId}/complete")
+    public ResponseEntity<CardDTO> completeCard(@PathVariable String cardId, @PathVariable String spaceId, @RequestBody boolean completed) {
+        UUID cardUUID = UUID.fromString(cardId);
+        CardDTO result = cardService.completeCard(cardUUID, completed);
+        messagingTemplate.convertAndSend("/topic/space/" + spaceId + "/card/complete", result);
+        return ResponseEntity.ok(result);
+    }
+
 }

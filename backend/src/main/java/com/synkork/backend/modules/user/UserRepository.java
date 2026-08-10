@@ -38,40 +38,6 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
 
     long countByRoleAndCreatedAtBetween(RoleEnum role, LocalDateTime from, LocalDateTime to);
 
-    long countByRoleAndCreatedAtLessThanEqual(RoleEnum role, LocalDateTime createdAt);
-
-    long countByRoleAndStatus(RoleEnum role, UserStatusEnum status);
-
-    long countByRoleAndCurrentPlan(RoleEnum role, PlanEnum currentPlan);
-
-    @Query("""
-            SELECT new com.synkork.backend.modules.admin.statistics.dtos.UserStatusCount(COUNT(u), u.status)
-            FROM UserEntity u
-            WHERE u.role = :role
-              AND (:start IS NULL OR u.createdAt >= :start)
-              AND (:end IS NULL OR u.createdAt <= :end)
-            GROUP BY u.status
-            """)
-    List<UserStatusCount> countGroupByStatus(
-            @Param("role") RoleEnum role,
-            @Param("start") LocalDateTime start,
-            @Param("end") LocalDateTime end
-    );
-
-    @Query("""
-            SELECT new com.synkork.backend.modules.admin.statistics.dtos.UserPlanCount(COUNT(u), u.currentPlan)
-            FROM UserEntity u
-            WHERE u.role = :role
-              AND (:start IS NULL OR u.createdAt >= :start)
-              AND (:end IS NULL OR u.createdAt <= :end)
-            GROUP BY u.currentPlan
-            """)
-    List<UserPlanCount> countGroupByPlan(
-            @Param("role") RoleEnum role,
-            @Param("start") LocalDateTime start,
-            @Param("end") LocalDateTime end
-    );
-
     List<UserEntity> findByPlanExpiresAtBetween(LocalDateTime now, LocalDateTime localDateTime);
 
     @Modifying

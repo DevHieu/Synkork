@@ -81,12 +81,21 @@ public class CardEntity extends BaseEntity {
     @Column(name = "archived_at")
     private LocalDateTime archivedAt;
 
+    @Column(nullable = false)
+    private Boolean completed = false;
+
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
+
     @JsonProperty("columnId") 
     public UUID getColumnId() {
         return column != null ? column.getId() : null;
     }
 
     public CardStatus getStatus() {
+        if(Boolean.TRUE.equals(completed)) {
+            return CardStatus.DONE;
+        }
 
         if (dueDate == null) {
             return CardStatus.NORMAL;

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { useSpaceStore } from "@/stores/spaceStore";
-import { getAll } from "@/services/noteService";
+import { getAll } from "@/features/note/services/noteService";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Note } from "@/types/NoteType";
+import type { Note } from "@/features/note/types/NoteType";
 
 const props = defineProps<{
   initialSpaceId?: string;

@@ -28,14 +28,6 @@ public interface RoomRepository extends JpaRepository<RoomEntity, UUID> {
 
     List<RoomEntity> findAllByStatusAndUpdatedAtBefore(RoomStatusEnum status, LocalDateTime updatedAtBefore);
  
-    long countByType(RoomTypeEnum type);
-
-    long countByTypeAndCreatedAtBetween(RoomTypeEnum type, LocalDateTime from, LocalDateTime to);
-
-    long countByCreatedAtBetweenAndType(LocalDateTime createdAtAfter, LocalDateTime createdAtBefore, RoomTypeEnum type);
-
-    void deleteByStatus(RoomStatusEnum roomStatusEnum);
-
     List<RoomEntity> findByOwnerIdAndTypeAndStatusInOrderByCreatedAtDesc(
             UUID ownerId,
             RoomTypeEnum type,

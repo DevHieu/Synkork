@@ -1,5 +1,5 @@
-export type ManagerStatus = 'active' | 'inactive' | 'banned'
-export type ManagementRole = 'user' | 'manager' | 'admin'
+export type ManagerStatus = 'ACTIVE' | 'BANNED' | 'NOT_VERIFIED'
+export type ManagementRole = 'USER' | 'MANAGER' | 'ADMIN'
 export type ManagerPlan = 'FREE' | 'TEAM' | 'BUSINESS'
 
 export interface ManagerAccount {

@@ -39,6 +39,14 @@ public class NotificationController {
         return ResponseEntity.noContent().build();
     }
 
+    @PatchMapping("/read-all")
+    public ResponseEntity<Void> markReadAll() {
+        UserPrinciple principal = (UserPrinciple) SecurityContextHolder
+                .getContext().getAuthentication().getPrincipal();
+        notificationService.markAllAsRead(principal.getId());
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/{notiId}")
     public ResponseEntity<Void> delete(@PathVariable String notiId){
         UUID notiUUID = UUID.fromString(notiId);

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from "vue";
 import ChooseSpaceDialog from "./sub-components/ChooseSpaceDialog.vue";
-import NoteDialog from "@/components/dialog/NoteDialog/NoteDialog.vue";
+import NoteDialog from "@/features/note/components/dialog/NoteDialog.vue";
 import type {
   CalendarChannelOption,
   MessageEventSuggestion,
@@ -9,16 +9,16 @@ import type {
   SuggestedTaskDraft,
 } from "@/types/CalendarSuggestion";
 import { buildSuggestedEventDraft, buildSuggestedNoteDraft, buildSuggestedTaskDraft } from "@/utils/calendarSuggestion";
-import ColumnListDialog from "@/components/dialog/TaskDialog/ColumnListDialog.vue";
-import CardFormDialog from "@/components/dialog/TaskDialog/CardFormDialog.vue";
+import ColumnListDialog from "@/features/tasks/components/dialog/ColumnListDialog.vue";
+import CardFormDialog from "@/features/tasks/components/dialog/CardFormDialog.vue";
 
 import { useSpaceStore } from "@/stores/spaceStore";
-import { useTaskStore } from "@/stores/taskStore";
 import { useSuggestionStore } from "@/features/calendar/stores/calendarStore";
+import { useTaskAction } from "@/features/tasks/composables/task-api.ts";
 
 const spaceStore = useSpaceStore();
 const suggestionStore = useSuggestionStore();
-const taskStore = useTaskStore();
+const taskAction = useTaskAction();
 
 const props = defineProps<{
   open: boolean;
@@ -140,7 +140,7 @@ const handleSelectTaskColumn = async (columnId: string) => {
 };
 
 const handleSaveTaskCard = async (data: { title: string; description: string }) => {
-  await taskStore.saveCard(
+  await taskAction.saveCard(
     spaceChoosenId.value,
     "",
     columnChoosenId.value,
