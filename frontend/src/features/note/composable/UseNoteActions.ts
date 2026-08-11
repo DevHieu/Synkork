@@ -8,7 +8,7 @@ import {
 } from '@/features/note/services/noteService'
 
 import { noteSocket } from '@/features/note/services/noteSocket'
-import { socketService } from '@/services/websocket/socketService'
+import { socketService } from '@/services/socketService'
 
 // Composable chứa toàn bộ logic gọi API. Sau khi API trả về, gọi mutation
 // tương ứng trong store để cập nhật state — component không tự đụng vào
@@ -45,7 +45,10 @@ export function useNoteActions() {
     await socketService.connect()
 
     noteSocket.subscribeCreateNote(spaceId, (note: Note) => store.addNote(note))
-    noteSocket.subscribeDeleteNote(spaceId, (id: string) => store.removeNote(id))
+    noteSocket.subscribeDeleteNote(
+      spaceId,
+      (id: string) => store.removeNoteFromList(id)
+    )
     noteSocket.subscribeUpdateNote(spaceId, (payload: Note) => store.replaceNote(payload))
     noteSocket.subscribetogglePin(spaceId, (payload: Note) => {
       store.replaceNote(payload)
@@ -144,7 +147,7 @@ export function useNoteActions() {
   async function archiveNote(spaceId: string, id: string) {
     try {
       await archiveNoteApi(spaceId, id)
-      store.removeNote(id)
+      store.removeNoteFromList(id)
     } catch (e) {
       store.setError('Không thể lưu trữ ghi chú')
       console.error(e)

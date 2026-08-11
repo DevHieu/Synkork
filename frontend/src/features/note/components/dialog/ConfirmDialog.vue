@@ -1,3 +1,9 @@
+<script setup lang="ts">
+import { Trash2 } from 'lucide-vue-next'
+defineProps<{ open: boolean }>()
+defineEmits<{ confirm: []; cancel: [] }>()
+</script>
+
 <template>
     <Teleport to="body">
       <Transition name="dialog">
@@ -26,12 +32,6 @@
       </Transition>
     </Teleport>
   </template>
-  
-  <script setup lang="ts">
-  import { Trash2 } from 'lucide-vue-next'
-  defineProps<{ open: boolean }>()
-  defineEmits<{ confirm: []; cancel: [] }>()
-  </script>
   
   <style scoped>
   .dialog-enter-active, .dialog-leave-active { transition: opacity 0.15s ease; }

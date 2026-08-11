@@ -1,3 +1,59 @@
+<script setup lang="ts">
+import { ref, watch } from 'vue'
+import { X, Archive, Loader2, Undo2, Trash2 } from 'lucide-vue-next'
+import { useNoteStore } from '@/features/note/stores/noteStore'
+import { useRoomMemberStore } from '@/features/members/stores/roomMemberStore';
+import { storeToRefs } from 'pinia'
+
+const props = defineProps<{
+  open: boolean
+  spaceId: string
+}>()
+
+defineEmits<{ close: [] }>()
+
+const store = useNoteStore()
+const { archivedNotes: notes, loadingArchived: loading } = storeToRefs(store)
+
+const roomMemberStore = useRoomMemberStore()
+const { canManage } = storeToRefs(roomMemberStore)
+
+const restoringId = ref<string | null>(null)
+const deletingId = ref<string | null>(null)
+
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (isOpen) {
+      store.fetchArchivedNotes(props.spaceId)
+    }
+  }
+)
+
+async function handleRestore(id: string) {
+  restoringId.value = id
+  try {
+    await store.restoreNote(props.spaceId, id)
+  } finally {
+    restoringId.value = null
+  }
+}
+
+async function handleDelete(id: string) {
+  if (!confirm('Xóa vĩnh viễn ghi chú này? Hành động không thể hoàn tác.')) return
+
+  deletingId.value = id
+  try {
+    const success = await store.deleteNote(props.spaceId, id)
+    if (success) {
+      store.archivedNotes = store.archivedNotes.filter(n => n.id !== id)
+    }
+  } finally {
+    deletingId.value = null
+  }
+}
+</script>
+
 <template>
   <Teleport to="body">
     <Transition name="dialog">
@@ -60,62 +116,6 @@
     </Transition>
   </Teleport>
 </template>
-
-<script setup lang="ts">
-import { ref, watch } from 'vue'
-import { X, Archive, Loader2, Undo2, Trash2 } from 'lucide-vue-next'
-import { useNoteStore } from '@/features/note/stores/noteStore'
-import { useRoomMemberStore } from '@/features/members/stores/roomMemberStore';
-import { storeToRefs } from 'pinia'
-
-const props = defineProps<{
-  open: boolean
-  spaceId: string
-}>()
-
-defineEmits<{ close: [] }>()
-
-const store = useNoteStore()
-const { archivedNotes: notes, loadingArchived: loading } = storeToRefs(store)
-
-const roomMemberStore = useRoomMemberStore()
-const { canManage } = storeToRefs(roomMemberStore)
-
-const restoringId = ref<string | null>(null)
-const deletingId = ref<string | null>(null)
-
-watch(
-  () => props.open,
-  (isOpen) => {
-    if (isOpen) {
-      store.fetchArchivedNotes(props.spaceId)
-    }
-  }
-)
-
-async function handleRestore(id: string) {
-  restoringId.value = id
-  try {
-    await store.restoreNote(props.spaceId, id)
-  } finally {
-    restoringId.value = null
-  }
-}
-
-async function handleDelete(id: string) {
-  if (!confirm('Xóa vĩnh viễn ghi chú này? Hành động không thể hoàn tác.')) return
-
-  deletingId.value = id
-  try {
-    const success = await store.deleteNote(props.spaceId, id)
-    if (success) {
-      store.archivedNotes = store.archivedNotes.filter(n => n.id !== id)
-    }
-  } finally {
-    deletingId.value = null
-  }
-}
-</script>
 
 <style scoped>
 .dialog-enter-active,

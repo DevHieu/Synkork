@@ -9,7 +9,7 @@ import {
 } from '@/features/note/services/noteService'
 
 import { noteSocket } from '@/features/note/services/noteSocket'
-import { socketService } from '@/services/websocket/socketService'
+import { socketService } from '@/services/socketService'
 
 export interface ConflictInfo {
   type: 'update' | 'delete'
@@ -236,8 +236,24 @@ export const useNoteStore = defineStore('notes', () => {
   return {
     // state
     notes, archivedNotes, loading, loadingArchived, error, searchQuery, currentSpaceId, conflict,
+  
     // getters
     filteredNotes, pinnedNotes, unpinnedNotes,
+  
+    // mutations (đang bị thiếu — thêm các dòng này)
+    setNotes,
+    addNote,
+    removeNoteFromList,
+    replaceNote,
+    sortByPinned,
+    setArchivedNotes,
+    removeArchivedNote,
+    setCurrentSpaceId,
+    setError,
+    setConflict,
+    removeNote,
+    clearConflict,
+  
     // actions
     fetchNotes, disconnectSocket,
     createNote, updateNote,
@@ -245,6 +261,5 @@ export const useNoteStore = defineStore('notes', () => {
     changePinStatus, updateNotePosition, setNoteReminder,
     archiveNote, fetchArchivedNotes, restoreNote,
     copyNoteToPersonal,
-    clearConflict,
   }
 })

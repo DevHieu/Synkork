@@ -12,7 +12,7 @@ export function useNoteSocket() {
       store.addNote(payload),
     );
     noteSocket.subscribeDeleteNote(spaceId, (payload) =>
-      store.removeNote(payload),
+      store.removeNoteFromList(payload),
     );
     noteSocket.subscribeUpdateNote(spaceId, (payload) =>
       store.replaceNote(payload),

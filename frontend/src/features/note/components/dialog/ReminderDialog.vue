@@ -1,3 +1,275 @@
+<script setup lang="ts">
+import { ref, computed, watch } from 'vue'
+
+import {
+  BellPlus,
+  Bell,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Clock
+} from 'lucide-vue-next'
+
+import type { Note } from '@/features/note/types/NoteType'
+
+const props = defineProps<{
+  open: boolean
+  note: Note | null
+}>()
+
+const emit = defineEmits(['close', 'confirm'])
+
+const now = new Date()
+
+const viewMonth = ref(now.getMonth())
+const viewYear = ref(now.getFullYear())
+
+const selectedDay = ref<number | null>(null)
+const selectedMonth = ref(now.getMonth())
+const selectedYear = ref(now.getFullYear())
+
+const selectedHour = ref(now.getHours())
+const selectedMinute = ref(now.getMinutes())
+
+const hourInput = ref(String(selectedHour.value).padStart(2, '0'))
+const minuteInput = ref(String(selectedMinute.value).padStart(2, '0'))
+
+const hourDropdownOpen = ref(false)
+const minuteDropdownOpen = ref(false)
+
+const minuteOptions = Array.from({ length: 60 }, (_, i) => i)
+
+const isSelectedDateTimePast = computed(() => {
+  if (!selectedDay.value) return true
+
+  const selected = new Date(
+    selectedYear.value,
+    selectedMonth.value,
+    selectedDay.value,
+    selectedHour.value,
+    selectedMinute.value,
+    0
+  )
+
+  return selected.getTime() < Date.now()
+})
+
+const monthNames = [
+  'Tháng 1','Tháng 2','Tháng 3','Tháng 4',
+  'Tháng 5','Tháng 6','Tháng 7','Tháng 8',
+  'Tháng 9','Tháng 10','Tháng 11','Tháng 12'
+]
+
+const dayNames = ['CN','T2','T3','T4','T5','T6','T7']
+
+const quickOptions = [
+  { label: 'Sau 30 phút', minutes: 30 },
+  { label: 'Sau 1 giờ', minutes: 60 },
+  { label: 'Sau 3 giờ', minutes: 180 },
+  { label: 'Ngày mai', minutes: 1440 }
+]
+
+const daysInMonth = computed(() =>
+  new Date(viewYear.value, viewMonth.value + 1, 0).getDate()
+)
+
+const firstDayOfMonth = computed(() =>
+  new Date(viewYear.value, viewMonth.value, 1).getDay()
+)
+
+function isPast(day: number) {
+  const d = new Date(
+    viewYear.value,
+    viewMonth.value,
+    day,
+    selectedHour.value,
+    selectedMinute.value,
+    0
+  )
+  return d.getTime() < Date.now()
+}
+
+function isToday(day: number) {
+  return (
+    day === now.getDate() &&
+    viewMonth.value === now.getMonth() &&
+    viewYear.value === now.getFullYear()
+  )
+}
+
+function isSelectedDay(day: number) {
+  return (
+    day === selectedDay.value &&
+    viewMonth.value === selectedMonth.value &&
+    viewYear.value === selectedYear.value
+  )
+}
+
+function selectDay(day: number) {
+
+selectedDay.value = day
+selectedMonth.value = viewMonth.value
+selectedYear.value = viewYear.value
+
+// force reactive update
+selectedHour.value = Number(selectedHour.value)
+selectedMinute.value = Number(selectedMinute.value)
+
+if (isSelectedDateTimePast.value) {
+  const next = new Date(Date.now() + 60000)
+
+  selectedHour.value = next.getHours()
+  selectedMinute.value = next.getMinutes()
+
+  hourInput.value = String(selectedHour.value).padStart(2, '0')
+  minuteInput.value = String(selectedMinute.value).padStart(2, '0')
+}
+}
+
+function prevMonth() {
+  if (viewMonth.value === 0) {
+    viewMonth.value = 11
+    viewYear.value--
+  } else {
+    viewMonth.value--
+  }
+}
+
+function nextMonth() {
+  if (viewMonth.value === 11) {
+    viewMonth.value = 0
+    viewYear.value++
+  } else {
+    viewMonth.value++
+  }
+}
+
+function changeHour(delta: number) {
+  selectedHour.value = (selectedHour.value + delta + 24) % 24
+  hourInput.value = String(selectedHour.value).padStart(2, '0')
+}
+
+function validateHour() {
+  let v = parseInt(hourInput.value)
+  if (isNaN(v) || v < 0) v = 0
+  if (v > 23) v = 23
+  selectedHour.value = v
+  hourInput.value = String(v).padStart(2, '0')
+}
+
+function toggleHourDropdown() {
+  hourDropdownOpen.value = !hourDropdownOpen.value
+  minuteDropdownOpen.value = false
+}
+
+function pickHour(h: number) {
+  selectedHour.value = h
+  hourInput.value = String(h).padStart(2, '0')
+  hourDropdownOpen.value = false
+}
+
+function changeMinute(delta: number) {
+  selectedMinute.value = (selectedMinute.value + delta + 60) % 60
+  minuteInput.value = String(selectedMinute.value).padStart(2, '0')
+}
+
+function validateMinute() {
+  let v = parseInt(minuteInput.value)
+  if (isNaN(v) || v < 0) v = 0
+  if (v > 59) v = 59
+  selectedMinute.value = v
+  minuteInput.value = String(v).padStart(2, '0')
+}
+
+function toggleMinuteDropdown() {
+  minuteDropdownOpen.value = !minuteDropdownOpen.value
+  hourDropdownOpen.value = false
+}
+
+function pickMinute(m: number) {
+  selectedMinute.value = m
+  minuteInput.value = String(m).padStart(2, '0')
+  minuteDropdownOpen.value = false
+}
+
+function selectQuick(minutes: number) {
+  const d = new Date(Date.now() + minutes * 60000)
+  viewMonth.value = d.getMonth()
+  viewYear.value = d.getFullYear()
+  selectedDay.value = d.getDate()
+  selectedMonth.value = d.getMonth()
+  selectedYear.value = d.getFullYear()
+  selectedHour.value = d.getHours()
+  selectedMinute.value = d.getMinutes()
+  hourInput.value = String(d.getHours()).padStart(2, '0')
+  minuteInput.value = String(d.getMinutes()).padStart(2, '0')
+}
+
+function formatExisting(isoStr: string) {
+  const d = new Date(isoStr)
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} — ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`
+}
+
+function handleConfirm() {
+  if (!selectedDay.value) return
+
+  const d = new Date(
+    selectedYear.value,
+    selectedMonth.value,
+    selectedDay.value,
+    selectedHour.value,
+    selectedMinute.value,
+    0
+  )
+
+  if (d.getTime() < Date.now()) {
+    alert('Không thể đặt nhắc nhở trong quá khứ')
+    return
+  }
+
+  emit('confirm', d.toISOString())
+}
+
+watch(
+  () => props.open,
+  (val) => {
+    if (!val) {
+      hourDropdownOpen.value = false
+      minuteDropdownOpen.value = false
+      return
+    }
+
+    const n = new Date()
+
+    // Ưu tiên reminderAt nếu còn trong tương lai
+    const r = props.note?.reminderAt ? new Date(props.note.reminderAt) : null
+
+    if (r && r.getTime() > Date.now()) {
+      viewMonth.value = r.getMonth()
+      viewYear.value = r.getFullYear()
+      selectedDay.value = r.getDate()
+      selectedMonth.value = r.getMonth()
+      selectedYear.value = r.getFullYear()
+      selectedHour.value = r.getHours()
+      selectedMinute.value = r.getMinutes()
+    } else {
+      // Không có reminder hợp lệ → reset về hiện tại, không pre-select ngày
+      viewMonth.value = n.getMonth()
+      viewYear.value = n.getFullYear()
+      selectedDay.value = null
+      selectedMonth.value = n.getMonth()
+      selectedYear.value = n.getFullYear()
+      selectedHour.value = n.getHours()
+      selectedMinute.value = n.getMinutes()
+    }
+
+    hourInput.value = String(selectedHour.value).padStart(2, '0')
+    minuteInput.value = String(selectedMinute.value).padStart(2, '0')
+  }
+)
+</script>
+
 <template>
   <Teleport to="body">
     <div
@@ -280,278 +552,6 @@
     </div>
   </Teleport>
 </template>
-
-<script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-
-import {
-  BellPlus,
-  Bell,
-  X,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  Clock
-} from 'lucide-vue-next'
-
-import type { Note } from '@/features/note/types/NoteType'
-
-const props = defineProps<{
-  open: boolean
-  note: Note | null
-}>()
-
-const emit = defineEmits(['close', 'confirm'])
-
-const now = new Date()
-
-const viewMonth = ref(now.getMonth())
-const viewYear = ref(now.getFullYear())
-
-const selectedDay = ref<number | null>(null)
-const selectedMonth = ref(now.getMonth())
-const selectedYear = ref(now.getFullYear())
-
-const selectedHour = ref(now.getHours())
-const selectedMinute = ref(now.getMinutes())
-
-const hourInput = ref(String(selectedHour.value).padStart(2, '0'))
-const minuteInput = ref(String(selectedMinute.value).padStart(2, '0'))
-
-const hourDropdownOpen = ref(false)
-const minuteDropdownOpen = ref(false)
-
-const minuteOptions = Array.from({ length: 60 }, (_, i) => i)
-
-const isSelectedDateTimePast = computed(() => {
-  if (!selectedDay.value) return true
-
-  const selected = new Date(
-    selectedYear.value,
-    selectedMonth.value,
-    selectedDay.value,
-    selectedHour.value,
-    selectedMinute.value,
-    0
-  )
-
-  return selected.getTime() < Date.now()
-})
-
-const monthNames = [
-  'Tháng 1','Tháng 2','Tháng 3','Tháng 4',
-  'Tháng 5','Tháng 6','Tháng 7','Tháng 8',
-  'Tháng 9','Tháng 10','Tháng 11','Tháng 12'
-]
-
-const dayNames = ['CN','T2','T3','T4','T5','T6','T7']
-
-const quickOptions = [
-  { label: 'Sau 30 phút', minutes: 30 },
-  { label: 'Sau 1 giờ', minutes: 60 },
-  { label: 'Sau 3 giờ', minutes: 180 },
-  { label: 'Ngày mai', minutes: 1440 }
-]
-
-const daysInMonth = computed(() =>
-  new Date(viewYear.value, viewMonth.value + 1, 0).getDate()
-)
-
-const firstDayOfMonth = computed(() =>
-  new Date(viewYear.value, viewMonth.value, 1).getDay()
-)
-
-function isPast(day: number) {
-  const d = new Date(
-    viewYear.value,
-    viewMonth.value,
-    day,
-    selectedHour.value,
-    selectedMinute.value,
-    0
-  )
-  return d.getTime() < Date.now()
-}
-
-function isToday(day: number) {
-  return (
-    day === now.getDate() &&
-    viewMonth.value === now.getMonth() &&
-    viewYear.value === now.getFullYear()
-  )
-}
-
-function isSelectedDay(day: number) {
-  return (
-    day === selectedDay.value &&
-    viewMonth.value === selectedMonth.value &&
-    viewYear.value === selectedYear.value
-  )
-}
-
-function selectDay(day: number) {
-
-selectedDay.value = day
-selectedMonth.value = viewMonth.value
-selectedYear.value = viewYear.value
-
-// force reactive update
-selectedHour.value = Number(selectedHour.value)
-selectedMinute.value = Number(selectedMinute.value)
-
-if (isSelectedDateTimePast.value) {
-  const next = new Date(Date.now() + 60000)
-
-  selectedHour.value = next.getHours()
-  selectedMinute.value = next.getMinutes()
-
-  hourInput.value = String(selectedHour.value).padStart(2, '0')
-  minuteInput.value = String(selectedMinute.value).padStart(2, '0')
-}
-}
-
-function prevMonth() {
-  if (viewMonth.value === 0) {
-    viewMonth.value = 11
-    viewYear.value--
-  } else {
-    viewMonth.value--
-  }
-}
-
-function nextMonth() {
-  if (viewMonth.value === 11) {
-    viewMonth.value = 0
-    viewYear.value++
-  } else {
-    viewMonth.value++
-  }
-}
-
-function changeHour(delta: number) {
-  selectedHour.value = (selectedHour.value + delta + 24) % 24
-  hourInput.value = String(selectedHour.value).padStart(2, '0')
-}
-
-function validateHour() {
-  let v = parseInt(hourInput.value)
-  if (isNaN(v) || v < 0) v = 0
-  if (v > 23) v = 23
-  selectedHour.value = v
-  hourInput.value = String(v).padStart(2, '0')
-}
-
-function toggleHourDropdown() {
-  hourDropdownOpen.value = !hourDropdownOpen.value
-  minuteDropdownOpen.value = false
-}
-
-function pickHour(h: number) {
-  selectedHour.value = h
-  hourInput.value = String(h).padStart(2, '0')
-  hourDropdownOpen.value = false
-}
-
-function changeMinute(delta: number) {
-  selectedMinute.value = (selectedMinute.value + delta + 60) % 60
-  minuteInput.value = String(selectedMinute.value).padStart(2, '0')
-}
-
-function validateMinute() {
-  let v = parseInt(minuteInput.value)
-  if (isNaN(v) || v < 0) v = 0
-  if (v > 59) v = 59
-  selectedMinute.value = v
-  minuteInput.value = String(v).padStart(2, '0')
-}
-
-function toggleMinuteDropdown() {
-  minuteDropdownOpen.value = !minuteDropdownOpen.value
-  hourDropdownOpen.value = false
-}
-
-function pickMinute(m: number) {
-  selectedMinute.value = m
-  minuteInput.value = String(m).padStart(2, '0')
-  minuteDropdownOpen.value = false
-}
-
-function selectQuick(minutes: number) {
-  const d = new Date(Date.now() + minutes * 60000)
-  viewMonth.value = d.getMonth()
-  viewYear.value = d.getFullYear()
-  selectedDay.value = d.getDate()
-  selectedMonth.value = d.getMonth()
-  selectedYear.value = d.getFullYear()
-  selectedHour.value = d.getHours()
-  selectedMinute.value = d.getMinutes()
-  hourInput.value = String(d.getHours()).padStart(2, '0')
-  minuteInput.value = String(d.getMinutes()).padStart(2, '0')
-}
-
-function formatExisting(isoStr: string) {
-  const d = new Date(isoStr)
-  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} — ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`
-}
-
-function handleConfirm() {
-  if (!selectedDay.value) return
-
-  const d = new Date(
-    selectedYear.value,
-    selectedMonth.value,
-    selectedDay.value,
-    selectedHour.value,
-    selectedMinute.value,
-    0
-  )
-
-  if (d.getTime() < Date.now()) {
-    alert('Không thể đặt nhắc nhở trong quá khứ')
-    return
-  }
-
-  emit('confirm', d.toISOString())
-}
-
-watch(
-  () => props.open,
-  (val) => {
-    if (!val) {
-      hourDropdownOpen.value = false
-      minuteDropdownOpen.value = false
-      return
-    }
-
-    const n = new Date()
-
-    // Ưu tiên reminderAt nếu còn trong tương lai
-    const r = props.note?.reminderAt ? new Date(props.note.reminderAt) : null
-
-    if (r && r.getTime() > Date.now()) {
-      viewMonth.value = r.getMonth()
-      viewYear.value = r.getFullYear()
-      selectedDay.value = r.getDate()
-      selectedMonth.value = r.getMonth()
-      selectedYear.value = r.getFullYear()
-      selectedHour.value = r.getHours()
-      selectedMinute.value = r.getMinutes()
-    } else {
-      // Không có reminder hợp lệ → reset về hiện tại, không pre-select ngày
-      viewMonth.value = n.getMonth()
-      viewYear.value = n.getFullYear()
-      selectedDay.value = null
-      selectedMonth.value = n.getMonth()
-      selectedYear.value = n.getFullYear()
-      selectedHour.value = n.getHours()
-      selectedMinute.value = n.getMinutes()
-    }
-
-    hourInput.value = String(selectedHour.value).padStart(2, '0')
-    minuteInput.value = String(selectedMinute.value).padStart(2, '0')
-  }
-)
-</script>
 
 <style scoped>
 input[type='number']::-webkit-inner-spin-button,
