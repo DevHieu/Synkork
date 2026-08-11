@@ -15,6 +15,7 @@ import { useTaskAction } from '../composables/task-api.ts'
 import { getAvatarColor, getInitials } from '@/features/tasks/utils/avatar'
 import { formattedDate, checkDueSoon, checkOverdue } from '@/features/tasks/utils/task-date'
 import { useVersionConflict } from '../composables/version-conflict.ts'
+import { useCardDetail } from '../composables/card-detail.ts'
 
 const spaceStore = useSpaceStore();
 const { currentSpace } = storeToRefs(spaceStore);
@@ -51,20 +52,48 @@ const openDetail = () => {
 
 const isCompleted = ref(props.card.completed)
 
-const handleToggleComplete = () => {
-    if (!currentSpace.value) return
+const handleToggleComplete = async () => {
+    if (!currentSpace.value) return;
 
     const newStatus = !isCompleted.value;
-    isCompleted.value = newStatus;
-    props.card.completed = newStatus;
+    const version = props.card.version;
 
-    taskAction.completeCardEvent(currentSpace.value.id, props.card.id, newStatus);
-    
-    emit("toggleComplete", {
-        id: props.card.id,
-        completed: newStatus,
-    })
-}
+    try {
+        await taskAction.completeCardEvent(
+            currentSpace.value.id,
+            props.card.id,
+            {
+                completed: newStatus,
+                version,
+            }
+        );
+
+        isCompleted.value = newStatus;
+        props.card.completed = newStatus;
+
+        emit("toggleComplete", {
+            id: props.card.id,
+            completed: newStatus,
+        });
+
+    } catch (e) {
+        if (e instanceof VersionConflictError) {
+            toast.error(
+                "Thẻ này vừa được người khác cập nhật. Vui lòng kiểm tra lại nội dung mới nhất."
+            );
+
+            if (e.latest) {
+                Object.assign(props.card, e.latest);
+                isCompleted.value = e.latest.completed;
+            }
+
+            return;
+        }
+
+        console.error("Lỗi cập nhật trạng thái:", e);
+        toast.error("Có lỗi xảy ra, vui lòng thử lại.");
+    }
+};
 
 const saveInDetail = async (updatedCard: CardEvent) => {
     if (!currentSpace.value) return
@@ -138,10 +167,10 @@ watch(
                     >
                         {{ card.title }}
                     </h3>
-                    <Button variant="ghost" size="icon"
+                    <Button v-if="isCompleted" variant="ghost" size="icon"
                         class="h-5 w-5 shrink-0 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all duration-150 rounded-md -mt-0.5 -mr-0.5"
                         @click.stop="emit('archive', card.id)">
-                        <Archive v-if="isCompleted" class="w-3 h-3" />
+                        <Archive class="w-3 h-3" />
                     </Button>
                 </div>
 

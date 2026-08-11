@@ -1,4 +1,4 @@
-import type { TaskMoveEvent } from "@/features/tasks/types/Task";
+import type { CardEvent, TaskMoveEvent } from "@/features/tasks/types/Task";
 import { useTaskStore } from "../stores/taskStore";
 import { storeToRefs } from "pinia";
 import {
@@ -53,13 +53,22 @@ export function useTaskAction() {
         }
     }
 
-    const moveColumnEvent = async (spaceId: string, event: TaskMoveEvent) => {
+    const moveColumnEvent = async (spaceId: string, event: TaskMoveEvent, version?: number) => {
         if (!event.moved) return;
 
         const columnId = event.moved.element.id;
         const newPosition = event.moved.newIndex;
+        try {
+            await moveColumn(spaceId, columnId, { newPosition, version });
+        } catch (e) {
+            if (e instanceof ColumnVersionConflictError) {
+                const i = columns.value.findIndex(c => c.id === columnId);
 
-        await moveColumn(spaceId, columnId, newPosition);
+                if (i !== -1 && e.latest) columns.value[i] = e.latest;
+            } throw e
+        } finally {
+            loading.value = false;
+        }    
     }
 
     const saveCard = async (spaceId: string, cardId: string, columnId: string, title: string, description: string, assigneeIds: string[] = [], dueDate?: string, version?: number) => {
@@ -88,14 +97,25 @@ export function useTaskAction() {
         }
     }
 
-    const moveCardEvent = async (spaceId: string, targetColumnId: string, event: TaskMoveEvent) => {
+    const moveCardEvent = async (spaceId: string, targetColumnId: string, event: TaskMoveEvent, version?: number) => {
         const movedCard = event.moved || event.added;
         if (!movedCard) return;
 
         const cardId = movedCard.element.id;
         const newPosition = movedCard.newIndex;
+        
+        try {
+            await moveCard(spaceId, cardId, { targetColumnId, newPosition, version });
+        } catch (e) {
+            if (e instanceof VersionConflictError) {
+                const i = tasks.value.findIndex(c => c.id === cardId);
 
-        await moveCard(spaceId, cardId, { targetColumnId, newPosition });
+                if (i !== -1 && e.latest) tasks.value[i] = e.latest;
+            } throw e
+        } finally {
+            loading.value = false;
+        }
+
     }
 
     const deleteTask = async (deleteType: 'column' | 'card', spaceId: string, deleteData: { columnId?: string, cardId?: string } | null) => {
@@ -161,8 +181,8 @@ export function useTaskAction() {
         }
     }
 
-    const completeCardEvent = async (spaceId: string, cardId: string, completed: boolean) => {
-        await completeCard(spaceId, cardId, completed);
+    const completeCardEvent = async (spaceId: string, cardId: string, completedCard: { completed: boolean, version?: number }) => {
+        return await completeCard(spaceId, cardId, completedCard);
     }
 
     return {
