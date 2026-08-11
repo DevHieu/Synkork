@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { MonitorUp, MoreHorizontal } from "lucide-vue-next";
-import type { User } from "@/types/User";
+import type { User } from "@/features/users/types/User.ts";
 import type { VoiceItemType } from "@/features/voice-chat/types/VoiceTypes.ts";
 import DropdownMenu from "@/components/ui/dropdown-menu/DropdownMenu.vue";
 import DropdownMenuTrigger from "@/components/ui/dropdown-menu/DropdownMenuTrigger.vue";
 import VoiceDropdownMenu from "./VoiceDropdownMenu.vue";
-import { useRoomMemberStore } from "@/stores/roomMemberStore";
+import { useRoomMemberStore } from '@/features/members/stores/roomMemberStore'
 import { storeToRefs } from "pinia";
 import Avatar from "@/components/ui/avatar/Avatar.vue";
 import AvatarImage from "@/components/ui/avatar/AvatarImage.vue";

@@ -1,4 +1,4 @@
-import { socketService } from "@/services/websocket/socketService";
+import { socketService } from "@/services/socketService";
 import type { Message } from "@/features/chats/types/MessageTypes";
 import type { MessageEventSuggestion } from "@/types/CalendarSuggestion";
 

@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarIcon, UserPlus, Archive, AlignLeft, CreditCard, X, Check, AlertCircle, Clock } from "lucide-vue-next";
 import type { CardEvent } from "@/features/tasks/types/Task";
-import { useRoomMemberStore } from "@/stores/roomMemberStore";
+import { useRoomMemberStore } from '@/features/members/stores/roomMemberStore'
 import { useCardDetail } from "../../composables/card-detail";
 import DateTimePicker from "@/components/DateTimePicker.vue";
 
@@ -128,23 +128,17 @@ watch(
             :class="isCompleted ? 'text-muted-foreground line-through decoration-2 decoration-muted-foreground/40' : ''"
             placeholder="Tiêu đề thẻ..." @blur="handleSave" @keydown="handleTitleKeydown" />
           <div class="flex flex-wrap items-center gap-2 text-sm text-muted-foreground pt-1">
-            <button
-              type="button"
-              role="checkbox"
-              :aria-checked="isCompleted"
-              :disabled="readOnly"
+            <button type="button" role="checkbox" :aria-checked="isCompleted" :disabled="readOnly"
               class="detail-check-btn group/check flex items-center gap-2 h-8 pl-1.5 pr-3 rounded-full border transition-all duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-50"
               :class="isCompleted
                 ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/50 dark:bg-emerald-950/30 dark:text-emerald-400'
                 : 'border-border bg-background text-muted-foreground hover:border-emerald-400 hover:text-emerald-600 hover:bg-emerald-50/60 dark:hover:bg-emerald-950/20'"
-              @click="handleToggleComplete"
-            >
+              @click="handleToggleComplete">
               <span
                 class="flex h-5 w-5 items-center justify-center rounded-full border-[1.5px] transition-all duration-200"
                 :class="isCompleted
                   ? 'border-emerald-500 bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.16)]'
-                  : 'border-muted-foreground/40 group-hover/check:border-emerald-500'"
-              >
+                  : 'border-muted-foreground/40 group-hover/check:border-emerald-500'">
                 <Check v-if="isCompleted" class="check-pop h-3 w-3 text-white" :stroke-width="3" />
               </span>
               <span class="text-xs font-semibold">
@@ -228,8 +222,8 @@ watch(
               Ngày hết hạn
             </Label>
             <div class="flex items-center gap-1.5">
-              <DateTimePicker :value="form.dueDate" :onChange="(val: any) => { form.dueDate = val; handleDueDateChange(); }"
-                placeholder="Chọn ngày và giờ"
+              <DateTimePicker :value="form.dueDate"
+                :onChange="(val: any) => { form.dueDate = val; handleDueDateChange(); }" placeholder="Chọn ngày và giờ"
                 class="w-full text-xs bg-transparent border-none outline-none text-foreground/80 cursor-pointer hover:text-primary transition-colors"
                 :disabled="readOnly" />
             </div>
@@ -237,7 +231,8 @@ watch(
             <!-- Status badge -->
             <div class="flex items-center gap-1.5">
 
-              <Badge v-if="isCompleted" variant="outline" class="text-[10px] px-1.5 py-0 h-4 gap-1
+              <Badge v-if="isCompleted" variant="outline"
+                class="text-[10px] px-1.5 py-0 h-4 gap-1
                 border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/40">
                 <Check class="w-2.5 h-2.5" />
                 Hoàn thành
@@ -292,24 +287,26 @@ watch(
 
 <style scoped>
 .detail-check-btn:active {
-    transform: scale(0.97);
+  transform: scale(0.97);
 }
 
 .check-pop {
-    animation: check-pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: check-pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes check-pop {
-    0% {
-        transform: scale(0);
-        opacity: 0;
-    }
-    60% {
-        transform: scale(1.25);
-    }
-    100% {
-        transform: scale(1);
-        opacity: 1;
-    }
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+
+  60% {
+    transform: scale(1.25);
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 </style>

@@ -4,9 +4,11 @@ import { useRouter } from "vue-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { requestPasswordReset } from "@/features/auth/services/authService";
+import { useAuthService } from "@/features/auth/services/authService";
 
 const router = useRouter();
+
+const authService = useAuthService();
 
 const email = ref("");
 const emailError = ref("");
@@ -35,7 +37,7 @@ const submitForgotPassword = async () => {
 
   isLoading.value = true;
   try {
-    await requestPasswordReset(email.value);
+    await authService.requestPasswordReset(email.value);
 
     router.push({
       path: "/auth/otp",

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
-import { useUserStore } from "@/stores/userStore";
+import { useUserStore } from "@/features/users/stores/userStore";
 import { createPaymentLink, getPlanPricing, type PlanPricingItem } from "@/services/subscriptionService";
 import { Check, X, Sparkles, Zap, Rocket } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";

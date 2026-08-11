@@ -9,10 +9,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { verifyAccount } from "@/features/auth/services/authService";
+import { useAuthService } from "@/features/auth/services/authService";
 
 const router = useRouter();
 const route = useRoute();
+
+const authService = useAuthService();
 
 type Status = "loading" | "success" | "expired" | "invalid";
 const status = ref<Status>("loading");
@@ -26,7 +28,7 @@ const verify = async () => {
   }
 
   try {
-    await verifyAccount(token);
+    await authService.verifyAccount(token);
     status.value = "success";
   } catch (error: any) {
     const httpStatus = error.response?.status;

@@ -2,18 +2,18 @@
 import { useRouter } from "vue-router";
 import { SidebarHeader, SidebarContent } from "@/components/ui/sidebar";
 import { useFriendStore } from "@/stores/friendStore";
-import { useUserStore } from "@/stores/userStore";
+import { useUserStore } from "@/features/users/stores/userStore";
 import { storeToRefs } from "pinia";
 import { onMounted } from "vue";
 import Avatar from "../ui/avatar/Avatar.vue";
 import AvatarImage from "../ui/avatar/AvatarImage.vue";
 import AvatarFallback from "../ui/avatar/AvatarFallback.vue";
 import { Sparkles } from "lucide-vue-next";
-import { useSpaceStore } from "@/stores/spaceStore";
+import { useSpaceComposable } from "@/features/spaces/composables/spaceComposable.ts";
 
 const router = useRouter();
 const friendStore = useFriendStore();
-const spaceStore = useSpaceStore();
+const spaceComposable = useSpaceComposable();
 const userStore = useUserStore();
 
 const { friends, loading, friendCount } = storeToRefs(friendStore);
@@ -25,12 +25,12 @@ onMounted(() => {
 });
 
 const jumpToDm = async (conversationId: string) => {
-  await spaceStore.joinDMSpace(conversationId);
+  await spaceComposable.joinDMSpace(conversationId);
 };
 
 const jumpToPersonalRoom = async (type: "NOTE" | "CALENDAR") => {
   const { noteId, calendarId } = userPersonalSpace.value;
-  await spaceStore.joinDMSpace(type === "NOTE" ? noteId : calendarId);
+  await spaceComposable.joinDMSpace(type === "NOTE" ? noteId : calendarId);
   const path = type === "NOTE" ? `note/${noteId}` : `calendar/${calendarId}`;
   router.push(`/me/${path}`);
 };

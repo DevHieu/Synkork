@@ -9,14 +9,17 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { logout } from "@/features/auth/services/authService"
-import { userService } from "@/services/userService"
-import { useUserStore } from "@/stores/userStore"
+import { useAuthService } from "@/features/auth/services/authService"
+import { useUserService } from "@/features/users/services/userService"
+import { useUserStore } from "@/features/users/stores/userStore"
 import { ref, reactive, computed, onMounted, onUnmounted } from "vue"
 import AudioSettingsTab from "@/components/sidebar/modals/AudioSettingsTab.vue"
 import ThemeSettingsTab from "@/components/sidebar/modals/ThemeSettingsTab.vue"
 
 const emit = defineEmits<{ close: [] }>()
+
+const authService = useAuthService()
+const userService = useUserService()
 
 const userStore = useUserStore()
 const currentUser = computed(() => userStore.user)
@@ -238,7 +241,7 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
             <div class="px-2 py-4">
               <button
                 class="flex items-center w-full px-3 py-[7px] rounded-md text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
-                @click="logout">
+                @click="authService.logout()">
                 <LogOut class="size-3.5 mr-2" /> Đăng xuất
               </button>
             </div>
@@ -252,7 +255,7 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
               <h2 class="text-base font-bold text-foreground">
                 <template v-if="activeTab === 'account'">Tài Khoản Của Tôi</template>
                 <template v-else>{{settingsTabs.flatMap(g => g.items).find(i => i.id === activeTab)?.label
-                  }}</template>
+                }}</template>
               </h2>
               <Button variant="ghost" size="sm" class="gap-1.5 text-muted-foreground text-[11px]"
                 @click="emit('close')">

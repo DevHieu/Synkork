@@ -18,11 +18,11 @@ import {
   FileText,
 } from "lucide-vue-next";
 import { watch } from "vue";
-import { useRoomsStore } from "@/stores/roomStore";
-import { useSpaceStore } from "@/stores/spaceStore";
+import { useRoomsStore } from "@/features/rooms/stores/roomStore.ts";
+import { useSpaceStore } from "@/features/spaces/stores/spaceStore.ts";
 import { storeToRefs } from "pinia";
 import { PlanLimitUtils, type LimitType } from "@/utils/PlanLimitUtils";
-import type { SpaceType } from "@/types/Space";
+import type { SpaceType } from "@/features/spaces/types/Space.ts";
 import PlanLimitDialog from "./PlanLimitDialog.vue";
 
 const { roomPlan } = storeToRefs(useRoomsStore());

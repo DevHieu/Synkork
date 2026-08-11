@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import NavUser from "@/components/sidebar/NavUser.vue";
-import VoiceControlBar from "@/components/sidebar/VoiceControlBar.vue";
+import VoiceControlBar from "@/components/VoiceControlBar.vue";
 import {
   SidebarInset,
   SidebarProvider,
@@ -9,8 +9,8 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { getCookie } from "@/lib/cookies";
-import { socketService } from "@/services/websocket/socketService";
-import { useUserStore } from "@/stores/userStore";
+import { socketService } from "@/services/socketService";
+import { useUserStore } from "@/features/users/stores/userStore";
 import { storeToRefs } from "pinia";
 import { ref, provide, watch, onMounted, onUnmounted } from "vue";
 import { useNotificationStore } from '@/features/notifications/stores/notificationStore'
@@ -73,9 +73,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <Transition enter-active-class="transition-transform duration-500 ease-out"
-    enter-from-class="-translate-y-full" enter-to-class="translate-y-0"
-    leave-active-class="transition-transform duration-300 ease-in"
+  <Transition enter-active-class="transition-transform duration-500 ease-out" enter-from-class="-translate-y-full"
+    enter-to-class="translate-y-0" leave-active-class="transition-transform duration-300 ease-in"
     leave-from-class="translate-y-0" leave-to-class="-translate-y-full">
     <div v-if="!isOnline"
       class="fixed left-0 top-0 z-50 flex h-8 w-full items-center justify-center gap-2 border-b border-destructive/25 bg-destructive/95 px-4 text-xs font-medium text-white shadow-sm backdrop-blur"

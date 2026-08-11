@@ -2,8 +2,8 @@
 import { computed, ref, watch } from "vue";
 import { CalendarClock, NotebookPen, ListTodo, ArrowRight } from "lucide-vue-next";
 import { toast } from "vue-sonner";
-import { getAllSpacesFromRoomId } from "@/services/spaceService";
-import { useRoomsStore } from "@/stores/roomStore";
+import { useSpaceService } from "@/features/spaces/services/spaceService";
+import { useRoomsStore } from "@/features/rooms/stores/roomStore.ts";
 import { storeToRefs } from "pinia";
 import type { CalendarChannelOption } from "@/types/CalendarSuggestion";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,8 @@ const emit = defineEmits<{
   (e: "update:open", value: boolean): void;
   (e: "select", option: CalendarChannelOption, type: "CALENDAR" | "NOTE" | "TASK"): void;
 }>();
+
+const spaceService = useSpaceService();
 
 const selectedType = ref<"CALENDAR" | "NOTE" | "TASK">("CALENDAR");
 
@@ -88,7 +90,7 @@ const loadChannels = async () => {
   loading.value = true;
 
   try {
-    const response = await getAllSpacesFromRoomId(currentRoom.value.id);
+    const response = await spaceService.getAllSpacesFromRoomId(currentRoom.value.id);
 
     currentRoomChannels.value = response.data
       .filter((space: { type: string }) => space.type === selectedType.value)

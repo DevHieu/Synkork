@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { getUserInfoByUsername } from "@/services/userService";
+import { useUserService } from "@/features/users/services/userService";
 import { useFriendStore } from "@/stores/friendStore";
-import type { User } from "@/types/User";
-import { computed, nextTick, onMounted, ref } from "vue";
+import type { User } from "@/features/users/types/User.ts";
+import { computed, onMounted, ref } from "vue";
 import {
   Popover,
   PopoverContent,
@@ -18,20 +18,20 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import { UserPlus, UserMinus, MessageCircle, Flag, Clock3, TicketCheck, TicketX, Ban } from "lucide-vue-next";
-import { useUserStore } from "@/stores/userStore";
-import { useSpaceStore } from "@/stores/spaceStore";
+import { useUserStore } from "@/features/users/stores/userStore";
 import ReportDialog from "../../features/reports/ReportDialog.vue";
 import { storeToRefs } from "pinia";
-import { useRoomMemberStore } from "@/stores/roomMemberStore";
+import { useRoomMemberStore } from '@/features/members/stores/roomMemberStore'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { muteChatMember } from "@/services/roomMemberService";
+import { useMemberService } from "@/features/members/services/roomMemberService.ts";
 import { toast } from "vue-sonner";
-import type { ChatDisableTime } from "@/types/Member.ts";
+import type { ChatDisableTime } from "@/features/members/types/Member.ts";
+import { useSpaceComposable } from "@/features/spaces/composables/spaceComposable.ts";
 
 
 const props = defineProps<{
@@ -41,7 +41,10 @@ const props = defineProps<{
   memberRole?: "OWNER" | "ADMIN" | "MEMBER";
 }>();
 
-const spaceStore = useSpaceStore();
+const userService = useUserService();
+const memberService = useMemberService();
+const spaceComposable = useSpaceComposable();
+
 const friendStore = useFriendStore();
 const roomMemberStore = useRoomMemberStore();
 const { canManage } = storeToRefs(roomMemberStore);
@@ -85,7 +88,7 @@ const canShowChatMute = computed(
 
 onMounted(async () => {
   isLoading.value = true;
-  userInfo.value = await getUserInfoByUsername(props.username);
+  userInfo.value = await userService.getUserInfoByUsername(props.username);
   isMyself.value = useUserStore().user?.username === props.username;
   isLoading.value = false;
 });
@@ -127,7 +130,7 @@ async function toggleFriend() {
 }
 
 const handleJumpToDm = async (conversationId: string) => {
-  await spaceStore.joinDMSpace(conversationId);
+  await spaceComposable.joinDMSpace(conversationId);
   isOpen.value = false;
 };
 
@@ -136,7 +139,7 @@ const handleChatMute = async (time: ChatDisableTime) => {
 
   isChatMuteLoading.value = true;
   try {
-    await muteChatMember(props.roomId, props.memberId, time);
+    await memberService.muteChatMember(props.roomId, props.memberId, time);
     toast.success("Da chan chat thanh vien");
     isOpen.value = false;
   } catch (err) {

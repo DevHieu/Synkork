@@ -3,10 +3,12 @@ import { ref } from "vue";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { register } from "@/features/auth/services/authService";
-import type { RegisterData } from "../types/AuthTypes";
+import { useAuthService } from "@/features/auth/services/authService";
+import type { RegisterType } from "../types/AuthTypes";
 
 defineEmits<{ backToLogin: [] }>();
+
+const authService = useAuthService();
 
 const form = ref({
   firstName: "",
@@ -91,7 +93,7 @@ const submit = async () => {
   serverError.value = "";
   if (!validate()) return;
 
-  const data: RegisterData = {
+  const data: RegisterType = {
     firstName: form.value.firstName,
     lastName: form.value.lastName,
     username: form.value.username,
@@ -100,7 +102,7 @@ const submit = async () => {
   };
 
   try {
-    await register(data);
+    await authService.register(data);
     successEmail.value = form.value.email;
   } catch (error: any) {
     serverError.value =

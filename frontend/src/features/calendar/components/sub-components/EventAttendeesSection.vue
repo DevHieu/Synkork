@@ -3,8 +3,8 @@ import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import { Plus, X, Check } from "lucide-vue-next";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import type { Member } from "@/types/Member";
-import { useUserStore } from "@/stores/userStore";
+import type { Member } from "@/features/members/types/Member";
+import { useUserStore } from "@/features/users/stores/userStore";
 
 const props = defineProps<{
   initialAttendeeIds?: string[];

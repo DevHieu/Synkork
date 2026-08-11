@@ -9,7 +9,7 @@ import {
 import { useVoiceSpaceStore } from "@/features/voice-chat/stores/voiceSpaceStore.ts";
 import { storeToRefs } from "pinia";
 import VoiceDropdownMenu from "./VoiceDropdownMenu.vue";
-import { useRoomMemberStore } from "@/stores/roomMemberStore";
+import { useRoomMemberStore } from '@/features/members/stores/roomMemberStore'
 import Avatar from "@/components/ui/avatar/Avatar.vue";
 import AvatarImage from "@/components/ui/avatar/AvatarImage.vue";
 import AvatarFallback from "@/components/ui/avatar/AvatarFallback.vue";

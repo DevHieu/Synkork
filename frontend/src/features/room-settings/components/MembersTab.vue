@@ -11,14 +11,9 @@ import {
   VolumeX,
   MessageSquareOff,
 } from "lucide-vue-next";
-import {
-  changeMemberAuthority,
-  kickMember,
-  muteAudio,
-  muteChatMember,
-} from "@/services/roomMemberService";
-import type { ChatDisableTime, Member } from "@/types/Member";
-import { useRoomMemberStore } from "@/stores/roomMemberStore";
+import { useMemberService } from "@/features/members/services/roomMemberService";
+import type { ChatDisableTime, Member } from "@/features/members/types/Member";
+import { useRoomMemberStore } from "@/features/members/stores/roomMemberStore";
 import { storeToRefs } from "pinia";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +39,7 @@ import DropdownMenuSub from "@/components/ui/dropdown-menu/DropdownMenuSub.vue";
 import DropdownMenuSubContent from "@/components/ui/dropdown-menu/DropdownMenuSubContent.vue";
 import DropdownMenuSubTrigger from "@/components/ui/dropdown-menu/DropdownMenuSubTrigger.vue";
 import InviteMemberDialog from "@/components/dialog/InviteMemberDialog.vue";
+import { useMemberComposable } from "@/features/members/composables/memberComposable";
 
 type AudioToggleField = "muted" | "deafen";
 
@@ -51,6 +47,8 @@ const props = defineProps<{ roomId: string }>();
 
 const showInviteDialog = ref(false);
 
+const memberService = useMemberService();
+const memberComposable = useMemberComposable();
 const roomMemberStore = useRoomMemberStore();
 const { members, canManage, isOwner, sortedMembers } =
   storeToRefs(roomMemberStore);
@@ -96,7 +94,7 @@ const canModerateMember = (member: Member) => {
 
 const handleKick = (member: Member | null) => {
   if (!member) return;
-  kickMember(member.memberId, props.roomId)
+  memberService.kickMember(member.memberId, props.roomId)
     .then(() => {
       members.value = members.value.filter((m) => m.memberId !== member.memberId);
       memberToKick.value = null;
@@ -114,7 +112,7 @@ const handleChangeRole = async (member: Member, newRole: "OWNER" | "ADMIN" | "ME
   }
 
   try {
-    await changeMemberAuthority(
+    await memberService.changeMemberAuthority(
       { memberId: member.memberId, newRole },
       props.roomId,
     );
@@ -150,12 +148,12 @@ const handleToggleAudioState = async (member: Member, field: AudioToggleField) =
   const newValue = !member[field];
 
   try {
-    await muteAudio(props.roomId, member.memberId, {
+    await memberService.muteAudio(props.roomId, member.memberId, {
       muted: field === "muted" ? newValue : null,
       deafen: field === "deafen" ? newValue : null,
     });
 
-    roomMemberStore.updateMember({ ...member, [field]: newValue });
+    memberComposable.updateMember({ ...member, [field]: newValue });
   } catch (err) {
     console.error(`Toggle ${field} error:`, err);
   }
@@ -166,13 +164,13 @@ const handleChangeChatDisable = async (
   time: ChatDisableTime,
 ) => {
   try {
-    const updatedMember = await muteChatMember(
+    const updatedMember = await memberService.muteChatMember(
       props.roomId,
       member.memberId,
       time,
     );
 
-    roomMemberStore.updateMember(updatedMember);
+    memberComposable.updateMember(updatedMember);
   } catch (err) {
     console.error("Change chat disable error:", err);
   }

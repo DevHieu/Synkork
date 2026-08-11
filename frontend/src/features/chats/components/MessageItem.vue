@@ -8,14 +8,14 @@ import type { Message } from "@/features/chats/types/MessageTypes.ts";
 
 import { computed, ref, watch } from "vue";
 import { useMessageStore } from "@/features/chats/stores/messageStore.ts";
-import { useUserStore } from "@/stores/userStore";
+import { useUserStore } from "@/features/users/stores/userStore";
 import { storeToRefs } from "pinia";
 import DeleteConfirmDialog from "@/components/dialog/DeleteConfirmDialog.vue";
 import UserInfoPopover from "@/components/dialog/UserInfoPopover.vue";
 import type { MessageEventSuggestion } from "@/types/CalendarSuggestion";
 import { chatService } from "../services/chatService.ts";
-import { useRoomMemberStore } from "@/stores/roomMemberStore.ts";
-import { useRoomsStore } from "@/stores/roomStore";
+import { useRoomMemberStore } from "@/features/members/stores/roomMemberStore";
+import { useRoomsStore } from "@/features/rooms/stores/roomStore.ts";
 import { useChatUtilsComposable } from "../composable/chat-utils.composable.ts"
 import { useChatComposable } from "../composable/chat.composable.ts";
 
@@ -238,7 +238,7 @@ const parsedContent = computed(() => {
         <template v-if="props.message.deleted">
           <span class="text-muted-foreground italic text-xs">{{
             props.message.type === "TEXT" ? "Tin nhắn" : "Tệp đính kèm"
-          }}
+            }}
             đã bị xóa</span>
         </template>
 

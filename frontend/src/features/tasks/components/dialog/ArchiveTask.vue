@@ -9,8 +9,8 @@ import {
 } from '@/components/ui/popover'
 
 import { useTaskStore } from '@/features/tasks/stores/taskStore'
-import { useSpaceStore } from '@/stores/spaceStore'
-import { useRoomMemberStore } from '@/stores/roomMemberStore'
+import { useSpaceStore } from '@/features/spaces/stores/spaceStore'
+import { useRoomMemberStore } from '@/features/members/stores/roomMemberStore'
 import { useTaskAction } from '../../composables/task-api'
 import type { CardEvent } from '@/features/tasks/types/Task.ts'
 import CardDetailDialog from './CardDetailDialog.vue'
@@ -164,7 +164,8 @@ const handleUnarchiveCard = async (cardId: string) => {
 
                         <div v-for="card in archivedCards" :key="card.id" class="p-3 rounded-lg bg-muted">
                             <div class="flex items-center justify-between">
-                                <span class="text-sm font-medium truncate" @click="openCardDetail(card)" style="cursor: pointer;">
+                                <span class="text-sm font-medium truncate" @click="openCardDetail(card)"
+                                    style="cursor: pointer;">
                                     {{ card.title }}
                                 </span>
                                 <div>
@@ -188,6 +189,6 @@ const handleUnarchiveCard = async (cardId: string) => {
         </PopoverContent>
     </Popover>
 
-    <CardDetailDialog v-if="selectedCard" v-model:open="isCardDetailOpen" :card="selectedCard" :column-name="selectedColumnName"
-        :read-only="true" />
+    <CardDetailDialog v-if="selectedCard" v-model:open="isCardDetailOpen" :card="selectedCard"
+        :column-name="selectedColumnName" :read-only="true" />
 </template>
