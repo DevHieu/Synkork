@@ -4,11 +4,13 @@ import { useRouter } from "vue-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { login } from "@/features/auth/services/authService";
-import type { LoginData } from "@/features/auth/types/AuthTypes";
+import { useAuthService } from "@/features/auth/services/authService";
+import type { LoginType } from "@/features/auth/types/AuthTypes";
 import { consumeAuthFlashMessage } from "@/utils/authFlashMessage";
 
 const router = useRouter();
+
+const authService = useAuthService();
 
 const form = ref({ username: "", password: "" });
 const errors = ref({ username: "", password: "" });
@@ -43,13 +45,13 @@ const submit = async () => {
   highlightGoogle.value = false;
   if (!validate()) return;
 
-  const data: LoginData = {
+  const data: LoginType = {
     username: form.value.username,
     password: form.value.password,
   };
 
   try {
-    await login(data);
+    await authService.login(data);
     router.push("/");
   } catch (error: any) {
     const status = error.response?.status;

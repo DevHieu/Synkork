@@ -2,11 +2,10 @@
 import { ref, computed, onMounted, watch } from "vue"
 import { Sun, Moon, Monitor, Check, RotateCcw } from "lucide-vue-next"
 import { toast } from "vue-sonner"
-import { useUserStore } from "@/stores/userStore"
+import { useUserStore } from "@/features/users/stores/userStore";
 import { useThemeStore } from "@/stores/themeStore" // Nhớ trỏ đúng đường dẫn file store của bạn
 import { storeToRefs } from "pinia"
 
-type ThemeMode = "light" | "dark" | "system"
 type ThemeId = string
 
 interface ThemeOption {

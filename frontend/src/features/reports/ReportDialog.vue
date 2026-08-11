@@ -24,7 +24,7 @@ import AvatarImage from "@/components/ui/avatar/AvatarImage.vue"
 import AvatarFallback from "@/components/ui/avatar/AvatarFallback.vue"
 import { Flag } from 'lucide-vue-next'
 import type { User } from "@/types/User"
-import type { Room } from "@/types/Room"
+import type { Room } from "@/features/rooms/types/Room"
 import { createRoomReport, createUserReport } from '@/features/reports/services/reportService'
 import type { ReportReason, ReportRequest } from '@/features/reports/types/Report'
 import { toast } from 'vue-sonner'

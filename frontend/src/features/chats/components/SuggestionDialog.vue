@@ -12,11 +12,11 @@ import { buildSuggestedEventDraft, buildSuggestedNoteDraft, buildSuggestedTaskDr
 import ColumnListDialog from "@/features/tasks/components/dialog/ColumnListDialog.vue";
 import CardFormDialog from "@/features/tasks/components/dialog/CardFormDialog.vue";
 
-import { useSpaceStore } from "@/stores/spaceStore";
 import { useSuggestionStore } from "@/features/calendar/stores/calendarStore";
 import { useTaskAction } from "@/features/tasks/composables/task-api.ts";
+import { useSpaceComposable } from "@/features/spaces/composables/spaceComposable.ts";
 
-const spaceStore = useSpaceStore();
+const spaceComposable = useSpaceComposable();
 const suggestionStore = useSuggestionStore();
 const taskAction = useTaskAction();
 
@@ -104,7 +104,7 @@ const handleSelectSuggestionChannel = async (
       buildSuggestedEventDraft(suggestion),
     );
 
-    await spaceStore.changeSpaceById(option.spaceId, "CALENDAR");
+    await spaceComposable.changeSpaceById(option.spaceId, "CALENDAR");
   }
 
   if (chosenType === "NOTE") {

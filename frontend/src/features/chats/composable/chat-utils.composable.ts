@@ -1,5 +1,5 @@
-import { useUserStore } from "@/stores/userStore";
-import { useRoomMemberStore } from "@/stores/roomMemberStore";
+import { useUserStore } from "@/features/users/stores/userStore";
+import { useRoomMemberStore } from "@/features/members/stores/roomMemberStore";
 import { useMessageStore } from "@/features/chats/stores/messageStore";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, onMounted, ref } from "vue";

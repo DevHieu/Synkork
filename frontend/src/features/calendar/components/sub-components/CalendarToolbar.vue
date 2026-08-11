@@ -11,7 +11,7 @@ import {
 import { ref, computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import axiosClient from "@/lib/axiosClient";
-import { useUserStore } from "@/stores/userStore";
+import { useUserStore } from "@/features/users/stores/userStore";
 import PremiumFeatureDialog from "@/components/dialog/PremiumFeatureDialog.vue";
 import CalendarNotificationDialog from "../dialogs/CalendarNotificationDialog.vue";
 

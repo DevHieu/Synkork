@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { useRoomMemberStore } from "@/stores/roomMemberStore";
+import { useRoomMemberStore } from "@/features/members/stores/roomMemberStore";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import MemberSection from "@/components/member/MemberSection.vue";
-import MemberRow from "@/components/member/MemberRow.vue";
+import MemberSection from "@/features/members/components/MemberSection.vue";
+import MemberRow from "@/features/members/components/MemberRow.vue";
 
 const roomMemberStore = useRoomMemberStore();
 const { owners, admins, regularMembers, loading } =

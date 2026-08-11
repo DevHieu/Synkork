@@ -1,10 +1,10 @@
 import { chatSocket } from "../services/chatSocket";
 import type { Message } from "@/features/chats/types/MessageTypes";
-import { useUserStore } from "@/stores/userStore";
+import { useUserStore } from "@/features/users/stores/userStore";
 import { useMessageStore } from "@/features/chats/stores/messageStore";
 import { storeToRefs } from "pinia";
 import { nextTick } from "vue";
-import { socketService } from "@/services/websocket/socketService";
+import { socketService } from "@/services/socketService";
 import { useChatUtilsComposable } from "./chat-utils.composable";
 
 export function useChatSocketComposable() {

@@ -2,9 +2,9 @@ import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { friendService } from "@/services/friendService";
 import type { Friend, FriendRequest } from "@/types/Friends";
-import { useUserStore } from "@/stores/userStore";
-import { userSocket } from "@/services/websocket/userSocket";
-import { socketService } from "@/services/websocket/socketService";
+import { useUserStore } from "@/features/users/stores/userStore";
+import { userSocket } from "@/features/users/services/userSocket";
+import { socketService } from "@/services/socketService";
 
 export const useFriendStore = defineStore("friend", () => {
   const friends = ref<Friend[]>([]);
@@ -154,18 +154,13 @@ export const useFriendStore = defineStore("friend", () => {
   };
 
   const getFriendshipStatus = (username: string) => {
-    const friend =
-      friends.value.find((f) => f.username === username) ?? null;
+    const friend = friends.value.find((f) => f.username === username) ?? null;
 
     const sentRequest =
-      sentRequests.value.find(
-        (r) => r.receiverUsername === username,
-      ) ?? null;
+      sentRequests.value.find((r) => r.receiverUsername === username) ?? null;
 
     const receivedRequest =
-      pendingRequests.value.find(
-        (r) => r.senderUsername === username,
-      ) ?? null;
+      pendingRequests.value.find((r) => r.senderUsername === username) ?? null;
 
     return {
       friend,
@@ -174,7 +169,7 @@ export const useFriendStore = defineStore("friend", () => {
       isFriend: !!friend,
       isPending: !!sentRequest,
       isReceived: !!receivedRequest,
-      requestId: sentRequest?.id || receivedRequest?.id || null
+      requestId: sentRequest?.id || receivedRequest?.id || null,
     };
   };
 
@@ -193,6 +188,6 @@ export const useFriendStore = defineStore("friend", () => {
     removeFriend,
     fetchPendingRequests,
     fetchSentRequests,
-    getFriendshipStatus
+    getFriendshipStatus,
   };
 });

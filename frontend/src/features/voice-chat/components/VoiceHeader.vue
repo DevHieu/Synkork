@@ -2,7 +2,7 @@
 import { ref, computed } from "vue";
 import SidebarTrigger from "@/components/ui/sidebar/SidebarTrigger.vue";
 import { FileText, Volume2, UploadCloud } from "lucide-vue-next";
-import { useUserStore } from "@/stores/userStore";
+import { useUserStore } from "@/features/users/stores/userStore";
 import { useVoiceSpaceStore } from "@/features/voice-chat/stores/voiceSpaceStore.ts";
 import { useRoute } from "vue-router";
 import PremiumFeatureDialog from "@/components/dialog/PremiumFeatureDialog.vue";

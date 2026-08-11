@@ -12,7 +12,7 @@ import {
     DialogDescription,
     DialogFooter,
 } from '@/components/ui/dialog'
-import { useSpaceStore } from "@/stores/spaceStore";
+import { useSpaceStore } from "@/features/spaces/stores/spaceStore.ts";
 import { storeToRefs } from "pinia";
 import type { CardEvent } from '@/features/tasks/types/Task.ts'
 import CardDetailDialog from './dialog/CardDetailDialog.vue'
@@ -66,7 +66,7 @@ const handleToggleComplete = () => {
     props.card.completed = newStatus;
 
     taskAction.completeCardEvent(currentSpace.value.id, props.card.id, newStatus);
-    
+
     emit("toggleComplete", {
         id: props.card.id,
         completed: newStatus,
@@ -110,25 +110,18 @@ watch(
 </script>
 <template>
     <div>
-        <Card
-            :class="[
-                'task-card group relative rounded-2xl border border-border/60 bg-card transition-all duration-300 cursor-grab active:cursor-grabbing overflow-hidden',
-                isCompleted
-                    ? 'opacity-60 saturate-50'
-                    : 'hover:shadow-md hover:-translate-y-0.5'
-            ]"
-            @click="openDetail"
-        >
+        <Card :class="[
+            'task-card group relative rounded-2xl border border-border/60 bg-card transition-all duration-300 cursor-grab active:cursor-grabbing overflow-hidden',
+            isCompleted
+                ? 'opacity-60 saturate-50'
+                : 'hover:shadow-md hover:-translate-y-0.5'
+        ]" @click="openDetail">
             <!-- để cho đẹp -->
             <div class="h-0.5 w-full bg-gradient-to-r from-primary/60 via-primary/30 to-transparent" />
 
             <div class="px-3 flex flex-col gap-1">
                 <div class="flex items-start gap-2">
-                    <button
-                        type="button"
-                        role="checkbox"
-                        :aria-checked="isCompleted"
-                        aria-label="Đánh dấu hoàn thành"
+                    <button type="button" role="checkbox" :aria-checked="isCompleted" aria-label="Đánh dấu hoàn thành"
                         class="task-check-btn relative mt-[1px] flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-[1.5px] transition-all duration-200 ease-out"
                         :class="[
                             isCompleted
@@ -137,12 +130,10 @@ watch(
                         ]" @click.stop="handleToggleComplete">
                         <Check v-if="isCompleted" class="check-pop h-2.5 w-2.5 text-white" :stroke-width="3" />
                     </button>
-                    <h3
-                        class="font-semibold text-[13px] line-clamp-1 leading-snug break-words flex-1 transition-colors duration-200"
+                    <h3 class="font-semibold text-[13px] line-clamp-1 leading-snug break-words flex-1 transition-colors duration-200"
                         :class="isCompleted
                             ? 'text-muted-foreground line-through decoration-[1.5px] decoration-muted-foreground/50'
-                            : 'text-card-foreground'"
-                    >
+                            : 'text-card-foreground'">
                         {{ card.title }}
                     </h3>
                     <Button variant="ghost" size="icon"
@@ -181,8 +172,8 @@ watch(
                                     ? "Hoàn thành"
                                     : new Date(card.dueDate).toLocaleDateString("vi-VN", {
                                         day: "2-digit",
-                            month: "2-digit",
-                            })
+                                        month: "2-digit",
+                                    })
                             }}
                         </Badge>
 
@@ -203,21 +194,16 @@ watch(
                         </div>
                     </div>
 
-                    <span v-if="formattedDate && !isCompleted" class="text-[10px] text-muted-foreground/50 tabular-nums">
+                    <span v-if="formattedDate && !isCompleted"
+                        class="text-[10px] text-muted-foreground/50 tabular-nums">
                         {{ formattedDate(card.dueDate) }}
                     </span>
                 </div>
             </div>
         </Card>
 
-        <CardDetailDialog
-            v-model:open="isCardDetailOpen"
-            :card="props.card"
-            :column-name="props.columnName"
-            :column-id="props.columnId"
-            @save="saveInDetail"
-            
-        />
+        <CardDetailDialog v-model:open="isCardDetailOpen" :card="props.card" :column-name="props.columnName"
+            :column-id="props.columnId" @save="saveInDetail" />
         <Dialog v-model:open="taskConflict.isConflictOpen">
             <DialogContent>
                 <DialogHeader>
@@ -229,7 +215,8 @@ watch(
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
-                    <Button variant="outline" :disabled="taskConflict.isCreatingCopy" @click="taskConflict.handleDiscard">
+                    <Button variant="outline" :disabled="taskConflict.isCreatingCopy"
+                        @click="taskConflict.handleDiscard">
                         Bỏ qua, xem bản mới nhất
                     </Button>
                     <Button :disabled="taskConflict.isCreatingCopy" @click="taskConflict.handleCreateCopy">
@@ -259,9 +246,11 @@ watch(
         transform: scale(0);
         opacity: 0;
     }
+
     60% {
         transform: scale(1.25);
     }
+
     100% {
         transform: scale(1);
         opacity: 1;

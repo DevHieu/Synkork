@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useUserStore } from "@/stores/userStore";
-import { useSpaceStore } from "@/stores/spaceStore";
+import { useUserStore } from "@/features/users/stores/userStore";
+import { useSpaceStore } from "@/features/spaces/stores/spaceStore.ts";
 import { useVoiceSpaceStore } from "@/features/voice-chat/stores/voiceSpaceStore.ts";
 import type { VoiceItemType } from "@/features/voice-chat/types/VoiceTypes.ts";
 import { storeToRefs } from "pinia";
