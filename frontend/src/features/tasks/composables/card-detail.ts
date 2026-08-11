@@ -1,11 +1,12 @@
 import { useSpaceStore } from "@/features/spaces/stores/spaceStore.ts";
 import { storeToRefs } from "pinia";
 import { useTaskAction } from "./task-api";
-import { ref, computed } from "vue";
-import type { MemberSummary } from "@/features/tasks/types/Task";
+import { ref, computed, type Ref } from "vue";
+import type { CardEvent, MemberSummary } from "@/features/tasks/types/Task";
 import type { Member } from "@/features/members/types/Member";
 import { checkOverdue } from "../utils/task-date";
 import { toast } from "vue-sonner";
+import { VersionConflictError } from "../services/cardService";
 
 export function useCardDetail(
   props: { card: any; open: boolean; readOnly: boolean },
@@ -110,20 +111,60 @@ export function useCardDetail(
     emitSave();
   };
 
-  const handleToggleComplete = () => {
-    if (props.readOnly || !currentSpace.value) return;
+  const toggleComplete = async (
+    spaceId: string | undefined,
+    card: CardEvent,
+    isCompleted: Ref<boolean | undefined>,
+    onSuccess?: (completed: boolean) => void,
+  ) => {
+    if (!spaceId) return;
+
     const newStatus = !isCompleted.value;
-    isCompleted.value = newStatus;
-    props.card.completed = newStatus;
+    const version = card.version;
 
-    taskAction.completeCardEvent(
-      currentSpace.value.id,
-      props.card.id,
-      newStatus,
-    );
+    try {
+      const updated = await taskAction.completeCardEvent(spaceId, card.id, {
+        completed: newStatus,
+        version,
+      });
 
-    emit("toggle-complete", { id: props.card.id, completed: newStatus });
+      isCompleted.value = newStatus;
+      card.completed = newStatus;
+
+
+      if (updated?.version != null) {
+        card.version = updated.version;
+      }
+
+      onSuccess?.(newStatus);
+    } catch (e) {
+      if (e instanceof VersionConflictError) {
+        toast.error(
+          "Thẻ này vừa được người khác cập nhật. Vui lòng kiểm tra lại nội dung mới nhất.",
+        );
+
+        if (e.latest) {
+          Object.assign(card, e.latest);
+          isCompleted.value = e.latest.completed;
+        }
+
+        return;
+      }
+
+      console.error("Lỗi cập nhật trạng thái:", e);
+      toast.error("Có lỗi xảy ra, vui lòng thử lại.");
+    }
   };
+
+  const handleToggleComplete = async () => {
+  if (!currentSpace.value) return;
+
+  await toggleComplete(
+    currentSpace.value.id,
+    props.card,
+    isCompleted
+  );
+};
 
   return {
     form,

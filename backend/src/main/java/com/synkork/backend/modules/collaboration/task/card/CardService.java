@@ -16,6 +16,7 @@ import com.synkork.backend.modules.collaboration.task.column.ColumnRepository;
 import com.synkork.backend.modules.collaboration.task.dto.CardDTO;
 import com.synkork.backend.modules.collaboration.task.dto.CardMovePayload;
 import com.synkork.backend.modules.collaboration.task.dto.CardRequest;
+import com.synkork.backend.modules.collaboration.task.dto.CompleteCardRequest;
 import com.synkork.backend.modules.collaboration.task.dto.MoveCardRequest;
 import com.synkork.backend.modules.notification.NotificationService;
 import com.synkork.backend.modules.notification.enums.NotificationRefTypeEnum;
@@ -80,11 +81,7 @@ public class CardService {
     public CardDTO updateCard(UUID cardId, CardRequest req) {
         CardEntity card = findCardById(cardId);
 
-            if (!card.getVersion().equals(req.version())) {
-                System.out.println("REQUEST VERSION = " + req.version());
-                System.out.println("DB VERSION = " + card.getVersion());
-            throw new ObjectOptimisticLockingFailureException(CardEntity.class, card.getId());
-        }
+        checkVersion(card, req.version());
 
         if (req.title() != null) {
             card.setTitle(req.title());
@@ -96,7 +93,8 @@ public class CardService {
 
         card.setDueDate(req.dueDate());
 
-        if(req.completed() != null) card.setCompleted(req.completed());
+        if (req.completed() != null)
+            card.setCompleted(req.completed());
 
         if (req.assigneeIds() != null) {
             // Lấy danh sách assignee cũ
@@ -173,6 +171,8 @@ public class CardService {
     @Transactional
     public CardMovePayload moveCard(UUID cardId, MoveCardRequest req) {
         CardEntity card = findCardById(cardId);
+
+        checkVersion(card, req.getVersion());
 
         ColumnEntity oldCol = card.getColumn();
         ColumnEntity newCol = columnRepository.findById(req.getTargetColumnId())
@@ -265,7 +265,7 @@ public class CardService {
                 .map(CardDTO::new)
                 .toList();
     }
-    
+
     @Transactional
     public void deleteAllArchivedCards(UUID spaceId){
         cardRepository.deleteAllArchivedCards(spaceId);
@@ -315,9 +315,12 @@ public class CardService {
         cardRepository.saveAll(newCards);
     }
 
-    public CardDTO completeCard(UUID cardId, boolean completed) {
+    public CardDTO completeCard(UUID cardId, CompleteCardRequest req) {
         CardEntity card = findCardById(cardId);
-        card.setCompleted(completed);
+
+        checkVersion(card, req.version());
+
+        card.setCompleted(req.completed());
         card.setCompletedAt(LocalDateTime.now());
 
         return new CardDTO(cardRepository.save(card));
@@ -325,5 +328,11 @@ public class CardService {
 
     private CardEntity findCardById(UUID cardId) {
         return cardRepository.findById(cardId).orElseThrow(() -> new RuntimeException("Card không tồn tại"));
+    }
+
+    private void checkVersion(CardEntity card, Integer requestVersion) {
+        if (requestVersion == null || !card.getVersion().equals(requestVersion)) {
+            throw new ObjectOptimisticLockingFailureException(CardEntity.class, card.getId());
+        }
     }
 }

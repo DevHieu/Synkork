@@ -41,9 +41,16 @@ export const deleteColumn = async (spaceId: string, columnId: string) => {
     return res;
 }
 
-export const moveColumn = async (spaceId: string, columnId: string, newPosition: number) => {
-    const res = await axiosClient.patch(`/api/space/${spaceId}/column/${columnId}/move`, { newPosition });
-    return res;
+export const moveColumn = async (spaceId: string, columnId: string, moveCol: { newPosition: number, version?: number }) => {
+    try {
+        const res = await axiosClient.patch(`/api/space/${spaceId}/column/${columnId}/move`, moveCol);
+        return res;
+    } catch (e: any) {
+        if(axios.isAxiosError(e) && e.response?.status === 409) {
+           throw new ColumnVersionConflictError(e.response.data?.latest)
+        }
+        throw e;
+    } 
 }
 
 export const archiveColumn = (spaceId: string, columnId: string) => {

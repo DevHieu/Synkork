@@ -93,8 +93,11 @@ const confirmDeleteAllArchivedColumns = () => {
 
 const onColumnMove = async (event: TaskMoveEvent) => {
     if (!currentSpace.value?.id) return;
+
+    const movedCol = event.moved || event.added;
+    const version = movedCol?.element?.version;
     try {
-        await taskAction.moveColumnEvent(currentSpace.value.id, event)
+        await taskAction.moveColumnEvent(currentSpace.value.id, event, version)
     } catch (error) {
         console.error("Lỗi di chuyển cột: ", error);
         await taskAction.fetchTasks(currentSpace.value.id);
@@ -134,8 +137,11 @@ const confirmDeleteAllArchivedCards = () => {
 
 const onCardMove = async (event: TaskMoveEvent, currentColumnId: string) => {
     if (!currentSpace.value?.id) return;
+
+    const movedCard = event.moved || event.added;
+    const version = movedCard?.element?.version;
     try {
-        await taskAction.moveCardEvent(currentSpace.value.id, currentColumnId, event)
+        await taskAction.moveCardEvent(currentSpace.value.id, currentColumnId, event, version)
     } catch (error) {
         console.error("Lỗi di chuyển card: ", error);
         await taskAction.fetchTasks(currentSpace.value.id);

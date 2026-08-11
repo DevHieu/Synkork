@@ -29,9 +29,16 @@ export const deleteCard = async (spaceId: string, cardId: string) => {
     return res.data;
 }
 
-export const moveCard = async (spaceId: string, cardId: string, moveData: { targetColumnId: string; newPosition: number }) => {
-    const res = await axiosClient.patch(`/api/space/${spaceId}/card/${cardId}/move`, moveData);
-    return res.data;
+export const moveCard = async (spaceId: string, cardId: string, moveData: { targetColumnId: string; newPosition: number, version?: number }) => {
+    try {
+        const res = await axiosClient.patch(`/api/space/${spaceId}/card/${cardId}/move`, moveData);
+        return res.data
+    } catch (e: any) {
+        if (axios.isAxiosError(e) && e.response?.status === 409) {
+            throw new VersionConflictError(e.response.data?.latest)
+        }
+        throw e
+    }
 }
 
 export const getSpaceMembers = async (spaceId: string) => {
@@ -59,13 +66,20 @@ export const deleteAllArchivedCards = async (spaceId: string) => {
     return res.data;
 }
 
-export const completeCard = async (spaceId: string, cardId: string, completed: boolean) => {
-    const res = await axiosClient.patch(`/api/space/${spaceId}/card/${cardId}/complete`, completed, {
+export const completeCard = async (spaceId: string, cardId: string, completedCard: { completed: boolean, version?: number } ) => {
+    try {
+        const res = await axiosClient.patch(`/api/space/${spaceId}/card/${cardId}/complete`, completedCard, {
             headers: {
                 "Content-Type": "application/json"
             }
         });
-    return res.data;
+        return res.data;
+    } catch (e: any) {
+        if (axios.isAxiosError(e) && e.response?.status === 409) {
+            throw new VersionConflictError(e.response.data?.latest)
+        }
+        throw e
+    }
 }
 
 export class VersionConflictError extends Error {

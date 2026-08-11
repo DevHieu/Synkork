@@ -5,4 +5,5 @@ import lombok.Data;
 @Data
 public class MoveColumnRequest {
     private int newPosition;
+    private Integer version;
 }
