@@ -73,12 +73,11 @@
 
                   <!-- Custom datetime -->
                   <div class="flex items-center gap-2">
-                    <input
-                      v-model="customDatetime"
-                      type="datetime-local"
-                      @change="onCustomDatetimeChange"
-                      :min="minDatetime"
-                      class="flex-1 text-xs rounded-md border px-2 py-1.5 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                    <DateTimePicker
+                      :value="customDatetime"
+                      :on-change="onCustomDatetimeChange"
+                      placeholder="Chọn ngày giờ..."
+                      class="flex-1 text-xs"
                     />
                     <button
                       v-if="form.reminderAt"
@@ -141,15 +140,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, watch } from 'vue'
 import {
-  X, Pin, Bell,
-  ALargeSmall, Palette, BellPlus, UserPlus,
-  ImagePlus, Archive, MoreVertical, Undo2, Redo2
+  X, Pin, Bell, Palette, BellPlus
 } from 'lucide-vue-next'
 import type { Note, NoteRequest } from '@/features/note/types/NoteType'
 import type { SuggestedNoteDraft } from '@/types/CalendarSuggestion'
 import { useNoteStore } from '@/features/note/stores/noteStore'
+import DateTimePicker from '@/components/DateTimePicker.vue'
 
 const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899']
 
@@ -157,7 +155,7 @@ const QUICK_REMINDERS = [
   { label: '30 phút', minutes: 30 },
   { label: '1 giờ',   minutes: 60 },
   { label: '3 giờ',   minutes: 180 },
-  { label: 'Tối nay', minutes: -1 },   // special case – see setQuickReminder
+  { label: 'Tối nay', minutes: -1 },   // special case – xem setQuickReminder
   { label: 'Ngày mai', minutes: 1440 },
 ]
 
@@ -169,7 +167,7 @@ const store = useNoteStore()
 const isEdit      = ref(false)
 const submitting  = ref(false)
 const showReminder = ref(false)
-const customDatetime = ref('')
+const customDatetime = ref('')   // dạng "YYYY-MM-DDTHH:mm" — định dạng DateTimePicker cần
 
 const form = ref<NoteRequest>({
   title: '',
@@ -182,12 +180,16 @@ const form = ref<NoteRequest>({
 
 // ── helpers ──────────────────────────────────────────────
 
-const minDatetime = computed(() => new Date().toISOString().slice(0, 16))
+// Convert Date → "YYYY-MM-DDTHH:mm" (giờ local) để truyền vào DateTimePicker
+function toLocalDateTimeString(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
 
 function setQuickReminder(minutes: number) {
   let d: Date
   if (minutes === -1) {
-    // "Tối nay" = today at 20:00
+    // "Tối nay" = hôm nay lúc 20:00 (nếu đã qua 20h thì chuyển sang mai)
     d = new Date()
     d.setHours(20, 0, 0, 0)
     if (d <= new Date()) d.setDate(d.getDate() + 1)
@@ -195,7 +197,7 @@ function setQuickReminder(minutes: number) {
     d = new Date(Date.now() + minutes * 60 * 1000)
   }
   form.value.reminderAt = d.toISOString()
-  customDatetime.value  = d.toISOString().slice(0, 16)
+  customDatetime.value  = toLocalDateTimeString(d)
 }
 
 function isQuickSelected(minutes: number): boolean {
@@ -211,9 +213,11 @@ function isQuickSelected(minutes: number): boolean {
   return Math.abs(actual - expected) < 5_000
 }
 
-function onCustomDatetimeChange() {
-  if (customDatetime.value) {
-    form.value.reminderAt = new Date(customDatetime.value).toISOString()
+// Nhận giá trị từ DateTimePicker (dạng "YYYY-MM-DDTHH:mm"), convert sang ISO để lưu vào form
+function onCustomDatetimeChange(value: string) {
+  customDatetime.value = value
+  if (value) {
+    form.value.reminderAt = new Date(value).toISOString()
   }
 }
 
@@ -247,7 +251,7 @@ function syncFormFromProps() {
       reminderAt: reminder ? reminder.toISOString() : null,
       version:    props.note.version,
     }
-    customDatetime.value = reminder ? reminder.toISOString().slice(0, 16) : ''
+    customDatetime.value = reminder ? toLocalDateTimeString(reminder) : ''
     if (reminder) showReminder.value = true
     return
   }

@@ -1,19 +1,27 @@
-import { useNoteStore } from '@/features/note/stores/noteStore'
-import { useNoteSocket } from '@/features/note/composable/UseNoteSocket'
-import {
-  getAll, create, update, deleteNote, togglePin, updatePosition,
-  setReminder, archiveNote, copyToPersonal, getArchivedNotes, restoreNote
-} from '@/features/note/services/noteService'
+import { useNoteStore, type ConflictInfo } from '@/features/note/stores/noteStore'
 import type { Note, NoteRequest } from '@/features/note/types/NoteType'
 
+import {
+  getAll, create, update, deleteNote as deleteNoteApi, togglePin,
+  updatePosition, setReminder, archiveNote as archiveNoteApi, copyToPersonal,
+  getArchivedNotes, restoreNote as restoreNoteApi
+} from '@/features/note/services/noteService'
+
+import { noteSocket } from '@/features/note/services/noteSocket'
+import { socketService } from '@/services/websocket/socketService'
+
+// Composable chứa toàn bộ logic gọi API. Sau khi API trả về, gọi mutation
+// tương ứng trong store để cập nhật state — component không tự đụng vào
+// store.xxx = ... mà luôn đi qua đây.
 export function useNoteActions() {
   const store = useNoteStore()
-  const { connect, disconnect } = useNoteSocket()
 
+  // ── FETCH danh sách note + kết nối socket ────────────────
   async function fetchNotes(spaceId: string) {
     if (store.currentSpaceId === spaceId && store.notes.length > 0) return
+
     if (store.currentSpaceId && store.currentSpaceId !== spaceId) {
-      disconnect(store.currentSpaceId)
+      noteSocket.unsubscribeAll(store.currentSpaceId)
     }
 
     store.setCurrentSpaceId(spaceId)
@@ -23,8 +31,8 @@ export function useNoteActions() {
 
     try {
       const res = await getAll(spaceId)
-      store.setNotes(Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []))
-      await connect(spaceId)
+      store.setNotes(Array.isArray(res) ? res : (res?.data ?? []))
+      await connectSocket(spaceId)
     } catch (e) {
       store.setError('Không thể tải ghi chú')
       console.error(e)
@@ -33,19 +41,23 @@ export function useNoteActions() {
     }
   }
 
-  async function fetchArchivedNotes(spaceId: string) {
-    store.loadingArchived = true
-    try {
-      const res = await getArchivedNotes(spaceId)
-      store.setArchivedNotes(Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []))
-    } catch (e) {
-      store.setError('Không thể tải ghi chú đã lưu trữ')
-      console.error(e)
-    } finally {
-      store.loadingArchived = false
-    }
+  async function connectSocket(spaceId: string) {
+    await socketService.connect()
+
+    noteSocket.subscribeCreateNote(spaceId, (note: Note) => store.addNote(note))
+    noteSocket.subscribeDeleteNote(spaceId, (id: string) => store.removeNote(id))
+    noteSocket.subscribeUpdateNote(spaceId, (payload: Note) => store.replaceNote(payload))
+    noteSocket.subscribetogglePin(spaceId, (payload: Note) => {
+      store.replaceNote(payload)
+      store.sortByPinned()
+    })
   }
 
+  function disconnectSocket(spaceId: string) {
+    noteSocket.unsubscribeAll(spaceId)
+  }
+
+  // ── CREATE ────────────────────────────────────────────────
   async function createNote(spaceId: string, data: NoteRequest): Promise<Note | null> {
     try {
       return await create(spaceId, data)
@@ -56,13 +68,18 @@ export function useNoteActions() {
     }
   }
 
+  // ── UPDATE — có check xung đột version (409) ─────────────
   async function updateNote(spaceId: string, id: string, data: NoteRequest): Promise<boolean> {
     try {
       await update(spaceId, id, data)
       return true
     } catch (e: any) {
       if (e?.response?.status === 409) {
-        store.setConflict({ type: 'update', currentNote: e.response.data.currentNote, pendingData: data })
+        store.setConflict({
+          type: 'update',
+          currentNote: e.response.data.currentNote,
+          pendingData: data
+        } as ConflictInfo)
       } else {
         store.setError('Không thể cập nhật ghi chú')
         console.error(e)
@@ -71,14 +88,16 @@ export function useNoteActions() {
     }
   }
 
-  async function deletedNote(spaceId: string, id: string, version?: number): Promise<boolean> {
+  // ── DELETE — có check quyền (403) + xung đột version (409) ─
+  async function deleteNote(spaceId: string, id: string, version?: number): Promise<boolean> {
     try {
-      await deleteNote(spaceId, id, version)
+      await deleteNoteApi(spaceId, id, version)
       return true
     } catch (e: any) {
-      if (e?.response?.status === 409) {
-        store.setConflict({ type: 'delete', currentNote: e.response.data.currentNote })
-      } else if (e?.response?.status === 403) {
+      const status = e?.response?.status
+      if (status === 409) {
+        store.setConflict({ type: 'delete', currentNote: e.response.data.currentNote } as ConflictInfo)
+      } else if (status === 403) {
         store.setError('Chỉ Owner hoặc Admin mới được xóa ghi chú')
       } else {
         store.setError('Không thể xóa ghi chú')
@@ -88,6 +107,7 @@ export function useNoteActions() {
     }
   }
 
+  // ── PIN ───────────────────────────────────────────────────
   async function changePinStatus(spaceId: string, id: string) {
     try {
       await togglePin(spaceId, id)
@@ -97,6 +117,7 @@ export function useNoteActions() {
     }
   }
 
+  // ── VỊ TRÍ (kéo thả) ──────────────────────────────────────
   async function updateNotePosition(
     spaceId: string, id: string,
     pos: { posX: number; posY: number; width: number; height: number }
@@ -109,6 +130,7 @@ export function useNoteActions() {
     }
   }
 
+  // ── NHẮC NHỞ ──────────────────────────────────────────────
   async function setNoteReminder(spaceId: string, id: string, reminderAt: string | null) {
     try {
       await setReminder(spaceId, id, reminderAt)
@@ -118,9 +140,10 @@ export function useNoteActions() {
     }
   }
 
-  async function archiveNoteAction(spaceId: string, id: string) {
+  // ── LƯU TRỮ / KHÔI PHỤC ───────────────────────────────────
+  async function archiveNote(spaceId: string, id: string) {
     try {
-      await archiveNote(spaceId, id)
+      await archiveNoteApi(spaceId, id)
       store.removeNote(id)
     } catch (e) {
       store.setError('Không thể lưu trữ ghi chú')
@@ -128,9 +151,22 @@ export function useNoteActions() {
     }
   }
 
-  async function restoreNoteAction(spaceId: string, id: string) {
+  async function fetchArchivedNotes(spaceId: string) {
+    store.loadingArchived = true
     try {
-      const restored = await restoreNote(spaceId, id)
+      const res = await getArchivedNotes(spaceId)
+      store.setArchivedNotes(Array.isArray(res) ? res : (res?.data ?? []))
+    } catch (e) {
+      store.setError('Không thể tải ghi chú đã lưu trữ')
+      console.error(e)
+    } finally {
+      store.loadingArchived = false
+    }
+  }
+
+  async function restoreNote(spaceId: string, id: string) {
+    try {
+      const restored = await restoreNoteApi(spaceId, id)
       store.removeArchivedNote(id)
       if (store.currentSpaceId === spaceId) store.addNote(restored)
     } catch (e) {
@@ -139,6 +175,7 @@ export function useNoteActions() {
     }
   }
 
+  // ── LƯU VỀ KHÔNG GIAN CÁ NHÂN ─────────────────────────────
   async function copyNoteToPersonal(spaceId: string, id: string): Promise<Note> {
     try {
       return await copyToPersonal(spaceId, id)
@@ -150,9 +187,10 @@ export function useNoteActions() {
   }
 
   return {
-    fetchNotes, fetchArchivedNotes, createNote, updateNote,
-    deleteNote: deletedNote, changePinStatus, updateNotePosition, setNoteReminder,
-    archiveNote: archiveNoteAction, restoreNote: restoreNoteAction, copyNoteToPersonal,
-    disconnectSocket: disconnect
+    fetchNotes, disconnectSocket,
+    createNote, updateNote, deleteNote,
+    changePinStatus, updateNotePosition, setNoteReminder,
+    archiveNote, fetchArchivedNotes, restoreNote,
+    copyNoteToPersonal,
   }
 }
