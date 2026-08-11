@@ -4,18 +4,11 @@ import { Archive, Calendar, AlignLeft, Check } from 'lucide-vue-next'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
-} from '@/components/ui/dialog'
 import { useSpaceStore } from "@/features/spaces/stores/spaceStore.ts";
 import { storeToRefs } from "pinia";
 import type { CardEvent } from '@/features/tasks/types/Task.ts'
 import CardDetailDialog from './dialog/CardDetailDialog.vue'
+import ConflictDialog from './dialog/ConflictDialog.vue'
 import { VersionConflictError } from '@/features/tasks/services/cardService'
 import { toast } from 'vue-sonner'
 import { useTaskAction } from '../composables/task-api.ts'
@@ -66,7 +59,7 @@ const handleToggleComplete = () => {
     props.card.completed = newStatus;
 
     taskAction.completeCardEvent(currentSpace.value.id, props.card.id, newStatus);
-
+    
     emit("toggleComplete", {
         id: props.card.id,
         completed: newStatus,
@@ -110,18 +103,25 @@ watch(
 </script>
 <template>
     <div>
-        <Card :class="[
-            'task-card group relative rounded-2xl border border-border/60 bg-card transition-all duration-300 cursor-grab active:cursor-grabbing overflow-hidden',
-            isCompleted
-                ? 'opacity-60 saturate-50'
-                : 'hover:shadow-md hover:-translate-y-0.5'
-        ]" @click="openDetail">
+        <Card
+            :class="[
+                'task-card group relative rounded-2xl border border-border/60 bg-card transition-all duration-300 cursor-grab active:cursor-grabbing overflow-hidden',
+                isCompleted
+                    ? 'opacity-60 saturate-50'
+                    : 'hover:shadow-md hover:-translate-y-0.5'
+            ]"
+            @click="openDetail"
+        >
             <!-- để cho đẹp -->
             <div class="h-0.5 w-full bg-gradient-to-r from-primary/60 via-primary/30 to-transparent" />
 
             <div class="px-3 flex flex-col gap-1">
                 <div class="flex items-start gap-2">
-                    <button type="button" role="checkbox" :aria-checked="isCompleted" aria-label="Đánh dấu hoàn thành"
+                    <button
+                        type="button"
+                        role="checkbox"
+                        :aria-checked="isCompleted"
+                        aria-label="Đánh dấu hoàn thành"
                         class="task-check-btn relative mt-[1px] flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-[1.5px] transition-all duration-200 ease-out"
                         :class="[
                             isCompleted
@@ -130,10 +130,12 @@ watch(
                         ]" @click.stop="handleToggleComplete">
                         <Check v-if="isCompleted" class="check-pop h-2.5 w-2.5 text-white" :stroke-width="3" />
                     </button>
-                    <h3 class="font-semibold text-[13px] line-clamp-1 leading-snug break-words flex-1 transition-colors duration-200"
+                    <h3
+                        class="font-semibold text-[13px] line-clamp-1 leading-snug break-words flex-1 transition-colors duration-200"
                         :class="isCompleted
                             ? 'text-muted-foreground line-through decoration-[1.5px] decoration-muted-foreground/50'
-                            : 'text-card-foreground'">
+                            : 'text-card-foreground'"
+                    >
                         {{ card.title }}
                     </h3>
                     <Button variant="ghost" size="icon"
@@ -172,8 +174,8 @@ watch(
                                     ? "Hoàn thành"
                                     : new Date(card.dueDate).toLocaleDateString("vi-VN", {
                                         day: "2-digit",
-                                        month: "2-digit",
-                                    })
+                            month: "2-digit",
+                            })
                             }}
                         </Badge>
 
@@ -194,37 +196,30 @@ watch(
                         </div>
                     </div>
 
-                    <span v-if="formattedDate && !isCompleted"
-                        class="text-[10px] text-muted-foreground/50 tabular-nums">
+                    <span v-if="formattedDate && !isCompleted" class="text-[10px] text-muted-foreground/50 tabular-nums">
                         {{ formattedDate(card.dueDate) }}
                     </span>
                 </div>
             </div>
         </Card>
 
-        <CardDetailDialog v-model:open="isCardDetailOpen" :card="props.card" :column-name="props.columnName"
-            :column-id="props.columnId" @save="saveInDetail" />
-        <Dialog v-model:open="taskConflict.isConflictOpen">
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Thẻ đã bị thay đổi bởi người khác</DialogTitle>
-                    <DialogDescription>
-                        Trong lúc bạn chỉnh sửa, một người khác đã lưu thay đổi cho thẻ
-                        <strong>"{{ card.title }}"</strong>. Nếu lưu đè, nội dung của họ sẽ bị mất.
-                        Bạn có muốn tạo một thẻ mới chứa nội dung bạn vừa nhập, để không mất dữ liệu không?
-                    </DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                    <Button variant="outline" :disabled="taskConflict.isCreatingCopy"
-                        @click="taskConflict.handleDiscard">
-                        Bỏ qua, xem bản mới nhất
-                    </Button>
-                    <Button :disabled="taskConflict.isCreatingCopy" @click="taskConflict.handleCreateCopy">
-                        {{ taskConflict.isCreatingCopy ? 'Đang tạo...' : 'Tạo thẻ mới với nội dung của tôi' }}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <CardDetailDialog
+            v-model:open="isCardDetailOpen"
+            :card="props.card"
+            :column-name="props.columnName"
+            :column-id="props.columnId"
+            @save="saveInDetail"
+            
+        />
+        <ConflictDialog
+            v-model:open="taskConflict.isConflictOpen"
+            :is-creating-copy="taskConflict.isCreatingCopy"
+            entity-label="thẻ"
+            entity-title="Thẻ"
+            :item-name="card.title"
+            @discard="taskConflict.handleDiscard"
+            @create-copy="taskConflict.handleCreateCopy"
+        />
     </div>
 </template>
 
@@ -246,11 +241,9 @@ watch(
         transform: scale(0);
         opacity: 0;
     }
-
     60% {
         transform: scale(1.25);
     }
-
     100% {
         transform: scale(1);
         opacity: 1;

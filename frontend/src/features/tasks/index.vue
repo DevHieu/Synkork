@@ -4,23 +4,16 @@ import draggable from 'vuedraggable'
 import { useRoute } from 'vue-router'
 import { Plus, Hash, Archive } from 'lucide-vue-next'
 import { taskSocket } from '@/features/tasks/services/taskSocket.ts'
-import { useSpaceStore } from "@/features/spaces/stores/spaceStore.ts";
+import { useSpaceStore } from "@/features/spaces/stores/spaceStore";
 import { useTaskStore } from "@/features/tasks/stores/taskStore";
 import { storeToRefs } from "pinia";
 import type { ColumnEvent, TaskMoveEvent } from "@/features/tasks/types/Task";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
-} from '@/components/ui/dialog'
 import TaskColumn from '@/features/tasks/components/TaskColumn.vue'
 import ColumnFormDialog from '@/features/tasks/components/dialog/ColumnFormDialog.vue'
 import DeleteConfirmDialog from '@/components/dialog/DeleteConfirmDialog.vue'
 import CardFormDialog from '@/features/tasks/components/dialog/CardFormDialog.vue'
 import ArchiveTask from '@/features/tasks/components/dialog/ArchiveTask.vue'
+import ConflictDialog from '@/features/tasks/components/dialog/ConflictDialog.vue'
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { toast } from "vue-sonner"
 import { VersionConflictError } from '@/features/tasks/services/cardService'
@@ -234,11 +227,9 @@ watch(
                 <draggable v-model="columns" group="columns" item-key="id" handle=".column-handle"
                     @change="onColumnMove" class="flex gap-6 items-start h-full">
                     <template #item="{ element: col }">
-                        <TaskColumn :column="col" :space-name="currentSpace?.name ?? ''"
-                            @edit-column="taskDialog.openColumnDialog"
-                            @archive-column="taskAction.archiveColumnEvent(spaceId, col.id)"
-                            @add-card="taskDialog.openCardDialog"
-                            @archive-card="taskAction.archiveCardEvent(spaceId, $event)" @card-move="onCardMove" />
+                        <TaskColumn :column="col" :space-name="currentSpace?.name ?? ''" @edit-column="taskDialog.openColumnDialog"
+                            @archive-column="taskAction.archiveColumnEvent(spaceId, col.id)" @add-card="taskDialog.openCardDialog" @archive-card="taskAction.archiveCardEvent(spaceId, $event)"
+                            @card-move="onCardMove" />
                     </template>
                 </draggable>
 
@@ -268,26 +259,15 @@ watch(
         :description="deleteAllType === 'columns' ? 'Toàn bộ các cột và thẻ bên trong sẽ bị xóa vĩnh viễn.' : 'Toàn bộ thẻ đã lưu trữ sẽ bị xóa vĩnh viễn.'"
         @confirm="handleDeleteAllArchived" />
 
-    <Dialog v-model:open="taskConflict.isConflictOpen">
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Cột đã bị thay đổi bởi người khác</DialogTitle>
-                <DialogDescription>
-                    Trong lúc bạn chỉnh sửa, một người khác đã lưu thay đổi cho cột
-                    <strong>"{{ editingCol?.name }}"</strong>. Nếu lưu đè, nội dung của họ sẽ bị mất.
-                    Bạn có muốn tạo một cột mới chứa nội dung bạn vừa nhập, để không mất dữ liệu không?
-                </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-                <Button variant="outline" :disabled="taskConflict.isCreatingCopy" @click="taskConflict.handleDiscard">
-                    Bỏ qua, xem bản mới nhất
-                </Button>
-                <Button :disabled="taskConflict.isCreatingCopy" @click="taskConflict.handleCreateCopy">
-                    {{ taskConflict.isCreatingCopy ? 'Đang tạo...' : 'Tạo cột mới với nội dung của tôi' }}
-                </Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
+        <ConflictDialog
+            v-model:open="taskConflict.isConflictOpen"
+            :is-creating-copy="taskConflict.isCreatingCopy"
+            entity-label="cột"
+            entity-title="Cột"
+            :item-name="editingCol?.name"
+            @discard="taskConflict.handleDiscard"
+            @create-copy="taskConflict.handleCreateCopy"
+        />
 
 </template>
 
