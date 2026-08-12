@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import { X, Archive, Loader2, Undo2, Trash2 } from 'lucide-vue-next'
 import { useNoteStore } from '@/features/note/stores/noteStore'
+import { useNoteActions } from '@/features/note/composable/UseNoteActions'
 import { useRoomMemberStore } from '@/features/members/stores/roomMemberStore';
 import { storeToRefs } from 'pinia'
 
@@ -14,6 +15,7 @@ defineEmits<{ close: [] }>()
 
 const store = useNoteStore()
 const { archivedNotes: notes, loadingArchived: loading } = storeToRefs(store)
+const actions = useNoteActions()
 
 const roomMemberStore = useRoomMemberStore()
 const { canManage } = storeToRefs(roomMemberStore)
@@ -25,7 +27,7 @@ watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
-      store.fetchArchivedNotes(props.spaceId)
+      actions.fetchArchivedNotes(props.spaceId)
     }
   }
 )
@@ -33,7 +35,7 @@ watch(
 async function handleRestore(id: string) {
   restoringId.value = id
   try {
-    await store.restoreNote(props.spaceId, id)
+    await actions.restoreNote(props.spaceId, id)
   } finally {
     restoringId.value = null
   }
@@ -44,9 +46,9 @@ async function handleDelete(id: string) {
 
   deletingId.value = id
   try {
-    const success = await store.deleteNote(props.spaceId, id)
+    const success = await actions.deleteNote(props.spaceId, id)
     if (success) {
-      store.archivedNotes = store.archivedNotes.filter(n => n.id !== id)
+      store.removeArchivedNote(id)
     }
   } finally {
     deletingId.value = null

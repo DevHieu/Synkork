@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { X, Pin, Pencil, Trash2, BookmarkPlus } from 'lucide-vue-next'
 import type { Note } from '@/features/note/types/NoteType'
 import { useNoteStore } from '@/features/note/stores/noteStore'
+import { useNoteActions } from '@/features/note/composable/UseNoteActions'
 
 // spaceId: id của space đang xem note này (nhóm)
 // personalSpaceId: id không gian cá nhân của user hiện tại (nếu có, để so sánh ẩn nút khi trùng)
@@ -20,6 +21,7 @@ const emit = defineEmits<{
 }>()
 
 const store = useNoteStore()
+const actions = useNoteActions()
 
 const savingPersonal = ref(false)
 const feedback = ref<{ type: 'success' | 'error'; message: string } | null>(null)
@@ -40,7 +42,7 @@ async function handleSavePersonal() {
   savingPersonal.value = true
   feedback.value = null
   try {
-    await store.copyNoteToPersonal(props.spaceId, props.note.id)
+    await actions.copyNoteToPersonal(props.spaceId, props.note.id)
     feedback.value = { type: 'success', message: 'Đã lưu vào ghi chú cá nhân' }
   } catch (e) {
     feedback.value = { type: 'error', message: 'Không thể lưu ghi chú, thử lại sau' }

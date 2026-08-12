@@ -6,6 +6,7 @@ import {
 import type { Note, NoteRequest } from '@/features/note/types/NoteType'
 import type { SuggestedNoteDraft } from '@/types/CalendarSuggestion'
 import { useNoteStore } from '@/features/note/stores/noteStore'
+import { useNoteActions } from '@/features/note/composable/UseNoteActions'
 import DateTimePicker from '@/components/DateTimePicker.vue'
 
 const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899']
@@ -22,6 +23,7 @@ const props = defineProps<{ spaceId: string; open: boolean; note?: Note | null; 
 const emit = defineEmits<{ close: [] }>()
 
 const store = useNoteStore()
+const actions = useNoteActions()
 
 const isEdit      = ref(false)
 const submitting  = ref(false)
@@ -153,12 +155,12 @@ async function handleSubmit() {
     }
 
     if (props.note?.id) {
-      const success = await store.updateNote(props.spaceId, props.note.id, data)
+      const success = await actions.updateNote(props.spaceId, props.note.id, data)
       if (success) {
         emit('close')
       }
     } else {
-      await store.createNote(props.spaceId, data)
+      await actions.createNote(props.spaceId, data)
       emit('close')
     }
   } finally {

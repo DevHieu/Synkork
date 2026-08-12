@@ -10,9 +10,6 @@ import {
 import { noteSocket } from '@/features/note/services/noteSocket'
 import { socketService } from '@/services/socketService'
 
-// Composable chứa toàn bộ logic gọi API. Sau khi API trả về, gọi mutation
-// tương ứng trong store để cập nhật state — component không tự đụng vào
-// store.xxx = ... mà luôn đi qua đây.
 export function useNoteActions() {
   const store = useNoteStore()
 
@@ -25,7 +22,7 @@ export function useNoteActions() {
     }
 
     store.setCurrentSpaceId(spaceId)
-    store.loading = true
+    store.setLoading(true)
     store.setError(null)
     store.setNotes([])
 
@@ -37,7 +34,7 @@ export function useNoteActions() {
       store.setError('Không thể tải ghi chú')
       console.error(e)
     } finally {
-      store.loading = false
+      store.setLoading(false)
     }
   }
 
@@ -45,10 +42,7 @@ export function useNoteActions() {
     await socketService.connect()
 
     noteSocket.subscribeCreateNote(spaceId, (note: Note) => store.addNote(note))
-    noteSocket.subscribeDeleteNote(
-      spaceId,
-      (id: string) => store.removeNoteFromList(id)
-    )
+    noteSocket.subscribeDeleteNote(spaceId, (id: string) => store.removeNoteFromList(id))
     noteSocket.subscribeUpdateNote(spaceId, (payload: Note) => store.replaceNote(payload))
     noteSocket.subscribetogglePin(spaceId, (payload: Note) => {
       store.replaceNote(payload)
@@ -155,7 +149,7 @@ export function useNoteActions() {
   }
 
   async function fetchArchivedNotes(spaceId: string) {
-    store.loadingArchived = true
+    store.setLoadingArchived(true)
     try {
       const res = await getArchivedNotes(spaceId)
       store.setArchivedNotes(Array.isArray(res) ? res : (res?.data ?? []))
@@ -163,7 +157,7 @@ export function useNoteActions() {
       store.setError('Không thể tải ghi chú đã lưu trữ')
       console.error(e)
     } finally {
-      store.loadingArchived = false
+      store.setLoadingArchived(false)
     }
   }
 

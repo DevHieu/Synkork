@@ -67,18 +67,24 @@ watch(
   () => store.unpinnedNotes,
   (newNotes) => {
     const existingIds = new Set(layout.value.map((l) => l.i))
-    newNotes.forEach((note, index) => {
+
+    newNotes.forEach((note) => {
       const id = String(note.id)
-      if (!existingIds.has(id)) {
-        layout.value.push({
-          i: id,
-          x: note.posX ?? (index % 4) * 3,
-          y: note.posY ?? Math.floor(index / 4) * 2,
-          w: note.width ?? 3,
-          h: note.height ?? 2,
-        })
-      }
+      if (existingIds.has(id)) return
+      const hasSavedPosition =
+        note.posX != null && note.posY != null &&
+        (note.posX !== 0 || note.posY !== 0)
+      const slotIndex = layout.value.length
+
+      layout.value.push({
+        i: id,
+        x: hasSavedPosition ? note.posX : (slotIndex % 4) * 3,
+        y: hasSavedPosition ? note.posY : Math.floor(slotIndex / 4) * 2,
+        w: note.width || 3,
+        h: note.height || 2,
+      })
     })
+
     const noteIds = new Set(newNotes.map((n) => String(n.id)))
     layout.value = layout.value.filter((l) => noteIds.has(l.i))
     nextTick(() => { layoutUpdateCount = 0 })
