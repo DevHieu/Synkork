@@ -1,3 +1,195 @@
+<script setup lang="ts">
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
+import { useNoteStore } from '@/features/note/stores/noteStore.ts'
+import { useNoteActions } from '@/features/note/composable/UseNoteActions'
+import { useUserStore } from '@/features/users/stores/userStore'
+import { GridLayout, GridItem } from 'vue3-grid-layout-next'
+import { NotebookPen, Plus, Search, X, Pin, Loader2, AlertCircle, Hash, Archive } from 'lucide-vue-next'
+
+import NoteCard from '@/features/note/components/NoteCard.vue'
+import NoteDialog from '@/features/note/components/dialog/NoteDialog.vue'
+import NoteDetailDialog from '@/features/note/components/dialog/NoteDetailDialog.vue'
+import ConfirmDialog from '@/features/note/components/dialog/ConfirmDialog.vue'
+import ReminderDialog from '@/features/note/components/dialog/ReminderDialog.vue'
+import ArchivedNotesDialog from '@/features/note/components/dialog/ArchivedNotesDialog.vue'
+import ConflictDialog from '@/features/note/components/dialog/ConflictDialog.vue'
+
+import type { Note, NoteRequest } from '@/features/note/types/NoteType'
+import { useSpaceStore } from '@/features/spaces/stores/spaceStore'
+import { storeToRefs } from 'pinia'
+import SidebarTrigger from '@/components/ui/sidebar/SidebarTrigger.vue'
+
+const route = useRoute()
+const spaceId = computed(() => route.params.spaceId as string)
+const spaceStore = useSpaceStore()
+
+// ── State (đọc) ── và ── Actions (gọi API/side-effect) tách riêng ──
+const store = useNoteStore()
+const actions = useNoteActions()
+
+const { currentSpace, isPersonalSpace } = storeToRefs(spaceStore)
+
+// ── User store (để lấy personalNoteId cho nút "Lưu cá nhân") ──
+const userStore = useUserStore()
+const { userPersonalSpace } = storeToRefs(userStore)
+
+const dialogOpen = ref(false)
+const detailOpen = ref(false)
+const selectedNote = ref<Note | null>(null)
+const confirmOpen = ref(false)
+const deleteTargetId = ref<string | null>(null)
+const reminderOpen = ref(false)
+const reminderNote = ref<Note | null>(null)
+const layout = ref<any[]>([])
+const archivedOpen = ref(false)
+const deleteTargetVersion = ref<number | undefined>(undefined)
+
+let layoutUpdateCount = 0
+let debounceTimer: ReturnType<typeof setTimeout>
+
+// ── SINGLE watch on ID only ───────────────────────────────
+watch(
+  () => currentSpace.value?.id,
+  (newId, oldId) => {
+    if (!newId) return
+    if (newId === oldId) return
+    if (oldId) actions.disconnectSocket(oldId)
+    store.setNotes([])
+    layout.value = []
+    layoutUpdateCount = 0
+    actions.fetchNotes(newId)
+  },
+  { immediate: true }
+)
+
+watch(
+  () => store.unpinnedNotes,
+  (newNotes) => {
+    const existingIds = new Set(layout.value.map((l) => l.i))
+
+    newNotes.forEach((note) => {
+      const id = String(note.id)
+      if (existingIds.has(id)) return
+      const hasSavedPosition =
+        note.posX != null && note.posY != null &&
+        (note.posX !== 0 || note.posY !== 0)
+      const slotIndex = layout.value.length
+
+      layout.value.push({
+        i: id,
+        x: hasSavedPosition ? note.posX : (slotIndex % 4) * 3,
+        y: hasSavedPosition ? note.posY : Math.floor(slotIndex / 4) * 2,
+        w: note.width || 3,
+        h: note.height || 2,
+      })
+    })
+
+    const noteIds = new Set(newNotes.map((n) => String(n.id)))
+    layout.value = layout.value.filter((l) => noteIds.has(l.i))
+    nextTick(() => { layoutUpdateCount = 0 })
+  },
+  { immediate: true, deep: true }
+)
+
+function getNoteById(id: string): Note | undefined {
+  return store.unpinnedNotes.find((n) => String(n.id) === id)
+}
+
+function onLayoutUpdated(newLayout: any[]) {
+  if (layoutUpdateCount < 1) { layoutUpdateCount++; return }
+  clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => {
+    newLayout.forEach((item) => {
+      actions.updateNotePosition(spaceId.value, item.i, {
+        posX: item.x, posY: item.y, width: item.w, height: item.h,
+      })
+    })
+  }, 600)
+}
+
+const localSearch = ref('')
+
+watch(localSearch, (val) => {
+  store.searchQuery = val
+})
+
+onMounted(() => {
+  store.searchQuery = ''
+  localSearch.value = ''
+})
+
+onUnmounted(() => {
+  store.searchQuery = ''
+  actions.disconnectSocket(spaceId.value)
+  clearTimeout(debounceTimer)
+})
+
+// ── CRUD ──────────────────────────────────────────────────
+
+function openCreate() {
+  selectedNote.value = null
+  dialogOpen.value = true
+}
+
+function openDetail(note: Note) {
+  selectedNote.value = note
+  detailOpen.value = true
+}
+
+function openEdit(note: Note) {
+  detailOpen.value = false
+  selectedNote.value = note
+  dialogOpen.value = true
+}
+
+function confirmDelete(id: string) {
+  deleteTargetId.value = id
+  const note = store.notes.find(n => n.id === id)
+  deleteTargetVersion.value = note?.version
+  detailOpen.value = false
+  confirmOpen.value = true
+}
+
+async function handleArchive(id: string) {
+  await actions.archiveNote(spaceId.value, id)
+}
+
+async function handleDelete() {
+  if (!deleteTargetId.value) return
+  await actions.deleteNote(spaceId.value, deleteTargetId.value, deleteTargetVersion.value)
+  confirmOpen.value = false
+  deleteTargetId.value = null
+  deleteTargetVersion.value = undefined
+}
+
+async function handleTogglePin(id: string) {
+  await actions.changePinStatus(spaceId.value, id)
+}
+
+async function handleColorChange(id: string, color: string) {
+  await actions.updateNote(spaceId.value, id, { color } as NoteRequest)
+}
+
+function openReminder(note: Note) {
+  reminderNote.value = note
+  reminderOpen.value = true
+}
+
+async function handleReminderConfirm(reminderAt: string | null) {
+  if (!reminderNote.value) return
+  await actions.setNoteReminder(spaceId.value, reminderNote.value.id, reminderAt)
+
+  const idx = store.notes.findIndex(n => n.id === reminderNote.value!.id)
+  if (idx !== -1) {
+    const updated: Note = { ...(store.notes[idx] as Note), reminderAt, reminderSent: false }
+    store.replaceNote(updated)
+    reminderNote.value = updated
+  }
+  reminderOpen.value = false
+}
+</script>
+
 <template>
   <div class="min-h-screen background">
     <div class="min-h-screen background">
@@ -147,189 +339,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
-import { useNoteStore } from '@/features/note/stores/noteStore.ts'
-import { useNoteActions } from '@/features/note/composable/UseNoteActions'
-import { useUserStore } from '@/features/users/stores/userStore'
-import { GridLayout, GridItem } from 'vue3-grid-layout-next'
-import { NotebookPen, Plus, Search, X, Pin, Loader2, AlertCircle, Hash, Archive } from 'lucide-vue-next'
-
-import NoteCard from '@/features/note/components/NoteCard.vue'
-import NoteDialog from '@/features/note/components/dialog/NoteDialog.vue'
-import NoteDetailDialog from '@/features/note/components/dialog/NoteDetailDialog.vue'
-import ConfirmDialog from '@/features/note/components/dialog/ConfirmDialog.vue'
-import ReminderDialog from '@/features/note/components/dialog/ReminderDialog.vue'
-import ArchivedNotesDialog from '@/features/note/components/dialog/ArchivedNotesDialog.vue'
-import ConflictDialog from '@/features/note/components/dialog/ConflictDialog.vue'
-
-import type { Note, NoteRequest } from '@/features/note/types/NoteType'
-import { useSpaceStore } from '@/features/spaces/stores/spaceStore'
-import { storeToRefs } from 'pinia'
-import SidebarTrigger from '@/components/ui/sidebar/SidebarTrigger.vue'
-
-const route = useRoute()
-const spaceId = computed(() => route.params.spaceId as string)
-const spaceStore = useSpaceStore()
-
-// ── State (đọc) ── và ── Actions (gọi API/side-effect) tách riêng ──
-const store = useNoteStore()
-const actions = useNoteActions()
-
-const { currentSpace, isPersonalSpace } = storeToRefs(spaceStore)
-
-// ── User store (để lấy personalNoteId cho nút "Lưu cá nhân") ──
-const userStore = useUserStore()
-const { userPersonalSpace } = storeToRefs(userStore)
-
-const dialogOpen = ref(false)
-const detailOpen = ref(false)
-const selectedNote = ref<Note | null>(null)
-const confirmOpen = ref(false)
-const deleteTargetId = ref<string | null>(null)
-const reminderOpen = ref(false)
-const reminderNote = ref<Note | null>(null)
-const layout = ref<any[]>([])
-const archivedOpen = ref(false)
-const deleteTargetVersion = ref<number | undefined>(undefined)
-
-let layoutUpdateCount = 0
-let debounceTimer: ReturnType<typeof setTimeout>
-
-// ── SINGLE watch on ID only ───────────────────────────────
-watch(
-  () => currentSpace.value?.id,
-  (newId, oldId) => {
-    if (!newId) return
-    if (newId === oldId) return
-    if (oldId) actions.disconnectSocket(oldId)
-    store.setNotes([])
-    layout.value = []
-    layoutUpdateCount = 0
-    actions.fetchNotes(newId)
-  },
-  { immediate: true }
-)
-
-watch(
-  () => store.unpinnedNotes,
-  (newNotes) => {
-    const existingIds = new Set(layout.value.map((l) => l.i))
-    newNotes.forEach((note, index) => {
-      const id = String(note.id)
-      if (!existingIds.has(id)) {
-        layout.value.push({
-          i: id,
-          x: note.posX ?? (index * 3) % 12,
-          y: note.posY ?? 9999,
-          w: note.width ?? 3,
-          h: note.height ?? 2,
-        })
-      }
-    })
-    const noteIds = new Set(newNotes.map((n) => String(n.id)))
-    layout.value = layout.value.filter((l) => noteIds.has(l.i))
-    nextTick(() => { layoutUpdateCount = 0 })
-  },
-  { immediate: true, deep: true }
-)
-
-function getNoteById(id: string): Note | undefined {
-  return store.unpinnedNotes.find((n) => String(n.id) === id)
-}
-
-function onLayoutUpdated(newLayout: any[]) {
-  if (layoutUpdateCount < 1) { layoutUpdateCount++; return }
-  clearTimeout(debounceTimer)
-  debounceTimer = setTimeout(() => {
-    newLayout.forEach((item) => {
-      actions.updateNotePosition(spaceId.value, item.i, {
-        posX: item.x, posY: item.y, width: item.w, height: item.h,
-      })
-    })
-  }, 600)
-}
-
-const localSearch = ref('')
-
-watch(localSearch, (val) => {
-  store.searchQuery = val
-})
-
-onMounted(() => {
-  store.searchQuery = ''
-  localSearch.value = ''
-})
-
-onUnmounted(() => {
-  store.searchQuery = ''
-  actions.disconnectSocket(spaceId.value)
-  clearTimeout(debounceTimer)
-})
-
-// ── CRUD ──────────────────────────────────────────────────
-
-function openCreate() {
-  selectedNote.value = null
-  dialogOpen.value = true
-}
-
-function openDetail(note: Note) {
-  selectedNote.value = note
-  detailOpen.value = true
-}
-
-function openEdit(note: Note) {
-  detailOpen.value = false
-  selectedNote.value = note
-  dialogOpen.value = true
-}
-
-function confirmDelete(id: string) {
-  deleteTargetId.value = id
-  const note = store.notes.find(n => n.id === id)
-  deleteTargetVersion.value = note?.version
-  detailOpen.value = false
-  confirmOpen.value = true
-}
-
-async function handleArchive(id: string) {
-  await actions.archiveNote(spaceId.value, id)
-}
-
-async function handleDelete() {
-  if (!deleteTargetId.value) return
-  await actions.deleteNote(spaceId.value, deleteTargetId.value, deleteTargetVersion.value)
-  confirmOpen.value = false
-  deleteTargetId.value = null
-  deleteTargetVersion.value = undefined
-}
-
-async function handleTogglePin(id: string) {
-  await actions.changePinStatus(spaceId.value, id)
-}
-
-async function handleColorChange(id: string, color: string) {
-  await actions.updateNote(spaceId.value, id, { color } as NoteRequest)
-}
-
-function openReminder(note: Note) {
-  reminderNote.value = note
-  reminderOpen.value = true
-}
-
-async function handleReminderConfirm(reminderAt: string | null) {
-  if (!reminderNote.value) return
-  await actions.setNoteReminder(spaceId.value, reminderNote.value.id, reminderAt)
-
-  const idx = store.notes.findIndex(n => n.id === reminderNote.value!.id)
-  if (idx !== -1) {
-    const updated: Note = { ...(store.notes[idx] as Note), reminderAt, reminderSent: false }
-    store.replaceNote(updated)
-    reminderNote.value = updated
-  }
-  reminderOpen.value = false
-}
-</script>

@@ -1,3 +1,66 @@
+<script setup lang="ts">
+import { ref, computed, watch } from 'vue'
+import { X, Pin, Pencil, Trash2, BookmarkPlus } from 'lucide-vue-next'
+import type { Note } from '@/features/note/types/NoteType'
+import { useNoteStore } from '@/features/note/stores/noteStore'
+import { useNoteActions } from '@/features/note/composable/UseNoteActions'
+
+// spaceId: id của space đang xem note này (nhóm)
+// personalSpaceId: id không gian cá nhân của user hiện tại (nếu có, để so sánh ẩn nút khi trùng)
+const props = defineProps<{
+  open: boolean
+  note?: Note | null
+  spaceId: string
+  personalSpaceId?: string | null
+}>()
+
+const emit = defineEmits<{
+  close: []
+  edit: [note: Note]
+  delete: [id: string]
+}>()
+
+const store = useNoteStore()
+const actions = useNoteActions()
+
+const savingPersonal = ref(false)
+const feedback = ref<{ type: 'success' | 'error'; message: string } | null>(null)
+
+// Ẩn nút nếu đang đứng ngay trong không gian cá nhân của chính mình
+const showSavePersonal = computed(() => {
+  if (!props.personalSpaceId) return true
+  return props.spaceId !== props.personalSpaceId
+})
+
+watch(() => props.note?.id, () => {
+  feedback.value = null
+  savingPersonal.value = false
+})
+
+async function handleSavePersonal() {
+  if (!props.note?.id || savingPersonal.value) return
+  savingPersonal.value = true
+  feedback.value = null
+  try {
+    await actions.copyNoteToPersonal(props.spaceId, props.note.id)
+    feedback.value = { type: 'success', message: 'Đã lưu vào ghi chú cá nhân' }
+  } catch (e) {
+    feedback.value = { type: 'error', message: 'Không thể lưu ghi chú, thử lại sau' }
+  } finally {
+    savingPersonal.value = false
+    setTimeout(() => { feedback.value = null }, 2500)
+  }
+}
+
+function formatDate(dateStr?: string | null): string {
+  if (!dateStr) return '---'
+  return new Date(dateStr).toLocaleString('vi-VN', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  })
+} 
+</script>
+
 <template>
   <Teleport to="body">
     <Transition name="dialog">
@@ -82,67 +145,6 @@
     </Transition>
   </Teleport>
 </template>
-
-<script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { X, Pin, Pencil, Trash2, BookmarkPlus } from 'lucide-vue-next'
-import type { Note } from '@/features/note/types/NoteType'
-import { useNoteStore } from '@/features/note/stores/noteStore'
-
-// spaceId: id của space đang xem note này (nhóm)
-// personalSpaceId: id không gian cá nhân của user hiện tại (nếu có, để so sánh ẩn nút khi trùng)
-const props = defineProps<{
-  open: boolean
-  note?: Note | null
-  spaceId: string
-  personalSpaceId?: string | null
-}>()
-
-const emit = defineEmits<{
-  close: []
-  edit: [note: Note]
-  delete: [id: string]
-}>()
-
-const store = useNoteStore()
-
-const savingPersonal = ref(false)
-const feedback = ref<{ type: 'success' | 'error'; message: string } | null>(null)
-
-// Ẩn nút nếu đang đứng ngay trong không gian cá nhân của chính mình
-const showSavePersonal = computed(() => {
-  if (!props.personalSpaceId) return true
-  return props.spaceId !== props.personalSpaceId
-})
-
-watch(() => props.note?.id, () => {
-  feedback.value = null
-  savingPersonal.value = false
-})
-
-async function handleSavePersonal() {
-  if (!props.note?.id || savingPersonal.value) return
-  savingPersonal.value = true
-  feedback.value = null
-  try {
-    await store.copyNoteToPersonal(props.spaceId, props.note.id)
-    feedback.value = { type: 'success', message: 'Đã lưu vào ghi chú cá nhân' }
-  } catch (e) {
-    feedback.value = { type: 'error', message: 'Không thể lưu ghi chú, thử lại sau' }
-  } finally {
-    savingPersonal.value = false
-    setTimeout(() => { feedback.value = null }, 2500)
-  }
-}
-
-function formatDate(dateStr?: string | null): string {
-  if (!dateStr) return '---'
-  return new Date(dateStr).toLocaleString('vi-VN', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit'
-  })
-} 
-</script>
 
 <style scoped>
 .dialog-enter-active, .dialog-leave-active { transition: opacity 0.2s ease; }

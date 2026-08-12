@@ -4,13 +4,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import com.synkork.backend.modules.collaboration.note.dto.NoteRequest;
 import com.synkork.backend.modules.collaboration.note.dto.NoteResponse;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
-import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
 
 import java.time.Instant;
 import java.util.List;
@@ -38,6 +38,14 @@ public class NoteService {
     @Autowired
     private RoomMemberRepository roomMemberRepository;
 
+    // ══════════════ MỚI THÊM: chặn đặt reminder trong quá khứ ══════════════
+    private void validateReminderNotInPast(Instant reminderAt) {
+        if (reminderAt != null && reminderAt.isBefore(Instant.now())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không thể đặt nhắc nhở trong quá khứ");
+        }
+    }
+    // ═════════════════════════════════════════════════════════════════════
+
     public List<NoteResponse> getAllNotesBySpaceId(String spaceId) {
         UUID spaceUuid = UUID.fromString(spaceId);
         List<NoteEntity> notes = noteRepository.findBySpaceIdAndArchived(spaceUuid, false);
@@ -57,6 +65,10 @@ public class NoteService {
 
         UserEntity user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        // ══════════════ MỚI THÊM ══════════════
+        validateReminderNotInPast(request.getReminderAt());
+        // ═══════════════════════════════════════
 
         NoteEntity note = NoteEntity.builder()
             .title(request.getTitle())
@@ -82,24 +94,30 @@ public class NoteService {
         UUID noteId = UUID.fromString(id);
         NoteEntity note = noteRepository.findById(noteId)
             .orElseThrow(() -> new RuntimeException("Note not found: " + id));
+
+        // So sánh version FE gửi lên với version hiện tại — phát hiện xung đột
+        // sửa đồng thời. Không tự setVersion — để Hibernate tự lo phần tăng version.
         if (request.getVersion() != null && !request.getVersion().equals(note.getVersion())) {
             throw new ObjectOptimisticLockingFailureException(NoteEntity.class, note.getId());
         }
+
         if (request.getTitle() != null) note.setTitle(request.getTitle());
         if (request.getNote()  != null) note.setNote(request.getNote());
         if (request.getPinned() != null) note.setPinned(request.getPinned());
         if (request.getColor() != null) note.setColor(request.getColor());
-    
+
         return new NoteResponse(noteRepository.save(note));
     }
-    
+
     public void deleteNote(String id, Integer version) {
         UUID uuid = UUID.fromString(id);
         NoteEntity note = noteRepository.findById(uuid)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Note not found"));
+
         if (version != null && !version.equals(note.getVersion())) {
             throw new ObjectOptimisticLockingFailureException(NoteEntity.class, note.getId());
         }
+
         noteRepository.delete(note);
     }
 
@@ -119,6 +137,12 @@ public class NoteService {
 
         note.setArchived(!Boolean.TRUE.equals(note.getArchived()));
         return new NoteResponse(noteRepository.save(note));
+    }
+
+    public List<NoteResponse> getArchivedNotesBySpaceId(String spaceId) {
+        UUID spaceUuid = UUID.fromString(spaceId);
+        List<NoteEntity> notes = noteRepository.findBySpaceIdAndArchived(spaceUuid, true);
+        return notes.stream().map(NoteResponse::new).collect(Collectors.toList());
     }
 
     public List<NoteResponse> searchNotes(String keyword) {
@@ -144,6 +168,10 @@ public class NoteService {
         NoteEntity note = noteRepository.findById(noteId)
             .orElseThrow(() -> new RuntimeException("Note not found: " + id));
 
+        // ══════════════ MỚI THÊM ══════════════
+        validateReminderNotInPast(request.getReminderAt());
+        // ═══════════════════════════════════════
+
         note.setReminderAt(request.getReminderAt());
         note.setReminderSent(false);
 
@@ -163,17 +191,17 @@ public class NoteService {
         UUID noteUuid = UUID.fromString(noteId);
         NoteEntity source = noteRepository.findById(noteUuid)
             .orElseThrow(() -> new IllegalArgumentException("Note not found"));
-    
+
         UserEntity user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
-    
+
         if (user.getPersonalNoteId() == null) {
             throw new IllegalStateException("User chưa có personal note space");
         }
-    
+
         SpaceEntity personalSpace = spaceRepository.findById(user.getPersonalNoteId())
             .orElseThrow(() -> new IllegalArgumentException("Personal space not found"));
-    
+
         NoteEntity clone = NoteEntity.builder()
             .title(source.getTitle())
             .note(source.getNote())
@@ -182,7 +210,7 @@ public class NoteService {
             .allowEditAll(true)
             .createdBy(user)
             .space(personalSpace)
-            .reminderAt(null)          
+            .reminderAt(null)
             .reminderSent(false)
             .posX(0)
             .posY(0)
@@ -190,29 +218,22 @@ public class NoteService {
             .height(source.getHeight())
             .archived(false)
             .build();
-    
-        return new NoteResponse(noteRepository.save(clone));
-    }
 
-    public List<NoteResponse> getArchivedNotesBySpaceId(String spaceId) {
-        UUID spaceUuid = UUID.fromString(spaceId);
-        List<NoteEntity> notes = noteRepository.findBySpaceIdAndArchived(spaceUuid, true);
-        return notes.stream().map(NoteResponse::new).collect(Collectors.toList());
+        return new NoteResponse(noteRepository.save(clone));
     }
 
     public void checkCanManageArchive(String spaceId, UUID userId) {
         UUID spaceUuid = UUID.fromString(spaceId);
         SpaceEntity space = spaceRepository.findById(spaceUuid)
             .orElseThrow(() -> new IllegalArgumentException("Space not found"));
-    
+
         UUID roomId = space.getRoom().getId();
-    
+
         RoomMemberEntity member = roomMemberRepository.findByRoom_IdAndUser_Id(roomId, userId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không phải thành viên của room này"));
-    
+
         if (member.getRole() != RoomMemberRoleEnum.OWNER && member.getRole() != RoomMemberRoleEnum.ADMIN) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Chỉ Owner hoặc Admin mới được xóa ghi chú");
         }
     }
-    
 }
