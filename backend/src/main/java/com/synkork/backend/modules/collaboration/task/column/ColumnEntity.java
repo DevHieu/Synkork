@@ -17,7 +17,12 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "columns")
+@Table(
+        name = "columns",
+        indexes = {
+                @Index(name = "idx_columns_space_position", columnList = "space_id, position")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor

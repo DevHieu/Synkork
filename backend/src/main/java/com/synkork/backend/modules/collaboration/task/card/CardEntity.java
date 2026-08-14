@@ -23,7 +23,14 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "cards")
+@Table(
+        name = "cards",
+        indexes = {
+                @Index(name = "idx_cards_column_position", columnList = "column_id, position"),
+                @Index(name = "idx_cards_due_date", columnList = "due_date, completed, archived"),
+                @Index(name = "idx_cards_created_by", columnList = "created_by")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -48,7 +55,10 @@ public class CardEntity extends BaseEntity {
     @JoinTable(
         name = "card_assignees",
         joinColumns = @JoinColumn(name = "card_id"),
-        inverseJoinColumns = @JoinColumn(name = "room_member_id")
+        inverseJoinColumns = @JoinColumn(name = "room_member_id"),
+        indexes = {
+                @Index(name = "idx_card_assignees_member_id", columnList = "room_member_id")
+        }
     )
     private List<RoomMemberEntity> assignees = new ArrayList<>();
 

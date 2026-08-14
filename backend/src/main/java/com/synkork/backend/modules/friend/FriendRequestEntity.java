@@ -19,6 +19,10 @@ import java.util.UUID;
         name = "friend_requests",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {"sender_id", "receiver_id"})
+        },
+        indexes = {
+                @Index(name = "idx_friend_req_receiver_status", columnList = "receiver_id, status"),
+                @Index(name = "idx_friend_req_sender_id", columnList = "sender_id")
         }
 )
 @Getter

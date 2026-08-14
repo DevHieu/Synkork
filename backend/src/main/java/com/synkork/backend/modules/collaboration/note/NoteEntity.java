@@ -13,7 +13,13 @@ import lombok.Builder;
 import java.time.Instant;
 
 @Entity
-@Table(name = "notes")
+@Table(
+        name = "notes",
+        indexes = {
+                @Index(name = "idx_notes_space_id", columnList = "space_id"),
+                @Index(name = "idx_notes_created_by", columnList = "created_by")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
