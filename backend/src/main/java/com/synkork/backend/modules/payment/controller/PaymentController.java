@@ -2,6 +2,7 @@ package com.synkork.backend.modules.payment.controller;
 
 import java.util.Map;
 
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,7 +19,7 @@ public class PaymentController {
     private PaymentService paymentService;
 
     @PostMapping("/momo")
-    public ResponseEntity<Map<String, Object>> createMomoPayment(@RequestBody PaymentRequest request) {
+    public ResponseEntity<Map<String, Object>> createMomoPayment(@Valid @RequestBody PaymentRequest request) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         Map<String, Object> result = paymentService.createMomoPayment(
                 request.getPlan(),

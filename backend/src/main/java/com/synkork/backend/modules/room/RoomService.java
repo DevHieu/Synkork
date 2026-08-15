@@ -4,15 +4,14 @@ import com.synkork.backend.common.dtos.FileUploaded;
 import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.common.utils.FileService;
 import com.synkork.backend.common.utils.PermissionService;
-import com.synkork.backend.modules.room.dto.CreateRoomDto;
+import com.synkork.backend.modules.room.dto.CreateRoomRequest;
 import com.synkork.backend.modules.room.dto.RoomDto;
 import com.synkork.backend.modules.room.dto.RoomReviewResponse;
-import com.synkork.backend.modules.room.dto.UpdateRoomDto;
+import com.synkork.backend.modules.room.dto.UpdateRoomRequest;
 import com.synkork.backend.modules.room.enums.RoomStatusEnum;
 import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
-import com.synkork.backend.modules.roomMember.RoomMemberService;
 import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
 import com.synkork.backend.modules.roomMember.enums.MemberStatusEnum;
 import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
@@ -22,7 +21,6 @@ import com.synkork.backend.modules.space.dto.CreateSpaceRequest;
 import com.synkork.backend.common.utils.PlanLimitUtils;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
-import com.synkork.backend.modules.user.enums.PlanEnum;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
@@ -88,10 +86,10 @@ public class RoomService {
                 .build();
     }
 
-    public RoomEntity createRoom(CreateRoomDto roomData) {
-        if (roomData.ownerId() != null) {
-            UUID ownerId = UUID.fromString(roomData.ownerId());
-            UserEntity owner = userRepository.findById(ownerId)
+    public RoomEntity createRoom(CreateRoomRequest roomData, UUID creatorId) {
+
+        if (creatorId != null) {
+            UserEntity owner = userRepository.findById(creatorId)
                     .orElseThrow(() -> new RuntimeException("User không tồn tại"));
 
             // Check xem owner được chọn có quá số lượng phòng theo gói hay không
@@ -110,15 +108,14 @@ public class RoomService {
             roomEntity.setAvatarId(avatar.publicId());
         }
 
-        if (roomData.ownerId() != null) {
-            UUID ownerId = UUID.fromString(roomData.ownerId());
-            roomEntity.setOwner(userRepository.getReferenceById(ownerId));
+        if (creatorId != null) {
+            roomEntity.setOwner(userRepository.getReferenceById(creatorId));
         }
 
         return roomRepository.save(roomEntity);
     }
 
-    public RoomEntity updateRoom(UUID roomId, UpdateRoomDto roomData) {
+    public RoomEntity updateRoom(UUID roomId, UpdateRoomRequest roomData) {
 
         UUID requesterId = AuthUtils.getCurrentUserId();
         PermissionService.requirePermission(roomId, requesterId, RoomMemberRoleEnum.OWNER, RoomMemberRoleEnum.ADMIN);

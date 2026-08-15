@@ -1,6 +1,5 @@
 package com.synkork.backend.modules.message;
 
-import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.modules.message.dto.MessageDTO;
 import com.synkork.backend.modules.message.dto.MessagePageDTO;
 import com.synkork.backend.modules.message.dto.MessageRequest;

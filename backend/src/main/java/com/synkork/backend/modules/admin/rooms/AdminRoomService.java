@@ -364,7 +364,7 @@ public class AdminRoomService {
                     member.setRole(RoomMemberRoleEnum.OWNER);
                     roomMemberRepository.save(member);
                 }, () -> roomMemberService.addRoomMembers(
-                        owner.getId().toString(),
+                        owner.getId(),
                         room.getId().toString(),
                         RoomMemberRoleEnum.OWNER.name()
                 ));

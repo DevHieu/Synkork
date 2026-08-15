@@ -3,14 +3,14 @@ package com.synkork.backend.modules.roomMember;
 import java.util.List;
 import java.util.UUID;
 
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import com.synkork.backend.common.utils.AuthUtils;
-import com.synkork.backend.modules.roomMember.dto.ChangeAuthorityDTO;
-import com.synkork.backend.modules.roomMember.dto.ChatDisableRequest;
+import com.synkork.backend.modules.roomMember.dto.ChangeAuthorityRequest;
 import com.synkork.backend.modules.roomMember.dto.MuteRequest;
 import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
 import com.synkork.backend.modules.roomMember.enums.ChatDisableTime;
@@ -32,7 +32,8 @@ public class RoomMemberController {
 
     @PostMapping("/{userId}")
     public ResponseEntity<RoomMemberDto> addRoomMembers(@PathVariable String roomId, @PathVariable String userId, @RequestParam String role) {
-        RoomMemberEntity entity = roomMemberService.addRoomMembers(userId, roomId, role);
+        UUID userUUID = UUID.fromString(userId);
+        RoomMemberEntity entity = roomMemberService.addRoomMembers(userUUID, roomId, role);
         RoomMemberDto dto = new RoomMemberDto(entity);
 
         messagingTemplate.convertAndSend("/topic/room/" + roomId + "/members/joined", dto);
@@ -40,7 +41,7 @@ public class RoomMemberController {
     }
 
     @PutMapping("/change-authority")
-    public ResponseEntity<RoomMemberDto> changeAuthority(@PathVariable String roomId, @RequestBody ChangeAuthorityDTO dto) {
+    public ResponseEntity<RoomMemberDto> changeAuthority(@PathVariable String roomId, @Valid @RequestBody ChangeAuthorityRequest dto) {
         UUID requesterId = AuthUtils.getCurrentUserId();
         UUID roomUUID = UUID.fromString(roomId);
 
