@@ -1,4 +1,4 @@
-package com.synkork.backend.modules.zego;
+package com.synkork.backend.modules.voice;
 
 import com.synkork.backend.common.utils.zegoCloud.TokenServerAssistant;
 import org.springframework.beans.factory.annotation.Value;

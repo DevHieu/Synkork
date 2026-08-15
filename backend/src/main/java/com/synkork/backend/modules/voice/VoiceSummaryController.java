@@ -1,7 +1,9 @@
-package com.synkork.backend.common.utils;
+package com.synkork.backend.modules.voice;
 
 import com.synkork.backend.common.dtos.FileUploaded;
-import com.synkork.backend.common.dtos.VoiceSummaryResponse;
+import com.synkork.backend.modules.voice.dtos.VoiceSummaryResponse;
+import com.synkork.backend.common.utils.AuthUtils;
+import com.synkork.backend.common.utils.FileService;
 import com.synkork.backend.common.utils.LLMFunction.MeetingLlmService;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
 import org.slf4j.Logger;

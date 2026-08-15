@@ -1,6 +1,6 @@
-package com.synkork.backend.common.utils;
+package com.synkork.backend.modules.voice;
 
-import com.synkork.backend.common.dtos.VoiceSummaryResponse;
+import com.synkork.backend.modules.voice.dtos.VoiceSummaryResponse;
 import com.synkork.backend.common.utils.LLMFunction.MeetingLlmService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;

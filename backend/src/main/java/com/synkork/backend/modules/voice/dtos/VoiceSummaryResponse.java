@@ -1,4 +1,4 @@
-package com.synkork.backend.common.dtos;
+package com.synkork.backend.modules.voice.dtos;
 
 public record VoiceSummaryResponse(
         String message,

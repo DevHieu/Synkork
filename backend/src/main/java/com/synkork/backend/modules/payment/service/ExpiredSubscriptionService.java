@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.synkork.backend.common.utils.PlanLimitUtils;
+import com.synkork.backend.modules.payment.utils.ExpiredSubscriptionEmail;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -34,23 +35,15 @@ public class ExpiredSubscriptionService {
     private RoomRepository roomRepository;
 
     @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private EmailService emailService;
-
-    @Autowired
     private SpaceRepository spaceRepository;
+
+    @Autowired
+    private ExpiredSubscriptionEmail expiredSubscriptionEmail;
 
     @Transactional
     public void pinPendingRemovalRoomAndSpace(List<UserEntity> users) {
-        pinPendingRemovalRoomAndSpace(users, null);
-    }
-
-    @Transactional
-    public void pinPendingRemovalRoomAndSpace(List<UserEntity> users, PlanEnum targetPlan) {
         for (UserEntity user : users) {
-            PlanEnum effectivePlan = targetPlan != null ? targetPlan : user.getCurrentPlan();
+            PlanEnum effectivePlan = user.getCurrentPlan();
             Map<SpaceTypeEnum, Integer> limits = limitsForPlan(effectivePlan);
             long daysRemaining = user.getPlanExpiresAt() != null
                     ? ChronoUnit.DAYS.between(LocalDateTime.now(), user.getPlanExpiresAt())
@@ -112,7 +105,7 @@ public class ExpiredSubscriptionService {
                 }
             }
 
-            emailService.sendRemindUserRenewSubscription(
+            expiredSubscriptionEmail.sendRemindUserRenewSubscription(
                     user.getEmail(), effectivePlan, daysRemaining,
                     pendingRoomNames, pendingSpaceNames
             );

@@ -227,7 +227,7 @@ public class AdminUserService {
                 }
 
                 if (AdminUtils.isPlanDowngrade(oldPlan, plan)) {
-                    expiredSubscriptionService.pinPendingRemovalRoomAndSpace(List.of(user), plan);
+                    expiredSubscriptionService.pinPendingRemovalRoomAndSpace(List.of(user));
                 } else {
                     expiredSubscriptionService.changePendingRoomAndSpace(user.getId());
                 }

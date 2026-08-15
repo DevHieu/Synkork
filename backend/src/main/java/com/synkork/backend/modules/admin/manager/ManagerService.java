@@ -135,7 +135,7 @@ public class ManagerService {
                 }
 
                 if (AdminUtils.isPlanDowngrade(oldPlan, plan)) {
-                    expiredSubscriptionService.pinPendingRemovalRoomAndSpace(List.of(account), plan);
+                    expiredSubscriptionService.pinPendingRemovalRoomAndSpace(List.of(account));
                 } else {
                     expiredSubscriptionService.changePendingRoomAndSpace(account.getId());
                 }
