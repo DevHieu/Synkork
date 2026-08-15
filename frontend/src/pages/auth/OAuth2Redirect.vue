@@ -4,6 +4,8 @@ import { useRouter } from "vue-router";
 import { useUserStore } from "@/features/users/stores/userStore";
 import { removeCookie, setCookie } from "@/lib/cookies";
 import { setAuthFlashMessage } from "@/utils/authFlashMessage";
+import { LoaderIcon } from "lucide-vue-next";
+import { cn } from "@/lib/utils";
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -63,5 +65,18 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div>Loading...</div>
+  <div class="background">
+    <div class="flex flex-col items-center justify-center h-screen">
+      <div class="text-center">
+        <div class="relative flex items-center justify-center">
+          <LoaderIcon role="status" aria-label="Loading" :class="cn('size-30 animate-spin')" />
+
+          <img src="/assets/DauChim.png" alt="logo"
+            class="absolute size-12 object-contain invert animate-[spin_1s_linear_infinite_reverse]" />
+        </div>
+        <h1 class="text-2xl font-bold mb-4">Đang đăng nhập ...</h1>
+        <p class="text-gray-600">Vui lòng đợi trong giây lát</p>
+      </div>
+    </div>
+  </div>
 </template>
