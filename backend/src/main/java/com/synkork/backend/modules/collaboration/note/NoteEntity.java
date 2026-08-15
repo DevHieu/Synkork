@@ -27,7 +27,7 @@ import java.time.Instant;
 @Builder
 public class NoteEntity extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "space_id", nullable = false, columnDefinition = "BINARY(16)")
     private SpaceEntity space;
 
@@ -43,7 +43,7 @@ public class NoteEntity extends BaseEntity {
     @Builder.Default
     private boolean allowEditAll = true;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false, columnDefinition = "BINARY(16)")
     private UserEntity createdBy;
 
