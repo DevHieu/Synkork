@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.admin.manager;
 
 import com.synkork.backend.common.utils.AuthUtils;
+import com.synkork.backend.modules.admin.auditLog.AuditLogService;
 import com.synkork.backend.modules.admin.manager.dto.*;
 import com.synkork.backend.modules.admin.manager.email.ManagerEmailService;
 import com.synkork.backend.modules.admin.utils.AdminUtils;
@@ -42,6 +43,12 @@ public class ManagerService {
 
     @Autowired
     private ExpiredSubscriptionService expiredSubscriptionService;
+
+    @Autowired
+    private AuditLogService auditLogService;
+
+    @Autowired
+    private com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     public Page<UserEntity> getManagers(ManagerFilterRequest request) {
         request.validate();
@@ -85,6 +92,11 @@ public class ManagerService {
         }
 
         managerEmailService.sendManagerAccessEmail(saved, temporaryPassword);
+        createLog(saved, com.synkork.backend.modules.admin.auditLog.enums.LogActionEnum.CREATE_MANAGER, null, Map.of(
+                "status", saved.getStatus().name(),
+                "role", saved.getRole().name(),
+                "plan", saved.getCurrentPlan().name()
+        ));
         return ManagerResponse.from(saved);
     }
 
@@ -148,6 +160,20 @@ public class ManagerService {
         } else {
             managerEmailService.sendManagerUpdatedEmail(saved, oldDisplayName, oldEmail, oldStatus, oldRole);
         }
+
+        createLog(saved, com.synkork.backend.modules.admin.auditLog.enums.LogActionEnum.UPDATE_MANAGER, null, metadata(
+                "oldDisplayName", oldDisplayName,
+                "newDisplayName", saved.getDisplayName(),
+                "oldEmail", oldEmail,
+                "newEmail", saved.getEmail(),
+                "oldStatus", oldStatus != null ? oldStatus.name() : null,
+                "newStatus", saved.getStatus() != null ? saved.getStatus().name() : null,
+                "oldRole", oldRole != null ? oldRole.name() : null,
+                "newRole", saved.getRole() != null ? saved.getRole().name() : null,
+                "oldPlan", oldPlan != null ? oldPlan.name() : null,
+                "newPlan", saved.getCurrentPlan() != null ? saved.getCurrentPlan().name() : null
+        ));
+
         return ManagerResponse.from(saved);
     }
 
@@ -160,8 +186,13 @@ public class ManagerService {
                 .filter(value -> !value.isBlank())
                 .orElse("Tai khoan cua ban da bi khoa boi quan tri vien.");
         account.setStatus(UserStatusEnum.BANNED);
-        managerRepository.save(account);
-        managerEmailService.sendManagerLockedEmail(account, reason);
+        UserEntity saved = managerRepository.save(account);
+        managerEmailService.sendManagerLockedEmail(saved, reason);
+
+        createLog(saved, com.synkork.backend.modules.admin.auditLog.enums.LogActionEnum.LOCK_MANAGER, reason, Map.of(
+                "newStatus", UserStatusEnum.BANNED.name()
+        ));
+
         return Map.of("message", "Da khoa tai khoan manager/admin thanh cong");
     }
 
@@ -222,6 +253,43 @@ public class ManagerService {
             return PlanEnum.valueOf(plan.toUpperCase());
         } catch (IllegalArgumentException exception) {
             throw new IllegalArgumentException("Goi dang ky phai la free, team hoac business");
+        }
+    }
+
+    private Map<String, Object> metadata(Object... keyValues) {
+        Map<String, Object> result = new java.util.HashMap<>();
+        for (int i = 0; i + 1 < keyValues.length; i += 2) {
+            result.put(String.valueOf(keyValues[i]), keyValues[i + 1]);
+        }
+        return result;
+    }
+
+    private void createLog(UserEntity account, com.synkork.backend.modules.admin.auditLog.enums.LogActionEnum action, String reason, Map<String, Object> metadata) {
+        com.synkork.backend.modules.admin.auditLog.dtos.BuildLog log = com.synkork.backend.modules.admin.auditLog.dtos.BuildLog.builder()
+                .action(action)
+                .entityType(com.synkork.backend.modules.admin.auditLog.enums.LogEntityTypeEnum.MANAGER)
+                .entityId(account.getId().toString())
+                .entityName(account.getEmail())
+                .description(AuthUtils.getCurrentUsername() + " performed " + action.name() + " for manager/admin " + account.getEmail())
+                .metadata(writeMetadata(metadataWithReason(metadata, reason)))
+                .build();
+
+        auditLogService.log(log);
+    }
+
+    private Map<String, Object> metadataWithReason(Map<String, Object> metadata, String reason) {
+        Map<String, Object> result = new java.util.HashMap<>(metadata);
+        if (reason != null && !reason.isBlank()) {
+            result.put("reason", reason);
+        }
+        return result;
+    }
+
+    private String writeMetadata(Map<String, Object> metadata) {
+        try {
+            return objectMapper.writeValueAsString(metadata);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize audit metadata", e);
         }
     }
 }
