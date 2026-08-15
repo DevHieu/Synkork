@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { useFriendStore } from "@/stores/friendStore";
+import { useFriendStore } from "../stores/friendStore";
 import { useRouter } from "vue-router";
-import type { Friend } from "@/types/Friends";
+import type { Friend } from "../types/Friends";
 import { Search } from "lucide-vue-next";
 
 const store = useFriendStore();

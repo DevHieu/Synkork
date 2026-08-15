@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import NavUser from "@/components/sidebar/NavUser.vue";
+import NavUser from "@/features/friends/components/NavUser.vue";
 import VoiceControlBar from "@/components/VoiceControlBar.vue";
 import {
   SidebarInset,
@@ -14,7 +14,7 @@ import { useUserStore } from "@/features/users/stores/userStore";
 import { storeToRefs } from "pinia";
 import { ref, provide, watch, onMounted, onUnmounted } from "vue";
 import { useNotificationStore } from '@/features/notifications/stores/notificationStore'
-import { useFriendStore } from "@/stores/friendStore";
+import { useFriendStore } from "@/features/friends/stores/friendStore";
 import globalAudio from "@/utils/appAudioManager"
 import { useChatSocketComposable } from "@/features/chats/composable/chat-socket.compsable";
 import { WifiOff } from "lucide-vue-next";

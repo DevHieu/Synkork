@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useUserService } from "@/features/users/services/userService";
-import { useFriendStore } from "@/stores/friendStore";
+import { useFriendStore } from "@/features/friends/stores/friendStore";
 import type { User } from "@/features/users/types/User.ts";
 import { computed, onMounted, ref } from "vue";
 import {

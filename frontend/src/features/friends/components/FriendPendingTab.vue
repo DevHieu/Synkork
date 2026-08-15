@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useFriendStore } from "@/stores/friendStore";
+import { useFriendStore } from "../stores/friendStore";
 
 const store = useFriendStore();
 

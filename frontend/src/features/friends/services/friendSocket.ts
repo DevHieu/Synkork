@@ -1,4 +1,4 @@
-import { socketService } from "../socketService";
+import { socketService } from "@/services/socketService";
 
 export const friendSocket = {
   subscribeFriendRequest(callback: (data: any) => void) {

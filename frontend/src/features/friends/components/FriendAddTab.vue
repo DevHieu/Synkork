@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { useFriendStore } from "@/stores/friendStore";
+import { useFriendStore } from "../stores/friendStore";
 
 const emit = defineEmits<{ (e: "switchTab", tab: "pending"): void }>();
 

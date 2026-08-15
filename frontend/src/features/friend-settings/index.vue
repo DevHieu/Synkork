@@ -9,24 +9,15 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { useAuthService } from "@/features/auth/services/authService"
-import { useUserService } from "@/features/users/services/userService"
-import { useUserStore } from "@/features/users/stores/userStore"
-import { ref, reactive, computed, onMounted, onUnmounted } from "vue"
-import AudioSettingsTab from "@/components/sidebar/modals/AudioSettingsTab.vue"
-import ThemeSettingsTab from "@/components/sidebar/modals/ThemeSettingsTab.vue"
+import { ref, useTemplateRef } from "vue"
+import AudioSettingsTab from "./components/AudioSettingsTab.vue"
+import ThemeSettingsTab from "./components/ThemeSettingsTab.vue"
+import { useAccountSettings } from "./composables/useAccountSettings"
 
 const emit = defineEmits<{ close: [] }>()
 
-const authService = useAuthService()
-const userService = useUserService()
-
-const userStore = useUserStore()
-const currentUser = computed(() => userStore.user)
 const activeTab = ref("account")
-const avatarInput = ref<HTMLInputElement | null>(null)
-const avatarLoading = ref(false)
-const avatarError = ref("")
+const avatarInput = useTemplateRef<HTMLInputElement>("avatarInput")
 
 const settingsTabs = [
   {
@@ -44,142 +35,39 @@ const settingsTabs = [
 
 const navIcons: Record<string, any> = { User, Palette, Volume2, Sparkles }
 
-// ── OAuth check ────────────────────────────────────────────
-const isOAuth = computed(() => {
-  const p = currentUser.value?.provider
-  return p && p !== "LOCAL"
-})
-const showChangePasswordForm = computed(() => !isOAuth.value || currentUser.value?.hasPassword)
-
-// ── Edit states ────────────────────────────────────────────
-const editingField = ref<string | null>(null)
-const editValues = reactive({ displayName: "", username: "" })
-const editError = ref("")
-const editSuccess = ref("")
-const editLoading = ref(false)
-
-function startEdit(field: string) {
-  editingField.value = field
-  editError.value = ""
-  editSuccess.value = ""
-  if (field === "displayName") editValues.displayName = currentUser.value?.displayName ?? ""
-  if (field === "username") editValues.username = currentUser.value?.username ?? ""
-}
-
-function cancelEdit() {
-  editingField.value = null
-  editError.value = ""
-}
-
-async function saveEdit(field: string) {
-  editLoading.value = true
-  editError.value = ""
-  try {
-    if (field === "displayName") await userService.updateProfile({ displayName: editValues.displayName })
-    else if (field === "username") await userService.updateProfile({ username: editValues.username })
-    await userStore.getUserInfo()
-    editSuccess.value = "Đã lưu thành công"
-    editingField.value = null
-    setTimeout(() => (editSuccess.value = ""), 2500)
-  } catch (e: any) {
-    editError.value = e?.response?.data || e?.message || "Lỗi khi lưu"
-  } finally {
-    editLoading.value = false
-  }
-}
-
-// ── Change password (LOCAL) ────────────────────────────────
-const pwForm = reactive({ current: "", next: "", confirm: "" })
-const showPw = reactive({ current: false, next: false, confirm: false })
-const pwError = ref("")
-const pwSuccess = ref("")
-const pwLoading = ref(false)
-
-async function submitPw() {
-  pwError.value = ""
-  if (pwForm.next !== pwForm.confirm) { pwError.value = "Mật khẩu mới không khớp"; return }
-  if (pwForm.next.length < 6) { pwError.value = "Ít nhất 6 ký tự"; return }
-  pwLoading.value = true
-  try {
-    await userService.changePassword({ currentPassword: pwForm.current, newPassword: pwForm.next })
-    pwSuccess.value = "Đổi mật khẩu thành công!"
-    pwForm.current = pwForm.next = pwForm.confirm = ""
-    setTimeout(() => (pwSuccess.value = ""), 3000)
-  } catch (e: any) {
-    pwError.value = e?.response?.data || e?.message || "Thất bại"
-  } finally {
-    pwLoading.value = false
-  }
-}
-
-// ── Create password (OAuth) ────────────────────────────────
-const createPwForm = reactive({ next: "", confirm: "" })
-const showCreatePw = reactive({ next: false, confirm: false })
-const createPwError = ref("")
-const createPwSuccess = ref("")
-const createPwLoading = ref(false)
-
-async function submitCreatePw() {
-  createPwError.value = ""
-  if (createPwForm.next !== createPwForm.confirm) { createPwError.value = "Mật khẩu xác nhận không khớp"; return }
-  if (createPwForm.next.length < 6) { createPwError.value = "Ít nhất 6 ký tự"; return }
-  createPwLoading.value = true
-  try {
-    await userService.createPassword({ newPassword: createPwForm.next })
-    createPwForm.next = createPwForm.confirm = ""
-    await userStore.getUserInfo()
-    pwSuccess.value = "Tạo mật khẩu thành công! Bạn có thể đổi mật khẩu bên dưới."
-    setTimeout(() => (pwSuccess.value = ""), 4000)
-  } catch (e: any) {
-    createPwError.value = e?.response?.data || e?.message || "Thất bại"
-  } finally {
-    createPwLoading.value = false
-  }
-}
-
-// ── Email mask ─────────────────────────────────────────────
-const showEmail = ref(false)
-const maskedEmail = computed(() =>
-  (currentUser.value?.email ?? "").replace(/(.{2})[^@]+(@.+)/, "$1***$2")
-)
-const displayName = computed(() =>
-  currentUser.value?.displayName || currentUser.value?.username || "—"
-)
-
-// ── ESC ───────────────────────────────────────────────────
-function chooseAvatar() {
-  if (!avatarLoading.value) avatarInput.value?.click()
-}
-
-async function uploadAvatar(event: Event) {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  input.value = ""
-  if (!file) return
-
-  avatarError.value = ""
-  if (!file.type.startsWith("image/")) {
-    avatarError.value = "Vui lòng chọn một tệp ảnh"
-    return
-  }
-  if (file.size > 5 * 1024 * 1024) {
-    avatarError.value = "Ảnh phải nhỏ hơn 5 MB"
-    return
-  }
-
-  avatarLoading.value = true
-  try {
-    userStore.user = await userService.uploadAvatar(file)
-  } catch (e: any) {
-    avatarError.value = e?.response?.data || e?.message || "Không thể tải ảnh lên"
-  } finally {
-    avatarLoading.value = false
-  }
-}
-
-function onKeydown(e: KeyboardEvent) { if (e.key === "Escape") emit("close") }
-onMounted(() => document.addEventListener("keydown", onKeydown))
-onUnmounted(() => document.removeEventListener("keydown", onKeydown))
+const {
+  currentUser,
+  avatarLoading,
+  avatarError,
+  isOAuth,
+  showChangePasswordForm,
+  editingField,
+  editValues,
+  editError,
+  editSuccess,
+  editLoading,
+  startEdit,
+  cancelEdit,
+  saveEdit,
+  pwForm,
+  showPw,
+  pwError,
+  pwSuccess,
+  pwLoading,
+  submitPw,
+  createPwForm,
+  showCreatePw,
+  createPwError,
+  createPwSuccess,
+  createPwLoading,
+  submitCreatePw,
+  showEmail,
+  maskedEmail,
+  displayName,
+  chooseAvatar,
+  uploadAvatar,
+  logout,
+} = useAccountSettings(() => emit("close"), avatarInput)
 </script>
 
 <template>
@@ -241,7 +129,7 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown))
             <div class="px-2 py-4">
               <button
                 class="flex items-center w-full px-3 py-[7px] rounded-md text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
-                @click="authService.logout()">
+                @click="logout">
                 <LogOut class="size-3.5 mr-2" /> Đăng xuất
               </button>
             </div>

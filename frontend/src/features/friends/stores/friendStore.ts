@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import { friendService } from "@/services/friendService";
-import type { Friend, FriendRequest } from "@/types/Friends";
+import { friendService } from "../services/friendService";
+import type { Friend, FriendRequest } from "../types/Friends";
 import { useUserStore } from "@/features/users/stores/userStore";
 import { userSocket } from "@/features/users/services/userSocket";
 import { socketService } from "@/services/socketService";
