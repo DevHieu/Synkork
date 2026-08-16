@@ -7,7 +7,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { ref } from "vue"
-import SettingsModal from "@/features/friend-settings/index.vue"
+import SettingsModal from "@/features/settings/index.vue"
 import NotificationBell from "@/features/notifications/components/NotificationBell.vue"
 
 const props = defineProps<{

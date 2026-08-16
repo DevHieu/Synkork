@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useUserService } from "@/features/users/services/userService";
 import { useFriendStore } from "@/features/friends/stores/friendStore";
+import { useFriendActions } from "@/features/friends/composables/useFriendActions";
 import type { User } from "@/features/users/types/User.ts";
 import { computed, onMounted, ref } from "vue";
 import {
@@ -46,6 +47,14 @@ const memberService = useMemberService();
 const spaceComposable = useSpaceComposable();
 
 const friendStore = useFriendStore();
+const {
+  removeFriend,
+  cancelRequest,
+  sendRequest,
+  fetchSentRequests,
+  acceptRequest,
+  rejectRequest,
+} = useFriendActions();
 const roomMemberStore = useRoomMemberStore();
 const { canManage } = storeToRefs(roomMemberStore);
 
@@ -98,28 +107,28 @@ async function toggleFriend() {
 
   try {
     if (friendship.value.isFriend) {
-      await friendStore.removeFriend(
+      await removeFriend(
         friendship.value.friend!.id,
       );
       return;
     }
 
     if (friendship.value.isPending) {
-      await friendStore.cancelRequest(
+      await cancelRequest(
         friendship.value.sentRequest!.id,
       );
       return;
     }
 
-    await friendStore.sendRequest(props.username);
-    await friendStore.fetchSentRequests();
+    await sendRequest(props.username);
+    await fetchSentRequests();
 
   } catch (e: any) {
     if (
       typeof e === "string" &&
       e.includes("đã gửi lời mời")
     ) {
-      await friendStore.fetchSentRequests();
+      await fetchSentRequests();
       return;
     }
 
@@ -189,7 +198,7 @@ const handleChatMute = async (time: ChatDisableTime) => {
                   <button
                     class="h-8 w-8 rounded-full bg-background/50 hover:bg-background/70 flex items-center justify-center transition-colors disabled:opacity-50"
                     :disabled="isFriendLoading" @click="() => {
-                      friendStore.acceptRequest(friendship.requestId!);
+                      acceptRequest(friendship.requestId!);
                     }">
                     <TicketCheck class="h-4 w-4 text-green-500" />
                   </button>
@@ -202,7 +211,7 @@ const handleChatMute = async (time: ChatDisableTime) => {
                   <button
                     class="h-8 w-8 rounded-full bg-background/50 hover:bg-background/70 flex items-center justify-center transition-colors disabled:opacity-50"
                     :disabled="isFriendLoading" @click="() => {
-                      friendStore.rejectRequest(friendship.requestId!);
+                      rejectRequest(friendship.requestId!);
                     }">
                     <TicketX class="h-4 w-4 text-destructive" />
                   </button>

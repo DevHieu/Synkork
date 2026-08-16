@@ -1,11 +1,17 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { friendSocket } from "../services/friendSocket";
 import { useFriendStore } from "../stores/friendStore";
+import { useFriendActions } from "./useFriendActions";
 
 type FriendTab = "all" | "pending" | "add";
 
 export const useFriendPage = () => {
   const store = useFriendStore();
+  const {
+    fetchFriends,
+    fetchPendingRequests,
+    fetchSentRequests,
+  } = useFriendActions();
   const activeTab = ref<FriendTab>("all");
 
   const totalPending = computed(
@@ -14,47 +20,37 @@ export const useFriendPage = () => {
 
   const subscribeToFriendEvents = () => {
     friendSocket.subscribeFriendRequest(async () => {
-      await Promise.all([
-        store.fetchPendingRequests(),
-        store.fetchSentRequests(),
-      ]);
+      await Promise.all([fetchPendingRequests(), fetchSentRequests()]);
     });
 
     friendSocket.subscribeFriendAccept(async () => {
       await Promise.all([
-        store.fetchFriends(),
-        store.fetchPendingRequests(),
-        store.fetchSentRequests(),
+        fetchFriends(),
+        fetchPendingRequests(),
+        fetchSentRequests(),
       ]);
     });
 
     friendSocket.subscribeFriendReject(async () => {
-      await store.fetchSentRequests();
+      await fetchSentRequests();
     });
 
     friendSocket.subscribeFriendCancel(async () => {
-      await store.fetchPendingRequests();
+      await fetchPendingRequests();
     });
 
     friendSocket.subscribeFriendRemove(async () => {
-      await store.fetchFriends();
+      await fetchFriends();
     });
   };
 
   const handleSwitchTab = async (tab: "pending") => {
     activeTab.value = tab;
-    await Promise.all([
-      store.fetchPendingRequests(),
-      store.fetchSentRequests(),
-    ]);
+    await Promise.all([fetchPendingRequests(), fetchSentRequests()]);
   };
 
   onMounted(async () => {
-    await Promise.all([
-      store.fetchFriends(),
-      store.fetchPendingRequests(),
-      store.fetchSentRequests(),
-    ]);
+    await Promise.all([fetchFriends(), fetchPendingRequests(), fetchSentRequests()]);
 
     subscribeToFriendEvents();
   });

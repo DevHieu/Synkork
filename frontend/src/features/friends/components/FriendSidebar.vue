@@ -2,6 +2,7 @@
 import { useRouter } from "vue-router";
 import { SidebarHeader, SidebarContent } from "@/components/ui/sidebar";
 import { useFriendStore } from "../stores/friendStore";
+import { useFriendActions } from "../composables/useFriendActions";
 import { useUserStore } from "@/features/users/stores/userStore";
 import { storeToRefs } from "pinia";
 import { onMounted } from "vue";
@@ -13,6 +14,7 @@ import { useSpaceComposable } from "@/features/spaces/composables/spaceComposabl
 
 const router = useRouter();
 const friendStore = useFriendStore();
+const { fetchFriends } = useFriendActions();
 const spaceComposable = useSpaceComposable();
 const userStore = useUserStore();
 
@@ -21,7 +23,7 @@ const { userPersonalSpace } = storeToRefs(userStore);
 
 
 onMounted(() => {
-  friendStore.fetchFriends();
+  fetchFriends();
 });
 
 const jumpToDm = async (conversationId: string) => {

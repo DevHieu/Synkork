@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { useFriendStore } from "../stores/friendStore";
+import { useFriendActions } from "../composables/useFriendActions";
 
 const store = useFriendStore();
+const { acceptRequest, rejectRequest, cancelRequest } = useFriendActions();
 
 const handleAccept = async (requestId: string) => {
-  await store.acceptRequest(requestId);
+  await acceptRequest(requestId);
 };
 
 const handleReject = async (requestId: string) => {
-  await store.rejectRequest(requestId);
+  await rejectRequest(requestId);
 };
 
 const handleCancel = async (requestId: string) => {
-  await store.cancelRequest(requestId);
+  await cancelRequest(requestId);
 };
 </script>
 
