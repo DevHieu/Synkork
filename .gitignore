@@ -1,6 +1,7 @@
 .idea/
 skills/
 database/
+.pnpm-store/
 
 docs/
 README.zh-CN.md

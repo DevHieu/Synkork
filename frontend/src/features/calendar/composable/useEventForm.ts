@@ -51,12 +51,6 @@ export function useEventForm(
     const startDt = dayjs(startStr);
     let endDt = dayjs(endStr);
 
-    // Xử lý ca qua đêm (overnight event): Nếu endDate bằng eventDate và endTime < startTime
-    if ((!formData.value.endDate || formData.value.endDate === formData.value.eventDate) &&
-        formData.value.endTime < formData.value.startTime) {
-      endDt = endDt.add(1, 'day');
-    }
-
     if (startDt.isValid() && endDt.isValid()) {
       return endDt.isAfter(startDt);
     }

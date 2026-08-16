@@ -120,8 +120,8 @@ watch(startAmPm, (newAmPm) => {
 // Điều chỉnh endTime nếu <= startTime (chỉ áp dụng khi sự kiện ở CÙNG NGÀY)
 watch([startHour, startMinute, startAmPm, endHour, endMinute, endAmPm, eventDate, endDate], () => {
   if (eventDate.value === endDate.value) {
-    const start = formatTime(startHour.value, startMinute.value, startAmPm.value, timeFormat.value);
-    const currentEnd = formatTime(endHour.value, endMinute.value, endAmPm.value, timeFormat.value);
+    const start = formatTime(startHour.value, startMinute.value, "24h", "24h");
+    const currentEnd = formatTime(endHour.value, endMinute.value, "24h", "24h");
     const adjustedEnd = adjustEndTimeIfNeeded(start, currentEnd);
     
     if (adjustedEnd !== currentEnd) {
