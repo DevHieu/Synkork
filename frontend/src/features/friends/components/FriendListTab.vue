@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { useFriendStore } from "@/stores/friendStore";
+import { useFriendStore } from "../stores/friendStore";
+import { useFriendActions } from "../composables/useFriendActions";
 import { useRouter } from "vue-router";
-import type { Friend } from "@/types/Friends";
+import type { Friend } from "../types/Friends";
 import { Search } from "lucide-vue-next";
 
 const store = useFriendStore();
+const { removeFriend } = useFriendActions();
 const router = useRouter();
 
 const searchAll = ref("");
@@ -45,7 +47,7 @@ const handleRemove = async (friendId: string) => {
   removingId.value = friendId;
   confirmRemoveId.value = null;
   try {
-    await store.removeFriend(friendId);
+    await removeFriend(friendId);
   } finally {
     removingId.value = null;
   }
