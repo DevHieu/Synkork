@@ -1,5 +1,5 @@
 import { ref } from "vue";
-import type { CalendarEventAttachment } from "@/types/CalendarEvent";
+import type { CalendarEventAttachment } from "@/features/calendar/types/calendar.types";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
 import { toMinutes } from "@/features/calendar/composable/useTimeSelector";

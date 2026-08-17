@@ -18,7 +18,7 @@ import {
   CalendarPlus,
   Sparkles,
 } from "lucide-vue-next";
-import type { CalendarEvent } from "@/types/CalendarEvent";
+import type { CalendarEvent } from "@/features/calendar/types/calendar.types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

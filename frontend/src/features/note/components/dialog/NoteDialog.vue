@@ -148,7 +148,7 @@ import {
   ImagePlus, Archive, MoreVertical, Undo2, Redo2
 } from 'lucide-vue-next'
 import type { Note, NoteRequest } from '@/features/note/types/NoteType'
-import type { SuggestedNoteDraft } from '@/types/CalendarSuggestion'
+import type { SuggestedNoteDraft } from '@/features/calendar/types/calendar.types'
 import { useNoteStore } from '@/features/note/stores/noteStore'
 
 const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899']

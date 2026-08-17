@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import type { CalendarEvent } from "@/types/CalendarEvent";
+import type { CalendarEvent } from "@/features/calendar/types/calendar.types";
 import type { EventFormData } from "@/features/calendar/composable/useEventForm";
 
 export const createInitialFormData = (

@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import type { CardEvent } from '@/features/tasks/types/Task'
-import type { SuggestedTaskDraft } from '@/types/CalendarSuggestion'
+import type { SuggestedTaskDraft } from '@/features/calendar/types/calendar.types'
 
 const props = defineProps<{
   open: boolean,

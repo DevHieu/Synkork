@@ -4,7 +4,7 @@ import type {
   SuggestedEventDraft,
   SuggestedNoteDraft,
   SuggestedTaskDraft,
-} from "@/types/CalendarSuggestion";
+} from "@/features/calendar/types/calendar.types";
 
 const DEFAULT_EVENT_TITLE = "Sự kiện từ tin nhắn";
 const DEFAULT_MORNING_START = "07:00";

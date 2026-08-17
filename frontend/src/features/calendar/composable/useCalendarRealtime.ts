@@ -1,7 +1,7 @@
 import { ref, watch, onMounted, onUnmounted } from "vue";
 import { socketService } from "@/services/websocket/socketService";
 import { subscribeCalendarSpace } from "@/services/websocket/calendarSocket";
-import type { CalendarEvent } from "@/types/CalendarEvent";
+import type { CalendarEvent } from "@/features/calendar/types/calendar.types";
 import type { Ref } from "vue";
 
 // Đồng bộ event realtime socket

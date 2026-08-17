@@ -12,7 +12,7 @@ import { useUserStore } from "@/stores/userStore";
 import { storeToRefs } from "pinia";
 import DeleteConfirmDialog from "@/components/dialog/DeleteConfirmDialog.vue";
 import UserInfoPopover from "@/components/dialog/UserInfoPopover.vue";
-import type { MessageEventSuggestion } from "@/types/CalendarSuggestion";
+import type { MessageEventSuggestion } from "@/features/calendar/types/calendar.types";
 import { chatService } from "../services/chatService.ts";
 import { useRoomMemberStore } from "@/stores/roomMemberStore.ts";
 import { useRoomsStore } from "@/stores/roomStore";

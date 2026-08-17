@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import dayjs from "dayjs";
-import type { CalendarEvent } from "@/types/CalendarEvent";
+import type { CalendarEvent } from "@/features/calendar/types/calendar.types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { continuationLabel, displayTime, formatDateTimeLabel } from "@/features/calendar/utils/calendar-display.utils";
 

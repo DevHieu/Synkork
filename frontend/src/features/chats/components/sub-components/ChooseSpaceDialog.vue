@@ -5,7 +5,7 @@ import { toast } from "vue-sonner";
 import { getAllSpacesFromRoomId } from "@/services/spaceService";
 import { useRoomsStore } from "@/stores/roomStore";
 import { storeToRefs } from "pinia";
-import type { CalendarChannelOption } from "@/types/CalendarSuggestion";
+import type { CalendarChannelOption } from "@/features/calendar/types/calendar.types";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
