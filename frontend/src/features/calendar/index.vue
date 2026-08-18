@@ -104,6 +104,7 @@ const initialFormData = ref<EventFormData>({
   recurrenceType: "NONE",
   recurrenceEndDate: undefined,
   allowEditAll: false,
+  attendeeIds: [],
   attendees: [],
   attachments: [],
   callRoomSpaceId: undefined,

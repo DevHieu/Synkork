@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { toast } from "vue-sonner";
-import { continuationLabel, displayTime, formatDateTimeLabel } from "@/features/calendar/utils/calendar-display.utils";
+import { continuationLabel, displayTime, formatDateTimeLabel, scheduleRanges } from "@/features/calendar/utils/calendar-display.utils";
 
 const props = defineProps<{
   currentDate: dayjs.Dayjs;
@@ -56,6 +56,15 @@ const getEventsForDate = (date: dayjs.Dayjs): CalendarEvent[] => {
   for (let i = 0; i < props.events.length; i++) {
     const event = props.events[i];
     if (!event) continue;
+
+    // Đối với sự kiện liên tục Schedule: mỗi bản ghi instance đã là 1 ngày cụ thể (eventDate = ngày đó)
+    if (event.schedule) {
+      const singleDate = (event.displayDate || event.eventDate || "").toString().substring(0, 10);
+      if (singleDate === targetDate) {
+        result.push(event);
+      }
+      continue;
+    }
 
     const startDate = (event.displayDate || event.eventDate || "").toString().substring(0, 10);
     const endDate = (event.endDate || event.displayDate || event.eventDate || "").toString().substring(0, 10);
@@ -265,6 +274,22 @@ const handleDeleteAllForDate = () => {
                   <p class="mt-1.5 rounded-md border border-border/60 bg-muted/20 p-2.5 text-xs font-sans leading-normal text-muted-foreground truncate" :title="event.description">
                     {{ event.description }}
                   </p>
+                </div>
+
+                <!-- Người tham gia -->
+                <div v-if="event.attendees && event.attendees.length > 0" class="pt-2.5 border-t border-border/60">
+                  <span class="text-[9px] font-sans font-semibold text-muted-foreground/80 uppercase tracking-wider">
+                    THAM GIA ({{ event.attendees.length }})
+                  </span>
+                  <div class="flex flex-wrap gap-1 mt-1.5">
+                    <span
+                      v-for="attendee in event.attendees"
+                      :key="attendee.memberId"
+                      class="inline-flex items-center rounded-sm bg-muted/40 px-1.5 py-0.5 text-[9px] font-medium text-foreground border border-border/50"
+                    >
+                      {{ attendee.displayName || attendee.username }}
+                    </span>
+                  </div>
                 </div>
 
                 <!-- Người tạo -->

@@ -33,17 +33,24 @@ const weekDays = computed(() => {
 const getEventsForDate = (date: dayjs.Dayjs) => {
   const targetDate = date.format("YYYY-MM-DD");
   const result: CalendarEvent[] = [];
-  
+
   for (let i = 0; i < props.events.length; i++) {
     const event = props.events[i];
     if (!event) continue;
+    if (event.schedule) {
+      const singleDate = (event.displayDate || event.eventDate || "").toString().substring(0, 10);
+      if (singleDate === targetDate) {
+        result.push(event);
+      }
+      continue;
+    }
     const startDate = event.displayDate || event.eventDate;
     const endDate = event.endDate || startDate;
     if (targetDate >= startDate && targetDate <= endDate) {
       result.push(event);
     }
   }
-  
+
   result.sort((a, b) => a.startTime.localeCompare(b.startTime));
   return result;
 };

@@ -48,7 +48,7 @@ const toggleMember = (member: Member) => {
   if (selectedIds.value.includes(member.memberId)) {
     selectedIds.value = selectedIds.value.filter((id) => id !== member.memberId);
   } else {
-    selectedIds.value.push(member.memberId);
+    selectedIds.value = [...selectedIds.value, member.memberId];
   }
 };
 

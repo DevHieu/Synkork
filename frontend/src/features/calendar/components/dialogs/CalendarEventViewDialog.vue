@@ -27,6 +27,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -212,10 +213,10 @@ const goToNoteSpace = async () => {
             <DialogTitle class="font-sans text-lg font-bold text-foreground leading-tight break-words">
               {{ event?.title }}
             </DialogTitle>
-            <p class="font-sans text-[11px] text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
+            <DialogDescription class="font-sans text-[11px] text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
               <CalendarDays class="h-3.5 w-3.5 text-muted-foreground/75" />
               {{ formattedEventDate }}
-            </p>
+            </DialogDescription>
           </div>
         </div>
       </DialogHeader>

@@ -11,6 +11,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -132,11 +133,14 @@ const handleSubmit = (): void => {
         <div class="flex items-center gap-2">
           <div class="inline-flex items-center gap-2 rounded-sm border border-primary/10 bg-primary/5 px-2.5 py-1">
             <component :is="isEditing ? Pencil : CalendarPlus2" class="text-primary h-4 w-4" />
-            <h2 class="text-xs font-sans font-bold text-primary uppercase tracking-wider">
+            <DialogTitle class="text-xs font-sans font-bold text-primary uppercase tracking-wider">
               {{ isEditing ? "Chỉnh sửa sự kiện" : "Thêm sự kiện mới" }}
-            </h2>
+            </DialogTitle>
           </div>
         </div>
+        <DialogDescription class="sr-only">
+          Biểu mẫu tạo hoặc chỉnh sửa sự kiện lịch
+        </DialogDescription>
       </DialogHeader>
 
       <form @submit.prevent="handleSubmit" class="flex flex-col flex-1 min-h-0 overflow-hidden">
@@ -228,7 +232,7 @@ const handleSubmit = (): void => {
               <Label class="text-[10px] font-sans font-bold text-muted-foreground uppercase tracking-wider">Người tham
                 gia</Label>
               <EventAttendeesSection :show="show" :room-members="roomMembers"
-                :initial-attendee-ids="formData.attendeeIds" @change="onAttendeesChange" />
+                :initial-attendee-ids="initialData.attendeeIds" @change="onAttendeesChange" />
             </div>
 
             <!-- Tệp đính kèm Section -->

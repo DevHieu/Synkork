@@ -26,6 +26,7 @@ const { user } = storeToRefs(userStore);
 
 const isOnline = ref(navigator.onLine);
 const spaceOpen = ref(true);
+const chatSocketComposable = useChatSocketComposable();
 
 provide("setSpaceOpen", (val: boolean) => {
   spaceOpen.value = val;
@@ -42,7 +43,7 @@ watch(
       friendStore.fetchPendingRequests();
       friendStore.fetchSentRequests();
 
-      useChatSocketComposable().subscribeToSuggestions();
+      chatSocketComposable.subscribeToSuggestions();
     }
   },
   { immediate: true },

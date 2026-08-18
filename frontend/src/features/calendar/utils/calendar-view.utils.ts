@@ -15,6 +15,7 @@ export const createInitialFormData = (
   recurrenceType: "NONE",
   recurrenceEndDate: undefined,
   allowEditAll: false,
+  attendeeIds: [],
   attendees: [],
   attachments: [],
   callRoomSpaceId: undefined,
@@ -72,10 +73,15 @@ export const resolveScheduleEvent = (
     }
   }
 
+  const attendees = group.flatMap((item) => item.attendees ?? []);
+  const attendeeIds = group.flatMap((item) => item.attendeeIds ?? []);
+
   return {
     ...event,
     eventDate: minDate || event.eventDate,
     endDate: maxDate || event.endDate || event.eventDate,
+    attendees: attendees.length ? attendees : event.attendees,
+    attendeeIds: attendeeIds.length ? [...new Set(attendeeIds)] : event.attendeeIds,
   };
 };
 
