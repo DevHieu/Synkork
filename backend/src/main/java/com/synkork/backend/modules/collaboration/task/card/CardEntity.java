@@ -15,7 +15,6 @@ import com.synkork.backend.common.base.BaseEntity;
 import com.synkork.backend.modules.collaboration.task.card.enums.CardStatus;
 import com.synkork.backend.modules.collaboration.task.column.ColumnEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
-import com.synkork.backend.modules.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

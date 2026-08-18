@@ -2,7 +2,7 @@
 import { ShieldAlert } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 
-import type { Report, ReportStatus } from '@/pages/report/types/Reports'
+import type { Report, ReportStatus, UpdateReportStatusPayload } from '@/pages/report/types/Reports'
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
@@ -27,7 +27,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:open', value: boolean): void
-  (e: 'action', payload: { id: string, status: ReportStatus, note?: string }): void
+  (e: 'action', payload: UpdateReportStatusPayload): void
   (e: 'locked', payload: { reportType: 'USER' | 'ROOM', targetId: string }): void
 }>()
 
@@ -57,8 +57,7 @@ const checkingTarget = ref(false)
 const targetCheckError = ref(false)
 const lockLoading = ref(false)
 const warnLoading = ref(false)
-const warnedReportIds = ref<Set<string>>(new Set())
-const hasWarned = computed(() => warnedReportIds.value.has(props.report.id))
+const hasWarned = computed(() => !!props.report.hasWarn)
 const reasonLabel = computed(() => REASON_LABEL_MAP[props.report.reason] ?? props.report.reason)
 
 const isTargetLocked = computed(() =>
@@ -143,7 +142,8 @@ async function handleWarnTarget() {
       await roomService.warnRoom(targetId.value)
     }
     targetWarning.value += 1
-    warnedReportIds.value = new Set(warnedReportIds.value).add(props.report.id)
+    
+    emit('action', { id: props.report.id, status: props.report.status, hasWarn: true })
   }
   catch (error) {
     console.error('Lỗi gửi cảnh cáo:', error)
