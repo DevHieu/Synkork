@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import BaseLayout from "./BaseLayout.vue";
 import RoomSidebar from "@/features/rooms/sidebar.vue";
-import FriendSidebar from "@/components/sidebar/FriendSidebar.vue";
+import FriendSidebar from "@/features/friends/components/FriendSidebar.vue";
 import { inject, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useSpaceComposable } from "@/features/spaces/composables/spaceComposable.ts";

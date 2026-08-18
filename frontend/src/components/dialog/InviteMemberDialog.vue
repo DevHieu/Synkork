@@ -11,8 +11,9 @@ import { storeToRefs } from "pinia";
 import { useRoomService } from "@/features/rooms/services/roomService";
 import { useRoomMemberStore } from '@/features/members/stores/roomMemberStore'
 import { toast } from "vue-sonner";
-import { useFriendStore } from "@/stores/friendStore";
-import type { Friend } from "@/types/Friends";
+import { useFriendStore } from "@/features/friends/stores/friendStore";
+import { useFriendActions } from "@/features/friends/composables/useFriendActions";
+import type { Friend } from "@/features/friends/types/Friends";
 
 const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{ "update:open": [value: boolean] }>();
@@ -28,6 +29,7 @@ const roomMemberStore = useRoomMemberStore();
 const { canManage, members } = storeToRefs(roomMemberStore)
 
 const friendStore = useFriendStore();
+const { fetchFriends } = useFriendActions();
 const { friends, loading: friendsLoading } = storeToRefs(friendStore);
 
 const inviteCode = ref("");
@@ -110,7 +112,7 @@ watch(
   (val) => {
     if (val) {
       fetchInviteCode();
-      friendStore.fetchFriends();
+      fetchFriends();
       invitedFriendIds.value = new Set();
     }
   },

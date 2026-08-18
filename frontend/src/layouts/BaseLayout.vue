@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import NavUser from "@/components/sidebar/NavUser.vue";
+import NavUser from "@/features/friends/components/NavUser.vue";
 import VoiceControlBar from "@/components/VoiceControlBar.vue";
 import {
   SidebarInset,
@@ -14,14 +14,15 @@ import { useUserStore } from "@/features/users/stores/userStore";
 import { storeToRefs } from "pinia";
 import { ref, provide, watch, onMounted, onUnmounted } from "vue";
 import { useNotificationStore } from '@/features/notifications/stores/notificationStore'
-import { useFriendStore } from "@/stores/friendStore";
+import { useFriendActions } from "@/features/friends/composables/useFriendActions";
 import globalAudio from "@/utils/appAudioManager"
 import { useChatSocketComposable } from "@/features/chats/composable/chat-socket.compsable";
 import { WifiOff } from "lucide-vue-next";
 
 const notificationStore = useNotificationStore()
 const userStore = useUserStore();
-const friendStore = useFriendStore();
+const { fetchFriends, fetchPendingRequests, fetchSentRequests } =
+  useFriendActions();
 const { user } = storeToRefs(userStore);
 
 const isOnline = ref(navigator.onLine);
@@ -38,9 +39,9 @@ watch(
       await socketService.connect();
       await userStore.getUserInfo();
 
-      friendStore.fetchFriends();
-      friendStore.fetchPendingRequests();
-      friendStore.fetchSentRequests();
+      fetchFriends();
+      fetchPendingRequests();
+      fetchSentRequests();
 
       useChatSocketComposable().subscribeToSuggestions();
     }

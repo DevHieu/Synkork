@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { useFriendStore } from "@/stores/friendStore";
+import { useFriendActions } from "../composables/useFriendActions";
 
 const emit = defineEmits<{ (e: "switchTab", tab: "pending"): void }>();
 
-const store = useFriendStore();
+const { sendRequest } = useFriendActions();
 
 const username = ref("");
 const isSending = ref(false);
@@ -19,7 +19,7 @@ const sendFriendRequest = async () => {
   sendError.value = "";
 
   try {
-    await store.sendRequest(username.value.trim());
+    await sendRequest(username.value.trim());
     username.value = "";
     sendSuccess.value = true;
     // Chuyển sang tab pending ngay lập tức — không delay

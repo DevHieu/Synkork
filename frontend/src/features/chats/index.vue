@@ -4,7 +4,7 @@ import { chatSocket } from "./services/chatSocket";
 import { useRoute } from "vue-router";
 import { useSpaceStore } from "@/features/spaces/stores/spaceStore.ts";
 import { useMessageStore } from "@/features/chats/stores/messageStore";
-import { useFriendStore } from "@/stores/friendStore";
+import { useFriendStore } from "@/features/friends/stores/friendStore";
 import { storeToRefs } from "pinia";
 
 import type { MessageEventSuggestion } from "@/types/CalendarSuggestion";
