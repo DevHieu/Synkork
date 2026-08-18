@@ -27,7 +27,7 @@ const handleChange = (event: Event) => {
   <div :class="cn('relative w-full', props.class)">
     <Calendar class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
 
-    <Input type="datetime-local" :value="props.value" :placeholder="props.placeholder"
+    <input type="datetime-local" :value="props.value" :placeholder="props.placeholder"
       :min="toLocalDateTimeString(new Date())" @change="handleChange" :class="cn(
         'pl-9',
         '[&::-webkit-calendar-picker-indicator]:absolute',

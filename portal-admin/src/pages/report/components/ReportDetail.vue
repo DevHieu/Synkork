@@ -130,7 +130,7 @@ async function handleWarnTarget() {
 
   const confirmMsg = isUserReport.value
     ? 'Bạn có chắc muốn gửi cảnh cáo đến người dùng này?'
-    : 'Bạn có chắc muốn khoá phòng này?'
+    : 'Bạn có chắc muốn gửi cảnh cáo đến phòng này?'
   if (!confirm(confirmMsg))
     return
 
