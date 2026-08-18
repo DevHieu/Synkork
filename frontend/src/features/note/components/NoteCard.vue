@@ -1,3 +1,58 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+
+import {
+  Pin,
+  Pencil,
+  Trash2,
+  GripHorizontal,
+  Palette,
+  BellPlus,
+  Bell,
+  X,
+  Archive
+} from 'lucide-vue-next'
+
+const COLORS = [
+  '#ef4444',
+  '#f97316',
+  '#eab308',
+  '#22c55e',
+  '#3b82f6',
+  '#8b5cf6',
+  '#ec4899'
+]
+
+const props = defineProps<{
+  note: any
+}>()
+
+const emit = defineEmits([
+  'view',
+  'edit',
+  'delete',
+  'pin',
+  'reminder',
+  'color',
+  'archive'
+])
+
+const showColorPicker = ref(false)
+
+function pickColor(color: string) {
+  emit('color', props.note.id, color)
+  showColorPicker.value = false
+}
+
+function formatReminder(dateStr: string) {
+  const d = new Date(dateStr)
+
+  return `${String(d.getHours()).padStart(2, '0')}:${String(
+    d.getMinutes()
+  ).padStart(2, '0')} • ${d.getDate()}/${d.getMonth() + 1}`
+}
+</script>
+
 <template>
   <div
     class="group relative rounded-lg border shadow-sm transition-all hover:shadow-md flex flex-col h-full"
@@ -147,58 +202,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref } from 'vue'
-
-import {
-  Pin,
-  Pencil,
-  Trash2,
-  GripHorizontal,
-  Palette,
-  BellPlus,
-  Bell,
-  X,
-  Archive
-} from 'lucide-vue-next'
-
-const COLORS = [
-  '#ef4444',
-  '#f97316',
-  '#eab308',
-  '#22c55e',
-  '#3b82f6',
-  '#8b5cf6',
-  '#ec4899'
-]
-
-const props = defineProps<{
-  note: any
-}>()
-
-const emit = defineEmits([
-  'view',
-  'edit',
-  'delete',
-  'pin',
-  'reminder',
-  'color',
-  'archive'
-])
-
-const showColorPicker = ref(false)
-
-function pickColor(color: string) {
-  emit('color', props.note.id, color)
-  showColorPicker.value = false
-}
-
-function formatReminder(dateStr: string) {
-  const d = new Date(dateStr)
-
-  return `${String(d.getHours()).padStart(2, '0')}:${String(
-    d.getMinutes()
-  ).padStart(2, '0')} • ${d.getDate()}/${d.getMonth() + 1}`
-}
-</script>

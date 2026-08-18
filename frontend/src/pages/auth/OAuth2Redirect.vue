@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { useUserStore } from "@/stores/userStore";
+import { useUserStore } from "@/features/users/stores/userStore";
 import { removeCookie, setCookie } from "@/lib/cookies";
 import { setAuthFlashMessage } from "@/utils/authFlashMessage";
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import dayjs from "dayjs";
 import { useRouter, useRoute } from "vue-router";
 import {
@@ -9,7 +9,6 @@ import {
   Link as LinkIcon,
   Paperclip,
   Pencil,
-  ShieldCheck,
   Trash2,
   UserRound,
   Users,
@@ -30,11 +29,10 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { useVoiceSpaceStore } from "@/features/voice-chat/stores/voiceSpaceStore";
-import { useSpaceStore } from "@/stores/spaceStore";
-import { useUserStore } from "@/stores/userStore";
+import { useUserStore } from "@/features/users/stores/userStore";
 import { continuationLabel, displayTime, formatDateTimeLabel } from "@/features/calendar/utils/calendar-display.utils";
+import { useSpaceComposable } from "@/features/spaces/composables/spaceComposable";
 
 const props = defineProps<{
   show: boolean;
@@ -148,11 +146,11 @@ const openDelete = () => {
 };
 
 const voiceSpaceStore = useVoiceSpaceStore();
-const spaceStore = useSpaceStore();
+const spaceComposable = useSpaceComposable();
 
 const joinVoiceRoom = () => {
   if (props.event?.callRoomSpaceId) {
-    spaceStore.changeSpaceById(props.event.callRoomSpaceId, "VOICE");
+    spaceComposable.changeSpaceById(props.event.callRoomSpaceId, "VOICE");
     voiceSpaceStore.joinRoom(props.event.callRoomSpaceId, false);
     emit("update:show", false);
   }
@@ -163,7 +161,7 @@ const route = useRoute();
 
 const goToTaskSpace = async () => {
   if (props.event?.taskSpaceId) {
-    await spaceStore.changeSpaceById(props.event.taskSpaceId, "TASK");
+    await spaceComposable.changeSpaceById(props.event.taskSpaceId, "TASK");
     const roomId = route.params.roomId;
     router.replace({
       path: `/rooms/task/${roomId}/${props.event.taskSpaceId}`,
@@ -175,7 +173,7 @@ const goToTaskSpace = async () => {
 
 const goToNoteSpace = async () => {
   if (props.event?.noteSpaceId) {
-    await spaceStore.changeSpaceById(props.event.noteSpaceId, "NOTE");
+    await spaceComposable.changeSpaceById(props.event.noteSpaceId, "NOTE");
     const roomId = route.params.roomId;
     router.replace({
       path: `/rooms/note/${roomId}/${props.event.noteSpaceId}`,

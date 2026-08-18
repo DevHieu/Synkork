@@ -1,17 +1,18 @@
 import { defineStore, storeToRefs } from "pinia";
-import { useSpaceStore } from "@/stores/spaceStore";
-import { useRoomMemberStore } from "../../../stores/roomMemberStore";
+import { useSpaceStore } from "@/features/spaces/stores/spaceStore.ts";
+import { useRoomMemberStore } from "@/features/members/stores/roomMemberStore";
 import { ref, computed, watch, reactive } from "vue";
 import { ZegoExpressEngine } from "zego-express-engine-webrtc";
 import type { Participant } from "@/features/voice-chat/types/VoiceTypes";
-import { useUserStore } from "@/stores/userStore";
-import { getZegoToken } from "@/services/spaceService";
+import { useUserStore } from "@/features/users/stores/userStore";
 import router from "@/routers";
 import { useLocalStorage } from "@vueuse/core";
 
 import { useZego } from "@/features/voice-chat/composables/zego/useZego";
-import { muteAudio } from "@/services/roomMemberService";
+import { useMemberService } from "@/features/members/services/roomMemberService";
 import { toast } from "vue-sonner";
+import { useSpaceComposable } from "@/features/spaces/composables/spaceComposable";
+import { useSpaceService } from "@/features/spaces/services/spaceService";
 
 export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
   const appID = Number(import.meta.env.VITE_ZEGO_APP_ID);
@@ -46,6 +47,10 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     Array.from(participants.value.values()),
   );
   const mutedList = reactive(new Map<string, boolean>());
+
+  const memberService = useMemberService();
+  const spaceService = useSpaceService();
+  const spaceComposable = useSpaceComposable();
 
   const spaceStore = useSpaceStore();
   const roomMemberStore = useRoomMemberStore();
@@ -110,7 +115,7 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     isDeafen.value = deafenStore.value;
 
     try {
-      const token = await getZegoToken(userID);
+      const token = await spaceService.getZegoToken(userID);
 
       await zego.initEngine();
       await zegoState.zg!.checkSystemRequirements();
@@ -173,7 +178,7 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     zego.utils.playNotificationSound("leave");
 
     if (router.currentRoute.value.path.includes("/rooms/voice")) {
-      await useSpaceStore().changeSpace(0, "CHAT");
+      await spaceComposable.changeSpace(0, "CHAT");
     }
   };
 
@@ -333,7 +338,7 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
       ...data,
     };
 
-    muteAudio(currentRoomId.value, userId, data);
+    memberService.muteAudio(currentRoomId.value, userId, data);
     zego.media.roomMutedUserRequest(currentSpaceId.value!, userId, payload);
   };
 

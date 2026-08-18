@@ -1,4 +1,4 @@
-import type { Member } from "../../../types/Member";
+import type { Member } from "../../members/types/Member";
 
 export interface ReplyPreview {
   id: string;

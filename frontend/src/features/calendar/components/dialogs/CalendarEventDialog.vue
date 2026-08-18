@@ -29,17 +29,17 @@ import EventAttachmentsSection from "../sub-components/EventAttachmentsSection.v
 import EventTaskSection from "../sub-components/EventTaskSection.vue";
 import EventNoteSection from "../sub-components/EventNoteSection.vue";
 import { useEventForm, type EventFormData } from "../../composable/useEventForm";
-import type { Member } from "@/types/Member";
-import { useSpaceStore } from "@/stores/spaceStore";
-import { useRoomsStore } from "@/stores/roomStore";
-import { useUserStore } from "@/stores/userStore";
-import { useRoomMemberStore } from "@/stores/roomMemberStore";
+import type { Member } from "@/features/members/types/Member.ts";
+import { useSpaceStore } from "@/features/spaces/stores/spaceStore.ts";
+import { useRoomsStore } from "@/features/rooms/stores/roomStore.ts";
+import { useUserStore } from "@/features/users/stores/userStore";
 import { Checkbox } from "@/components/ui/checkbox/index.ts";
+import { useMemberComposable } from "@/features/members/composables/memberComposable.ts";
 
 const spaceStore = useSpaceStore();
 const roomsStore = useRoomsStore();
 const userStore = useUserStore();
-const roomMemberStore = useRoomMemberStore();
+const memberComposable = useMemberComposable();
 
 const voiceSpaces = computed(() => spaceStore.voiceSpaces || []);
 
@@ -108,7 +108,7 @@ watch(
       const username = userStore.user?.username;
       if (roomId && username) {
         try {
-          await roomMemberStore.fetchMembers(roomId, username);
+          await memberComposable.fetchMembers(roomId, username);
         } catch (error) {
           console.error("Lỗi khi tải thành viên phòng:", error);
         }
@@ -212,20 +212,12 @@ const handleSubmit = (): void => {
             </div>
 
             <!-- Liên kết Task -->
-            <EventTaskSection
-              :show="show"
-              :initial-space-id="initialData.taskSpaceId"
-              :initial-task-id="initialData.taskId"
-              @change="onTaskChange"
-            />
+            <EventTaskSection :show="show" :initial-space-id="initialData.taskSpaceId"
+              :initial-task-id="initialData.taskId" @change="onTaskChange" />
 
             <!-- Liên kết Note -->
-            <EventNoteSection
-              :show="show"
-              :initial-space-id="initialData.noteSpaceId"
-              :initial-note-id="initialData.noteId"
-              @change="onNoteChange"
-            />
+            <EventNoteSection :show="show" :initial-space-id="initialData.noteSpaceId"
+              :initial-note-id="initialData.noteId" @change="onNoteChange" />
 
             <!-- Người tham gia Section -->
             <div class="space-y-1.5">
@@ -269,17 +261,20 @@ const handleSubmit = (): void => {
             :class="[
               isSuccess ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : 'bg-primary hover:bg-primary/90 text-primary-foreground'
             ]">
-            <span class="flex items-center gap-1.5 transition-all duration-300" :class="{ 'opacity-0 scale-95': isSaving || isSuccess }">
+            <span class="flex items-center gap-1.5 transition-all duration-300"
+              :class="{ 'opacity-0 scale-95': isSaving || isSuccess }">
               <component :is="isEditing ? Pencil : CalendarPlus2" class="h-3.5 w-3.5" />
               {{ isEditing ? "Cập nhật" : "Tạo sự kiện" }}
             </span>
-            
-            <span class="absolute inset-0 flex items-center justify-center gap-1.5 transition-all duration-300" :class="{ 'opacity-100 scale-100': isSaving, 'opacity-0 scale-105 pointer-events-none': !isSaving }">
+
+            <span class="absolute inset-0 flex items-center justify-center gap-1.5 transition-all duration-300"
+              :class="{ 'opacity-100 scale-100': isSaving, 'opacity-0 scale-105 pointer-events-none': !isSaving }">
               <div class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
               <span>Đang lưu...</span>
             </span>
 
-            <span class="absolute inset-0 flex items-center justify-center gap-1.5 transition-all duration-300" :class="{ 'opacity-100 scale-100': isSuccess, 'opacity-0 scale-95 pointer-events-none': !isSuccess }">
+            <span class="absolute inset-0 flex items-center justify-center gap-1.5 transition-all duration-300"
+              :class="{ 'opacity-100 scale-100': isSuccess, 'opacity-0 scale-95 pointer-events-none': !isSuccess }">
               <Check class="h-3.5 w-3.5" />
               <span>Đã lưu!</span>
             </span>

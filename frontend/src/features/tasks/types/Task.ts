@@ -10,7 +10,7 @@ export interface CardEvent {
   assignees: MemberSummary[]
   dueDate?: string | undefined
   
-  version?: number
+  version: number | undefined
 
   completed?: boolean
 }

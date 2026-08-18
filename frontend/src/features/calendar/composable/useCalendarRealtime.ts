@@ -1,5 +1,5 @@
 import { ref, watch, onMounted, onUnmounted } from "vue";
-import { socketService } from "@/services/websocket/socketService";
+import { socketService } from "@/services/socketService";
 import { subscribeCalendarSpace } from "@/services/websocket/calendarSocket";
 import type { CalendarEvent } from "@/features/calendar/types/calendar.types";
 import type { Ref } from "vue";
@@ -8,7 +8,7 @@ import type { Ref } from "vue";
 export function useCalendarRealtime(
   spaceIdRef: Ref<string | undefined>,
   events: Ref<CalendarEvent[]>,
-  fetchEvents?: () => Promise<void>
+  fetchEvents?: () => Promise<void>,
 ) {
   const isSocketReady = ref(false);
   let sub: { unsubscribe: () => void } | null = null;
@@ -62,7 +62,8 @@ export function useCalendarRealtime(
             return;
           }
           const idx = events.value.findIndex((e) => e.id === ev.id);
-          if (idx !== -1) events.value[idx] = ev; else events.value.push(ev);
+          if (idx !== -1) events.value[idx] = ev;
+          else events.value.push(ev);
         },
         DELETED: (ev) => {
           events.value = events.value.filter((e) => e.id !== ev.id);
@@ -73,6 +74,6 @@ export function useCalendarRealtime(
         handlers[action]?.(event);
       });
     },
-    { immediate: true }
+    { immediate: true },
   );
 }

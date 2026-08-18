@@ -4,24 +4,18 @@ import { Archive, Calendar, AlignLeft, Check } from 'lucide-vue-next'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
-} from '@/components/ui/dialog'
-import { useSpaceStore } from "@/stores/spaceStore";
+import { useSpaceStore } from "@/features/spaces/stores/spaceStore.ts";
 import { storeToRefs } from "pinia";
 import type { CardEvent } from '@/features/tasks/types/Task.ts'
 import CardDetailDialog from './dialog/CardDetailDialog.vue'
+import ConflictDialog from './dialog/ConflictDialog.vue'
 import { VersionConflictError } from '@/features/tasks/services/cardService'
 import { toast } from 'vue-sonner'
 import { useTaskAction } from '../composables/task-api.ts'
 import { getAvatarColor, getInitials } from '@/features/tasks/utils/avatar'
 import { formattedDate, checkDueSoon, checkOverdue } from '@/features/tasks/utils/task-date'
 import { useVersionConflict } from '../composables/version-conflict.ts'
+import { useCardDetail } from '../composables/card-detail.ts'
 
 const spaceStore = useSpaceStore();
 const { currentSpace } = storeToRefs(spaceStore);
@@ -58,20 +52,48 @@ const openDetail = () => {
 
 const isCompleted = ref(props.card.completed)
 
-const handleToggleComplete = () => {
-    if (!currentSpace.value) return
+const handleToggleComplete = async () => {
+    if (!currentSpace.value) return;
 
     const newStatus = !isCompleted.value;
-    isCompleted.value = newStatus;
-    props.card.completed = newStatus;
+    const version = props.card.version;
 
-    taskAction.completeCardEvent(currentSpace.value.id, props.card.id, newStatus);
-    
-    emit("toggleComplete", {
-        id: props.card.id,
-        completed: newStatus,
-    })
-}
+    try {
+        await taskAction.completeCardEvent(
+            currentSpace.value.id,
+            props.card.id,
+            {
+                completed: newStatus,
+                version,
+            }
+        );
+
+        isCompleted.value = newStatus;
+        props.card.completed = newStatus;
+
+        emit("toggleComplete", {
+            id: props.card.id,
+            completed: newStatus,
+        });
+
+    } catch (e) {
+        if (e instanceof VersionConflictError) {
+            toast.error(
+                "Thẻ này vừa được người khác cập nhật. Vui lòng kiểm tra lại nội dung mới nhất."
+            );
+
+            if (e.latest) {
+                Object.assign(props.card, e.latest);
+                isCompleted.value = e.latest.completed;
+            }
+
+            return;
+        }
+
+        console.error("Lỗi cập nhật trạng thái:", e);
+        toast.error("Có lỗi xảy ra, vui lòng thử lại.");
+    }
+};
 
 const saveInDetail = async (updatedCard: CardEvent) => {
     if (!currentSpace.value) return
@@ -145,10 +167,10 @@ watch(
                     >
                         {{ card.title }}
                     </h3>
-                    <Button variant="ghost" size="icon"
+                    <Button v-if="isCompleted" variant="ghost" size="icon"
                         class="h-5 w-5 shrink-0 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all duration-150 rounded-md -mt-0.5 -mr-0.5"
                         @click.stop="emit('archive', card.id)">
-                        <Archive v-if="isCompleted" class="w-3 h-3" />
+                        <Archive class="w-3 h-3" />
                     </Button>
                 </div>
 
@@ -218,26 +240,15 @@ watch(
             @save="saveInDetail"
             
         />
-        <Dialog v-model:open="taskConflict.isConflictOpen">
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Thẻ đã bị thay đổi bởi người khác</DialogTitle>
-                    <DialogDescription>
-                        Trong lúc bạn chỉnh sửa, một người khác đã lưu thay đổi cho thẻ
-                        <strong>"{{ card.title }}"</strong>. Nếu lưu đè, nội dung của họ sẽ bị mất.
-                        Bạn có muốn tạo một thẻ mới chứa nội dung bạn vừa nhập, để không mất dữ liệu không?
-                    </DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                    <Button variant="outline" :disabled="taskConflict.isCreatingCopy" @click="taskConflict.handleDiscard">
-                        Bỏ qua, xem bản mới nhất
-                    </Button>
-                    <Button :disabled="taskConflict.isCreatingCopy" @click="taskConflict.handleCreateCopy">
-                        {{ taskConflict.isCreatingCopy ? 'Đang tạo...' : 'Tạo thẻ mới với nội dung của tôi' }}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <ConflictDialog
+            v-model:open="taskConflict.isConflictOpen"
+            :is-creating-copy="taskConflict.isCreatingCopy"
+            entity-label="thẻ"
+            entity-title="Thẻ"
+            :item-name="card.title"
+            @discard="taskConflict.handleDiscard"
+            @create-copy="taskConflict.handleCreateCopy"
+        />
     </div>
 </template>
 

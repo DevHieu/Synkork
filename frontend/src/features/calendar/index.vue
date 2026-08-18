@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
-import { useSpaceStore } from "@/stores/spaceStore";
-import { useUserStore } from "@/stores/userStore";
+import { useSpaceStore } from "@/features/spaces/stores/spaceStore.ts";
+import { useUserStore } from "@/features/users/stores/userStore";
 import { useSuggestionStore } from "@/features/calendar/stores/calendarStore";
-import { useRoomMemberStore } from "@/stores/roomMemberStore";
+import { useRoomMemberStore } from '@/features/members/stores/roomMemberStore'
 import { storeToRefs } from "pinia";
 import { useCalendarDate } from "@/features/calendar/composable/useCalendarDate";
 import { useCalendarEvents } from "@/features/calendar/composable/useCalendarEvents";
@@ -244,7 +244,7 @@ const persistEvent = async (payload: { isEditing: boolean; eventId?: string; dat
       await createEvent(payload.data);
     }
     isSaveSuccess.value = true;
-    
+
     setTimeout(() => {
       showDialog.value = false;
       showViewDialog.value = false;
@@ -347,7 +347,7 @@ const deleteAllStep = ref(0);
 const showDeleteAllConfirmationStep = () => {
   const events = eventsToDeleteAll.value;
   if (!events || events.length === 0 || !events[0]) return;
-  
+
   const rawDate = events[0].eventDate;
   const parts = rawDate.split("-");
   const displayDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : rawDate;
@@ -357,9 +357,9 @@ const showDeleteAllConfirmationStep = () => {
       "delete",
       "CẢNH BÁO LẦN 1: XÁC NHẬN XÓA TOÀN BỘ",
       `Bạn đang yêu cầu <b>xóa toàn bộ ${events.length} sự kiện</b> do bạn tạo trong ngày <b>${displayDate}</b>.<br/><br/>Hành động này có thể ảnh hưởng đến người khác nếu đó là sự kiện nhóm.`,
-      { 
-        confirmText: "Tiếp tục", 
-        cancelText: "Hủy" 
+      {
+        confirmText: "Tiếp tục",
+        cancelText: "Hủy"
       }
     );
   } else if (deleteAllStep.value === 2) {
@@ -367,9 +367,9 @@ const showDeleteAllConfirmationStep = () => {
       "delete",
       "CẢNH BÁO LẦN 2: CHẮC CHẮN MUỐN XÓA TOÀN BỘ",
       `Bạn <b>chắc chắn muốn xóa toàn bộ</b> sự kiện trong ngày <b>${displayDate}</b> chứ?<br/><br/>Hành động này <b>tuyệt đối KHÔNG THỂ hoàn tác</b>.`,
-      { 
-        confirmText: "Chắc chắn", 
-        cancelText: "Quay Lại" 
+      {
+        confirmText: "Chắc chắn",
+        cancelText: "Quay Lại"
       }
     );
   } else if (deleteAllStep.value === 3) {
@@ -377,8 +377,8 @@ const showDeleteAllConfirmationStep = () => {
       "delete",
       `XÓA TOÀN BỘ SỰ KIỆN TRONG ${displayDate}`,
       `Bước cuối cùng. Hãy nhập từ khóa để hoàn tất việc xóa <b>${events.length}</b> sự kiện.`,
-      { 
-        confirmText: "XÁC NHẬN XÓA", 
+      {
+        confirmText: "XÁC NHẬN XÓA",
         cancelText: "Hủy",
         requireInput: "DELETE"
       }
@@ -532,7 +532,7 @@ const handleNotificationCancel = () => {
   if (notificationState.value.type === "delete") {
     eventToDelete.value = null;
   }
-  
+
   if (eventsToDeleteAll.value.length > 0) {
     eventsToDeleteAll.value = [];
     deleteAllStep.value = 0;
@@ -591,7 +591,8 @@ const handleConflictCreateCopy = async () => {
 
       <CalendarMonthView v-if="viewMode === 'month'" :current-date="currentDate" :selected-date="selectedDate"
         :events="events" :current-user-id="currentUserId" :day-names="dayNamesLong" :is-today="isToday"
-        :is-selected="isSelected" @select-date="selectDate" @view-event="openViewDialog" @delete-all-events="requestDeleteAllEvents" />
+        :is-selected="isSelected" @select-date="selectDate" @view-event="openViewDialog"
+        @delete-all-events="requestDeleteAllEvents" />
 
       <CalendarWeekView v-if="viewMode === 'week'" :current-date="currentDate" :selected-date="selectedDate"
         :events="events" :day-names="dayNamesLong" :is-today="isToday" :is-selected="isSelected"
@@ -605,32 +606,23 @@ const handleConflictCreateCopy = async () => {
       @edit="openEditDialog" @delete="handleDeleteEvent" @add-to-personal-calendar="handleAddToPersonalCalendar"
       @summarize-attachment="handleSummarizeAttachment" />
 
-    <CalendarEventDialog v-model:show="showDialog" :is-editing="isEditing" :initial-data="initialFormData" :room-members="members"
-      :is-saving="isSavingEvent" :is-success="isSaveSuccess" @save="handleSaveEvent" />
+    <CalendarEventDialog v-model:show="showDialog" :is-editing="isEditing" :initial-data="initialFormData"
+      :room-members="members" :is-saving="isSavingEvent" :is-success="isSaveSuccess" @save="handleSaveEvent" />
 
     <CalendarNotificationDialog v-model:show="notificationState.show" :type="notificationState.type"
       :title="notificationState.title" :message="notificationState.message"
       :confirm-text="notificationState.confirmText" :cancel-text="notificationState.cancelText"
-      :require-input="notificationState.requireInput"
-      :is-loading="isDeletingEvent || isSavingEvent" @confirm="handleNotificationConfirm"
-      @cancel="handleNotificationCancel" />
+      :require-input="notificationState.requireInput" :is-loading="isDeletingEvent || isSavingEvent"
+      @confirm="handleNotificationConfirm" @cancel="handleNotificationCancel" />
 
     <!-- Conflict Dialog -->
-    <CalendarNotificationDialog
-      v-model:show="isConflictDialogOpen"
-      type="confirm"
+    <CalendarNotificationDialog v-model:show="isConflictDialogOpen" type="confirm"
       title="SỰ KIỆN ĐÃ BỊ THAY ĐỔI BỞI NGƯỜI KHÁC"
       message="Trong lúc bạn chỉnh sửa, một người khác đã lưu thay đổi cho sự kiện này. Nếu lưu đè, nội dung của họ sẽ bị mất.<br/><br/>Bạn có muốn tạo một sự kiện mới chứa nội dung bạn vừa nhập không?"
-      confirm-text="Tạo sự kiện mới"
-      cancel-text="Bỏ qua, xem bản mới nhất"
-      @confirm="handleConflictCreateCopy"
-      @cancel="handleConflictDiscard"
-    />
+      confirm-text="Tạo sự kiện mới" cancel-text="Bỏ qua, xem bản mới nhất" @confirm="handleConflictCreateCopy"
+      @cancel="handleConflictDiscard" />
 
-    <PremiumFeatureDialog
-      v-model:open="showPremiumDialog"
-      feature-name="Tải lên file lớn"
-    />
+    <PremiumFeatureDialog v-model:open="showPremiumDialog" feature-name="Tải lên file lớn" />
   </div>
 </template>
 

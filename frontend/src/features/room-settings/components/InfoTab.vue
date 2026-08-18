@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref, watch, computed } from "vue";
 import { Camera } from "lucide-vue-next";
-import { updateRoomInfo } from "@/services/roomService";
+import { useRoomService } from "@/features/rooms/services/roomService";
 
 const props = defineProps<{ room: any, canEdit: boolean }>();
 
-const isSaving = ref(false);
+const roomService = useRoomService();
 
+const isSaving = ref(false);
 const roomName = ref(props.room?.name ?? "");
 const roomDescription = ref(props.room?.description ?? "");
 const selectedFile = ref<File | null>(null);
@@ -56,7 +57,7 @@ const handleSaveInfo = async () => {
     imageFile: selectedFile.value ?? undefined,
   };
 
-  await updateRoomInfo(props.room.id, data);
+  await roomService.updateRoomInfo(props.room.id, data);
 
   originalName.value = roomName.value;
   originalDescription.value = roomDescription.value;

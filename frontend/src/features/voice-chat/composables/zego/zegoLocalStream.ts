@@ -1,4 +1,4 @@
-import { useUserStore } from "@/stores/userStore";
+import { useUserStore } from "@/features/users/stores/userStore";
 import type { Participant } from "@/features/voice-chat/types/VoiceTypes";
 import type { ZegoState } from "@/features/voice-chat/types/ZegoTypes";
 import { type Ref } from "vue";

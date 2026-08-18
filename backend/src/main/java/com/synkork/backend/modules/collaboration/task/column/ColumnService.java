@@ -55,11 +55,8 @@ public class ColumnService {
     @Transactional
     public ColumnDTO updateColumn(UUID columnId, ColumnRequest req) {
         ColumnEntity col = findColumnById(columnId);
-
         
-                if (!col.getVersion().equals(req.version())) {
-            throw new ObjectOptimisticLockingFailureException(ColumnEntity.class, col.getId());
-        }
+        checkVersion(col, req.version());
         col.setName(req.name());
         
         ColumnEntity updatedCol = columnRepository.save(col);
@@ -87,6 +84,8 @@ public class ColumnService {
     @Transactional
     public ColumnDTO moveColumn(UUID columnId, MoveColumnRequest req) {
         ColumnEntity movingCol = findColumnById(columnId);
+
+        checkVersion(movingCol, req.getVersion());
 
         UUID spaceId = movingCol.getSpace().getId();
 
@@ -216,5 +215,11 @@ public class ColumnService {
 
     private ColumnEntity findColumnById(UUID columnId) {
         return columnRepository.findById(columnId).orElseThrow(() -> new RuntimeException("Cột không tồn tại"));
+    }
+
+    private void checkVersion(ColumnEntity col, Integer requestVersion) {
+        if (requestVersion == null || !col.getVersion().equals(requestVersion)) {
+            throw new ObjectOptimisticLockingFailureException(ColumnEntity.class, col.getId());
+        }
     }
 }

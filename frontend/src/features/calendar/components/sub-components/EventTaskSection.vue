@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import { useSpaceStore } from "@/stores/spaceStore";
+import { useSpaceStore } from "@/features/spaces/stores/spaceStore.ts";
 import { getAllColumns } from "@/features/tasks/services/columnService";
 import { Label } from "@/components/ui/label";
 import {
@@ -55,9 +55,9 @@ watch(selectedSpaceId, async (newSpaceId) => {
   } else {
     columns.value = [];
   }
-  
+
   // Kiểm tra xem task hiện tại có tồn tại trong bất cứ cột nào không
-  const taskExists = columns.value.some(col => 
+  const taskExists = columns.value.some(col =>
     col.cards && col.cards.some((t: any) => t.id === selectedTaskId.value)
   );
   if (!taskExists) {
@@ -118,9 +118,9 @@ watch(() => props.show, async (isOpen) => {
 
     <!-- Chọn Task -->
     <div class="space-y-1.5">
-      <Label class="text-[10px] font-sans font-bold text-muted-foreground uppercase tracking-wider">Liên kết Task</Label>
-      <Select :model-value="selectedTaskId || 'none'"
-        @update:model-value="val => selectedTaskId = val as string"
+      <Label class="text-[10px] font-sans font-bold text-muted-foreground uppercase tracking-wider">Liên kết
+        Task</Label>
+      <Select :model-value="selectedTaskId || 'none'" @update:model-value="val => selectedTaskId = val as string"
         :disabled="!selectedSpaceId || selectedSpaceId === 'none' || loadingTasks">
         <SelectTrigger class="w-full rounded-md border-border/60 h-10 font-sans bg-transparent">
           <SelectValue :placeholder="loadingTasks ? 'Đang tải...' : '--- Chọn task ---'" />
@@ -129,7 +129,8 @@ watch(() => props.show, async (isOpen) => {
           <SelectItem value="none">---</SelectItem>
           <template v-for="col in columns" :key="col.id">
             <SelectGroup v-if="col.cards && col.cards.length > 0">
-              <SelectLabel class="px-2.5 py-1.5 text-[9px] font-sans font-extrabold text-muted-foreground/70 uppercase tracking-widest border-b border-border/20 mb-1 select-none">
+              <SelectLabel
+                class="px-2.5 py-1.5 text-[9px] font-sans font-extrabold text-muted-foreground/70 uppercase tracking-widest border-b border-border/20 mb-1 select-none">
                 {{ col.name }}
               </SelectLabel>
               <SelectItem v-for="task in col.cards" :key="task.id" :value="task.id" class="pl-5 cursor-pointer">

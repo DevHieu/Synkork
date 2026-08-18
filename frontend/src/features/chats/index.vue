@@ -2,9 +2,9 @@
 import { ref, watch, onUnmounted, computed, nextTick } from "vue";
 import { chatSocket } from "./services/chatSocket";
 import { useRoute } from "vue-router";
-import { useSpaceStore } from "@/stores/spaceStore";
+import { useSpaceStore } from "@/features/spaces/stores/spaceStore.ts";
 import { useMessageStore } from "@/features/chats/stores/messageStore";
-import { useFriendStore } from "@/stores/friendStore";
+import { useFriendStore } from "@/features/friends/stores/friendStore";
 import { storeToRefs } from "pinia";
 
 import type { MessageEventSuggestion } from "@/features/calendar/types/calendar.types";

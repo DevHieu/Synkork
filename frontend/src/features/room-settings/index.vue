@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { useRoomsStore } from "@/stores/roomStore";
+import { useRoomsStore } from "@/features/rooms/stores/roomStore.ts";
 import { storeToRefs } from "pinia";
 
 import Dialog from "@/components/ui/dialog/Dialog.vue";
@@ -11,9 +11,9 @@ import { Settings, Users, Trash2, LogOut, Flag } from "lucide-vue-next";
 import InfoTab from "./components/InfoTab.vue";
 import MembersTab from "./components/MembersTab.vue";
 import DeleteTab from "./components/DeleteTab.vue";
-import { useRoomMemberStore } from "@/stores/roomMemberStore";
+import { useRoomMemberStore } from '@/features/members/stores/roomMemberStore'
 import DeleteConfirmDialog from "@/components/dialog/DeleteConfirmDialog.vue";
-import { leaveRoom } from "@/services/roomMemberService";
+import { useMemberService } from "@/features/members/services/roomMemberService";
 import ReportDialog from "@/features/reports/ReportDialog.vue";
 
 const props = defineProps<{ open: boolean }>();
@@ -24,6 +24,8 @@ const emit = defineEmits<{
 const handleClose = () => {
   emit("update:open", false);
 };
+
+const memberService = useMemberService()
 
 const roomStore = useRoomsStore();
 const { currentRoom } = storeToRefs(roomStore);
@@ -62,7 +64,7 @@ const tabs = computed(() =>
 
 const handleLeaveRoom = async () => {
   if (currentRoom.value) {
-    await leaveRoom(currentRoom.value.id)
+    await memberService.leaveRoom(currentRoom.value.id)
     roomStore.removeRoomFromArray(currentRoom.value.id)
   }
 }
@@ -71,7 +73,7 @@ const handleLeaveRoom = async () => {
 <template>
   <Dialog :open="open" @update:open="handleClose">
     <DialogContent
-      class="!max-w-[65vw] !w-[65vw] !max-h-[65vh] !h-[65vh] !p-0 overflow-hidden rounded-xl border border-border bg-background shadow-2xl">
+      class="max-w-[65vw]! w-[65vw]! max-h-[65vh]! h-[65vh]! p-0! overflow-hidden rounded-xl border border-border bg-background shadow-2xl">
       <!-- Header -->
       <DialogHeader class="px-6 pt-6 pb-0">
         <DialogTitle class="text-lg font-semibold text-foreground">
@@ -91,7 +93,7 @@ const handleLeaveRoom = async () => {
               ? 'hover:text-destructive hover:bg-destructive/5'
               : '',
             tab.key === 'danger' && activeTab === 'danger'
-              ? '!bg-destructive/10 !text-destructive'
+              ? 'bg-destructive/10! text-destructive!'
               : '',
           ]">
             <component :is="tab.icon" class="h-4 w-4 shrink-0" />

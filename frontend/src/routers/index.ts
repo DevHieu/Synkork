@@ -17,7 +17,7 @@ import NoteWindow from "@/features/note/index.vue";
 import TaskWindow from "@/features/tasks/index.vue";
 import CalendarWindowLayout from "@/features/calendar/index.vue";
 
-import FriendPage from "@/pages/FriendPage.vue";
+import FriendPage from "@/features/friends/index.vue";
 import MePage from "@/pages/MePage.vue";
 import SubscriptionPage from "@/pages/SubscriptionPage.vue";
 import InvitePage from "@/pages/InvitePage.vue";

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { watch, ref, onMounted, onUnmounted, computed } from "vue";
 import { Ban, CirclePlus, Smile } from "lucide-vue-next";
-import { useUserStore } from "@/stores/userStore.ts";
+import { useUserStore } from "@/features/users/stores/userStore.ts";
 import { useMessageStore } from "@/features/chats/stores/messageStore.ts";
 import { storeToRefs } from "pinia";
 import { PlanLimitUtils } from "@/utils/PlanLimitUtils.ts";

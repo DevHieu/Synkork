@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import { useSpaceStore } from "@/stores/spaceStore";
+import { useSpaceStore } from "@/features/spaces/stores/spaceStore.ts";
 import { getAll } from "@/features/note/services/noteService";
 import { Label } from "@/components/ui/label";
 import {
@@ -59,7 +59,7 @@ watch(selectedSpaceId, async (newSpaceId) => {
   } else {
     notes.value = [];
   }
-  
+
   // Nếu note hiện tại không nằm trong danh sách note của Space mới thì reset về none
   if (!notes.value.some(n => n.id === selectedNoteId.value)) {
     selectedNoteId.value = "none";
@@ -117,9 +117,9 @@ watch(() => props.show, async (isOpen) => {
 
     <!-- Chọn Note -->
     <div class="space-y-1.5">
-      <Label class="text-[10px] font-sans font-bold text-muted-foreground uppercase tracking-wider">Liên kết Note</Label>
-      <Select :model-value="selectedNoteId || 'none'"
-        @update:model-value="val => selectedNoteId = val as string"
+      <Label class="text-[10px] font-sans font-bold text-muted-foreground uppercase tracking-wider">Liên kết
+        Note</Label>
+      <Select :model-value="selectedNoteId || 'none'" @update:model-value="val => selectedNoteId = val as string"
         :disabled="!selectedSpaceId || selectedSpaceId === 'none' || loadingNotes">
         <SelectTrigger class="w-full rounded-md border-border/60 h-10 font-sans bg-transparent">
           <SelectValue :placeholder="loadingNotes ? 'Đang tải...' : '--- Chọn note ---'" />

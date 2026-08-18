@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Hash, Pin, Users } from "lucide-vue-next";
-import type { Friend } from "@/types/Friends";
+import type { Friend } from "@/features/friends/types/Friends";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import UserInfoPopover from "@/components/dialog/UserInfoPopover.vue";
 import SearchBar from "./sub-components/SearchBar.vue";
