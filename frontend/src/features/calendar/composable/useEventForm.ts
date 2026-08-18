@@ -46,10 +46,17 @@ export function useEventForm(
 
   const isEndTimeAfterStartTime = (): boolean => {
     const startStr = `${formData.value.eventDate}T${formData.value.startTime}`;
-    let endStr = `${formData.value.endDate || formData.value.eventDate}T${formData.value.endTime}`;
-    
+    let endDateStr = formData.value.endDate || formData.value.eventDate;
+
+    // Nếu cùng ngày và endTime nhỏ hơn startTime => Ca qua đêm (overnight event), ngày kết thúc là hôm sau
+    if (endDateStr === formData.value.eventDate && formData.value.endTime < formData.value.startTime) {
+      endDateStr = dayjs(formData.value.eventDate).add(1, "day").format("YYYY-MM-DD");
+    }
+
+    const endStr = `${endDateStr}T${formData.value.endTime}`;
+
     const startDt = dayjs(startStr);
-    let endDt = dayjs(endStr);
+    const endDt = dayjs(endStr);
 
     if (startDt.isValid() && endDt.isValid()) {
       return endDt.isAfter(startDt);

@@ -228,14 +228,14 @@ const handleSubmit = (): void => {
               <Label class="text-[10px] font-sans font-bold text-muted-foreground uppercase tracking-wider">Người tham
                 gia</Label>
               <EventAttendeesSection :show="show" :room-members="roomMembers"
-                :initial-attendee-ids="initialData.attendeeIds" @change="onAttendeesChange" />
+                :initial-attendee-ids="formData.attendeeIds" @change="onAttendeesChange" />
             </div>
 
             <!-- Tệp đính kèm Section -->
             <div class="space-y-1.5">
               <Label class="text-[10px] font-sans font-bold text-muted-foreground uppercase tracking-wider">Tệp đính
                 kèm</Label>
-              <EventAttachmentsSection :show="show" :initial-attachments="initialData.attachments"
+              <EventAttachmentsSection :show="show" :initial-attachments="formData.attachments"
                 @change="onAttachmentsChange" />
             </div>
 

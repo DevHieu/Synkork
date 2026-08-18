@@ -1,4 +1,5 @@
 export interface CalendarEventAttachment {
+  id?: string;
   name: string;
   size: number;
   fileUrl?: string;

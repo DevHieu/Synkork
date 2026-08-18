@@ -351,9 +351,12 @@ public class CalendarEventService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng với ID: " + userId));
 
         // Logic cập nhật nhóm sự kiện liên tục
-        // Nếu sự kiện thuộc nhóm liên tục và ngày bắt đầu thay đổi -> Tạo lại toàn bộ nhóm sự kiện
-        if (calendarEvent.isSchedule() && calendarEvent.getScheduleId() != null
-                && !calendarEvent.getEventDate().equals(eventRequest.getEventDate())) {
+        // Nếu sự kiện thuộc nhóm liên tục và ngày bắt đầu hoặc ngày kết thúc thay đổi -> Tạo lại toàn bộ nhóm sự kiện
+        LocalDate currentEnd = calendarEvent.getEndDate() != null ? calendarEvent.getEndDate() : calendarEvent.getEventDate();
+        LocalDate reqEnd = eventRequest.getEndDate() != null ? eventRequest.getEndDate() : eventRequest.getEventDate();
+        boolean dateRangeChanged = !calendarEvent.getEventDate().equals(eventRequest.getEventDate()) || !currentEnd.equals(reqEnd);
+
+        if (calendarEvent.isSchedule() && calendarEvent.getScheduleId() != null && dateRangeChanged) {
             return regenerateScheduleGroup(calendarEvent, eventRequest, actor);
         }
 
@@ -727,17 +730,30 @@ public class CalendarEventService {
     }
 
     // Kiểm tra sự kiện trùng giờ
-    public List<CalendarEventDTO> findConflicts(UUID spaceId, LocalDate date, LocalTime startTime, LocalTime endTime,
+    public List<CalendarEventDTO> findConflicts(UUID spaceId, LocalDate startDate, LocalDate endDate, LocalTime startTime, LocalTime endTime,
             UUID excludeEventId) {
-        // Liệt kê mọi sự kiện trong ngày (bao gồm sự kiện lặp) để tìm trùng lặp
-        List<CalendarEventDTO> dayEvents = getEventsByDateRange(spaceId, date, date);
+        LocalDate actualEnd = endDate != null ? endDate : startDate;
+        List<CalendarEventDTO> rangeEvents = getEventsByDateRange(spaceId, startDate, actualEnd);
         List<CalendarEventDTO> conflicts = new ArrayList<>();
 
-        for (CalendarEventDTO event : dayEvents) {
+        boolean isOvernight = endTime.isBefore(startTime);
+        java.time.LocalDateTime newStart = java.time.LocalDateTime.of(startDate, startTime);
+        java.time.LocalDateTime newEnd = java.time.LocalDateTime.of(isOvernight && actualEnd.equals(startDate) ? actualEnd.plusDays(1) : actualEnd, endTime);
+
+        for (CalendarEventDTO event : rangeEvents) {
             if (excludeEventId != null && event.getId().equals(excludeEventId)) {
                 continue;
             }
-            if (event.getStartTime().isBefore(endTime) && event.getEndTime().isAfter(startTime)) {
+            LocalDate evStart = event.getEventDate();
+            LocalDate evEnd = event.getEndDate() != null ? event.getEndDate() : evStart;
+            boolean evOvernight = event.getEndTime().isBefore(event.getStartTime());
+            if (evOvernight && evEnd.equals(evStart)) {
+                evEnd = evStart.plusDays(1);
+            }
+            java.time.LocalDateTime eStart = java.time.LocalDateTime.of(evStart, event.getStartTime());
+            java.time.LocalDateTime eEnd = java.time.LocalDateTime.of(evEnd, event.getEndTime());
+
+            if (eStart.isBefore(newEnd) && eEnd.isAfter(newStart)) {
                 conflicts.add(event);
             }
         }

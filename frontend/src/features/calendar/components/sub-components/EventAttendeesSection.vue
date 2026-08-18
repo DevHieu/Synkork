@@ -77,7 +77,11 @@ watch(selectedIds, (newList) => {
   emit("change", newList);
 });
 
-// Làm mới khi Dialog mở ra
+// Làm mới khi Dialog mở ra hoặc initialAttendeeIds thay đổi
+watch(() => props.initialAttendeeIds, (newIds) => {
+  selectedIds.value = [...(newIds || [])];
+}, { deep: true });
+
 watch(() => props.show, (isOpened) => {
   if (isOpened) {
     selectedIds.value = [...(props.initialAttendeeIds || [])];

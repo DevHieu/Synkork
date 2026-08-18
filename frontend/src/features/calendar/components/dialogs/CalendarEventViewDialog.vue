@@ -122,12 +122,12 @@ const displayEndTime = computed(() =>
 );
 const originalStartLabel = computed(() =>
   props.event
-    ? formatDateTimeLabel(props.event.originalStartDateTime, props.event.eventDate, props.event.startTime)
+    ? formatDateTimeLabel(props.event.originalStartDateTime, props.event.displayDate || props.event.eventDate, props.event.startTime)
     : "",
 );
 const originalEndLabel = computed(() =>
   props.event
-    ? formatDateTimeLabel(props.event.originalEndDateTime, props.event.endDate || props.event.eventDate, props.event.endTime)
+    ? formatDateTimeLabel(props.event.originalEndDateTime, props.event.endDate || props.event.displayDate || props.event.eventDate, props.event.endTime)
     : "",
 );
 const continuationText = computed(() =>
@@ -356,7 +356,7 @@ const goToNoteSpace = async () => {
                 </p>
               </div>
 
-              <div class="pt-3 border-t border-primary/10 grid grid-cols-3 gap-2">
+              <div class="pt-3 border-t border-primary/10 grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <div>
                   <p class="font-sans text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80">
                     Ngày bắt đầu
@@ -373,13 +373,21 @@ const goToNoteSpace = async () => {
                     {{ displayEndDate }}
                   </p>
                 </div>
-                <div class="col-span-1">
+                <div>
                   <p class="font-sans text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80">
                     Lặp lại
                   </p>
                   <p class="font-sans text-[11px] font-medium text-foreground mt-0.5 break-words"
                     :title="recurrenceLabel">
                     {{ recurrenceLabel }}
+                  </p>
+                </div>
+                <div v-if="event?.remindBeforeMinutes !== undefined && event?.remindBeforeMinutes !== null">
+                  <p class="font-sans text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+                    Nhắc nhở trước
+                  </p>
+                  <p class="font-sans text-[11px] font-medium text-foreground mt-0.5">
+                    {{ event.remindBeforeMinutes === 0 ? 'Khi sự kiện bắt đầu' : `${event.remindBeforeMinutes} phút` }}
                   </p>
                 </div>
               </div>

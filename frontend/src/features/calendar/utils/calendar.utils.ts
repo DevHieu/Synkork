@@ -20,10 +20,10 @@ export const calculateDateRange = (date: dayjs.Dayjs, mode: string) => {
     };
   }
 
-  // View month default (đệm 7 ngày)
+  // View month default: lấy trọn vẹn từ đầu tuần của ngày 1 đến hết tuần của ngày cuối tháng (bao gồm ngày đệm)
   return {
-    start: date.startOf("month").subtract(7, "day").format("YYYY-MM-DD"),
-    end: date.endOf("month").add(7, "day").format("YYYY-MM-DD")
+    start: date.startOf("month").startOf("week").subtract(7, "day").format("YYYY-MM-DD"),
+    end: date.endOf("month").endOf("week").add(7, "day").format("YYYY-MM-DD")
   };
 };
 
@@ -65,8 +65,8 @@ export const formatPayload = (
     ...data,
     eventLink: data.eventLink?.trim() || null,
     endDate: data.endDate || data.eventDate,
-    startTime: data.startTime.length === 5 ? `${data.startTime}:00` : data.startTime,
-    endTime: data.endTime.length === 5 ? `${data.endTime}:00` : data.endTime,
+    startTime: data.startTime && data.startTime.length === 5 ? `${data.startTime}:00` : (data.startTime || "09:00:00"),
+    endTime: data.endTime && data.endTime.length === 5 ? `${data.endTime}:00` : (data.endTime || "10:00:00"),
     spaceId: spaceIdRef.value,
     createdById: unref(currentUserId),
     attendeeIds: normalizedAttendeeIds,

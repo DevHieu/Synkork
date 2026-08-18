@@ -48,25 +48,28 @@ const monthDays = computed(() => {
   return days;
 });
 
-/**
- * Memoize: nhóm sự kiện theo ngày, sắp xếp mỗi nhóm theo startTime.
- * Template chỉ cần tra cứu O(1) thay vì lặp toàn bộ mảng events.
- */
-const eventsByDate = computed(() => {
-  const map: Record<string, CalendarEvent[]> = {};
-  for (const event of props.events) {
-    const d = event.displayDate || event.eventDate;
-    if (!map[d]) map[d] = [];
-    map[d].push(event);
-  }
-  for (const key in map) {
-    map[key]?.sort((a, b) => a.startTime.localeCompare(b.startTime));
-  }
-  return map;
-});
+const getEventsForDate = (date: dayjs.Dayjs): CalendarEvent[] => {
+  if (!date || !date.isValid()) return [];
+  const targetDate = date.format("YYYY-MM-DD");
+  const result: CalendarEvent[] = [];
 
-const getEventsForDate = (date: dayjs.Dayjs): CalendarEvent[] =>
-  eventsByDate.value[date.format("YYYY-MM-DD")] || [];
+  for (let i = 0; i < props.events.length; i++) {
+    const event = props.events[i];
+    if (!event) continue;
+
+    const startDate = (event.displayDate || event.eventDate || "").toString().substring(0, 10);
+    const endDate = (event.endDate || event.displayDate || event.eventDate || "").toString().substring(0, 10);
+
+    if (!startDate) continue;
+
+    if (targetDate >= startDate && targetDate <= endDate) {
+      result.push(event);
+    }
+  }
+
+  result.sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
+  return result;
+};
 
 const selectedDateEvents = computed(() => getEventsForDate(props.selectedDate));
 
@@ -220,8 +223,8 @@ const handleDeleteAllForDate = () => {
               KHÔNG CÓ SỰ KIỆN
             </div>
             <div
-              v-for="event in selectedDateEvents"
-              :key="event.id"
+              v-for="(event, eIdx) in selectedDateEvents"
+              :key="`${event.id || 'event'}-${event.displayDate || event.eventDate}-${eIdx}`"
               class="group cursor-pointer rounded-lg border border-border/60 bg-card p-0 text-foreground shadow-sm transition-all duration-200 hover:border-primary/80"
               @click="emit('viewEvent', event)"
             >
@@ -287,6 +290,7 @@ const handleDeleteAllForDate = () => {
         </ScrollArea>
       </div>
     </div>
+    
   </div>
 </template>
 
