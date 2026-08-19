@@ -1,5 +1,5 @@
 import { ref } from "vue";
-import type { CalendarEventAttachment } from "@/types/CalendarEvent";
+import type { CalendarEventAttachment } from "@/features/calendar/types/calendar.types";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
 import { toMinutes } from "@/features/calendar/composable/useTimeSelector";
@@ -46,16 +46,17 @@ export function useEventForm(
 
   const isEndTimeAfterStartTime = (): boolean => {
     const startStr = `${formData.value.eventDate}T${formData.value.startTime}`;
-    let endStr = `${formData.value.endDate || formData.value.eventDate}T${formData.value.endTime}`;
-    
-    const startDt = dayjs(startStr);
-    let endDt = dayjs(endStr);
+    let endDateStr = formData.value.endDate || formData.value.eventDate;
 
-    // Xử lý ca qua đêm (overnight event): Nếu endDate bằng eventDate và endTime < startTime
-    if ((!formData.value.endDate || formData.value.endDate === formData.value.eventDate) &&
-        formData.value.endTime < formData.value.startTime) {
-      endDt = endDt.add(1, 'day');
+    // Nếu cùng ngày và endTime nhỏ hơn startTime => Ca qua đêm (overnight event), ngày kết thúc là hôm sau
+    if (endDateStr === formData.value.eventDate && formData.value.endTime < formData.value.startTime) {
+      endDateStr = dayjs(formData.value.eventDate).add(1, "day").format("YYYY-MM-DD");
     }
+
+    const endStr = `${endDateStr}T${formData.value.endTime}`;
+
+    const startDt = dayjs(startStr);
+    const endDt = dayjs(endStr);
 
     if (startDt.isValid() && endDt.isValid()) {
       return endDt.isAfter(startDt);

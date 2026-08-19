@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import type { CalendarEvent } from "@/types/CalendarEvent";
+import type { CalendarEvent } from "@/features/calendar/types/calendar.types";
 
 export const displayTime = (value?: string) => (value || "").substring(0, 5);
 

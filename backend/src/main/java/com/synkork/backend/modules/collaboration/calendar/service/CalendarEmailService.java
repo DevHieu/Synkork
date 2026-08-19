@@ -37,7 +37,7 @@ public class CalendarEmailService {
         CalendarEventEntity targetEvent = calendarEventRepository.findById(event.getId()).orElse(event);
         if (targetEvent.getSpace() == null || targetEvent.getSpace().getRoom() == null) return;
 
-        List<RoomMemberEntity> attendeeList = targetEvent.getAttendees();
+        List<RoomMemberEntity> attendeeList = (recipients != null && !recipients.isEmpty()) ? recipients : targetEvent.getAttendees();
         if (attendeeList == null || attendeeList.isEmpty()) return;
 
         for (RoomMemberEntity attendee : attendeeList) {
@@ -110,26 +110,7 @@ public class CalendarEmailService {
     }
 
     private void sendNotification(boolean isReminder, UserEntity target, UserEntity actor, UUID eventId, UUID roomId, UUID spaceId) {
-        if (isReminder) {
-            notificationService.sendNotification(
-                    target,
-                    actor,
-                    eventId,
-                    roomId,
-                    spaceId,
-                    NotificationTypeEnum.CALENDAR,
-                    NotificationRefTypeEnum.EVENT_REMINDER
-            );
-        } else {
-            notificationService.sendNotification(
-                    target,
-                    actor,
-                    eventId,
-                    roomId,
-                    spaceId,
-                    NotificationTypeEnum.CALENDAR,
-                    NotificationRefTypeEnum.EVENT_ASSIGNED
-            );
-        }
+        NotificationRefTypeEnum refType = isReminder ? NotificationRefTypeEnum.EVENT_REMINDER : NotificationRefTypeEnum.EVENT_ASSIGNED;
+        notificationService.sendNotification(actor, target, eventId, roomId, spaceId, NotificationTypeEnum.CALENDAR, refType);
     }
 }

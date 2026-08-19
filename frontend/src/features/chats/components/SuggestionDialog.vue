@@ -7,7 +7,7 @@ import type {
   MessageEventSuggestion,
   SuggestedNoteDraft,
   SuggestedTaskDraft,
-} from "@/types/CalendarSuggestion";
+} from "@/features/calendar/types/calendar.types";
 import { buildSuggestedEventDraft, buildSuggestedNoteDraft, buildSuggestedTaskDraft } from "@/utils/calendarSuggestion";
 import ColumnListDialog from "@/features/tasks/components/dialog/ColumnListDialog.vue";
 import CardFormDialog from "@/features/tasks/components/dialog/CardFormDialog.vue";

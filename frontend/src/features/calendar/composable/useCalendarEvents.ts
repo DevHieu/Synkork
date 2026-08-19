@@ -7,7 +7,7 @@ import {
   deleteEvent as apiDeleteEvent,
   checkConflicts as apiCheckConflicts,
 } from "@/features/calendar/services/calendarService";
-import type { CalendarEvent } from "@/types/CalendarEvent";
+import type { CalendarEvent } from "@/features/calendar/types/calendar.types";
 import type { Ref } from "vue";
 import type dayjs from "dayjs";
 import { calculateDateRange, formatPayload, extractNewFiles } from "@/features/calendar/utils/calendar.utils";

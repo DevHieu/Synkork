@@ -55,7 +55,7 @@ export function useTimeSelector() {
 
   // Tự động đẩy endTime lên +1h nếu endTime <= startTime
   const adjustEndTimeIfNeeded = (startTime: string, endTime: string): string => {
-    return toMinutes(endTime) <= toMinutes(startTime)
+    return endTime <= startTime
       ? fromMinutes(toMinutes(startTime) + 60)
       : endTime;
   };
