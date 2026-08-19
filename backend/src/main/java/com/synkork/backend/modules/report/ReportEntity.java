@@ -55,4 +55,6 @@ public class ReportEntity extends BaseEntity {
     private String evidencePublicId;
     private String evidenceResourceType;
     private String evidenceName;
+
+    private Boolean hasWarn; 
 }
