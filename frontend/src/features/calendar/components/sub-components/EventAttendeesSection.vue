@@ -48,7 +48,7 @@ const toggleMember = (member: Member) => {
   if (selectedIds.value.includes(member.memberId)) {
     selectedIds.value = selectedIds.value.filter((id) => id !== member.memberId);
   } else {
-    selectedIds.value.push(member.memberId);
+    selectedIds.value = [...selectedIds.value, member.memberId];
   }
 };
 
@@ -77,7 +77,11 @@ watch(selectedIds, (newList) => {
   emit("change", newList);
 });
 
-// Làm mới khi Dialog mở ra
+// Làm mới khi Dialog mở ra hoặc initialAttendeeIds thay đổi
+watch(() => props.initialAttendeeIds, (newIds) => {
+  selectedIds.value = [...(newIds || [])];
+}, { deep: true });
+
 watch(() => props.show, (isOpened) => {
   if (isOpened) {
     selectedIds.value = [...(props.initialAttendeeIds || [])];

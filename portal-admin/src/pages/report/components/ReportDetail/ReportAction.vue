@@ -95,7 +95,7 @@ const lockButtonLabel = computed(() => (props.report.reportType === 'USER' ? 'Kh
       <Button
         v-if="!isTargetLocked" variant="outline" size="sm"
         class="gap-1.5 shrink-0 border-destructive text-destructive hover:bg-destructive/10"
-        :disabled="checkingTarget || lockLoading" @click="emit('lock')"
+        :disabled="checkingTarget || lockLoading || hasWarned" @click="emit('lock')"
       >
         <Loader2 v-if="lockLoading" class="h-3.5 w-3.5 animate-spin" />
         <Lock v-else class="h-3.5 w-3.5" />
@@ -120,7 +120,7 @@ const lockButtonLabel = computed(() => (props.report.reportType === 'USER' ? 'Kh
         Giải quyết
       </Button>
 
-      <Button variant="destructive" class="flex-1 gap-2" :disabled="isTargetLocked" @click="emit('dismiss')">
+      <Button variant="destructive" class="flex-1 gap-2" :disabled="isTargetLocked || hasWarned" @click="emit('dismiss')">
         <XCircle class="h-4 w-4" />
         Bác bỏ
       </Button>

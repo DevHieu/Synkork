@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import type {
   SuggestedEventDraft,
-} from "@/types/CalendarSuggestion";
+} from "@/features/calendar/types/calendar.types";
 
 interface PendingCalendarSuggestionDraft {
   spaceId: string;

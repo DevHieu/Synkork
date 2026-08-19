@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
-import { BellOff, Trash2, Loader2 } from 'lucide-vue-next'
+import { BellOff, Trash2, Loader2, Proportions } from 'lucide-vue-next'
 import { useNotificationStore } from '@/features/notifications/stores/notificationStore'
 import type { NotificationDTO } from '@/features/notifications/types/Notification'
 import { Badge } from '@/components/ui/badge'
@@ -20,7 +20,9 @@ const notiStore = useNotificationStore()
 const { notifications, unreadCount } = storeToRefs(notiStore)
 
 const isLoading = ref(false)
+const notiDeleteId = ref<string | null>(null)
 const isDeleteOpen = ref(false)
+const isDeleteAllOpen = ref(false)
 
 onMounted(async () => {
   isLoading.value = true
@@ -36,12 +38,25 @@ onUnmounted(() => {
   notiStore.disconnect()
 })
 
-function confirmDelete() {
+function confirmDeleteAll() {
+  isDeleteAllOpen.value = true
+}
+
+function confirmDelete(notiId : string) {
+  notiDeleteId.value = notiId
   isDeleteOpen.value = true
 }
 
 function clearAll() {
   notiStore.clearNotifications()
+  isDeleteOpen.value = false
+}
+
+function deleteNoti() {
+  if(notiDeleteId.value) {
+    notiStore.removeNotification(notiDeleteId.value)
+  }
+  notiDeleteId.value = null
   isDeleteOpen.value = false
 }
 
@@ -83,7 +98,7 @@ async function handleClick(notification: NotificationDTO) {
           variant="ghost"
           size="icon"
           class="h-7 w-7 text-muted-foreground hover:text-destructive cursor-pointer"
-          @click="confirmDelete"
+          @click="confirmDeleteAll"
         >
           <Trash2 class="w-4 h-4" />
         </Button>
@@ -135,7 +150,7 @@ async function handleClick(notification: NotificationDTO) {
               variant="ghost"
               size="icon"
               class="h-7 w-7 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity cursor-pointer"
-              @click.stop="notiStore.removeNotification(n.id)"
+              @click.stop="confirmDelete(n.id)"
             >
               <Trash2 class="w-4 h-4" />
             </Button>
@@ -155,9 +170,16 @@ async function handleClick(notification: NotificationDTO) {
   </div>
 
   <DeleteConfirmDialog
-    v-model:open="isDeleteOpen"
+    v-model:open="isDeleteAllOpen"
     :title="'Xóa tất cả thông báo?'"
     description="Bạn không thể khôi phục lại các thông báo đã xóa."
     @confirm="clearAll"
+  />
+
+  <DeleteConfirmDialog
+    v-model:open="isDeleteOpen"
+    :title="'Xóa thông báo này?'"
+    description="Bạn không thể khôi phục lại thông báo đã xóa."
+    @confirm="deleteNoti()"
   />
 </template>

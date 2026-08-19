@@ -55,10 +55,11 @@ public class CalendarEventController {
     public ResponseEntity<List<CalendarEventDTO>> checkConflicts(
             @PathVariable UUID spaceId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam @DateTimeFormat(pattern = "HH:mm") LocalTime startTime,
             @RequestParam @DateTimeFormat(pattern = "HH:mm") LocalTime endTime,
             @RequestParam(required = false) UUID excludeId) {
-        List<CalendarEventDTO> conflicts = calendarEventService.findConflicts(spaceId, date, startTime, endTime, excludeId);
+        List<CalendarEventDTO> conflicts = calendarEventService.findConflicts(spaceId, date, endDate != null ? endDate : date, startTime, endTime, excludeId);
         return ResponseEntity.ok(conflicts);
     }
 

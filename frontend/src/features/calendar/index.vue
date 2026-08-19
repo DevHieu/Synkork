@@ -8,8 +8,8 @@ import { storeToRefs } from "pinia";
 import { useCalendarDate } from "@/features/calendar/composable/useCalendarDate";
 import { useCalendarEvents } from "@/features/calendar/composable/useCalendarEvents";
 import { useCalendarRealtime } from "@/features/calendar/composable/useCalendarRealtime";
-import type { CalendarEvent } from "@/types/CalendarEvent";
-import type { SuggestedEventDraft } from "@/types/CalendarSuggestion";
+import type { CalendarEvent } from "@/features/calendar/types/calendar.types";
+import type { SuggestedEventDraft } from "@/features/calendar/types/calendar.types";
 import dayjs from "dayjs";
 
 import CalendarMonthView from "@/features/calendar/components/views/CalendarMonthView.vue";
@@ -104,6 +104,7 @@ const initialFormData = ref<EventFormData>({
   recurrenceType: "NONE",
   recurrenceEndDate: undefined,
   allowEditAll: false,
+  attendeeIds: [],
   attendees: [],
   attachments: [],
   callRoomSpaceId: undefined,

@@ -7,7 +7,7 @@ import { useMessageStore } from "@/features/chats/stores/messageStore";
 import { useFriendStore } from "@/features/friends/stores/friendStore";
 import { storeToRefs } from "pinia";
 
-import type { MessageEventSuggestion } from "@/types/CalendarSuggestion";
+import type { MessageEventSuggestion } from "@/features/calendar/types/calendar.types";
 import { useChatComposable } from "@/features/chats/composable/chat.composable.ts";
 import { useChatUtilsComposable } from "@/features/chats/composable/chat-utils.composable.ts";
 import { useChatSocketComposable } from "@/features/chats/composable/chat-socket.compsable.ts";
