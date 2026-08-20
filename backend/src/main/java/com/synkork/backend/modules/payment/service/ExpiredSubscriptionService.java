@@ -13,7 +13,6 @@ import com.synkork.backend.modules.payment.utils.ExpiredSubscriptionEmail;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.synkork.backend.common.utils.EmailService;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.RoomRepository;
 import com.synkork.backend.modules.room.enums.RoomStatusEnum;
@@ -23,7 +22,6 @@ import com.synkork.backend.modules.space.SpaceRepository;
 import com.synkork.backend.modules.space.enums.SpaceStatusEnum;
 import com.synkork.backend.modules.space.enums.SpaceTypeEnum;
 import com.synkork.backend.modules.user.UserEntity;
-import com.synkork.backend.modules.user.UserRepository;
 import com.synkork.backend.modules.user.enums.PlanEnum;
 
 import jakarta.transaction.Transactional;

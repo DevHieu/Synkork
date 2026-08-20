@@ -155,8 +155,9 @@ const choosePlan = async (planId: string) => {
       billingCycle,
     });
 
-    if (response.payUrl) {
-      window.location.href = response.payUrl;
+
+    if (response.paymentUrl) {
+      window.location.href = response.paymentUrl;
     }
   } catch (error) {
     console.error("Payment error:", error);

@@ -65,6 +65,7 @@ public class SecurityConfig {
                         .requestMatchers("/auth/check").authenticated()
                         .requestMatchers("/public/**", "/auth/**", "/ws/**", "/error").permitAll()
                         .requestMatchers("/payment/momo/callback").permitAll() // Cái này cần permit để momo còn trả về. Do Momo ko thể gửi đc JWT Token
+                        .requestMatchers("/payment/vnpay-return").permitAll() // Cái này cần permit để vnpay còn trả về. Do VnPay ko thể gửi đc JWT Token
                         .requestMatchers("/manage/auth/check-login").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/manage/auth/**").permitAll()
                         .requestMatchers("/manage/admin/**").hasAnyRole("ADMIN")

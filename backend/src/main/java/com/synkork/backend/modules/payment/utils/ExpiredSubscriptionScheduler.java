@@ -1,7 +1,6 @@
 package com.synkork.backend.modules.payment.utils;
 
 import com.google.common.collect.Lists;
-import com.synkork.backend.common.utils.EmailService;
 import com.synkork.backend.modules.payment.service.ExpiredSubscriptionService;
 import com.synkork.backend.modules.room.RoomRepository;
 import com.synkork.backend.modules.room.enums.RoomStatusEnum;

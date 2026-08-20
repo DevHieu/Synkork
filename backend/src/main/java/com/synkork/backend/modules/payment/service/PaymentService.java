@@ -2,7 +2,7 @@ package com.synkork.backend.modules.payment.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.synkork.backend.common.utils.EmailService;
+import com.synkork.backend.modules.payment.utils.PaymentEmail;
 import com.synkork.backend.modules.payment.entity.InvoiceEntity;
 import com.synkork.backend.modules.payment.entity.PlanPricingEntity;
 import com.synkork.backend.modules.payment.entity.UserSubscriptionEntity;
@@ -10,7 +10,7 @@ import com.synkork.backend.modules.payment.enums.*;
 import com.synkork.backend.modules.payment.repository.InvoiceRepository;
 import com.synkork.backend.modules.payment.repository.PlanPricingRepository;
 import com.synkork.backend.modules.payment.repository.UserSubscriptionRepository;
-import com.synkork.backend.modules.payment.utils.PaymentEmail;
+import com.synkork.backend.modules.payment.utils.PaymentUtils;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserService;
 import com.synkork.backend.modules.user.enums.PlanEnum;
@@ -88,7 +88,7 @@ public class PaymentService {
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy giá cho gói này"));
 
             // Tính giá sau giảm
-            BigDecimal finalAmount = calculateFinalAmount(pricing);
+            BigDecimal finalAmount = PaymentUtils.calculateFinalAmount(pricing);
             BigDecimal discountAmount = pricing.getDiscountAmount() != null
                     ? pricing.getDiscountAmount()
                     : BigDecimal.ZERO;
@@ -136,35 +136,6 @@ public class PaymentService {
             log.error("Lỗi tạo thanh toán MoMo", e);
             throw new RuntimeException("Lỗi tạo thanh toán MoMo: " + e.getMessage());
         }
-    }
-
-    /**
-     * Tính giá cuối cùng sau khi áp dụng giảm giá
-     */
-    private BigDecimal calculateFinalAmount(PlanPricingEntity pricing) {
-        BigDecimal baseAmount = pricing.getAmount();
-        BigDecimal discountAmount = BigDecimal.ZERO;
-
-        if (pricing.getDiscountType() != null && pricing.getDiscountValue() != null) {
-            if (pricing.getDiscountType() == DiscountTypeEnum.PERCENTAGE) {
-                discountAmount = baseAmount
-                        .multiply(pricing.getDiscountValue())
-                        .divide(BigDecimal.valueOf(100), 0, BigDecimal.ROUND_HALF_UP);
-            } else if (pricing.getDiscountType() == DiscountTypeEnum.FIXED) {
-                discountAmount = pricing.getDiscountValue();
-            }
-
-            // Không cho giảm vượt quá giá gốc
-            discountAmount = discountAmount.min(baseAmount);
-        }
-
-        // Cập nhật lại discountAmount vào entity (nếu cần)
-        if (pricing.getDiscountAmount() == null || !pricing.getDiscountAmount().equals(discountAmount)) {
-            pricing.setDiscountAmount(discountAmount);
-            // Không save ở đây vì chỉ là tính toán tạm
-        }
-
-        return baseAmount.subtract(discountAmount).max(BigDecimal.ZERO);
     }
 
     private String buildRequestSignature(String orderId, long amount, String extraData, String requestId) {
@@ -227,7 +198,7 @@ public class PaymentService {
         String userEmail = parts[2];
 
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime expiresAt = resolveExpiresAt(now, billing);
+        LocalDateTime expiresAt = PaymentUtils.resolveExpiresAt(now, billing);
 
         // Lý do cần tăng lên 3 ngày vì khi user gần đến hạn 3 ngày thì phòng sẽ chuyển về PENDING_REMOVAL. Và đến khi hết hạn hẳn mà user không nâng cấp gói thì xóa phòng
         LocalDateTime expireDate = expiresAt.plusDays(3);
@@ -281,11 +252,6 @@ public class PaymentService {
         String extraData = payload.get("extraData").toString();
         String decoded = new String(Base64.getDecoder().decode(extraData));
         return decoded.split("\\|", 3);
-    }
-
-    private LocalDateTime resolveExpiresAt(LocalDateTime now, String billing) {
-        BillingCycleEnum cycle = BillingCycleEnum.valueOf(billing.toUpperCase());
-        return cycle == BillingCycleEnum.YEARLY ? now.plusYears(1) : now.plusMonths(1);
     }
 
     private void deactivateCurrentSubscription(UserEntity user) {

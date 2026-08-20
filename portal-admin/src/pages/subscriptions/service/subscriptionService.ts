@@ -34,12 +34,12 @@ export const subscriptionService = {
   },
 
   async getPlanPricings() {
-    const res = await axiosClient.get('/api/payment/plan-pricing')
+    const res = await axiosClient.get('/api/manage/plan-pricing')
     return res.data
   },
 
   async updatePlanPricing(payload: PlanPricingRequest) {
-    const res = await axiosClient.put('/api/payment/plan-pricing', payload)
+    const res = await axiosClient.put('/api/manage/plan-pricing', payload)
     return res.data
   },
 }
