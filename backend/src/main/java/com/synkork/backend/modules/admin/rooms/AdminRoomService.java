@@ -24,6 +24,7 @@ import com.synkork.backend.modules.roomMember.enums.MemberStatusEnum;
 import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
 import com.synkork.backend.modules.space.SpaceEntity;
 import com.synkork.backend.modules.space.SpaceRepository;
+import com.synkork.backend.modules.user.enums.RoleEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
@@ -71,8 +72,7 @@ public class AdminRoomService {
         LocalDateTime effectiveFrom = dateFrom != null ? dateFrom : effectiveTo.minusMonths(1);
 
         long totalRooms = adminRoomRepository.countByTypeAndCreatedAtLessThanEqual(RoomTypeEnum.GROUP, effectiveTo);
-        long previousTotalRooms = adminRoomRepository.countByTypeAndCreatedAtLessThanEqual(RoomTypeEnum.GROUP, effectiveFrom);
-        double roomGrowth = AdminUtils.calcGrowth(totalRooms, previousTotalRooms);
+        double roomGrowth = this.calculateRoomGrowth(effectiveFrom, effectiveTo, totalRooms);
 
         long newRooms = adminRoomRepository.countByTypeAndCreatedAtBetween(RoomTypeEnum.GROUP, effectiveFrom, effectiveTo);
 
@@ -99,6 +99,12 @@ public class AdminRoomService {
 
     public List<RoomStatusCount> getRoomChart(LocalDateTime dateFrom, LocalDateTime dateTo) {
         return adminRoomRepository.countGroupByStatus(dateFrom, dateTo);
+    }
+
+    public double calculateRoomGrowth(LocalDateTime dateFrom, LocalDateTime dateTo, Long total) {
+        long totalRooms = total != null ? total : adminRoomRepository.countByTypeAndCreatedAtLessThanEqual(RoomTypeEnum.GROUP, dateTo);;
+        long previousTotalRooms = adminRoomRepository.countByTypeAndCreatedAtLessThanEqual(RoomTypeEnum.GROUP, dateFrom);
+        return AdminUtils.calcGrowth(totalRooms, previousTotalRooms);
     }
 
     public Page<RoomEntity> getRooms(RoomFilterRequest request) {

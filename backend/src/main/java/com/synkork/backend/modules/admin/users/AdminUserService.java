@@ -97,8 +97,7 @@ public class AdminUserService {
         LocalDateTime effectiveFrom = dateFrom != null ? dateFrom : effectiveTo.minusMonths(1);
 
         long totalUsers = userAdminRepository.countByRoleAndCreatedAtLessThanEqual(userRole, effectiveTo);
-        long previousTotalUsers = userAdminRepository.countByRoleAndCreatedAtLessThanEqual(userRole, effectiveFrom);
-        double userGrowth = AdminUtils.calcGrowth(totalUsers, previousTotalUsers);
+        double userGrowth = this.calculateUserGrowth(effectiveFrom, effectiveTo, totalUsers);
 
         LocalDate today = LocalDate.now();
         LocalDateTime startOfToday = today.atStartOfDay();
@@ -119,6 +118,11 @@ public class AdminUserService {
         );
     }
 
+    public double calculateUserGrowth(LocalDateTime dateFrom, LocalDateTime dateTo, Long total) {
+        long totalUsers = total != null ? total : userAdminRepository.countByRoleAndCreatedAtLessThanEqual(RoleEnum.USER, dateTo);;
+        long previousTotalUsers = userAdminRepository.countByRoleAndCreatedAtLessThanEqual(RoleEnum.USER, dateFrom);
+        return AdminUtils.calcGrowth(totalUsers, previousTotalUsers);
+    }
 
     private UserEntity findUserById(UUID id) {
         UserEntity user = userAdminRepository.findById(id)
