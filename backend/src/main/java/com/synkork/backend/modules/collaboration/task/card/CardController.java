@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.synkork.backend.modules.collaboration.task.dto.CardDTO;
 import com.synkork.backend.modules.collaboration.task.dto.CardMovePayload;
 import com.synkork.backend.modules.collaboration.task.dto.CardRequest;
+import com.synkork.backend.modules.collaboration.task.dto.CompleteCardRequest;
 import com.synkork.backend.modules.collaboration.task.dto.MoveCardRequest;
 
 @RestController
@@ -57,7 +58,7 @@ public class CardController {
     public ResponseEntity<CardDTO> updateCard(@PathVariable String cardId, @RequestBody CardRequest req) {
         UUID cardUUID = UUID.fromString(cardId);
         CardDTO updatedCard = cardService.updateCard(cardUUID, req);
-
+        System.out.println("Final: " + updatedCard.getVersion());
         messagingTemplate.convertAndSend("/topic/space/" + updatedCard.getSpaceId() + "/card/update", updatedCard);
 
         return ResponseEntity.ok(updatedCard);
@@ -113,4 +114,13 @@ public class CardController {
 
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/{cardId}/complete")
+    public ResponseEntity<CardDTO> completeCard(@PathVariable String cardId, @PathVariable String spaceId, @RequestBody CompleteCardRequest req) {
+        UUID cardUUID = UUID.fromString(cardId);
+        CardDTO result = cardService.completeCard(cardUUID, req);
+        messagingTemplate.convertAndSend("/topic/space/" + spaceId + "/card/complete", result);
+        return ResponseEntity.ok(result);
+    }
+
 }

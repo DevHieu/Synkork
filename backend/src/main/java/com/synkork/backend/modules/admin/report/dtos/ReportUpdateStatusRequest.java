@@ -7,5 +7,7 @@ public record ReportUpdateStatusRequest(
         @NotNull(message = "Status không được để trống")
         ReportStatusEnums status,
 
-        String note
+        String note,
+        
+        Boolean hasWarn
 ) {}

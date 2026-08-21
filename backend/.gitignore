@@ -12,6 +12,7 @@ bin/
 
 *.local
 .env
+src/main/java/com/synkork/backend/config/TestUserSeeder.java
 
 src/main/resources/application-local.properties
 src/main/resources/application-local.yml
@@ -48,3 +49,11 @@ log/
 .DS_Store
 Thumbs.db
 testFunc.md
+docs/
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
+
+AGENTS.md

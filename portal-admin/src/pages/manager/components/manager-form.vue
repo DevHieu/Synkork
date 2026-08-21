@@ -37,8 +37,8 @@ const form = reactive({
   displayName: props.account?.displayName ?? '',
   username: props.account?.username ?? '',
   email: props.account?.email ?? '',
-  status: (props.account?.status ?? 'active') as ManagerStatus,
-  role: (props.account?.role ?? 'manager') as ManagementRole,
+  status: (props.account?.status ?? 'ACTIVE') as ManagerStatus,
+  role: (props.account?.role ?? 'MANAGER') as ManagementRole,
 })
 
 function getErrorMessage(error: any) {
@@ -73,7 +73,7 @@ async function onSubmit() {
         username: form.username.trim(),
         email: form.email.trim(),
         status: form.status,
-        role: form.role,
+        role: form.role as Exclude<ManagementRole, 'user'>,
       }
       result = await managerService.create(payload)
       toast.success('Tạo tài khoản quản trị thành công')
@@ -91,54 +91,56 @@ async function onSubmit() {
 </script>
 
 <template>
-  <form class="space-y-4" @submit.prevent="onSubmit">
-    <div class="space-y-2">
-      <label class="text-sm font-medium">Tên hiển thị</label>
-      <Input v-model="form.displayName" placeholder="Nguyễn Văn A" />
+  <form class="space-y-5 px-6 py-5" @submit.prevent="onSubmit">
+    <div class="grid gap-3 md:grid-cols-2">
+      <div class="space-y-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5 md:col-span-2">
+        <label class="text-[12px] font-medium text-muted-foreground">Tên hiển thị</label>
+        <Input v-model="form.displayName" placeholder="Nguyễn Văn A" />
+      </div>
+
+      <div class="space-y-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+        <label class="text-[12px] font-medium text-muted-foreground">Tên đăng nhập</label>
+        <Input
+          v-model="form.username"
+          placeholder="nguyenvana"
+          :disabled="isEditing"
+        />
+      </div>
+
+      <div class="space-y-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+        <label class="text-[12px] font-medium text-muted-foreground">Email</label>
+        <Input v-model="form.email" type="email" placeholder="admin@synkork.com" />
+      </div>
+
+      <div class="space-y-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+        <label class="text-[12px] font-medium text-muted-foreground">Vai trò</label>
+        <Select v-model="form.role">
+          <SelectTrigger class="w-full bg-background">
+            <SelectValue placeholder="Chọn vai trò" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem v-if="isEditing" value="USER">Người dùng</SelectItem>
+            <SelectItem value="MANAGER">Quản lý</SelectItem>
+            <SelectItem value="ADMIN">Quản trị viên</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div class="space-y-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+        <label class="text-[12px] font-medium text-muted-foreground">Trạng thái</label>
+        <Select v-model="form.status">
+          <SelectTrigger class="w-full bg-background">
+            <SelectValue placeholder="Chọn trạng thái" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ACTIVE">Hoạt động</SelectItem>
+            <SelectItem value="BANNED">Bị khóa</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
     </div>
 
-    <div class="space-y-2">
-      <label class="text-sm font-medium">Tên đăng nhập</label>
-      <Input
-        v-model="form.username"
-        placeholder="nguyenvana"
-        :disabled="isEditing"
-      />
-    </div>
-
-    <div class="space-y-2">
-      <label class="text-sm font-medium">Email</label>
-      <Input v-model="form.email" type="email" placeholder="admin@synkork.com" />
-    </div>
-
-    <div class="space-y-2">
-      <label class="text-sm font-medium">Vai trò</label>
-      <Select v-model="form.role">
-        <SelectTrigger class="w-full">
-          <SelectValue placeholder="Chọn vai trò" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="manager">Quản lý</SelectItem>
-          <SelectItem value="admin">Quản trị viên</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-
-    <div class="space-y-2">
-      <label class="text-sm font-medium">Trạng thái</label>
-      <Select v-model="form.status">
-        <SelectTrigger class="w-full">
-          <SelectValue placeholder="Chọn trạng thái" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="active">Hoạt động</SelectItem>
-          <SelectItem value="inactive">Ngừng hoạt động</SelectItem>
-          <SelectItem value="banned">Bị khóa</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-
-    <div class="flex justify-end gap-2 pt-2">
+    <div class="flex justify-end gap-2 border-t border-border pt-4">
       <Button type="button" variant="outline" :disabled="isLoading" @click="emit('close')">
         Hủy
       </Button>

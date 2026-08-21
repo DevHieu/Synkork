@@ -1,6 +1,6 @@
 import axiosClient from '@/lib/axiosClient'
 
-import type { InvoiceRequest, InvoiceSearchParams } from '../types/invoiceTypes'
+import type { InvoiceRequest, InvoiceSearchParams, PlanPricingRequest, SubscriptionSearchParams } from '../types/invoiceTypes'
 
 export const subscriptionService = {
   async getInvoices(params: { params: InvoiceSearchParams }) {
@@ -25,6 +25,21 @@ export const subscriptionService = {
 
   async deleteInvoice(id: string) {
     const res = await axiosClient.delete(`/api/manage/invoices/${id}`)
+    return res.data
+  },
+
+  async getSubscriptions(params: { params: SubscriptionSearchParams }) {
+    const res = await axiosClient.get('/api/manage/subscriptions', params)
+    return res.data
+  },
+
+  async getPlanPricings() {
+    const res = await axiosClient.get('/api/manage/plan-pricing')
+    return res.data
+  },
+
+  async updatePlanPricing(payload: PlanPricingRequest) {
+    const res = await axiosClient.put('/api/manage/plan-pricing', payload)
     return res.data
   },
 }

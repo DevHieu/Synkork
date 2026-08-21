@@ -22,7 +22,7 @@ public class NotificationService {
 
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
-
+    
     public void sendNotification(UserEntity actor, UserEntity target, UUID id, UUID roomId, UUID spaceId, NotificationTypeEnum type, NotificationRefTypeEnum refType) {
         NotificationEntity noti = NotificationEntity.builder()
                 .user(target)
@@ -53,6 +53,14 @@ public class NotificationService {
 
         n.setRead(true);
         notificationRepository.save(n);
+    }
+
+    public void markAllAsRead(UUID userId) {
+        List<NotificationEntity> notifications =
+                notificationRepository.findByUserIdAndIsReadFalse(userId);
+
+        notifications.forEach(notification -> notification.setRead(true));
+        notificationRepository.saveAll(notifications);
     }
 
     public List<NotificationDTO> getNotifications(UUID userId) {

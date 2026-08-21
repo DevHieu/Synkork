@@ -20,8 +20,8 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
             SELECT new com.synkork.backend.modules.message.dto.MessageDTO(
                 m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
                 m.type, m.attachmentUrl, m.attachmentName,
-                rm.user.username, rm.user.displayName, rm.user.avatarUrl,
-                rm.role, m.replyTo.id, m.createdAt, m.updatedAt
+                rm.id, rm.user.username, rm.user.displayName, rm.user.avatarUrl,
+                rm.role, m.replyTo.id, m.createdAt, m.updatedAt, m.version
                 )
                 FROM MessageEntity m
                 JOIN m.sender rm
@@ -35,8 +35,8 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
                 SELECT new com.synkork.backend.modules.message.dto.MessageDTO(
                     m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
                     m.type, m.attachmentUrl, m.attachmentName,
-                    rm.user.username, rm.user.displayName, rm.user.avatarUrl,
-                    rm.role, m.replyTo.id, m.createdAt, m.updatedAt
+                    rm.id, rm.user.username, rm.user.displayName, rm.user.avatarUrl,
+                    rm.role, m.replyTo.id, m.createdAt, m.updatedAt, m.version
                     )
                 FROM MessageEntity m
                 JOIN m.sender rm
@@ -55,8 +55,8 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
                 SELECT new com.synkork.backend.modules.message.dto.MessageDTO(
                     m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
                     m.type, m.attachmentUrl, m.attachmentName,
-                    rm.user.username, rm.user.displayName, rm.user.avatarUrl,
-                    rm.role, m.replyTo.id, m.createdAt, m.updatedAt
+                    rm.id, rm.user.username, rm.user.displayName, rm.user.avatarUrl,
+                    rm.role, m.replyTo.id, m.createdAt, m.updatedAt, m.version
                 )
                 FROM MessageEntity m
                 JOIN m.sender rm
@@ -76,8 +76,8 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
             SELECT new com.synkork.backend.modules.message.dto.MessageDTO(
                 m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
                 m.type, m.attachmentUrl, m.attachmentName,
-                rm.user.username, rm.user.displayName, rm.user.avatarUrl,
-                rm.role, m.replyTo.id, m.createdAt, m.updatedAt
+                rm.id, rm.user.username, rm.user.displayName, rm.user.avatarUrl,
+                rm.role, m.replyTo.id, m.createdAt, m.updatedAt, m.version
                 )
                 FROM MessageEntity m
                 JOIN m.sender rm
@@ -91,8 +91,8 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
                 SELECT new com.synkork.backend.modules.message.dto.MessageDTO(
                     m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
                     m.type, m.attachmentUrl, m.attachmentName,
-                    rm.user.username, rm.user.displayName, rm.user.avatarUrl,
-                    rm.role, m.replyTo.id, m.createdAt, m.updatedAt
+                    rm.id, rm.user.username, rm.user.displayName, rm.user.avatarUrl,
+                    rm.role, m.replyTo.id, m.createdAt, m.updatedAt, m.version
                     )
                 FROM MessageEntity m
                 JOIN m.sender rm
@@ -111,6 +111,10 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
     // Tìm với load máy cái tin nhắn khi nhấn lướt đến 1 cái tin nhắn trong Pinned
     @Query("""
                 SELECT m from MessageEntity m
+                JOIN FETCH m.sender rm
+                JOIN FETCH rm.user
+                JOIN FETCH m.space
+                LEFT JOIN FETCH m.replyTo
                 WHERE m.space.id = :spaceId
                   AND m.id < :messageId
                 ORDER BY m.id DESC
@@ -121,6 +125,10 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
 
     @Query("""
                 SELECT m from MessageEntity m
+                JOIN FETCH m.sender rm
+                JOIN FETCH rm.user
+                JOIN FETCH m.space
+                LEFT JOIN FETCH m.replyTo
                 WHERE m.space.id = :spaceId
                   AND m.id >= :messageId
                 ORDER BY m.id ASC
@@ -143,8 +151,8 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
                 SELECT new com.synkork.backend.modules.message.dto.MessageDTO(
                     m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
                     m.type, m.attachmentUrl, m.attachmentName,
-                    rm.user.username, rm.user.displayName, rm.user.avatarUrl,
-                    rm.role, m.replyTo.id, m.createdAt, m.updatedAt
+                    rm.id, rm.user.username, rm.user.displayName, rm.user.avatarUrl,
+                    rm.role, m.replyTo.id, m.createdAt, m.updatedAt, m.version
                 )
                 FROM MessageEntity m
                 JOIN m.sender rm
@@ -164,8 +172,8 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
                 SELECT new com.synkork.backend.modules.message.dto.MessageDTO(
                     m.id, m.content, m.space.id, m.deleted, m.pinned, m.edited,
                     m.type, m.attachmentUrl, m.attachmentName,
-                    rm.user.username, rm.user.displayName, rm.user.avatarUrl,
-                    rm.role, m.replyTo.id, m.createdAt, m.updatedAt
+                    rm.id, rm.user.username, rm.user.displayName, rm.user.avatarUrl,
+                    rm.role, m.replyTo.id, m.createdAt, m.updatedAt, m.version
                 )
                 FROM MessageEntity m
                 JOIN m.sender rm

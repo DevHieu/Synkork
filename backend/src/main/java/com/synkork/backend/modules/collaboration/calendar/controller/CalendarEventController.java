@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import com.synkork.backend.modules.collaboration.calendar.dto.CalendarEventAttachmentDTO;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -53,10 +55,11 @@ public class CalendarEventController {
     public ResponseEntity<List<CalendarEventDTO>> checkConflicts(
             @PathVariable UUID spaceId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime startTime,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime endTime,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam @DateTimeFormat(pattern = "HH:mm") LocalTime startTime,
+            @RequestParam @DateTimeFormat(pattern = "HH:mm") LocalTime endTime,
             @RequestParam(required = false) UUID excludeId) {
-        List<CalendarEventDTO> conflicts = calendarEventService.findConflicts(spaceId, date, startTime, endTime, excludeId);
+        List<CalendarEventDTO> conflicts = calendarEventService.findConflicts(spaceId, date, endDate != null ? endDate : date, startTime, endTime, excludeId);
         return ResponseEntity.ok(conflicts);
     }
 
@@ -86,6 +89,34 @@ public class CalendarEventController {
     public ResponseEntity<Void> deleteEvent(@PathVariable UUID eventId) {
         UUID userId = AuthUtils.getCurrentUserId();
         calendarEventService.deleteEvent(eventId, userId);
+        return ResponseEntity.ok().build();
+    }
+
+
+    @PostMapping("/{eventId}/attachments")
+    public ResponseEntity<List<CalendarEventAttachmentDTO>> uploadAttachments(
+            @PathVariable UUID eventId,
+            @RequestParam("files") List<MultipartFile> files) {
+        UUID userId = AuthUtils.getCurrentUserId();
+        List<CalendarEventAttachmentDTO> uploaded = calendarEventService.uploadAttachments(eventId, files, userId);
+        return ResponseEntity.ok(uploaded);
+    }
+
+
+    @PostMapping("/{eventId}/attachments/{attachmentId}/summarize")
+    public ResponseEntity<String> summarizeAttachment(
+            @PathVariable UUID eventId,
+            @PathVariable UUID attachmentId) {
+        UUID userId = AuthUtils.getCurrentUserId();
+        return ResponseEntity.ok(calendarEventService.summarizeAttachment(eventId, attachmentId, userId));
+    }
+
+    @DeleteMapping("/{eventId}/attachments/{attachmentId}")
+    public ResponseEntity<Void> deleteAttachment(
+            @PathVariable UUID eventId,
+            @PathVariable UUID attachmentId) {
+        UUID userId = AuthUtils.getCurrentUserId();
+        calendarEventService.deleteAttachment(eventId, attachmentId, userId);
         return ResponseEntity.ok().build();
     }
 

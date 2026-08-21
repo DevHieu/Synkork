@@ -5,6 +5,10 @@ import com.synkork.backend.modules.report.ReportEntity;
 import com.synkork.backend.modules.report.enums.ReportSeverityEnums;
 import com.synkork.backend.modules.report.enums.ReportStatusEnums;
 import com.synkork.backend.modules.report.enums.ReportTypeEnums;
+import com.synkork.backend.modules.room.RoomEntity;
+import com.synkork.backend.modules.user.UserEntity;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -18,16 +22,32 @@ public final class ReportSpecification {
 
     public static Specification<ReportEntity> from(ReportFilterRequest filter) {
         return (root, query, cb) -> {
+
+            if (Long.class != query.getResultType() && long.class != query.getResultType()) {
+                root.fetch("reporter", JoinType.LEFT);
+                root.fetch("targetUser", JoinType.LEFT);
+                var targetRoomFetch = root.fetch("targetRoom", JoinType.LEFT);
+                targetRoomFetch.fetch("owner", JoinType.LEFT);
+                query.distinct(true);
+            }
+            
             List<Predicate> predicates = new ArrayList<>();
+            Join<ReportEntity, UserEntity> reporter = null;
+            Join<ReportEntity, UserEntity> targetUser = null;
+            Join<ReportEntity, RoomEntity> targetRoom = null;
 
             String search = filter.search();
-            if (search != null && !search.isBlank()) {
-                String pattern = "%" + search.trim().toLowerCase() + "%";
-                Predicate byReason = cb.like(cb.lower(root.get("reason")), pattern);
-                Predicate byDescription = cb.like(cb.lower(root.get("description")), pattern);
-                predicates.add(cb.or(byReason, byDescription));
-            }
+            if (hasText(filter.search())) {
+                reporter = root.join("reporter", JoinType.LEFT);
+                targetUser = root.join("targetUser", JoinType.LEFT);
+                targetRoom =  root.join("targetRoom", JoinType.LEFT);
 
+                String keyword = "%" + search.trim().toLowerCase() + "%";
+                Predicate reporterEmail = cb.like(cb.lower(reporter.get("email")), keyword);
+                Predicate targetUsername = cb.like(cb.lower(targetUser.get("username")), keyword);
+                Predicate targetRoomname = cb.like(cb.lower(targetRoom.get("name")), keyword);
+                predicates.add(cb.or(reporterEmail, targetUsername, targetRoomname));
+            }
             ReportStatusEnums status = filter.status();
             if (status != null) {
                 predicates.add(cb.equal(root.get("status"), status));
@@ -57,5 +77,9 @@ public final class ReportSpecification {
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 }

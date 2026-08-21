@@ -1,8 +1,6 @@
 <script lang="ts" setup>
 import { Icon } from '@iconify/vue'
 import { useClipboard } from '@vueuse/core'
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import FlickeringGrid from '@/components/inspira-ui/flickering-grid.vue'
 
@@ -13,7 +11,7 @@ import { statuses } from '../billing-history/data/data'
 interface Props {
   cardNo: number
   orderId: string
-  price: number
+  price: string
   currency: string
   invoiceNo: string
   state: PayState
@@ -22,30 +20,13 @@ interface Props {
 }
 const props = defineProps<Props>()
 
-const { t } = useI18n()
-
 const orderId = computed(() => props.orderId || '')
 const cardNo = computed(() => `**${props.cardNo.toString().slice(2)}`)
 const { copy, copied } = useClipboard({ source: orderId })
 
 const state = computed(() => props.state)
 const currentState = computed(() => {
-  const item = statuses.find(it => it.value === state.value)
-  if (!item)
-    return undefined
-  let label = item.label
-  if (item.value === 'paid')
-    label = t('subscriptions.statusPaid')
-  else if (item.value === 'unpaid')
-    label = t('subscriptions.statusPending')
-  else if (item.value === 'cancelled')
-    label = t('subscriptions.statusCancelled')
-  else if (item.value === 'overdue')
-    label = t('subscriptions.statusCancelled')
-  return {
-    ...item,
-    label,
-  }
+  return statuses.find(item => item.value === state.value)
 })
 </script>
 
@@ -66,7 +47,6 @@ const currentState = computed(() => {
       </div>
 
       <div class="mt-6 text-4xl">
-        <span class="ml-1 text-stone-500">{{ currency }}</span>
         <span class="font-medium">{{ price }}</span>
       </div>
     </header>

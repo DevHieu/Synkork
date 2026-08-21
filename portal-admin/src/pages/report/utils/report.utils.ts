@@ -1,4 +1,5 @@
 import type { ReportReason, ReportSeverity } from '@/pages/report/types/Reports'
+import { CheckCircle2, Clock, Eye, Home, User, XCircle } from '@lucide/vue'
 
 export const REASON_LABEL_MAP: Record<ReportReason, string> = {
   SPAM: 'Spam / Quảng cáo',
@@ -26,3 +27,17 @@ export const SEVERITY_CONFIG: Record<ReportSeverity, { label: string, class: str
     class: 'border-red-300 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-950 dark:text-red-300',
   },
 }
+
+export const STATUS_CONFIG = {
+  PENDING: { label: 'Chờ xử lý', variant: 'secondary' as const, icon: Clock },
+  REVIEWED: { label: 'Đang xem xét', variant: 'outline' as const, icon: Eye },
+  RESOLVED: { label: 'Đã giải quyết', variant: 'default' as const, icon: CheckCircle2 },
+  DISMISSED: { label: 'Đã bác bỏ', variant: 'destructive' as const, icon: XCircle },
+}
+
+export const TYPE_CONFIG = {
+  USER: { label: 'Báo cáo người dùng', icon: User },
+  ROOM: { label: 'Báo cáo phòng', icon: Home },
+}
+
+export const LOCKED_STATUS = { USER: 'BANNED', ROOM: 'LOCKED' } as const

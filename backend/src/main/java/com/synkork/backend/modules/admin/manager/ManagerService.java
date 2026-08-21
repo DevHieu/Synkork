@@ -1,9 +1,14 @@
 package com.synkork.backend.modules.admin.manager;
 
 import com.synkork.backend.common.utils.AuthUtils;
-import com.synkork.backend.common.utils.EmailService;
+import com.synkork.backend.modules.admin.auditLog.AuditLogService;
 import com.synkork.backend.modules.admin.manager.dto.*;
+import com.synkork.backend.modules.admin.manager.email.ManagerEmailService;
+import com.synkork.backend.modules.admin.utils.AdminUtils;
+import com.synkork.backend.modules.payment.service.ExpiredSubscriptionService;
+import com.synkork.backend.modules.payment.service.PaymentService;
 import com.synkork.backend.modules.user.UserEntity;
+import com.synkork.backend.modules.user.enums.PlanEnum;
 import com.synkork.backend.modules.user.enums.RoleEnum;
 import com.synkork.backend.modules.user.enums.UserStatusEnum;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +20,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,7 +36,19 @@ public class ManagerService {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    private EmailService emailService;
+    private ManagerEmailService managerEmailService;
+
+    @Autowired
+    private PaymentService paymentService;
+
+    @Autowired
+    private ExpiredSubscriptionService expiredSubscriptionService;
+
+    @Autowired
+    private AuditLogService auditLogService;
+
+    @Autowired
+    private com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     public Page<UserEntity> getManagers(ManagerFilterRequest request) {
         request.validate();
@@ -47,24 +66,37 @@ public class ManagerService {
 
     @Transactional
     public ManagerResponse createManager(CreateManagerRequest request) {
-        if (managerRepository.existsByEmail(request.getEmail())) {
+        String email = request.getEmail().trim();
+        if (managerRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("Email da duoc su dung");
         }
-        if (managerRepository.existsByUsername(request.getUsername())) {
+
+        String username = request.getUsername().trim();
+        if (managerRepository.existsByUsername(username)) {
             throw new IllegalArgumentException("Username da duoc su dung");
         }
 
-        String temporaryPassword = UUID.randomUUID().toString().substring(0, 8);
+        String temporaryPassword = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
         UserEntity account = new UserEntity();
         account.setDisplayName(request.getDisplayName().trim());
-        account.setUsername(request.getUsername().trim());
-        account.setEmail(request.getEmail().trim());
+        account.setUsername(username);
+        account.setEmail(email);
         account.setPassword(passwordEncoder.encode(temporaryPassword));
         account.setRole(parseManagedRole(request.getRole()));
         account.setStatus(parseRequiredStatus(request.getStatus()));
 
         UserEntity saved = managerRepository.save(account);
-        sendWelcomeEmail(saved, temporaryPassword);
+
+        if (saved.getCurrentPlan() != PlanEnum.FREE) {
+            paymentService.createNewSubscription(saved, saved.getCurrentPlan().toString(), null, LocalDateTime.now(), LocalDateTime.now().plusMonths(1));
+        }
+
+        managerEmailService.sendManagerAccessEmail(saved, temporaryPassword);
+        createLog(saved, com.synkork.backend.modules.admin.auditLog.enums.LogActionEnum.CREATE_MANAGER, null, Map.of(
+                "status", saved.getStatus().name(),
+                "role", saved.getRole().name(),
+                "plan", saved.getCurrentPlan().name()
+        ));
         return ManagerResponse.from(saved);
     }
 
@@ -75,6 +107,7 @@ public class ManagerService {
         String oldEmail = account.getEmail();
         UserStatusEnum oldStatus = account.getStatus();
         RoleEnum oldRole = account.getRole();
+        PlanEnum oldPlan = account.getCurrentPlan();
 
         if (request.getDisplayName() != null) {
             account.setDisplayName(request.getDisplayName().trim());
@@ -96,15 +129,51 @@ public class ManagerService {
         }
 
         if (request.getRole() != null) {
-            account.setRole(parseManagedRole(request.getRole()));
+            account.setRole(parseAssignableRole(request.getRole()));
+        }
+
+        if (request.getPlan() != null) {
+            account.setCurrentPlan(parsePlan(request.getPlan()));
+        }
+
+        if (request.getPlan() != null) {
+            PlanEnum plan = PlanEnum.valueOf(request.getPlan().toUpperCase());
+
+            if (plan != oldPlan) {
+                account.setCurrentPlan(plan);
+
+                if (plan != PlanEnum.FREE) {
+                    paymentService.createNewSubscription(account, request.getPlan().toUpperCase(), null, LocalDateTime.now(), LocalDateTime.now().plusMonths(1));
+                }
+
+                if (AdminUtils.isPlanDowngrade(oldPlan, plan)) {
+                    expiredSubscriptionService.pinPendingRemovalRoomAndSpace(List.of(account));
+                } else {
+                    expiredSubscriptionService.changePendingRoomAndSpace(account.getId());
+                }
+            }
         }
 
         UserEntity saved = managerRepository.save(account);
         if (!isLockedStatus(oldStatus) && isLockedStatus(saved.getStatus())) {
-            sendManagerLockedEmail(saved, "Tai khoan cua ban da bi khoa boi quan tri vien.");
+            managerEmailService.sendManagerLockedEmail(saved, "Tai khoan cua ban da bi khoa boi quan tri vien.");
         } else {
-            sendManagerUpdatedEmail(saved, oldDisplayName, oldEmail, oldStatus, oldRole);
+            managerEmailService.sendManagerUpdatedEmail(saved, oldDisplayName, oldEmail, oldStatus, oldRole);
         }
+
+        createLog(saved, com.synkork.backend.modules.admin.auditLog.enums.LogActionEnum.UPDATE_MANAGER, null, metadata(
+                "oldDisplayName", oldDisplayName,
+                "newDisplayName", saved.getDisplayName(),
+                "oldEmail", oldEmail,
+                "newEmail", saved.getEmail(),
+                "oldStatus", oldStatus != null ? oldStatus.name() : null,
+                "newStatus", saved.getStatus() != null ? saved.getStatus().name() : null,
+                "oldRole", oldRole != null ? oldRole.name() : null,
+                "newRole", saved.getRole() != null ? saved.getRole().name() : null,
+                "oldPlan", oldPlan != null ? oldPlan.name() : null,
+                "newPlan", saved.getCurrentPlan() != null ? saved.getCurrentPlan().name() : null
+        ));
+
         return ManagerResponse.from(saved);
     }
 
@@ -117,8 +186,13 @@ public class ManagerService {
                 .filter(value -> !value.isBlank())
                 .orElse("Tai khoan cua ban da bi khoa boi quan tri vien.");
         account.setStatus(UserStatusEnum.BANNED);
-        managerRepository.save(account);
-        sendManagerLockedEmail(account, reason);
+        UserEntity saved = managerRepository.save(account);
+        managerEmailService.sendManagerLockedEmail(saved, reason);
+
+        createLog(saved, com.synkork.backend.modules.admin.auditLog.enums.LogActionEnum.LOCK_MANAGER, reason, Map.of(
+                "newStatus", UserStatusEnum.BANNED.name()
+        ));
+
         return Map.of("message", "Da khoa tai khoan manager/admin thanh cong");
     }
 
@@ -129,7 +203,7 @@ public class ManagerService {
     }
 
     private boolean isLockedStatus(UserStatusEnum status) {
-        return status == UserStatusEnum.INACTIVE || status == UserStatusEnum.BANNED;
+        return status == UserStatusEnum.NOT_VERIFIED || status == UserStatusEnum.BANNED;
     }
 
     private UserEntity findManagedAccount(UUID id) {
@@ -153,9 +227,12 @@ public class ManagerService {
         }
     }
 
-    private RoleEnum parseRole(String role) {
-        if (role == null || role.isBlank()) return null;
-        return parseManagedRole(role);
+    private RoleEnum parseAssignableRole(String role) {
+        try {
+            return RoleEnum.valueOf(role.toUpperCase());
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Vai tro phai la user, manager hoac admin");
+        }
     }
 
     private UserStatusEnum parseStatus(String status) {
@@ -171,82 +248,48 @@ public class ManagerService {
         }
     }
 
-    private void sendWelcomeEmail(UserEntity account, String temporaryPassword) {
-        String body = plainTextEmailBody(String.format(
-                "Xin chao %s,\n\nUsername: %s\nMat khau tam thoi: %s\n\n"
-                        + "Vui long doi mat khau sau khi dang nhap.",
-                account.getDisplayName(),
-                account.getUsername(),
-                temporaryPassword
-        ));
-        emailService.send(account.getEmail(), "[Synkork] Tai khoan quan tri da duoc tao", body);
-    }
-
-    private void sendManagerLockedEmail(UserEntity account, String reason) {
-        String body = plainTextEmailBody(String.format(
-                "Xin chao %s,\n\nTai khoan quan tri Synkork cua ban da bi khoa.\n\n"
-                        + "Trang thai hien tai: %s\n"
-                        + "Ly do: %s\n\n"
-                        + "Neu can ho tro them, vui long lien he quan tri vien.",
-                account.getUsername(),
-                account.getStatus(),
-                reason
-        ));
-        emailService.send(account.getEmail(), "[Synkork] Tai khoan quan tri cua ban da bi khoa", body);
-    }
-
-    private void sendManagerUpdatedEmail(
-            UserEntity account,
-            String oldDisplayName,
-            String oldEmail,
-            UserStatusEnum oldStatus,
-            RoleEnum oldRole
-    ) {
-        String body = plainTextEmailBody(String.format(
-                "Xin chao %s,\n\nTai khoan quan tri Synkork cua ban da duoc cap nhat.\n\n"
-                        + "Thong tin truoc do:\n"
-                        + "- Ten hien thi: %s\n"
-                        + "- Email: %s\n"
-                        + "- Trang thai: %s\n"
-                        + "- Vai tro: %s\n\n"
-                        + "Thong tin hien tai:\n"
-                        + "- Ten hien thi: %s\n"
-                        + "- Email: %s\n"
-                        + "- Trang thai: %s\n"
-                        + "- Vai tro: %s\n\n"
-                        + "Neu ban khong yeu cau thay doi nay, vui long lien he quan tri vien.",
-                account.getUsername(),
-                valueOrDash(oldDisplayName),
-                valueOrDash(oldEmail),
-                valueOrDash(oldStatus),
-                valueOrDash(oldRole),
-                valueOrDash(account.getDisplayName()),
-                valueOrDash(account.getEmail()),
-                valueOrDash(account.getStatus()),
-                valueOrDash(account.getRole())
-        ));
-        emailService.send(account.getEmail(), "[Synkork] Tai khoan quan tri cua ban da duoc cap nhat", body);
-    }
-
-    private String valueOrDash(Object value) {
-        return value == null ? "-" : value.toString();
-    }
-
-    private String plainTextEmailBody(String text) {
-        return "<div style=\"font-family: Arial, sans-serif; white-space: pre-line;\">"
-                + escapeHtml(text)
-                + "</div>";
-    }
-
-    private String escapeHtml(String text) {
-        if (text == null) {
-            return "";
+    private PlanEnum parsePlan(String plan) {
+        try {
+            return PlanEnum.valueOf(plan.toUpperCase());
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Goi dang ky phai la free, team hoac business");
         }
-        return text
-                .replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&#39;");
+    }
+
+    private Map<String, Object> metadata(Object... keyValues) {
+        Map<String, Object> result = new java.util.HashMap<>();
+        for (int i = 0; i + 1 < keyValues.length; i += 2) {
+            result.put(String.valueOf(keyValues[i]), keyValues[i + 1]);
+        }
+        return result;
+    }
+
+    private void createLog(UserEntity account, com.synkork.backend.modules.admin.auditLog.enums.LogActionEnum action, String reason, Map<String, Object> metadata) {
+        com.synkork.backend.modules.admin.auditLog.dtos.BuildLog log = com.synkork.backend.modules.admin.auditLog.dtos.BuildLog.builder()
+                .action(action)
+                .entityType(com.synkork.backend.modules.admin.auditLog.enums.LogEntityTypeEnum.MANAGER)
+                .entityId(account.getId().toString())
+                .entityName(account.getEmail())
+                .description(AuthUtils.getCurrentUsername() + " performed " + action.name() + " for manager/admin " + account.getEmail())
+                .metadata(writeMetadata(metadataWithReason(metadata, reason)))
+                .build();
+
+        auditLogService.log(log);
+    }
+
+    private Map<String, Object> metadataWithReason(Map<String, Object> metadata, String reason) {
+        Map<String, Object> result = new java.util.HashMap<>(metadata);
+        if (reason != null && !reason.isBlank()) {
+            result.put("reason", reason);
+        }
+        return result;
+    }
+
+    private String writeMetadata(Map<String, Object> metadata) {
+        try {
+            return objectMapper.writeValueAsString(metadata);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize audit metadata", e);
+        }
     }
 }

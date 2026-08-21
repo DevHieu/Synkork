@@ -2,6 +2,7 @@ package com.synkork.backend.modules.auth.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,5 +21,6 @@ public class RegisterRequest {
   @Email
   private String email;
   @NotBlank(message = "Password must not be blank")
+  @Size(min = 6, message = "Mật khẩu dài ít nhất 6 kĩ tự")
   private String password;
 }

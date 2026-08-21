@@ -1,6 +1,9 @@
 package com.synkork.backend.modules.space;
 
 import com.synkork.backend.common.base.BaseEntity;
+import com.synkork.backend.modules.collaboration.calendar.entity.CalendarEventEntity;
+import com.synkork.backend.modules.collaboration.note.NoteEntity;
+import com.synkork.backend.modules.collaboration.task.column.ColumnEntity;
 import com.synkork.backend.modules.message.MessageEntity;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.space.enums.SpaceStatusEnum;
@@ -11,7 +14,12 @@ import lombok.*;
 import java.util.List;
 
 @Entity
-@Table(name = "spaces")
+@Table(
+        name = "spaces",
+        indexes = {
+                @Index(name = "idx_spaces_room_id", columnList = "room_id")
+        }
+)
 @Getter
 @Setter
 @Builder
@@ -30,6 +38,15 @@ public class SpaceEntity extends BaseEntity {
 
     @OneToMany(mappedBy = "space", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MessageEntity> messages;
+
+    @OneToMany(mappedBy = "space", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<NoteEntity> notes;
+
+    @OneToMany(mappedBy = "space", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ColumnEntity> columns;
+
+    @OneToMany(mappedBy = "space", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CalendarEventEntity> calendarEvents;
 
     @Enumerated(EnumType.STRING)
     @Builder.Default

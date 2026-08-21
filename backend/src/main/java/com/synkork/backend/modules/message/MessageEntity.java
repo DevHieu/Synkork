@@ -11,7 +11,15 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "messages")
+@Table(
+        name = "messages",
+        indexes = {
+                @Index(name = "idx_messages_space_created", columnList = "space_id, createdAt DESC"),
+                @Index(name = "idx_messages_sender_id", columnList = "sender_id"),
+                @Index(name = "idx_messages_reply_to_id", columnList = "reply_to_id"),
+                @Index(name = "idx_messages_space_pinned", columnList = "space_id, pinned")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -46,8 +54,11 @@ public class MessageEntity extends BaseEntity {
     private String attachmentPublicId;  // cần để xóa trên Cloudinary
 
     @Column(name = "attachment_resource_type")
-    private String attachmentResourceType;  // "image" hoặc "raw" để xóa đúng
+    private String attachmentResourceType;  // "image", "video" hoặc "raw" để xóa đúng
 
     @Column(name = "attachment_name")
     private String attachmentName;  // tên file gốc để hiển thị cho user
+
+    @Version
+    private Integer version;
 }

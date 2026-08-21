@@ -1,15 +1,24 @@
-import type { SpaceType } from "@/types/Space";
+import type { SpaceType } from "@/features/spaces/types/Space";
 
 export type PlanType = "FREE" | "TEAM" | "BUSINESS";
-export type LimitType = "file" | "rooms" | "chat" | "voice" | "note" | "calendar" | "task";
-
+export type LimitType =
+  | "file"
+  | "rooms"
+  | "chat"
+  | "voice"
+  | "note"
+  | "calendar"
+  | "task";
 
 export const PlanLimitUtils = {
   maxRooms(plan: PlanType): number {
     switch (plan) {
-      case "FREE": return 5;
-      case "TEAM": return 10;
-      case "BUSINESS": return 30;
+      case "FREE":
+        return 5;
+      case "TEAM":
+        return 10;
+      case "BUSINESS":
+        return 30;
     }
   },
 
@@ -32,33 +41,45 @@ export const PlanLimitUtils = {
 
   maxChatSpaces(plan: PlanType): number {
     switch (plan) {
-      case "FREE": return 3;
-      case "TEAM": return 10;
-      case "BUSINESS": return 20;
+      case "FREE":
+        return 3;
+      case "TEAM":
+        return 10;
+      case "BUSINESS":
+        return 20;
     }
   },
 
   maxVoiceSpaces(plan: PlanType): number {
     switch (plan) {
-      case "FREE": return 2;
-      case "TEAM": return 5;
-      case "BUSINESS": return 10;
+      case "FREE":
+        return 2;
+      case "TEAM":
+        return 5;
+      case "BUSINESS":
+        return 10;
     }
   },
 
   maxCollaborationSpaces(plan: PlanType): number {
     switch (plan) {
-      case "FREE": return 1;
-      case "TEAM": return 3;
-      case "BUSINESS": return 10;
+      case "FREE":
+        return 1;
+      case "TEAM":
+        return 3;
+      case "BUSINESS":
+        return 10;
     }
   },
 
   maxFileSizeBytes(plan: PlanType): number {
     switch (plan) {
-      case "FREE": return 1 * 1024 * 1024;
-      case "TEAM": return 10 * 1024 * 1024;
-      case "BUSINESS": return 50 * 1024 * 1024;
+      case "FREE":
+        return 1 * 1024 * 1024;
+      case "TEAM":
+        return 10 * 1024 * 1024;
+      case "BUSINESS":
+        return 50 * 1024 * 1024;
     }
   },
 

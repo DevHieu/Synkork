@@ -7,7 +7,6 @@ import com.synkork.backend.modules.collaboration.task.column.ColumnRepository;
 import com.synkork.backend.modules.message.MessageRepository;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.RoomRepository;
-import com.synkork.backend.modules.room.dto.CreateRoomDto;
 import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import com.synkork.backend.modules.space.dto.CreateSpaceRequest;
 import com.synkork.backend.modules.space.dto.SpaceDTO;
@@ -44,8 +43,6 @@ public class SpaceService {
     @Autowired
     private UserRepository userRepository;
 
-//    @Autowired
-//    private CalendarEventRepository calendarEventRepository;
 
     public SpaceEntity createSpace(CreateSpaceRequest space, UUID roomId) {
         RoomEntity roomEntity = roomRepository.getReferenceById(roomId);
@@ -72,7 +69,11 @@ public class SpaceService {
             );
         }
 
-        SpaceEntity spaceEntity = new SpaceEntity(space.name(), type, roomEntity);
+        SpaceEntity spaceEntity = SpaceEntity.builder()
+                .name(space.name())
+                .type(type)
+                .room(roomEntity)
+                .build();
         return spaceRepository.save(spaceEntity);
     }
 

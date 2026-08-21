@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import BaseLayout from "./BaseLayout.vue";
-import RoomSidebar from "@/components/sidebar/RoomSidebar.vue";
-import FriendSidebar from "@/components/sidebar/FriendSidebar.vue";
+import RoomSidebar from "@/features/rooms/sidebar.vue";
+import FriendSidebar from "@/features/friends/components/FriendSidebar.vue";
 import { inject, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
-import { useSpaceStore } from "@/stores/spaceStore";
+import { useSpaceComposable } from "@/features/spaces/composables/spaceComposable.ts";
 
 const setSpaceOpen = inject<(val: boolean) => void>("setSpaceOpen");
 onMounted(() => {
@@ -18,7 +18,7 @@ watch(
   async (spaceId) => {
     if (spaceId) {
       const path = ["/me/note", "/me/calendar"].find(p => route.path.includes(p)) ?? "/me";
-      await useSpaceStore().joinDMSpace(spaceId as string, path);
+      await useSpaceComposable().joinDMSpace(spaceId as string, path);
     }
   },
   { immediate: true },

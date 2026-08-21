@@ -6,20 +6,18 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+public record CardRequest(
+        UUID columnId,
+        String title,
+        String description,
+        UUID userId,
+        List<UUID> assigneeIds,
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class CardRequest {
-    private UUID columnId;
-    private String title;
-    private String description;
-    private UUID userId;
+        @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        LocalDateTime dueDate,
 
-    private List<UUID> assigneeIds;
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    private LocalDateTime dueDate;
+        Integer version,
+
+        Boolean completed
+) {
 }

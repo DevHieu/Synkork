@@ -34,16 +34,28 @@ public class FileService {
         }
     }
 
-    public FileUploaded uploadFile(MultipartFile file, String folderName, PlanEnum plan) {
+    @SuppressWarnings("unchecked")
+    public FileUploaded uploadVideo(MultipartFile file, String folderName) {
         try {
-            long maxSize = PlanLimitUtils.maxFileSizeBytes(plan);
-            if (file.getSize() > maxSize) {
-                long maxMB = maxSize / (1024 * 1024);
-                throw new RuntimeException(
-                    "File vượt quá giới hạn " + maxMB + "MB của gói " + plan + ". Vui lòng nâng cấp gói."
-                );
-            }
+            Map<String, Object> options = ObjectUtils.asMap(
+                    "folder", folderName,
+                    "resource_type", "video"
+            );
+            Map uploaded = cloudinary.uploader().upload(file.getBytes(), options);
+            String publicId = (String) uploaded.get("public_id");
+            String url = cloudinary.url()
+                    .secure(true)
+                    .resourceType("video")
+                    .generate(publicId);
 
+            return new FileUploaded(url, publicId, "video", file.getOriginalFilename());
+        } catch (IOException e) {
+            throw new RuntimeException("Upload video failed", e);
+        }
+    }
+
+    public FileUploaded uploadFile(MultipartFile file, String folderName) {
+        try {
             Map options = ObjectUtils.asMap(
                     "folder", folderName,
                     "resource_type", "raw"
@@ -54,11 +66,37 @@ public class FileService {
 
             return new FileUploaded(url, publicId, "raw", file.getOriginalFilename());
         } catch (IOException e) {
-            throw new RuntimeException("Upload file failed", e);
+            throw new RuntimeException("Upload video failed", e);
         }
     }
-    public FileUploaded uploadFile(MultipartFile file, String folderName) {
-        return uploadFile(file, folderName, PlanEnum.FREE);
+
+    public FileUploaded handleUpload(MultipartFile file, String folderName, boolean needSizeCheck) {
+        PlanEnum currentPlan = AuthUtils.getCurrentPlan();
+
+        if (needSizeCheck) {
+            long maxSize = PlanLimitUtils.maxFileSizeBytes(currentPlan);
+            if (file.getSize() > maxSize) {
+                long maxMB = maxSize / (1024 * 1024);
+                throw new RuntimeException(
+                        "File vượt quá giới hạn " + maxMB + "MB của gói " + currentPlan + ". Vui lòng nâng cấp gói."
+                );
+            }
+        }
+
+        boolean isImage = file.getContentType() != null && file.getContentType().startsWith("image/");
+        boolean isVideo = file.getContentType() != null && file.getContentType().startsWith("video/");
+
+        if (isImage) {
+            return this.uploadImage(file, folderName);
+        } else if (isVideo) {
+            return this.uploadVideo(file, folderName);
+        } else {
+            return this.uploadFile(file, folderName);
+        }
+    }
+
+    public FileUploaded handleUpload(MultipartFile file, String folderName) {
+        return handleUpload(file, folderName, true);
     }
 
     public boolean deleteFile(String publicId, String resourceType) {

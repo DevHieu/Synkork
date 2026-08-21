@@ -22,8 +22,8 @@ public class CreateManagerRequest {
 
     @NotBlank(message = "Trang thai khong duoc de trong")
     @Pattern(
-            regexp = "(?i)active|inactive|banned",
-            message = "Trang thai phải là active, inactive hoặc banned"
+            regexp = "(?i)active|not_verified|banned",
+            message = "Trang thai phải là active, banned hoặc not_verified"
     )
     private String status;
 

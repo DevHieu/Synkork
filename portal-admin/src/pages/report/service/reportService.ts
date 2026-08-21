@@ -7,8 +7,8 @@ export async function getReports(params: { params: ReportFilterParams }) {
   return res.data
 }
 
-export async function updateReportStatus(reportId: string, status: ReportStatus, note?: string) {
-  await axiosClient.patch(`/api/manage/reports/${reportId}/status`, { status, ...(note ? { note } : {}) })
+export async function updateReportStatus(reportId: string, status: ReportStatus, note?: string, hasWarn?: boolean) {
+  await axiosClient.patch(`/api/manage/reports/${reportId}/status`, { status, ...(note ? { note } : {}), ...(hasWarn ? { hasWarn: true } : {}) })
 }
 
 export async function deleteReport(reportId: string) {

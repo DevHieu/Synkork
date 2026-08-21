@@ -12,12 +12,17 @@ import com.synkork.backend.modules.collaboration.task.card.CardEntity;
 import com.synkork.backend.modules.space.SpaceEntity;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
-@Table(name = "columns")
+@Table(
+        name = "columns",
+        indexes = {
+                @Index(name = "idx_columns_space_position", columnList = "space_id, position")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -48,6 +53,21 @@ public class ColumnEntity {
 
     @OneToMany(mappedBy = "column", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC")
-    private List<CardEntity> cards = new ArrayList<>();
-    
+    private Set<CardEntity> cards = new HashSet<>();
+
+    @Version
+    private Integer version;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ColumnEntity that = (ColumnEntity) o;
+        return id != null && id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

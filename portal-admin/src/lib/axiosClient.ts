@@ -16,8 +16,7 @@ axiosClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = getCookie('accessToken')
     const url = config.url ?? ''
-    const authRoute = ['/auth/login', '/auth/logout']
-    if (!authRoute.some(route => url.includes(route))) {
+    if (!url.includes('auth/')) {
       if (token) {
         config.headers = config.headers ?? {}
         config.headers.Authorization = `Bearer ${token}`
@@ -36,6 +35,13 @@ axiosClient.interceptors.response.use(
 
     if (originalRequest.url.includes('/auth/refresh')) {
       return Promise.reject(error)
+    }
+
+    // 403: FORBIDDEN: Không có quyền -> cút ra đăng nhập luôn
+    if (error.response?.status === 403 && !originalRequest.url.includes('/auth')) {
+      removeCookie('accessToken')
+      removeCookie('refreshToken')
+      window.location.href = '/auth/sign-in'
     }
 
     // Token mà không hợp lệ thì về trang đăng nhập

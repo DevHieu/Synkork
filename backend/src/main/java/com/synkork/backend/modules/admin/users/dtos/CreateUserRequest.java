@@ -20,10 +20,16 @@ public record CreateUserRequest(
 
         @NotBlank(message = "status không được để trống")
         @Pattern(
-                regexp = "(?i)active|inactive|banned",
-                message = "status phải là: active, inactive, banned"
+                regexp = "(?i)active|banned",
+                message = "status phải là: active, banned"
         )
         String status,
+
+        @Pattern(
+                regexp = "(?i)free|team|business",
+                message = "plan phải là: free, team, business"
+        )
+        String plan,
 
         @Pattern(
                 regexp = "(?i)user",

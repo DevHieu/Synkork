@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  portal-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: synkork-portal-admin
+    ports:
+      - "5174:5174"
+    restart: unless-stopped
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: synkork-ngrok-admin
+    restart: unless-stopped
+    command:
+      - "http"
+      - "portal-admin:5174"
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    ports:
+      - "4042:4040"
+    depends_on:
+      - portal-admin

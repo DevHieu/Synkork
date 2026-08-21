@@ -8,4 +8,5 @@ import lombok.Data;
 public class MoveCardRequest {
     private UUID targetColumnId;
     private int newPosition;
+    private Integer version;
 }

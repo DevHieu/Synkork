@@ -7,14 +7,9 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface StatisticsRepository extends JpaRepository<StatisticsEntity, UUID> {
-    @Query("SELECT s FROM StatisticsEntity s WHERE s.createdAt >= :from ORDER BY s.createdAt")
-    List<StatisticsEntity> findByDateRange(@Param("from") LocalDateTime from);
-
-    @Query("SELECT s FROM StatisticsEntity s WHERE DATE(s.createdAt) = DATE(:date)")
-    Optional<StatisticsEntity> findByDate(@Param("date") LocalDateTime date);
+    List<StatisticsEntity> findByCreatedAtBetweenOrderByCreatedAtAsc(LocalDateTime from, LocalDateTime to);
 }

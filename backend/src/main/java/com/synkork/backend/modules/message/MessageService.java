@@ -1,28 +1,35 @@
 package com.synkork.backend.modules.message;
 
-import com.synkork.backend.common.dtos.FileUploaded;
-import com.synkork.backend.common.utils.AuthUtils;
-import com.synkork.backend.common.utils.FileService;
-import com.synkork.backend.common.utils.ChatEventLlmService;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+
 import com.synkork.backend.modules.message.dto.*;
-import com.synkork.backend.modules.roomMember.RoomMemberEntity;
-import com.synkork.backend.modules.roomMember.RoomMemberRepository;
-import com.synkork.backend.modules.space.SpaceEntity;
-import com.synkork.backend.modules.space.SpaceRepository;
 import com.synkork.backend.modules.user.enums.PlanEnum;
+import com.synkork.backend.security.UserPrinciple;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.concurrent.CompletableFuture;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
-
-
-import java.util.*;
-import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.synkork.backend.common.dtos.FileUploaded;
+import com.synkork.backend.common.utils.AuthUtils;
+import com.synkork.backend.common.utils.FileService;
+import com.synkork.backend.common.utils.LLMFunction.ChatEventLlmService;
+import com.synkork.backend.modules.roomMember.RoomMemberEntity;
+import com.synkork.backend.modules.roomMember.RoomMemberRepository;
+import com.synkork.backend.modules.space.SpaceEntity;
+import com.synkork.backend.modules.space.SpaceRepository;
 
 @Service
 public class MessageService {
@@ -32,12 +39,16 @@ public class MessageService {
 
     @Autowired
     MessageRepository messageRepository;
+
     @Autowired
     SpaceRepository spaceRepository;
+
     @Autowired
     private ChatEventLlmService chatEventLlmService;
+
     @Autowired
     private ObjectMapper objectMapper;
+
     @Autowired
     private RoomMemberRepository roomMemberRepository;
 
@@ -73,6 +84,11 @@ public class MessageService {
         }
     }
 
+    public MessageEntity findById(UUID messageId) {
+        return messageRepository.findById(messageId)
+                .orElseThrow(() -> new IllegalArgumentException("Message not found"));
+    }
+
     @Transactional
     public MessageDTO saveMessage(String spaceId, MessageRequest request) {
         String senderId = AuthUtils.getCurrentUserId().toString();
@@ -85,6 +101,7 @@ public class MessageService {
                 .orElseThrow(() -> new IllegalArgumentException("Space not found"));
 
         RoomMemberEntity sender = resolveSender(space.getRoom().getId(), senderId, senderEmail);
+        this.requireChatEnabled(sender);
 
         entity.setSender(sender);
         entity.setSpace(space);
@@ -117,13 +134,10 @@ public class MessageService {
                 Optional<RoomMemberEntity> senderById = roomMemberRepository
                         .findByUserIdAndRoom_IdWithUser(userId, roomId);
                 if (senderById.isPresent()) {
-                    System.out.println("[Tin nhan] Tim duoc sender theo userId=" + senderId + " trong roomId=" + roomId);
                     return senderById.get();
                 }
-                System.out.println("[Tin nhan] Khong tim thay sender theo userId=" + senderId + " trong roomId=" + roomId);
             } catch (IllegalArgumentException ignored) {
                 // Bỏ qua để fallback sang email nếu userId trong session không hợp lệ.
-                System.out.println("[Tin nhan] senderId khong phai UUID hop le: " + senderId);
             }
         }
 
@@ -132,21 +146,16 @@ public class MessageService {
             Optional<RoomMemberEntity> senderByEmail = roomMemberRepository
                     .findByUser_EmailAndRoom_Id(senderEmail, roomId);
             if (senderByEmail.isPresent()) {
-                System.out.println("[Tin nhan] Tim duoc sender theo email=" + senderEmail + " trong roomId=" + roomId);
                 return senderByEmail.get();
             }
-            System.out.println("[Tin nhan] Khong tim thay sender theo email=" + senderEmail + " trong roomId=" + roomId);
         }
 
-        System.out.println("[Tin nhan] Khong the xac dinh sender. roomId=" + roomId
-                + ", senderId=" + senderId
-                + ", senderEmail=" + senderEmail);
+        System.err.println("[Tin nhan] Khong the xac dinh sender. roomId=" + roomId + ", senderId=" + senderId + ", senderEmail=" + senderEmail);
         throw new IllegalArgumentException("User is not a member of this room");
     }
 
     public void deleteMessage(UUID messageId) {
-        MessageEntity message = messageRepository.findById(messageId)
-                .orElseThrow(() -> new IllegalArgumentException("Message not found"));
+        MessageEntity message = this.findById(messageId);
 
         message.setContent(null);
         message.setPinned(false);
@@ -156,7 +165,9 @@ public class MessageService {
         if (message.getAttachmentPublicId() != null) {
             if (message.getType() == MessageTypeEnum.IMAGE) {
                 fileService.deleteFile(message.getAttachmentPublicId(), "image");
-            } else if (message.getType() == MessageTypeEnum.FILE) {
+            } else if (message.getType() == MessageTypeEnum.VIDEO) {
+                fileService.deleteFile(message.getAttachmentPublicId(), "video");
+            } else {
                 fileService.deleteFile(message.getAttachmentPublicId(), "raw");
             }
         }
@@ -165,21 +176,23 @@ public class MessageService {
     public MessageDTO updateMessage(String messageId, MessageRequest request) {
         UUID messageUUID =  UUID.fromString(messageId);
 
-        MessageEntity entity = messageRepository.findById(messageUUID)
-                .orElseThrow(() -> new IllegalArgumentException("Message not found"));
+        MessageEntity entity = this.findById(messageUUID);
+
+        if (!entity.getVersion().equals(request.version())) {
+            throw new ObjectOptimisticLockingFailureException(MessageEntity.class, entity.getId());
+        }
 
         entity.setContent(request.content());
-        entity.setEdited(true); // thêm cái này vào là xong
+        entity.setEdited(true);
 
         MessageEntity saved = messageRepository.save(entity);
         saved.setUpdatedAt(saved.getUpdatedAt());
-        saved.setEdited(true);
 
         return new MessageDTO(saved);
     }
 
     public MessageDTO changeMessagePinStatus(UUID messageUUID) {
-        MessageEntity entity = messageRepository.findById(messageUUID).orElseThrow(() -> new IllegalArgumentException("Message not found"));
+        MessageEntity entity = this.findById(messageUUID);
 
         entity.setPinned(!entity.isPinned());
         messageRepository.save(entity);
@@ -250,18 +263,19 @@ public class MessageService {
                 .findByUserIdAndRoom_IdWithUser(userId, space.getRoom().getId())
                 .orElseThrow(() -> new IllegalArgumentException("User is not a member of this room"));
 
+        this.requireChatEnabled(sender);
+
         // Gửi từng file message
         for (MultipartFile file : fileList) {
             boolean isImage = file.getContentType() != null && file.getContentType().startsWith("image/");
-            FileUploaded uploaded = isImage
-                    ? fileService.uploadImage(file, "message_file")
-                    : fileService.uploadFile(file, "message_file");
+            boolean isVideo = file.getContentType() != null && file.getContentType().startsWith("video/");
+            FileUploaded uploaded = fileService.handleUpload(file, "message_file");
 
             MessageEntity fileMessage = new MessageEntity();
             fileMessage.setSpace(space);
             fileMessage.setSender(sender);
             fileMessage.setContent(null);
-            fileMessage.setType(isImage ? MessageTypeEnum.IMAGE : MessageTypeEnum.FILE);
+            fileMessage.setType(isImage ? MessageTypeEnum.IMAGE : isVideo ? MessageTypeEnum.VIDEO : MessageTypeEnum.FILE);
             fileMessage.setAttachmentUrl(uploaded.url());
             fileMessage.setAttachmentPublicId(uploaded.publicId());
             fileMessage.setAttachmentResourceType(uploaded.resourceType());
@@ -305,8 +319,8 @@ public class MessageService {
 
         CompletableFuture.runAsync(() -> {
             try {
+                System.out.println("[LLM Chat] Đang phân tích tin nhắn ID: " + message.getId());
                 String jsonResponse = chatEventLlmService.detectSuggestionFromMessage(messageContent);
-                System.out.println("[Goi y LLM] Phan hoi tho cho message " + message.getId() + ": " + jsonResponse);
 
                 JsonNode rootNode = objectMapper.readTree(jsonResponse);
                 MessageSuggestionDTO suggestionPayload = MessageSuggestionDTO.fromJsonNode(
@@ -318,18 +332,24 @@ public class MessageService {
                 if (suggestionPayload.isActionable()) {
                     // Luôn dùng userId thật từ sender đã resolve để tránh lệch với id trong websocket session.
                     String privateChannel = "/topic/user/" + sender.getUser().getId() + "/suggestions";
-                    System.out.println("[Goi y LLM] Dang gui toi " + privateChannel
-                            + " for messageId=" + message.getId()
-                            + " payload=" + suggestionPayload);
+                    System.out.println("[LLM Chat] Thành công tạo suggestion (" + suggestionPayload.getSuggestionType() + ") cho tin nhắn ID: " + message.getId() + ". Đang gửi tới " + privateChannel);
 
                     simpMessagingTemplate.convertAndSend(privateChannel, suggestionPayload);
                 } else {
-                    System.out.println("[Goi y LLM] Bo qua message " + message.getId() + " vi suggestionType=NONE");
+                    System.out.println("[LLM Chat] Bỏ qua tin nhắn ID: " + message.getId() + " vì suggestionType=NONE hoặc không chứa format hợp lệ");
                 }
             } catch (Exception e) {
-                System.err.println("Loi khi phan tich tin nhan bang LLM: " + e.getMessage());
+                System.err.println("[LLM Chat] Thất bại khi phân tích tin nhắn ID: " + message.getId() + ". Lỗi: " + e.getMessage());
             }
         });
+    }
+
+    private void requireChatEnabled(RoomMemberEntity sender) {
+        LocalDateTime chatDisableUntil = sender.getChatDisableUntil();
+
+        if (chatDisableUntil != null && chatDisableUntil.isAfter(LocalDateTime.now())) {
+            throw new RuntimeException("Bạn đang bị chặn chat đến " + chatDisableUntil);
+        }
     }
 
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import BaseLayout from "./BaseLayout.vue";
-import RoomSidebar from "@/components/sidebar/RoomSidebar.vue";
-import SpaceSidebar from "@/components/sidebar/SpaceSidebar.vue";
+import RoomSidebar from "@/features/rooms/sidebar.vue";
+import SpaceSidebar from "@/features/spaces/sidebar.vue";
 </script>
 
 <template>

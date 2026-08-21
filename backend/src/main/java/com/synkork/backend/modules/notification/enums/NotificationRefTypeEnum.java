@@ -6,6 +6,7 @@ public enum NotificationRefTypeEnum {
     FRIEND_REJECT,
 
     EVENT_REMINDER,
+    EVENT_ASSIGNED,
     
     CARD_ASSIGNED,
     CARD_DUE_SOON,

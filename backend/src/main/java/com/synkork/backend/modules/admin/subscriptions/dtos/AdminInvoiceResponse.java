@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.admin.subscriptions.dtos;
 
-import com.synkork.backend.modules.payment.InvoiceEntity;
+import com.synkork.backend.modules.payment.entity.InvoiceEntity;
+import com.synkork.backend.modules.payment.enums.BillingCycleEnum;
 import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
 import com.synkork.backend.modules.payment.enums.PaymentMethodEnum;
 import com.synkork.backend.modules.user.enums.PlanEnum;
@@ -15,12 +16,12 @@ public record AdminInvoiceResponse(
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
         PlanEnum plan,
+        BillingCycleEnum billingCycle,
         InvoiceStatusEnum status,
         String transactionId,
         PaymentMethodEnum paymentMethod,
         String userEmail,
-        String username,
-        LocalDateTime planExpiresAt
+        String username
 ) {
     public static AdminInvoiceResponse from(InvoiceEntity invoice) {
         if (invoice == null) return null;
@@ -30,13 +31,13 @@ public record AdminInvoiceResponse(
                 invoice.getPaidAt(),
                 invoice.getCreatedAt(),
                 invoice.getUpdatedAt(),
-                invoice.getUser() != null ? invoice.getUser().getCurrentPlan() : null,
+                invoice.getPlan(),
+                invoice.getBillingCycle(),
                 invoice.getStatus(),
                 invoice.getTransactionId(),
                 invoice.getPaymentMethod(),
                 invoice.getUser() != null ? invoice.getUser().getEmail() : null,
-                invoice.getUser() != null ? invoice.getUser().getUsername() : null,
-                invoice.getUser() != null ? invoice.getUser().getPlanExpiresAt() : null
+                invoice.getUser() != null ? invoice.getUser().getUsername() : null
         );
     }
 }

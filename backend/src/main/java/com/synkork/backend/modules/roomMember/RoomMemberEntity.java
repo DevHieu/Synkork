@@ -1,22 +1,28 @@
 package com.synkork.backend.modules.roomMember;
 
-import com.synkork.backend.common.utils.uuid.UuidV7Annotation;
-import com.synkork.backend.modules.message.MessageEntity;
-import com.synkork.backend.modules.room.RoomEntity;
-import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
-import com.synkork.backend.modules.user.UserEntity;
-import jakarta.persistence.*;
-import lombok.*;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+
+import com.synkork.backend.common.utils.uuid.UuidV7Annotation;
+import com.synkork.backend.modules.message.MessageEntity;
+import com.synkork.backend.modules.room.RoomEntity;
+import com.synkork.backend.modules.roomMember.enums.MemberStatusEnum;
+import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
+import com.synkork.backend.modules.user.UserEntity;
+
+import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
 @Table(
         name = "room_members",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {"room_id", "user_id"})
+        },
+        indexes = {
+                @Index(name = "idx_room_members_user_id", columnList = "user_id"),
+                @Index(name = "idx_room_members_room_status", columnList = "room_id, status")
         }
 )
 @Getter @Setter
@@ -44,6 +50,10 @@ public class RoomMemberEntity {
     @Builder.Default
     private RoomMemberRoleEnum role = RoomMemberRoleEnum.MEMBER;
 
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private MemberStatusEnum status = MemberStatusEnum.ACTIVE;
+
     @Builder.Default
     private LocalDateTime joinedAt =  LocalDateTime.now();
 
@@ -53,4 +63,19 @@ public class RoomMemberEntity {
     @Builder.Default
     private boolean deafen = false;
 
+    @Column(nullable = true)
+    private LocalDateTime chatDisableUntil;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RoomMemberEntity that = (RoomMemberEntity) o;
+        return id != null && id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

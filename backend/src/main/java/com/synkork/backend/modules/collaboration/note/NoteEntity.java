@@ -13,7 +13,13 @@ import lombok.Builder;
 import java.time.Instant;
 
 @Entity
-@Table(name = "notes")
+@Table(
+        name = "notes",
+        indexes = {
+                @Index(name = "idx_notes_space_id", columnList = "space_id"),
+                @Index(name = "idx_notes_created_by", columnList = "created_by")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,7 +27,7 @@ import java.time.Instant;
 @Builder
 public class NoteEntity extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "space_id", nullable = false, columnDefinition = "BINARY(16)")
     private SpaceEntity space;
 
@@ -37,7 +43,7 @@ public class NoteEntity extends BaseEntity {
     @Builder.Default
     private boolean allowEditAll = true;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false, columnDefinition = "BINARY(16)")
     private UserEntity createdBy;
 
@@ -66,4 +72,7 @@ public class NoteEntity extends BaseEntity {
     @Builder.Default
     @Column(name = "archived")
     private Boolean archived = false;
+
+    @Version
+    private Integer version;
 }

@@ -48,7 +48,7 @@ const handleViewPlans = () => {
           khả dụng cho gói <span class="font-semibold text-foreground/90">
             {{ businessOnly ? "BUSINESS" : "TEAM" }}
           </span>
-          {{ !businessOnly ? "trở lên" : "" }}. Nâng cấp để sử dụng. trở lên
+          {{ !businessOnly ? "trở lên" : "" }}. Nâng cấp để sử dụng.
         </DialogDescription>
       </DialogHeader>
 

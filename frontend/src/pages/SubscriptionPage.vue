@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
-import { useUserStore } from "@/stores/userStore";
-import { createPaymentLink } from "@/services/subscriptionService";
+import { ref, computed, onMounted } from "vue";
+import { useUserStore } from "@/features/users/stores/userStore";
+import { createPaymentLink, getPlanPricing, type PlanPricingItem } from "@/services/subscriptionService";
 import { Check, X, Sparkles, Zap, Rocket } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,115 @@ const { userPlan, planExpiresAt } = storeToRefs(userStore);
 const loading = ref(false);
 const selectedPlan = ref("");
 const isYearly = ref(false);
+
+const pricingLoading = ref(true);
+const pricingList = ref<PlanPricingItem[]>([]);
+
+// Chỉ chứa thông tin TĨNH (tên, mô tả, icon, feature) — KHÔNG chứa giá.
+// Giá được lấy từ API /payment/plan-pricing để admin đổi giá là FE tự cập nhật theo,
+// không cần sửa code + deploy lại mỗi lần đổi giá.
+const planMeta = [
+  {
+    id: "FREE",
+    name: "Gói Miễn Phí",
+    description: "Khởi đầu tuyệt vời cho cá nhân",
+    icon: Zap,
+    features: [
+      { text: "Tối đa 5 phòng (Rooms)", included: true },
+      { text: "3 Kênh Chat", included: true },
+      { text: "2 Kênh Voice", included: true },
+      { text: "1 Bảng Note / Task / Calendar", included: true },
+      { text: "Giới hạn file 1MB", included: true },
+      { text: "Theme cơ bản", included: true },
+    ],
+    buttonText: "Gói Hiện Tại",
+    accentColor: "var(--foreground)",
+    cardClass: "bg-card/30 border-border hover:border-primary/50 shadow-sm",
+    buttonClass: "bg-muted text-muted-foreground cursor-not-allowed",
+  },
+  {
+    id: "TEAM",
+    name: "Gói Team",
+    description: "Dành cho nhóm nhỏ và sáng tạo",
+    icon: Sparkles,
+    features: [
+      { text: "Tối đa 15 phòng (Rooms)", included: true },
+      { text: "10 Kênh Chat", included: true },
+      { text: "5 Kênh Voice", included: true },
+      { text: "3 Bảng Note / Task / Calendar", included: true },
+      { text: "Giới hạn file 10MB", included: true },
+      { text: "Bộ Theme Pastel", included: true },
+      { text: "AI tạo nhanh lịch/note/task từ tin nhắn", included: true },
+      { text: "AI tóm tắt tài liệu", included: true },
+    ],
+    buttonText: "Nâng cấp gói Team",
+    accentColor: "var(--primary)",
+    cardClass: "bg-primary/5 border-primary/20 hover:border-primary/40 shadow-sm",
+    buttonClass: "bg-primary hover:opacity-90 text-primary-foreground",
+  },
+  {
+    id: "BUSINESS",
+    name: "Gói Business",
+    description: "Sức mạnh tối đa cho chuyên nghiệp",
+    icon: Rocket,
+    popular: true,
+    features: [
+      { text: "Tối đa 50 phòng (Rooms)", included: true },
+      { text: "30 Kênh Chat", included: true },
+      { text: "15 Kênh Voice", included: true },
+      { text: "10 Bảng Note / Task / Calendar", included: true },
+      { text: "Giới hạn file 50MB", included: true },
+      { text: "Theme Ombre & Tùy chỉnh", included: true },
+      { text: "AI tạo nhanh lịch/note/task từ tin nhắn", included: true },
+      { text: "AI tóm tắt cuộc họp", included: true },
+      { text: "Google Calendar", included: true },
+    ],
+    buttonText: "Lên đời Business",
+    accentColor: "var(--secondary)",
+    cardClass: "bg-secondary/5 border-secondary/20 hover:border-secondary/40 shadow-sm",
+    buttonClass: "bg-secondary hover:opacity-90 text-secondary-foreground",
+  },
+];
+
+// Tra giá theo plan + chu kỳ từ dữ liệu API. FREE mặc định 0đ (không cần có trong DB).
+function findPricing(planId: string, cycle: "MONTHLY" | "YEARLY"): PlanPricingItem | undefined {
+  if (planId === "FREE") return undefined;
+  return pricingList.value.find(
+    (p) => p.plan === planId && p.billingCycle === cycle && p.active
+  );
+}
+
+function getOriginalPrice(pricing?: PlanPricingItem): number {
+  return pricing ? Number(pricing.amount) : 0;
+}
+
+function getFinalPrice(pricing?: PlanPricingItem): number {
+  if (!pricing) return 0;
+  const finalAmount = pricing.finalAmount ?? Number(pricing.amount) - Number(pricing.discountAmount ?? 0);
+  return Math.max(Number(finalAmount), 0);
+}
+
+function hasDiscount(pricing?: PlanPricingItem): boolean {
+  return !!pricing && Number(pricing.discountAmount ?? 0) > 0 && getFinalPrice(pricing) < getOriginalPrice(pricing);
+}
+
+// Ghép metadata tĩnh với giá động lấy từ API — component dùng "plans" y hệt trước đây.
+const plans = computed(() =>
+  planMeta.map((meta) => {
+    const monthlyPricing = findPricing(meta.id, "MONTHLY");
+    const yearlyPricing = findPricing(meta.id, "YEARLY");
+
+    return {
+      ...meta,
+      monthlyPrice: getFinalPrice(monthlyPricing),
+      yearlyPrice: getFinalPrice(yearlyPricing),
+      monthlyOriginalPrice: getOriginalPrice(monthlyPricing),
+      yearlyOriginalPrice: getOriginalPrice(yearlyPricing),
+      monthlyHasDiscount: hasDiscount(monthlyPricing),
+      yearlyHasDiscount: hasDiscount(yearlyPricing),
+    };
+  })
+);
 
 const activePlan = computed(() => {
   if (!userPlan.value) return "FREE";
@@ -33,76 +142,6 @@ const isExpiringSoon = computed(() => {
   return daysUntilExpiry.value !== null && daysUntilExpiry.value <= 3;
 });
 
-const plans = [
-  {
-    id: "FREE",
-    name: "Gói Miễn Phí",
-    description: "Khởi đầu tuyệt vời cho cá nhân",
-    monthlyPrice: 0,
-    yearlyPrice: 0,
-    icon: Zap,
-    features: [
-      { text: "Tối đa 5 phòng (Rooms)", included: true },
-      { text: "3 Kênh Chat", included: true },
-      { text: "2 Kênh Voice", included: true },
-      { text: "1 Bảng Note / Task", included: true },
-      { text: "Giới hạn file 1MB", included: true },
-      { text: "Theme cơ bản", included: true },
-    ],
-    buttonText: "Gói Hiện Tại",
-    accentColor: "var(--foreground)",
-    cardClass: "bg-card/30 border-border hover:border-primary/50 shadow-sm",
-    buttonClass: "bg-muted text-muted-foreground cursor-not-allowed",
-  },
-  {
-    id: "TEAM",
-    name: "Gói Team",
-    description: "Dành cho nhóm nhỏ và sáng tạo",
-    monthlyPrice: 69000,
-    yearlyPrice: 659000,
-    icon: Sparkles,
-    features: [
-      { text: "Tối đa 15 phòng (Rooms)", included: true },
-      { text: "10 Kênh Chat", included: true },
-      { text: "5 Kênh Voice", included: true },
-      { text: "3 Bảng Note / Task", included: true },
-      { text: "Giới hạn file 10MB", included: true },
-      { text: "Bộ Theme Pastel", included: true },
-      { text: "AI tạo nhanh lịch/note/task từ tin nhắn", included: true },
-      { text: "Google Keep", included: true },
-    ],
-    buttonText: "Nâng cấp gói Team",
-    accentColor: "var(--primary)",
-    cardClass: "bg-primary/5 border-primary/20 hover:border-primary/40 shadow-sm",
-    buttonClass: "bg-primary hover:opacity-90 text-primary-foreground",
-  },
-  {
-    id: "BUSINESS",
-    name: "Gói Business",
-    description: "Sức mạnh tối đa cho chuyên nghiệp",
-    monthlyPrice: 129000,
-    yearlyPrice: 1239000,
-    icon: Rocket,
-    popular: true,
-    features: [
-      { text: "Tối đa 50 phòng (Rooms)", included: true },
-      { text: "30 Kênh Chat", included: true },
-      { text: "15 Kênh Voice", included: true },
-      { text: "10 Bảng Note / Task", included: true },
-      { text: "Giới hạn file 50MB", included: true },
-      { text: "Theme Ombre & Tùy chỉnh", included: true },
-      { text: "AI tạo nhanh lịch/note/task từ tin nhắn", included: true },
-      { text: "AI tóm tắt cuộc họp", included: true },
-      { text: "Google Keep", included: true },
-      { text: "Google Calendar", included: true },
-    ],
-    buttonText: "Lên đời Business",
-    accentColor: "var(--secondary)",
-    cardClass: "bg-secondary/5 border-secondary/20 hover:border-secondary/40 shadow-sm",
-    buttonClass: "bg-secondary hover:opacity-90 text-secondary-foreground",
-  },
-];
-
 const choosePlan = async (planId: string) => {
   if (planId === "FREE") return;
 
@@ -116,8 +155,9 @@ const choosePlan = async (planId: string) => {
       billingCycle,
     });
 
-    if (response.payUrl) {
-      window.location.href = response.payUrl;
+
+    if (response.paymentUrl) {
+      window.location.href = response.paymentUrl;
     }
   } catch (error) {
     console.error("Payment error:", error);
@@ -129,6 +169,16 @@ const choosePlan = async (planId: string) => {
 const renewPlan = () => {
   choosePlan(activePlan.value);
 };
+
+onMounted(async () => {
+  try {
+    pricingList.value = await getPlanPricing();
+  } catch (error) {
+    console.error("Không lấy được bảng giá:", error);
+  } finally {
+    pricingLoading.value = false;
+  }
+});
 </script>
 
 <template>
@@ -218,7 +268,11 @@ const renewPlan = () => {
         </Button>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+      <div v-if="pricingLoading" class="text-center py-20 text-muted-foreground font-bold">
+        Đang tải bảng giá...
+      </div>
+
+      <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
         <div v-for="plan in plans" :key="plan.id"
           class="group relative p-8 rounded-[32px] border backdrop-blur-sm transition-all duration-500 flex flex-col min-h-[660px]"
           :class="[
@@ -251,6 +305,10 @@ const renewPlan = () => {
 
           <!-- Price -->
           <div class="mb-10">
+            <p v-if="isYearly ? plan.yearlyHasDiscount : plan.monthlyHasDiscount"
+              class="text-sm text-muted-foreground font-bold line-through mb-1">
+              {{ (isYearly ? plan.yearlyOriginalPrice : plan.monthlyOriginalPrice).toLocaleString('vi-VN') }}₫
+            </p>
             <div class="flex items-baseline gap-1">
               <span class="text-5xl font-black">
                 {{ (isYearly ? plan.yearlyPrice : plan.monthlyPrice).toLocaleString('vi-VN') }}₫

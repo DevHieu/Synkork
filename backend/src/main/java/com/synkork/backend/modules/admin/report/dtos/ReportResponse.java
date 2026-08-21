@@ -23,7 +23,12 @@ public record ReportResponse(
         ReportTypeEnums reportType,
         ReportStatusEnums status,
         ReportSeverityEnums severity,
-        LocalDateTime createdAt) {
+        LocalDateTime createdAt,
+        String evidenceUrl,
+        String evidenceName,
+        String evidenceResourceType,
+        Boolean hasWarn
+        ) {
     public ReportResponse(ReportEntity e) {
         this(
                 e.getId(),
@@ -46,6 +51,10 @@ public record ReportResponse(
                 e.getReportType(),
                 e.getStatus(),
                 e.getSeverity(),
-                e.getCreatedAt());
+                e.getCreatedAt(),
+                e.getEvidenceUrl(),
+                e.getEvidenceName(),
+                e.getEvidenceResourceType(),
+                e.getHasWarn());
     }
 }

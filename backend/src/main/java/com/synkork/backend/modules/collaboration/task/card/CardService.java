@@ -1,12 +1,14 @@
 package com.synkork.backend.modules.collaboration.task.card;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +17,7 @@ import com.synkork.backend.modules.collaboration.task.column.ColumnRepository;
 import com.synkork.backend.modules.collaboration.task.dto.CardDTO;
 import com.synkork.backend.modules.collaboration.task.dto.CardMovePayload;
 import com.synkork.backend.modules.collaboration.task.dto.CardRequest;
+import com.synkork.backend.modules.collaboration.task.dto.CompleteCardRequest;
 import com.synkork.backend.modules.collaboration.task.dto.MoveCardRequest;
 import com.synkork.backend.modules.notification.NotificationService;
 import com.synkork.backend.modules.notification.enums.NotificationRefTypeEnum;
@@ -47,7 +50,7 @@ public class CardService {
 
     @Transactional
     public CardDTO createCard(UUID spaceId, String creatorEmail, CardRequest req) {
-        UUID columnId = req.getColumnId();
+        UUID columnId = req.columnId();
         ColumnEntity column = columnRepository.findById(columnId)
                 .orElseThrow(() -> new RuntimeException("Cột không tồn tại"));
 
@@ -55,9 +58,9 @@ public class CardService {
 
         CardEntity card = new CardEntity();
         card.setColumn(column);
-        card.setTitle(req.getTitle());
+        card.setTitle(req.title());
         card.setPosition(nextPosition);
-        card.setDescription(req.getDescription() != null ? req.getDescription() : "");
+        card.setDescription(req.description() != null ? req.description() : "");
         card.setCreatedAt(LocalDateTime.now());
 
         UUID roomId = column.getSpace().getRoom().getId();
@@ -65,38 +68,44 @@ public class CardService {
                 roomMemberRepository.findByUser_EmailAndRoom_Id(creatorEmail, roomId)
                         .orElseThrow(() -> new RuntimeException("User không phải member của room này")));
 
-        if (req.getAssigneeIds() != null && !req.getAssigneeIds().isEmpty()) {
-            List<RoomMemberEntity> assignees = roomMemberRepository.findAllById(req.getAssigneeIds());
+        if (req.assigneeIds() != null && !req.assigneeIds().isEmpty()) {
+            Set<RoomMemberEntity> assignees = new HashSet<>(roomMemberRepository.findAllById(req.assigneeIds()));
             card.setAssignees(assignees);
         }
 
-        card.setDueDate(req.getDueDate());
+        card.setDueDate(req.dueDate());
 
         CardEntity savedCard = cardRepository.save(card);
         return new CardDTO(savedCard);
     }
 
+    @Transactional
     public CardDTO updateCard(UUID cardId, CardRequest req) {
-        CardEntity card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
+        System.out.println("Card version: " + req.version());
+        CardEntity card = findCardById(cardId);
 
-        if (req.getTitle() != null) {
-            card.setTitle(req.getTitle());
+        checkVersion(card, req.version());
+
+        if (req.title() != null) {
+            card.setTitle(req.title());
         }
 
-        if (req.getDescription() != null) {
-            card.setDescription(req.getDescription());
+        if (req.description() != null) {
+            card.setDescription(req.description());
         }
 
-        card.setDueDate(req.getDueDate());
+        card.setDueDate(req.dueDate());
 
-        if (req.getAssigneeIds() != null) {
+        if (req.completed() != null)
+            card.setCompleted(req.completed());
+
+        if (req.assigneeIds() != null) {
             // Lấy danh sách assignee cũ
             Set<UUID> oldAssigneeIds = card.getAssignees().stream()
                     .map(RoomMemberEntity::getId)
                     .collect(Collectors.toSet());
 
-            List<RoomMemberEntity> newAssignees = roomMemberRepository.findAllById(req.getAssigneeIds());
+            Set<RoomMemberEntity> newAssignees = new HashSet<>(roomMemberRepository.findAllById(req.assigneeIds()));
 
             // Tìm người mới được assign (có trong new nhưng không có trong old)
             List<RoomMemberEntity> justAssigned = newAssignees.stream()
@@ -104,7 +113,7 @@ public class CardService {
                     .toList();
 
             card.setAssignees(newAssignees);
-            CardEntity updatedCard = cardRepository.save(card);
+            CardEntity updatedCard = cardRepository.saveAndFlush(card);
 
             // Gửi notification cho từng người mới được assign
             if (!justAssigned.isEmpty()) {
@@ -140,8 +149,7 @@ public class CardService {
 
     @Transactional
     public void deleteCard(UUID cardId) {
-        CardEntity card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
+        CardEntity card = findCardById(cardId);
 
         UUID columnId = card.getColumn().getId();
         int deletedPos = card.getPosition();
@@ -159,15 +167,15 @@ public class CardService {
 
     @Transactional
     public CardDTO getCardById(UUID cardUUID) {
-        CardEntity card = cardRepository.findById(cardUUID)
-                .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
+        CardEntity card = findCardById(cardUUID);
         return new CardDTO(card);
     }
 
     @Transactional
     public CardMovePayload moveCard(UUID cardId, MoveCardRequest req) {
-        CardEntity card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
+        CardEntity card = findCardById(cardId);
+
+        checkVersion(card, req.getVersion());
 
         ColumnEntity oldCol = card.getColumn();
         ColumnEntity newCol = columnRepository.findById(req.getTargetColumnId())
@@ -204,8 +212,7 @@ public class CardService {
 
     @Transactional
     public CardDTO archiveCard(UUID cardId) {
-        CardEntity card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
+        CardEntity card = findCardById(cardId);
 
         UUID columnId = card.getColumn().getId();
         int archivedPos = card.getPosition();
@@ -230,8 +237,7 @@ public class CardService {
 
     @Transactional
     public CardDTO unarchiveCard(UUID cardId) {
-        CardEntity card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new RuntimeException("Card không tồn tại"));
+        CardEntity card = findCardById(cardId);
 
         UUID columnId = card.getColumn().getId();
 
@@ -262,7 +268,7 @@ public class CardService {
                 .map(CardDTO::new)
                 .toList();
     }
-    
+
     @Transactional
     public void deleteAllArchivedCards(UUID spaceId){
         cardRepository.deleteAllArchivedCards(spaceId);
@@ -310,5 +316,26 @@ public class CardService {
             }
         }
         cardRepository.saveAll(newCards);
+    }
+
+    public CardDTO completeCard(UUID cardId, CompleteCardRequest req) {
+        CardEntity card = findCardById(cardId);
+
+        checkVersion(card, req.version());
+
+        card.setCompleted(req.completed());
+        card.setCompletedAt(LocalDateTime.now());
+
+        return new CardDTO(cardRepository.save(card));
+    }
+
+    private CardEntity findCardById(UUID cardId) {
+        return cardRepository.findById(cardId).orElseThrow(() -> new RuntimeException("Card không tồn tại"));
+    }
+
+    private void checkVersion(CardEntity card, Integer requestVersion) {
+        if (requestVersion == null || !card.getVersion().equals(requestVersion)) {
+            throw new ObjectOptimisticLockingFailureException(CardEntity.class, card.getId());
+        }
     }
 }

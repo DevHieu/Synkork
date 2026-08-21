@@ -1,5 +1,6 @@
 package com.synkork.backend.common.utils;
 
+import com.synkork.backend.modules.user.enums.PlanEnum;
 import com.synkork.backend.security.UserPrinciple;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -14,5 +15,10 @@ public class AuthUtils {
     public static String getCurrentUsername() {
         UserPrinciple user = (UserPrinciple) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         return user.getUsername();
+    }
+
+    public static PlanEnum getCurrentPlan() {
+        UserPrinciple user = (UserPrinciple) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        return user.getCurrentPlan();
     }
 }

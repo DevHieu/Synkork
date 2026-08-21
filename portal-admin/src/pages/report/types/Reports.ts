@@ -31,6 +31,10 @@ export interface Report {
   reportType: ReportType
   status: ReportStatus
   createdAt: string
+  evidenceUrl: string | null
+  evidenceName?: string | null
+  evidenceResourceType?: 'image' | 'video' | null
+  hasWarn: boolean
 }
 
 export interface ReportFilterParams {
@@ -45,6 +49,8 @@ export interface ReportFilterParams {
 }
 
 export interface UpdateReportStatusPayload {
+  id: string
   status: ReportStatus
-  reason?: string
+  note?: string
+  hasWarn?: boolean
 }

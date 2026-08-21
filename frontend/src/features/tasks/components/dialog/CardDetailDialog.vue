@@ -1,0 +1,312 @@
+<script setup lang="ts">
+import { ref, watch, computed } from "vue";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarIcon, UserPlus, Archive, AlignLeft, CreditCard, X, Check, AlertCircle, Clock } from "lucide-vue-next";
+import type { CardEvent } from "@/features/tasks/types/Task";
+import { useRoomMemberStore } from '@/features/members/stores/roomMemberStore'
+import { useCardDetail } from "../../composables/card-detail";
+import DateTimePicker from "@/components/DateTimePicker.vue";
+
+const props = withDefaults(defineProps<{
+  open: boolean;
+  card: CardEvent;
+  columnName: string;
+  readOnly?: boolean;
+}>(), {
+  readOnly: false,
+});
+
+const emit = defineEmits(["update:open", "save", "archive", "toggle-complete"]);
+
+const {
+  form,
+  localAssignees,
+  baseVersion,
+  isCompleted,
+  getStatus,
+  handleSave,
+  handleArchive,
+  toggleAssignee,
+  removeAssignee,
+  handleDueDateChange,
+  handleToggleComplete
+} = useCardDetail(props, emit);
+
+const roomMemberStore = useRoomMemberStore();
+
+const searchQuery = ref("");
+const showDropdown = ref(false);
+
+const status = computed(() => getStatus(form.value.dueDate));
+
+const clearDueDate = () => {
+  form.value.dueDate = ""
+  handleSave()
+};
+
+const handleTitleKeydown = (e: KeyboardEvent) => {
+  if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+};
+
+const filteredMembers = computed(() => roomMemberStore.searchMembers(searchQuery.value));
+
+const isAssigned = (memberId: string) => localAssignees.value.some((a) => a.id === memberId);
+
+watch(
+  () => props.card.completed,
+  (value) => {
+    isCompleted.value = value ?? false;
+  },
+);
+
+watch(
+  () => props.open,
+  (newVal) => {
+    localAssignees.value = [...(props.card.assignees ?? [])];
+    if (newVal && props.card) {
+      let formattedDate = "";
+
+      if (props.card.dueDate) {
+        formattedDate = props.card.dueDate.slice(0, 16);
+      }
+      form.value = {
+        title: props.card.title || "",
+        description: props.card.description || "",
+        dueDate: formattedDate,
+      };
+      baseVersion.value = props.card.version;
+    }
+    searchQuery.value = "";
+    showDropdown.value = false;
+  },
+  { immediate: true },
+);
+
+watch(
+  () => props.card.version,
+  (newVersion) => {
+    if (!props.open) return;
+
+    if (
+      form.value.title === props.card.title &&
+      form.value.description === props.card.description
+    ) {
+      baseVersion.value = newVersion;
+    }
+  }
+);
+</script>
+
+<template>
+  <Dialog :open="open" @update:open="$emit('update:open', $event)">
+    <DialogContent class="max-w-2xl p-0 overflow-hidden border-none shadow-2xl bg-background rounded-xl">
+      <DialogTitle class="sr-only">Chi tiết thẻ</DialogTitle>
+      <DialogDescription class="sr-only">Chỉnh sửa thông tin thẻ công việc</DialogDescription>
+      <div class="flex items-center justify-between px-6 py-3 bg-muted/20 border-b border-border/50">
+        <div class="flex items-center gap-2 text-muted-foreground">
+          <CreditCard :size="16" />
+          <span class="text-xs font-medium uppercase tracking-wider">Chi tiết thẻ</span>
+        </div>
+        <Button v-if="!readOnly" variant="ghost" size="sm" @click.stop="handleArchive"
+          class="h-8 text-muted-foreground hover:text-amber-500 hover:bg-amber-50 transition-colors mr-5">
+          <Archive :size="14" class="mr-1" />
+          <span class="text-xs">Lưu trữ thẻ</span>
+        </Button>
+      </div>
+
+      <div class="p-5 space-y-5">
+        <!-- Title -->
+        <div class="space-y-1">
+          <input v-model="form.title"
+            class="w-full text-2xl font-bold bg-transparent border-none p-1 focus:ring-0 focus:outline-none placeholder:text-muted-foreground/40 transition-colors duration-200"
+            :class="isCompleted ? 'text-muted-foreground line-through decoration-2 decoration-muted-foreground/40' : ''"
+            placeholder="Tiêu đề thẻ..." @blur="handleSave" @keydown="handleTitleKeydown" />
+          <div class="flex flex-wrap items-center gap-2 text-sm text-muted-foreground pt-1">
+            <button type="button" role="checkbox" :aria-checked="isCompleted" :disabled="readOnly"
+              class="detail-check-btn group/check flex items-center gap-2 h-8 pl-1.5 pr-3 rounded-full border transition-all duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-50"
+              :class="isCompleted
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/50 dark:bg-emerald-950/30 dark:text-emerald-400'
+                : 'border-border bg-background text-muted-foreground hover:border-emerald-400 hover:text-emerald-600 hover:bg-emerald-50/60 dark:hover:bg-emerald-950/20'"
+              @click="handleToggleComplete">
+              <span
+                class="flex h-5 w-5 items-center justify-center rounded-full border-[1.5px] transition-all duration-200"
+                :class="isCompleted
+                  ? 'border-emerald-500 bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.16)]'
+                  : 'border-muted-foreground/40 group-hover/check:border-emerald-500'">
+                <Check v-if="isCompleted" class="check-pop h-3 w-3 text-white" :stroke-width="3" />
+              </span>
+              <span class="text-xs font-semibold">
+                {{ isCompleted ? "Đã hoàn thành" : "Đánh dấu hoàn thành" }}
+              </span>
+            </button>
+            <span class="text-xs">Trong mục</span>
+            <span class="px-2 py-0.5 rounded bg-secondary text-secondary-foreground font-medium text-xs">
+              {{ columnName }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Assignees -->
+        <div class="grid grid-cols-2 gap-8 py-2">
+          <div class="space-y-2">
+            <Label class="text-[11px] font-semibold uppercase text-muted-foreground">Người thực hiện</Label>
+            <div class="flex flex-wrap gap-2 mb-2">
+              <div v-for="assignee in localAssignees" :key="assignee.id"
+                class="flex items-center gap-1.5 bg-secondary rounded-full pl-1 pr-2 py-0.5">
+                <Avatar class="h-5 w-5">
+                  <AvatarImage v-if="assignee.avatarUrl" :src="assignee.avatarUrl" />
+                  <AvatarFallback class="text-[9px] bg-primary/10 text-primary font-bold">
+                    {{ assignee.name?.charAt(0).toUpperCase() }}
+                  </AvatarFallback>
+                </Avatar>
+                <span class="text-xs font-medium">{{ assignee.name }}</span>
+                <button v-if="!readOnly" @click="removeAssignee(assignee.id)"
+                  class="text-muted-foreground hover:text-red-500">
+                  <X :size="10" />
+                </button>
+              </div>
+            </div>
+
+            <!-- Dropdown chọn assignee -->
+            <Popover v-if="!readOnly" v-model:open="showDropdown">
+              <PopoverTrigger as-child>
+                <div
+                  class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-dashed border-border hover:border-primary cursor-pointer transition-colors">
+                  <UserPlus :size="13" class="text-muted-foreground" />
+                  <span class="text-xs text-muted-foreground">
+                    Thêm người...
+                  </span>
+                </div>
+              </PopoverTrigger>
+
+              <PopoverContent class="w-56 p-0 overflow-hidden" align="start">
+                <div class="p-2 border-b border-border">
+                  <input v-model="searchQuery" placeholder="Tìm tên..."
+                    class="w-full text-xs bg-transparent outline-none placeholder:text-muted-foreground" />
+                </div>
+
+                <ul class="max-h-48 overflow-y-auto py-1">
+                  <li v-for="member in filteredMembers" :key="member.memberId"
+                    class="flex items-center gap-2 px-3 py-2 hover:bg-accent cursor-pointer transition-colors"
+                    @click="toggleAssignee(member)">
+                    <Avatar class="h-6 w-6">
+                      <AvatarImage v-if="member.avatarUrl" :src="member.avatarUrl" />
+                      <AvatarFallback class="text-[9px] bg-primary/10 text-primary font-bold">
+                        {{ member.displayName?.charAt(0).toUpperCase() }}
+                      </AvatarFallback>
+                    </Avatar>
+
+                    <span class="text-xs flex-1">
+                      {{ member.displayName }}
+                    </span>
+
+                    <Check v-if="isAssigned(member.memberId)" :size="12" class="text-primary" />
+                  </li>
+
+                  <li v-if="filteredMembers.length === 0" class="px-3 py-2 text-xs text-muted-foreground">
+                    Không tìm thấy
+                  </li>
+                </ul>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div class="space-y-2">
+            <Label class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              Ngày hết hạn
+            </Label>
+            <div class="flex items-center gap-1.5">
+              <DateTimePicker :value="form.dueDate"
+                :onChange="(val: any) => { form.dueDate = val; handleDueDateChange(); }" placeholder="Chọn ngày và giờ"
+                class="w-full text-xs bg-transparent border-none outline-none text-foreground/80 cursor-pointer hover:text-primary transition-colors"
+                :disabled="readOnly" />
+            </div>
+
+            <!-- Status badge -->
+            <div class="flex items-center gap-1.5">
+
+              <Badge v-if="isCompleted" variant="outline"
+                class="text-[10px] px-1.5 py-0 h-4 gap-1
+                border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/40">
+                <Check class="w-2.5 h-2.5" />
+                Hoàn thành
+              </Badge>
+
+              <Badge v-else-if="status === 'OVERDUE'" variant="outline"
+                class="text-[10px] px-1.5 py-0 h-4 gap-1 border-destructive/30 bg-destructive/10 text-destructive">
+                <AlertCircle class="w-2.5 h-2.5" />
+                Quá hạn
+              </Badge>
+
+              <Badge v-else-if="status === 'DUE_SOON'" variant="outline"
+                class="text-[10px] px-1.5 py-0 h-4 gap-1 border-amber-300 bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800/40">
+                <Clock class="w-2.5 h-2.5" />
+                Sắp đến hạn
+              </Badge>
+
+              <button v-if="form.dueDate && !readOnly" @click="clearDueDate"
+                class="text-[10px] text-muted-foreground/60 hover:text-destructive transition-colors flex items-center gap-0.5">
+                <X class="w-2.5 h-2.5" />
+                Xóa
+              </button>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="space-y-3 pt-4 border-t border-border/50">
+          <div class="flex items-center gap-2 text-foreground/70">
+            <AlignLeft :size="18" />
+            <span class="text-sm font-semibold">Mô tả</span>
+          </div>
+          <Textarea v-model="form.description" placeholder="Nội dung chi tiết..."
+            class="min-h-[100px] max-h-[130px] max-w-[470px] text-base bg-transparent border-none focus-visible:ring-0 p-2 resize-none leading-relaxed placeholder:text-muted-foreground/30 shadow-none !overflow-y-auto overflow-x-hidden break-words whitespace-pre-wrap"
+            @blur="handleSave" />
+        </div>
+      </div>
+
+      <!-- Footer Info -->
+      <div class="px-8 py-4 bg-muted/5 flex justify-between items-center border-t border-border/30">
+        <p v-if="!readOnly" class="text-[10px] text-muted-foreground italic">
+          * Tự động lưu khi bạn hoàn tất chỉnh sửa
+        </p>
+        <p v-else class="text-[10px] text-muted-foreground italic">
+          * Chế độ chỉ xem
+        </p>
+      </div>
+    </DialogContent>
+  </Dialog>
+</template>
+
+<style scoped>
+.detail-check-btn:active {
+  transform: scale(0.97);
+}
+
+.check-pop {
+  animation: check-pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes check-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+
+  60% {
+    transform: scale(1.25);
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+</style>

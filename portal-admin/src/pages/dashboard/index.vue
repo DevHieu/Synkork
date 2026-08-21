@@ -1,14 +1,13 @@
 <script lang="ts" setup>
-// import { toast } from 'vue-sonner'
+import { ref } from 'vue'
 
 import { BasicPage } from '@/components/global-layout'
-// import { Button } from '@/components/ui/button'
 
 import OverviewContent from './tabs/overview-content.vue'
+import ReportOverview from './tabs/report-overview.vue'
 import RoomOverview from './tabs/room-overview.vue'
 import SubscriptionOverview from './tabs/subscription-overview.vue'
 import UserOverview from './tabs/user-overview.vue'
-import ReportOverview from './tabs/report-overview.vue'
 
 const tabs = ref([
   { name: 'Tổng quát', value: 'overview' },
@@ -27,16 +26,6 @@ const activeTab = ref(tabs.value[0].value)
     description="Theo dõi tổng quan các chỉ số và tình hình hoạt động của hệ thống."
     sticky
   >
-    <!-- <template #actions>
-      <Button
-        @click="() => toast('hello', {
-          position: 'top-center',
-        })"
-      >
-        {{ $t('download') }}
-      </Button>
-    </template> -->
-
     <UiTabs :default-value="activeTab" class="w-full">
       <UiTabsList>
         <UiTabsTrigger
