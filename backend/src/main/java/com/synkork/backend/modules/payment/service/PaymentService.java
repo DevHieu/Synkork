@@ -1,5 +1,27 @@
 package com.synkork.backend.modules.payment.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.synkork.backend.modules.payment.utils.PaymentEmail;
+import com.synkork.backend.modules.payment.entity.InvoiceEntity;
+import com.synkork.backend.modules.payment.entity.PlanPricingEntity;
+import com.synkork.backend.modules.payment.entity.UserSubscriptionEntity;
+import com.synkork.backend.modules.payment.enums.*;
+import com.synkork.backend.modules.payment.repository.InvoiceRepository;
+import com.synkork.backend.modules.payment.repository.PlanPricingRepository;
+import com.synkork.backend.modules.payment.repository.UserSubscriptionRepository;
+import com.synkork.backend.modules.payment.utils.PaymentUtils;
+import com.synkork.backend.modules.user.UserEntity;
+import com.synkork.backend.modules.user.UserService;
+import com.synkork.backend.modules.user.enums.PlanEnum;
+import jakarta.transaction.Transactional;
+import org.apache.commons.codec.digest.HmacUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
 import java.math.BigDecimal;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -11,33 +33,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.commons.codec.digest.HmacUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.synkork.backend.common.utils.EmailService;
-import com.synkork.backend.modules.payment.entity.InvoiceEntity;
-import com.synkork.backend.modules.payment.entity.PlanPricingEntity;
-import com.synkork.backend.modules.payment.entity.UserSubscriptionEntity;
-import com.synkork.backend.modules.payment.enums.BillingCycleEnum;
-import com.synkork.backend.modules.payment.enums.DiscountTypeEnum;
-import com.synkork.backend.modules.payment.enums.InvoiceStatusEnum;
-import com.synkork.backend.modules.payment.enums.PaymentMethodEnum;
-import com.synkork.backend.modules.payment.enums.SubscriptionStatusEnum;
-import com.synkork.backend.modules.payment.repository.InvoiceRepository;
-import com.synkork.backend.modules.payment.repository.PlanPricingRepository;
-import com.synkork.backend.modules.payment.repository.UserSubscriptionRepository;
-import com.synkork.backend.modules.user.UserEntity;
-import com.synkork.backend.modules.user.UserService;
-import com.synkork.backend.modules.user.enums.PlanEnum;
-
-import jakarta.transaction.Transactional;
-
 @Service
 public class PaymentService {
 
@@ -47,7 +42,7 @@ public class PaymentService {
     private UserService userService;
 
     @Autowired
-    private EmailService emailService;
+    private PaymentEmail paymentEmail;
 
     @Autowired
     private InvoiceRepository invoiceRepository;
@@ -93,9 +88,9 @@ public class PaymentService {
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy giá cho gói này"));
 
             // Tính giá sau giảm
-            BigDecimal finalAmount = calculateFinalAmount(pricing);
-            BigDecimal discountAmount = pricing.getDiscountAmount() != null 
-                    ? pricing.getDiscountAmount() 
+            BigDecimal finalAmount = PaymentUtils.calculateFinalAmount(pricing);
+            BigDecimal discountAmount = pricing.getDiscountAmount() != null
+                    ? pricing.getDiscountAmount()
                     : BigDecimal.ZERO;
 
             String requestId = UUID.randomUUID().toString();
@@ -134,7 +129,8 @@ public class PaymentService {
             HttpResponse<String> response = HttpClient.newHttpClient()
                     .send(request, HttpResponse.BodyHandlers.ofString());
 
-            return mapper.readValue(response.body(), new TypeReference<Map<String, Object>>() {});
+            return mapper.readValue(response.body(), new TypeReference<Map<String, Object>>() {
+            });
 
         } catch (Exception e) {
             log.error("Lỗi tạo thanh toán MoMo", e);
@@ -142,47 +138,18 @@ public class PaymentService {
         }
     }
 
-    /**
-     * Tính giá cuối cùng sau khi áp dụng giảm giá
-     */
-    private BigDecimal calculateFinalAmount(PlanPricingEntity pricing) {
-        BigDecimal baseAmount = pricing.getAmount();
-        BigDecimal discountAmount = BigDecimal.ZERO;
-
-        if (pricing.getDiscountType() != null && pricing.getDiscountValue() != null) {
-            if (pricing.getDiscountType() == DiscountTypeEnum.PERCENTAGE) {
-                discountAmount = baseAmount
-                        .multiply(pricing.getDiscountValue())
-                        .divide(BigDecimal.valueOf(100), 0, BigDecimal.ROUND_HALF_UP);
-            } else if (pricing.getDiscountType() == DiscountTypeEnum.FIXED) {
-                discountAmount = pricing.getDiscountValue();
-            }
-
-            // Không cho giảm vượt quá giá gốc
-            discountAmount = discountAmount.min(baseAmount);
-        }
-
-        // Cập nhật lại discountAmount vào entity (nếu cần)
-        if (pricing.getDiscountAmount() == null || !pricing.getDiscountAmount().equals(discountAmount)) {
-            pricing.setDiscountAmount(discountAmount);
-            // Không save ở đây vì chỉ là tính toán tạm
-        }
-
-        return baseAmount.subtract(discountAmount).max(BigDecimal.ZERO);
-    }
-
     private String buildRequestSignature(String orderId, long amount, String extraData, String requestId) {
         String rawHash =
                 "accessKey=" + accessKey +
-                "&amount=" + amount +
-                "&extraData=" + extraData +
-                "&ipnUrl=" + ipnUrl +
-                "&orderId=" + orderId +
-                "&orderInfo=Synkork VIP" +
-                "&partnerCode=" + partnerCode +
-                "&redirectUrl=" + redirectUrl +
-                "&requestId=" + requestId +
-                "&requestType=payWithATM";
+                        "&amount=" + amount +
+                        "&extraData=" + extraData +
+                        "&ipnUrl=" + ipnUrl +
+                        "&orderId=" + orderId +
+                        "&orderInfo=Synkork VIP" +
+                        "&partnerCode=" + partnerCode +
+                        "&redirectUrl=" + redirectUrl +
+                        "&requestId=" + requestId +
+                        "&requestType=payWithATM";
 
         return new HmacUtils("HmacSHA256", secretKey).hmacHex(rawHash);
     }
@@ -209,70 +176,65 @@ public class PaymentService {
 
     @Transactional
     public void handleMomoCallback(Map<String, Object> payload) {
-        try {
-            if (!isValidSignature(payload)) {
-                log.warn("Invalid MoMo signature — rejected. orderId={}", payload.get("orderId"));
-                return;
-            }
-
-            String orderId = payload.get("orderId").toString();
-            String resultCode = payload.get("resultCode").toString();
-
-            InvoiceEntity invoice = invoiceRepository.findById(UUID.fromString(orderId))
-                    .orElseThrow(() -> new RuntimeException("Invoice not found: " + orderId));
-
-            if (!"0".equals(resultCode)) {
-                markInvoiceFailed(invoice, payload);
-                return;
-            }
-
-            String[] parts = decodeExtraData(payload);
-            String plan = parts[0];
-            String billing = parts[1];
-            String userEmail = parts[2];
-
-            LocalDateTime now = LocalDateTime.now();
-            LocalDateTime expiresAt = resolveExpiresAt(now, billing);
-
-            // Lý do cần tăng lên 3 ngày vì khi user gần đến hạn 3 ngày thì phòng sẽ chuyển về PENDING_REMOVAL. Và đến khi hết hạn hẳn mà user không nâng cấp gói thì xóa phòng
-            LocalDateTime expireDate = expiresAt.plusDays(3);
-
-            markInvoicePaid(invoice, payload, now);
-
-            UserEntity user = userService.findByEmail(userEmail);
-
-            createNewSubscription(user, plan, invoice, now, expireDate);
-            updateUserPlanCache(user, plan, expireDate);
-
-            expiredSubscriptionService.changePendingRoomAndSpace(user.getId());
-            emailService.sendPaymentSuccessEmail(userEmail, plan);
-
-        } catch (Exception e) {
-            log.error("Lỗi xử lý MoMo callback, orderId={}", payload.get("orderId"), e);
+        if (!isValidSignature(payload)) {
+            log.warn("Invalid MoMo signature — rejected. orderId={}", payload.get("orderId"));
+            return;
         }
+
+        String orderId = payload.get("orderId").toString();
+        String resultCode = payload.get("resultCode").toString();
+
+        InvoiceEntity invoice = invoiceRepository.findById(UUID.fromString(orderId))
+                .orElseThrow(() -> new RuntimeException("Invoice not found: " + orderId));
+
+        if (!"0".equals(resultCode)) {
+            markInvoiceFailed(invoice, payload);
+            return;
+        }
+
+        String[] parts = decodeExtraData(payload);
+        String plan = parts[0];
+        String billing = parts[1];
+        String userEmail = parts[2];
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expiresAt = PaymentUtils.resolveExpiresAt(now, billing);
+
+        // Lý do cần tăng lên 3 ngày vì khi user gần đến hạn 3 ngày thì phòng sẽ chuyển về PENDING_REMOVAL. Và đến khi hết hạn hẳn mà user không nâng cấp gói thì xóa phòng
+        LocalDateTime expireDate = expiresAt.plusDays(3);
+
+        markInvoicePaid(invoice, payload, now);
+
+        UserEntity user = userService.findByEmail(userEmail);
+
+        createNewSubscription(user, plan, invoice, now, expireDate);
+        updateUserPlanCache(user, plan, expireDate);
+
+        expiredSubscriptionService.changePendingRoomAndSpace(user.getId());
+        paymentEmail.sendPaymentSuccessEmail(userEmail, plan);
     }
-    
+
     private boolean isValidSignature(Map<String, Object> payload) {
         String rawHash =
                 "accessKey=" + accessKey +
-                "&amount=" + payload.get("amount") +
-                "&extraData=" + payload.get("extraData") +
-                "&message=" + payload.get("message") +
-                "&orderId=" + payload.get("orderId") +
-                "&orderInfo=" + payload.get("orderInfo") +
-                "&orderType=" + payload.get("orderType") +
-                "&partnerCode=" + partnerCode +
-                "&payType=" + payload.get("payType") +
-                "&requestId=" + payload.get("requestId") +
-                "&responseTime=" + payload.get("responseTime") +
-                "&resultCode=" + payload.get("resultCode") +
-                "&transId=" + payload.get("transId");
+                        "&amount=" + payload.get("amount") +
+                        "&extraData=" + payload.get("extraData") +
+                        "&message=" + payload.get("message") +
+                        "&orderId=" + payload.get("orderId") +
+                        "&orderInfo=" + payload.get("orderInfo") +
+                        "&orderType=" + payload.get("orderType") +
+                        "&partnerCode=" + partnerCode +
+                        "&payType=" + payload.get("payType") +
+                        "&requestId=" + payload.get("requestId") +
+                        "&responseTime=" + payload.get("responseTime") +
+                        "&resultCode=" + payload.get("resultCode") +
+                        "&transId=" + payload.get("transId");
 
         String expectedSig = new HmacUtils("HmacSHA256", secretKey).hmacHex(rawHash);
         String receivedSig = payload.get("signature").toString();
         return expectedSig.equals(receivedSig);
     }
-    
+
     private void markInvoiceFailed(InvoiceEntity invoice, Map<String, Object> payload) {
         invoice.setStatus(InvoiceStatusEnum.FAILED);
         invoice.setTransactionId(payload.get("transId") != null ? payload.get("transId").toString() : null);
@@ -292,11 +254,6 @@ public class PaymentService {
         return decoded.split("\\|", 3);
     }
 
-    private LocalDateTime resolveExpiresAt(LocalDateTime now, String billing) {
-        BillingCycleEnum cycle = BillingCycleEnum.valueOf(billing.toUpperCase());
-        return cycle == BillingCycleEnum.YEARLY ? now.plusYears(1) : now.plusMonths(1);
-    }
-
     private void deactivateCurrentSubscription(UserEntity user) {
         userSubscriptionRepository.findByUserIdAndCurrentTrue(user.getId())
                 .ifPresent(oldSubscription -> {
@@ -307,7 +264,7 @@ public class PaymentService {
     }
 
     public void createNewSubscription(UserEntity user, String plan, InvoiceEntity invoice,
-                                       LocalDateTime now, LocalDateTime expireDate) {
+                                      LocalDateTime now, LocalDateTime expireDate) {
 
         deactivateCurrentSubscription(user);
 

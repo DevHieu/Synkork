@@ -61,17 +61,12 @@ export function useRoomComposable() {
     }
   };
 
-  const createRoom = async (roomData: {
-    name: string;
-    ownerId: string;
-    imageFile?: File;
-  }) => {
+  const createRoom = async (roomData: { name: string; imageFile?: File }) => {
     const userStore = useUserStore();
     const { user } = storeToRefs(userStore);
 
     if (!user.value) return;
 
-    roomData.ownerId = (user.value as any).id;
     const newRoom = await roomService.createRoom(roomData);
 
     rooms.value.unshift(newRoom);

@@ -1,7 +1,5 @@
 import { defineStore } from "pinia";
-import type {
-  SuggestedEventDraft,
-} from "@/features/calendar/types/calendar.types";
+import type { SuggestedEventDraft } from "@/types/SuggestionTypes";
 
 interface PendingCalendarSuggestionDraft {
   spaceId: string;
@@ -34,6 +32,5 @@ export const useSuggestionStore = defineStore("suggestion", {
     clearPendingDraft() {
       this.pendingDraft = null;
     },
-
   },
 });

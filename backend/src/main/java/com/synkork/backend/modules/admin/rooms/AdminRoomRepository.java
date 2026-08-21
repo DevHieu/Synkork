@@ -2,7 +2,6 @@ package com.synkork.backend.modules.admin.rooms;
 
 import com.synkork.backend.modules.admin.rooms.dtos.RoomStatusCount;
 import com.synkork.backend.modules.room.RoomEntity;
-import com.synkork.backend.modules.room.enums.RoomStatusEnum;
 import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -17,7 +16,7 @@ public interface AdminRoomRepository
         extends JpaRepository<RoomEntity, UUID>,
         JpaSpecificationExecutor<RoomEntity> {
 
-    long countByTypeAndCreatedAtLessThan(RoomTypeEnum roomTypeEnum, LocalDateTime dateTo);
+    long countByTypeAndCreatedAtLessThanEqual(RoomTypeEnum roomTypeEnum, LocalDateTime dateTo);
     long countByTypeAndCreatedAtBetween(RoomTypeEnum type, LocalDateTime from, LocalDateTime to);
     long countByWarningGreaterThanAndCreatedAtBetweenAndType(int warning, LocalDateTime from, LocalDateTime to, RoomTypeEnum type);
 

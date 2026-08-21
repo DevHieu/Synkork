@@ -1,7 +1,6 @@
 package com.synkork.backend.modules.admin.auth;
 
 import com.synkork.backend.modules.admin.changePassword.PasswordResetRequestService;
-import com.synkork.backend.modules.admin.changePassword.enums.PasswordResetStatusEnum;
 import com.synkork.backend.modules.auth.dto.LoginRequest;
 import com.synkork.backend.modules.auth.dto.PasswordResetVerifyRequest;
 import com.synkork.backend.modules.auth.dto.ResetPasswordRequest;
@@ -15,9 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -63,7 +60,7 @@ public ResponseEntity<?> checkAuth() {
     }
 
     @PostMapping("/reset-password-request")
-    public ResponseEntity<Map<String, String>> requestPasswordReset(@RequestBody ResetPasswordRequest request) {
+    public ResponseEntity<Map<String, String>> requestPasswordReset(@Valid @RequestBody ResetPasswordRequest request) {
         String verifyCode =  passwordResetRequestService.createRequest(request.email());
         return ResponseEntity.ok(Map.of("verifyCode", verifyCode));
     }

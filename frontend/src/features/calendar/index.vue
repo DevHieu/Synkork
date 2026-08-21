@@ -2,14 +2,14 @@
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useSpaceStore } from "@/features/spaces/stores/spaceStore.ts";
 import { useUserStore } from "@/features/users/stores/userStore";
-import { useSuggestionStore } from "@/features/calendar/stores/calendarStore";
+import { useSuggestionStore } from "@/stores/suggestionStore";
 import { useRoomMemberStore } from '@/features/members/stores/roomMemberStore'
 import { storeToRefs } from "pinia";
 import { useCalendarDate } from "@/features/calendar/composable/useCalendarDate";
 import { useCalendarEvents } from "@/features/calendar/composable/useCalendarEvents";
 import { useCalendarRealtime } from "@/features/calendar/composable/useCalendarRealtime";
 import type { CalendarEvent } from "@/features/calendar/types/calendar.types";
-import type { SuggestedEventDraft } from "@/features/calendar/types/calendar.types";
+import type { SuggestedEventDraft } from "@/types/SuggestionTypes";
 import dayjs from "dayjs";
 
 import CalendarMonthView from "@/features/calendar/components/views/CalendarMonthView.vue";

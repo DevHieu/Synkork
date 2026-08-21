@@ -21,7 +21,14 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Entity
-@Table(name="calendar_events")
+@Table(
+        name = "calendar_events",
+        indexes = {
+                @Index(name = "idx_calendar_events_space_date", columnList = "space_id, eventDate"),
+                @Index(name = "idx_calendar_events_created_by", columnList = "created_by"),
+                @Index(name = "idx_calendar_events_google_event", columnList = "googleEventId")
+        }
+)
 @Getter
 @Setter
 @AllArgsConstructor
@@ -90,7 +97,10 @@ public class CalendarEventEntity extends BaseEntity {
             name = "calendar_event_room_members",
             joinColumns = @JoinColumn(name = "event_id"),
             inverseJoinColumns = @JoinColumn(name = "room_member_id"),
-            uniqueConstraints = @UniqueConstraint(columnNames = {"event_id", "room_member_id"})
+            uniqueConstraints = @UniqueConstraint(columnNames = {"event_id", "room_member_id"}),
+            indexes = {
+                    @Index(name = "idx_cal_event_members_member", columnList = "room_member_id")
+            }
     )
     @Setter(AccessLevel.NONE)
     private List<RoomMemberEntity> attendees;

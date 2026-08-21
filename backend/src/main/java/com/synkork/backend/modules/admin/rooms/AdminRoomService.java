@@ -1,6 +1,5 @@
 package com.synkork.backend.modules.admin.rooms;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +24,7 @@ import com.synkork.backend.modules.roomMember.enums.MemberStatusEnum;
 import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
 import com.synkork.backend.modules.space.SpaceEntity;
 import com.synkork.backend.modules.space.SpaceRepository;
+import com.synkork.backend.modules.user.enums.RoleEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
@@ -70,14 +70,11 @@ public class AdminRoomService {
     public RoomDashboardStatsResponse getRoomStats(LocalDateTime dateFrom, LocalDateTime dateTo) {
         LocalDateTime effectiveTo = dateTo != null ? dateTo : LocalDateTime.now();
         LocalDateTime effectiveFrom = dateFrom != null ? dateFrom : effectiveTo.minusMonths(1);
-        LocalDateTime previousFrom = dateFrom == null && dateTo == null
-                ? effectiveFrom.minusMonths(1)
-                : effectiveFrom.minus(Duration.between(effectiveFrom, effectiveTo));
 
-        long totalRooms = adminRoomRepository.countByTypeAndCreatedAtLessThan(RoomTypeEnum.GROUP, effectiveTo);
+        long totalRooms = adminRoomRepository.countByTypeAndCreatedAtLessThanEqual(RoomTypeEnum.GROUP, effectiveTo);
+        double roomGrowth = this.calculateRoomGrowth(effectiveFrom, effectiveTo, totalRooms);
+
         long newRooms = adminRoomRepository.countByTypeAndCreatedAtBetween(RoomTypeEnum.GROUP, effectiveFrom, effectiveTo);
-        long previousRooms = adminRoomRepository.countByTypeAndCreatedAtBetween(RoomTypeEnum.GROUP, previousFrom, effectiveFrom);
-        double roomGrowth = AdminUtils.calcGrowth(newRooms, previousRooms);
 
         long groupRooms = adminRoomRepository.countByTypeAndCreatedAtBetween(RoomTypeEnum.GROUP, effectiveFrom, effectiveTo);
         long membersInGroupRooms = roomMemberRepository.countByRoomTypeAndRoomCreatedAtBetween(
@@ -102,6 +99,12 @@ public class AdminRoomService {
 
     public List<RoomStatusCount> getRoomChart(LocalDateTime dateFrom, LocalDateTime dateTo) {
         return adminRoomRepository.countGroupByStatus(dateFrom, dateTo);
+    }
+
+    public double calculateRoomGrowth(LocalDateTime dateFrom, LocalDateTime dateTo, Long total) {
+        long totalRooms = total != null ? total : adminRoomRepository.countByTypeAndCreatedAtLessThanEqual(RoomTypeEnum.GROUP, dateTo);;
+        long previousTotalRooms = adminRoomRepository.countByTypeAndCreatedAtLessThanEqual(RoomTypeEnum.GROUP, dateFrom);
+        return AdminUtils.calcGrowth(totalRooms, previousTotalRooms);
     }
 
     public Page<RoomEntity> getRooms(RoomFilterRequest request) {
@@ -364,7 +367,7 @@ public class AdminRoomService {
                     member.setRole(RoomMemberRoleEnum.OWNER);
                     roomMemberRepository.save(member);
                 }, () -> roomMemberService.addRoomMembers(
-                        owner.getId().toString(),
+                        owner.getId(),
                         room.getId().toString(),
                         RoomMemberRoleEnum.OWNER.name()
                 ));

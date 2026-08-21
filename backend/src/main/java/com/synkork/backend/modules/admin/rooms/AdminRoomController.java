@@ -5,6 +5,7 @@ import com.synkork.backend.common.response.PageMeta;
 import com.synkork.backend.modules.admin.rooms.dtos.*;
 
 import com.synkork.backend.modules.roomMember.RoomMemberService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -40,7 +41,7 @@ public class AdminRoomController {
     public ApiResponse<AdminRoomResponse> createRoom(@RequestBody AdminRoomRequest request) {
         AdminRoomResponse roomEntity = adminRoomService.createRoom(request);
         roomMemberService.addRoomMembers(
-                roomEntity.getOwnerId().toString(),
+                roomEntity.getOwnerId(),
                 roomEntity.getId().toString(),
                 "OWNER"
         );
@@ -50,7 +51,7 @@ public class AdminRoomController {
     @PutMapping("/{roomId}")
     public ApiResponse<AdminRoomResponse> updateRoom(
             @PathVariable String roomId,
-            @RequestBody AdminRoomRequest request
+            @Valid @RequestBody AdminRoomRequest request
     ) {
         return ApiResponse.success("Cập nhật room thành công", adminRoomService.updateRoom(roomId, request));
     }
@@ -63,7 +64,7 @@ public class AdminRoomController {
     }
 
     @PatchMapping("/{roomId}/status")
-    public ApiResponse<AdminRoomResponse> toggleRoomStatus(@PathVariable UUID roomId, @RequestBody ToggleRoomStatusRequest request){
+    public ApiResponse<AdminRoomResponse> toggleRoomStatus(@PathVariable UUID roomId, @Valid @RequestBody ToggleRoomStatusRequest request){
         return ApiResponse.success("Cập nhật trạng thái room thành công", adminRoomService.toggleRoomStatus(roomId, request));
     }
 

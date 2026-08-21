@@ -1,11 +1,10 @@
     package com.synkork.backend.modules.room;
 
 import com.synkork.backend.common.utils.AuthUtils;
-import com.synkork.backend.modules.room.dto.CreateRoomDto;
+import com.synkork.backend.modules.room.dto.CreateRoomRequest;
 import com.synkork.backend.modules.room.dto.RoomDto;
 import com.synkork.backend.modules.room.dto.RoomReviewResponse;
-import com.synkork.backend.modules.room.dto.UpdateRoomDto;
-import com.synkork.backend.modules.roomMember.RoomMemberEntity;
+import com.synkork.backend.modules.room.dto.UpdateRoomRequest;
 import com.synkork.backend.modules.roomMember.RoomMemberService;
 import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
 import com.synkork.backend.modules.space.SpaceService;
@@ -14,6 +13,7 @@ import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.security.UserPrinciple;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -45,13 +45,15 @@ public class RoomController {
     @Transactional
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> createRoom(
-            @ModelAttribute CreateRoomDto roomData
+            @Valid @ModelAttribute CreateRoomRequest roomData
     ) {
-        System.out.println("roomData: " + roomData);
         try {
-            RoomEntity roomEntity = roomService.createRoom(roomData);
+            UUID creatorId = AuthUtils.getCurrentUserId();
+
+            RoomEntity roomEntity = roomService.createRoom(roomData, creatorId);
+
             roomMemberService.addRoomMembers(
-                    roomData.ownerId(),
+                    creatorId,
                     roomEntity.getId().toString(),
                     "OWNER"
             );
@@ -74,7 +76,7 @@ public class RoomController {
 
     @Transactional
     @PutMapping(value="/{roomId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<RoomDto> updateRoom(@PathVariable String roomId, @ModelAttribute UpdateRoomDto roomData) {
+    public ResponseEntity<RoomDto> updateRoom(@PathVariable String roomId, @Valid @ModelAttribute UpdateRoomRequest roomData) {
         UUID roomUUID =  UUID.fromString(roomId);
 
         RoomEntity roomEntity = roomService.updateRoom(roomUUID,  roomData);

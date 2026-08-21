@@ -1,10 +1,9 @@
 package com.synkork.backend.modules.user;
 
 import com.synkork.backend.common.utils.FileService;
-import com.synkork.backend.modules.user.dto.ChangePasswordDto;
-import com.synkork.backend.modules.user.dto.UpdateprofileDto;
+import com.synkork.backend.modules.user.dto.ChangePasswordRequest;
+import com.synkork.backend.modules.user.dto.UpdateProfileRequest;
 import com.synkork.backend.modules.user.dto.UserInfoDto;
-import com.synkork.backend.modules.user.enums.UserStatusEnum;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
@@ -73,7 +72,7 @@ public class UserService {
     }
 
     // Cập nhật displayName và username
-    public UserInfoDto updateProfile(UpdateprofileDto dto) {
+    public UserInfoDto updateProfile(UpdateProfileRequest dto) {
         UserEntity user = getCurrentUser();
 
         if (dto.displayName() != null && !dto.displayName().isBlank()) {
@@ -94,7 +93,7 @@ public class UserService {
     }
 
     // Đổi mật khẩu — chỉ dành cho tài khoản LOCAL đã có password
-    public void changePassword(ChangePasswordDto dto) {
+    public void changePassword(ChangePasswordRequest dto) {
         UserEntity user = getCurrentUser();
 
         if (user.getPassword() == null) {

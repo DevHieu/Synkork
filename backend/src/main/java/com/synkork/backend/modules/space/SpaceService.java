@@ -7,7 +7,6 @@ import com.synkork.backend.modules.collaboration.task.column.ColumnRepository;
 import com.synkork.backend.modules.message.MessageRepository;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.RoomRepository;
-import com.synkork.backend.modules.room.dto.CreateRoomDto;
 import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import com.synkork.backend.modules.space.dto.CreateSpaceRequest;
 import com.synkork.backend.modules.space.dto.SpaceDTO;

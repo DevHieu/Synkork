@@ -4,27 +4,27 @@ type NotificationContext = "dropdown" | "toast";
 
 const MESSAGES: Record<string, Record<NotificationContext, string>> = {
   CARD_ASSIGNED: {
-    dropdown: "vừa assign bạn vào một task",
+    dropdown: "Vừa assign bạn vào một task",
     toast: "Bạn vừa được assign vào một task",
   },
   CARD_DUE_SOON: {
-    dropdown: "nhắc bạn: task sắp đến hạn",
+    dropdown: "Nhắc bạn: task sắp đến hạn",
     toast: "Nhắc nhở: Task của bạn sắp đến hạn",
   },
   CARD_OVER_DUE: {
-    dropdown: "nhắc bạn: task đã quá hạn",
+    dropdown: "Nhắc bạn: task đã quá hạn",
     toast: "Nhắc nhở: Task của bạn đã quá hạn",
   },
   FRIEND_REQUEST: {
-    dropdown: "đã gửi cho bạn lời mời kết bạn",
+    dropdown: "Đã gửi cho bạn lời mời kết bạn",
     toast: "Bạn có lời mời kết bạn mới",
   },
   FRIEND_REJECT: {
-    dropdown: "đã từ chối lời mời kết bạn của bạn",
+    dropdown: "Đã từ chối lời mời kết bạn của bạn",
     toast: "Lời mời kết bạn của bạn đã bị từ chối",
   },
   FRIEND_ACCEPT: {
-    dropdown: "đã chấp nhận lời mời kết bạn của bạn",
+    dropdown: "Đã chấp nhận lời mời kết bạn của bạn",
     toast: "Lời mời kết bạn của bạn đã được chấp nhận",
   },
   NOTE_REMINDER: {
@@ -36,19 +36,19 @@ const MESSAGES: Record<string, Record<NotificationContext, string>> = {
     toast: "Nhắc nhở: Sự kiện sắp diễn ra",
   },
   EVENT_ASSIGNED: {
-    dropdown: "vừa assign bạn vào một sự kiện",
+    dropdown: "Vừa assign bạn vào một sự kiện",
     toast: "Bạn vừa được assign vào một sự kiện",
   },
 };
 
 const DEFAULT_MESSAGE: Record<NotificationContext, string> = {
-  dropdown: "có thông báo mới",
+  dropdown: "Có thông báo mới",
   toast: "Bạn có thông báo mới",
 };
 
 export function notificationMessage(
   n: NotificationDTO,
-  context: NotificationContext = "dropdown"
+  context: NotificationContext = "dropdown",
 ) {
   return MESSAGES[n.refType]?.[context] ?? DEFAULT_MESSAGE[context];
 }
@@ -77,15 +77,16 @@ export function getNotificationPath(n: NotificationDTO) {
 }
 
 export function timeAgo(dateStr: string | number): string {
-  const date = typeof dateStr === 'number' ? new Date(dateStr) : new Date(dateStr)
-  const diff = Date.now() - date.getTime()
-  const minutes = Math.floor(diff / 60000)
+  const date =
+    typeof dateStr === "number" ? new Date(dateStr) : new Date(dateStr);
+  const diff = Date.now() - date.getTime();
+  const minutes = Math.floor(diff / 60000);
 
-  if (minutes < 1)  return 'Vừa xong'
-  if (minutes < 60) return `${minutes} phút trước`
+  if (minutes < 1) return "Vừa xong";
+  if (minutes < 60) return `${minutes} phút trước`;
 
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24)   return `${hours} giờ trước`
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} giờ trước`;
 
-  return `${Math.floor(hours / 24)} ngày trước`
+  return `${Math.floor(hours / 24)} ngày trước`;
 }

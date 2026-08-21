@@ -16,7 +16,12 @@ import jakarta.transaction.Transactional;
 public interface ColumnRepository extends JpaRepository<ColumnEntity, UUID> {
     // Tìm các cột của 1 board và sắp xếp theo vị trí
     @EntityGraph(attributePaths = {
-            "cards"
+            "space",
+            "cards",
+            "cards.assignees",
+            "cards.assignees.user",
+            "cards.createdBy",
+            "cards.createdBy.user"
     })
     List<ColumnEntity> findBySpaceIdOrderByPositionAsc(UUID spaceId);
 
@@ -25,9 +30,24 @@ public interface ColumnRepository extends JpaRepository<ColumnEntity, UUID> {
 
     void deleteBySpaceId(UUID spaceId);
 
-    
+    @EntityGraph(attributePaths = {
+            "space",
+            "cards",
+            "cards.assignees",
+            "cards.assignees.user",
+            "cards.createdBy",
+            "cards.createdBy.user"
+    })
     List<ColumnEntity> findBySpaceIdAndArchivedFalseOrderByPositionAsc(UUID spaceId);
 
+    @EntityGraph(attributePaths = {
+            "space",
+            "cards",
+            "cards.assignees",
+            "cards.assignees.user",
+            "cards.createdBy",
+            "cards.createdBy.user"
+    })
     List<ColumnEntity> findBySpaceIdAndArchivedTrueOrderByPositionAsc(UUID spaceId);
 
     @Transactional

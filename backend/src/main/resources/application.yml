@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/synkork?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+    url: ${DB_URL:jdbc:mysql://localhost:3306/synkork_demo?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:123}
 
@@ -59,6 +59,13 @@ momo:
   endpoint: https://test-payment.momo.vn/v2/gateway/api/create
   redirect-url: ${FRONTEND_URL:}/me/subscriptions
   ipn-url: ${SERVER_URL:}/api/payment/momo/callback
+
+vnpay:
+  tmn-code: ${VNP_TMN_CODE}
+  hash-secret: ${VNP_HASH_SECRET}
+  url: ${VNP_URL}
+  return-url: ${VNP_RETURN_URL}
+  redirect-url: ${FRONTEND_URL:}/me/subscriptions
 
 server:
   port: 8080

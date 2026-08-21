@@ -19,6 +19,10 @@ import lombok.*;
         name = "room_members",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {"room_id", "user_id"})
+        },
+        indexes = {
+                @Index(name = "idx_room_members_user_id", columnList = "user_id"),
+                @Index(name = "idx_room_members_room_status", columnList = "room_id, status")
         }
 )
 @Getter @Setter
@@ -61,4 +65,17 @@ public class RoomMemberEntity {
 
     @Column(nullable = true)
     private LocalDateTime chatDisableUntil;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RoomMemberEntity that = (RoomMemberEntity) o;
+        return id != null && id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

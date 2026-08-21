@@ -1,5 +1,10 @@
 package com.synkork.backend.modules.admin.changePassword;
 
+import com.synkork.backend.common.utils.AuthUtils;
+import com.synkork.backend.modules.admin.auditLog.AuditLogService;
+import com.synkork.backend.modules.admin.auditLog.dtos.BuildLog;
+import com.synkork.backend.modules.admin.auditLog.enums.LogActionEnum;
+import com.synkork.backend.modules.admin.auditLog.enums.LogEntityTypeEnum;
 import com.synkork.backend.modules.admin.changePassword.dto.PasswordResetRequestFilter;
 import com.synkork.backend.modules.admin.changePassword.email.PasswordResetRequestEmailService;
 import com.synkork.backend.modules.admin.changePassword.enums.PasswordResetStatusEnum;
@@ -10,10 +15,10 @@ import com.synkork.backend.modules.verification.VerificationEntity;
 import com.synkork.backend.modules.verification.VerificationService;
 import com.synkork.backend.modules.verification.VerifyTypeEnum;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -37,6 +42,9 @@ public class PasswordResetRequestService {
 
     @Autowired
     private VerificationService verificationService;
+
+    @Autowired
+    private AuditLogService auditLogService;
 
     public Page<PasswordResetRequestEntity> getRequests(PasswordResetRequestFilter filter) {
         filter.validate();
@@ -87,10 +95,18 @@ public class PasswordResetRequestService {
         userService.create(user);
 
         request.setStatus(PasswordResetStatusEnum.APPROVED);
-        passwordResetRequestRepository.save(request);
+        PasswordResetRequestEntity saved = passwordResetRequestRepository.save(request);
 
         // Gửi mail thông báo
         passwordResetRequestEmailService.sendApprovedEmail(request.getUser().getEmail());
+
+        auditLogService.log(BuildLog.builder()
+                .action(LogActionEnum.APPROVE_PASSWORD_RESET)
+                .entityType(LogEntityTypeEnum.PASSWORD_RESET_REQUEST)
+                .entityId(saved.getId().toString())
+                .entityName(saved.getUser().getEmail())
+                .description(AuthUtils.getCurrentUsername() + " đã duyệt yêu cầu đổi mật khẩu của " + saved.getUser().getEmail())
+                .build());
     }
 
     public void reject(UUID id) {
@@ -102,9 +118,17 @@ public class PasswordResetRequestService {
         }
 
         request.setStatus(PasswordResetStatusEnum.REJECTED);
-        passwordResetRequestRepository.save(request);
+        PasswordResetRequestEntity saved = passwordResetRequestRepository.save(request);
 
         passwordResetRequestEmailService.sendRejectedEmail(request.getUser().getEmail());
+
+        auditLogService.log(BuildLog.builder()
+                .action(LogActionEnum.REJECT_PASSWORD_RESET)
+                .entityType(LogEntityTypeEnum.PASSWORD_RESET_REQUEST)
+                .entityId(saved.getId().toString())
+                .entityName(saved.getUser().getEmail())
+                .description(AuthUtils.getCurrentUsername() + " đã từ chối yêu cầu đổi mật khẩu của " + saved.getUser().getEmail())
+                .build());
     }
 
     public void buildChangePasswordRequest(UserEntity requester, String newPassword) {

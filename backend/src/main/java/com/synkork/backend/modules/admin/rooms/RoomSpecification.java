@@ -4,6 +4,7 @@ import com.synkork.backend.modules.admin.rooms.dtos.RoomFilterRequest;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
@@ -15,6 +16,11 @@ public class RoomSpecification {
 
     public static Specification<RoomEntity> filter(RoomFilterRequest request) {
         return (root, query, cb) -> {
+            if (Long.class != query.getResultType() && long.class != query.getResultType()) {
+                root.fetch("owner", JoinType.LEFT);
+                root.fetch("roomMembers", JoinType.LEFT);
+            }
+
             List<Predicate> predicates = new ArrayList<>();
 
             predicates.add(cb.equal(root.get("type"), RoomTypeEnum.GROUP));

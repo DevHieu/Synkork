@@ -1,10 +1,7 @@
 package com.synkork.backend.modules.user;
 
-import com.synkork.backend.modules.admin.statistics.dtos.UserPlanCount;
-import com.synkork.backend.modules.admin.statistics.dtos.UserStatusCount;
 import com.synkork.backend.modules.user.enums.PlanEnum;
 import com.synkork.backend.modules.user.enums.RoleEnum;
-import com.synkork.backend.modules.user.enums.UserStatusEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -45,7 +42,7 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
     void resetExpiredUsersToPlan(@Param("plan") PlanEnum plan, @Param("now") LocalDateTime now);
 
     @Query("SELECT u.email FROM UserEntity u WHERE u.planExpiresAt < :now")
-    List<String> findEmailByPlanExpiresAtAfter(LocalDateTime now);
+    List<String> findEmailByPlanExpiresAtBefore(LocalDateTime now);
 
     @Query("SELECT COUNT(u) FROM UserEntity u WHERE u.currentPlan != :freePlan AND (u.planExpiresAt IS NULL OR u.planExpiresAt > :now)")
     long countActiveSubscriptions(@Param("freePlan") PlanEnum freePlan, @Param("now") LocalDateTime now);
