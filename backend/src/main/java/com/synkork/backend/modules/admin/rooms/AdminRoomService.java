@@ -1,6 +1,5 @@
 package com.synkork.backend.modules.admin.rooms;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -70,14 +69,12 @@ public class AdminRoomService {
     public RoomDashboardStatsResponse getRoomStats(LocalDateTime dateFrom, LocalDateTime dateTo) {
         LocalDateTime effectiveTo = dateTo != null ? dateTo : LocalDateTime.now();
         LocalDateTime effectiveFrom = dateFrom != null ? dateFrom : effectiveTo.minusMonths(1);
-        LocalDateTime previousFrom = dateFrom == null && dateTo == null
-                ? effectiveFrom.minusMonths(1)
-                : effectiveFrom.minus(Duration.between(effectiveFrom, effectiveTo));
 
-        long totalRooms = adminRoomRepository.countByTypeAndCreatedAtLessThan(RoomTypeEnum.GROUP, effectiveTo);
+        long totalRooms = adminRoomRepository.countByTypeAndCreatedAtLessThanEqual(RoomTypeEnum.GROUP, effectiveTo);
+        long previousTotalRooms = adminRoomRepository.countByTypeAndCreatedAtLessThanEqual(RoomTypeEnum.GROUP, effectiveFrom);
+        double roomGrowth = AdminUtils.calcGrowth(totalRooms, previousTotalRooms);
+
         long newRooms = adminRoomRepository.countByTypeAndCreatedAtBetween(RoomTypeEnum.GROUP, effectiveFrom, effectiveTo);
-        long previousRooms = adminRoomRepository.countByTypeAndCreatedAtBetween(RoomTypeEnum.GROUP, previousFrom, effectiveFrom);
-        double roomGrowth = AdminUtils.calcGrowth(newRooms, previousRooms);
 
         long groupRooms = adminRoomRepository.countByTypeAndCreatedAtBetween(RoomTypeEnum.GROUP, effectiveFrom, effectiveTo);
         long membersInGroupRooms = roomMemberRepository.countByRoomTypeAndRoomCreatedAtBetween(

@@ -92,22 +92,18 @@ public class AdminUserService {
 
     public UserStatsResponse getUserStatsData(LocalDateTime dateFrom, LocalDateTime dateTo) {
         RoleEnum userRole = RoleEnum.USER;
-        LocalDate today = LocalDate.now();
-        LocalDateTime startOfToday = today.atStartOfDay();
-        LocalDateTime startOfTomorrow = today.plusDays(1).atStartOfDay();
 
         LocalDateTime effectiveTo = dateTo != null ? dateTo : LocalDateTime.now();
         LocalDateTime effectiveFrom = dateFrom != null ? dateFrom : effectiveTo.minusMonths(1);
-        LocalDateTime previousFrom = dateFrom == null && dateTo == null
-                ? effectiveFrom.minusMonths(1)
-                : effectiveFrom.minus(Duration.between(effectiveFrom, effectiveTo));
-        LocalDateTime previousTo = effectiveFrom;
 
-        long totalUsers = userAdminRepository.countByRole(userRole);
-        long currentPeriodUsers = userAdminRepository.countByRoleAndCreatedAtBetween(userRole, effectiveFrom, effectiveTo);
-        long previousPeriodUsers = userAdminRepository.countByRoleAndCreatedAtBetween(userRole, previousFrom, previousTo);
+        long totalUsers = userAdminRepository.countByRoleAndCreatedAtLessThanEqual(userRole, effectiveTo);
+        long previousTotalUsers = userAdminRepository.countByRoleAndCreatedAtLessThanEqual(userRole, effectiveFrom);
+        double userGrowth = AdminUtils.calcGrowth(totalUsers, previousTotalUsers);
+
+        LocalDate today = LocalDate.now();
+        LocalDateTime startOfToday = today.atStartOfDay();
+        LocalDateTime startOfTomorrow = today.plusDays(1).atStartOfDay();
         long newUsersToday = userAdminRepository.countByRoleAndCreatedAtBetween(userRole, startOfToday, startOfTomorrow);
-        double userGrowth = AdminUtils.calcGrowth(currentPeriodUsers, previousPeriodUsers);
 
         return new UserStatsResponse(
                 totalUsers,

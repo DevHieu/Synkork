@@ -23,7 +23,7 @@ interface UserStats {
 
 interface UserStatusCount {
   count: number
-  status: 'ACTIVE' | 'INACTIVE' | 'BANNED'
+  status: 'ACTIVE' | 'NOT_VERIFIED' | 'BANNED'
 }
 
 interface UserPlanCount {
@@ -52,7 +52,7 @@ const isLoadingChart = ref(false)
 
 const USER_STATUS_COLORS = {
   ACTIVE: '#10b981',
-  INACTIVE: '#94a3b8',
+  NOT_VERIFIED: '#94a3b8',
   BANNED: '#f43f5e',
 } as const
 
@@ -64,8 +64,8 @@ const USER_PLAN_COLORS = {
 
 const statusConfig: Array<{ name: string, status: UserStatusCount['status'], color: string }> = [
   { name: 'Active', status: 'ACTIVE', color: USER_STATUS_COLORS.ACTIVE },
-  { name: 'Inactive', status: 'INACTIVE', color: USER_STATUS_COLORS.INACTIVE },
   { name: 'Banned', status: 'BANNED', color: USER_STATUS_COLORS.BANNED },
+  { name: 'Not Verified', status: 'NOT_VERIFIED', color: USER_STATUS_COLORS.NOT_VERIFIED },
 ]
 
 const planConfig: Array<{ name: string, plan: UserPlanCount['plan'], color: string }> = [
@@ -112,16 +112,13 @@ const comparisonRangeLabel = computed(() => {
   let previousTo: dayjs.Dayjs
 
   if (dateRange.value) {
-    const currentFrom = dayjs(dateRange.value.from)
-    const currentTo = dayjs(dateRange.value.to)
-    const periodLength = currentTo.diff(currentFrom)
-    previousFrom = currentFrom.subtract(periodLength, 'millisecond')
-    previousTo = currentFrom
+    previousFrom = dayjs(dateRange.value.from)
+    previousTo = dayjs(dateRange.value.to)
   }
   else {
     const now = dayjs()
-    previousFrom = now.subtract(2, 'month')
-    previousTo = now.subtract(1, 'month')
+    previousFrom = now.subtract(1, 'month')
+    previousTo = now
   }
 
   return `so từ ${previousFrom.format('DD/MM/YYYY')} đến ${previousTo.format('DD/MM/YYYY')}`
