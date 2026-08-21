@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -35,13 +36,6 @@ public class NoteReminderScheduler {
 
         for (NoteEntity note : pending) {
             noteEmail.sendNoteReminderEmail(note);
-
-            NoteResponse response = new NoteResponse(note);
-            String spaceId = note.getSpace().getId().toString();
-            messageTemplate.convertAndSend(
-                    "/topic/space/" + spaceId + "/notes/reminder",
-                    response
-            );
 
             notificationService.sendNotification(null, note.getCreatedBy(), null, note.getSpace().getRoom().getId(), note.getSpace().getId(), NotificationTypeEnum.NOTE, NotificationRefTypeEnum.NOTE_REMINDER);
 

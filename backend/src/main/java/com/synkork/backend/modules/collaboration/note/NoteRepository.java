@@ -23,6 +23,7 @@ public interface NoteRepository extends JpaRepository<NoteEntity, UUID> {
 
     List<NoteEntity> findByTitleContainingIgnoreCase(String title);
 
+    @EntityGraph(attributePaths = {"space", "space.room", "createdBy"})
     @Query("SELECT n FROM NoteEntity n WHERE n.reminderAt <= :now AND n.reminderSent = false")
     List<NoteEntity> findPendingReminders(@Param("now") Instant now);
 }
