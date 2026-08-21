@@ -113,7 +113,7 @@ public class CardService {
                     .toList();
 
             card.setAssignees(newAssignees);
-            CardEntity updatedCard = cardRepository.save(card);
+            CardEntity updatedCard = cardRepository.saveAndFlush(card);
 
             // Gửi notification cho từng người mới được assign
             if (!justAssigned.isEmpty()) {
