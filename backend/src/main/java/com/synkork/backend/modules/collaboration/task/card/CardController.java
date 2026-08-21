@@ -58,7 +58,7 @@ public class CardController {
     public ResponseEntity<CardDTO> updateCard(@PathVariable String cardId, @RequestBody CardRequest req) {
         UUID cardUUID = UUID.fromString(cardId);
         CardDTO updatedCard = cardService.updateCard(cardUUID, req);
-
+        System.out.println("Final: " + updatedCard.getVersion());
         messagingTemplate.convertAndSend("/topic/space/" + updatedCard.getSpaceId() + "/card/update", updatedCard);
 
         return ResponseEntity.ok(updatedCard);

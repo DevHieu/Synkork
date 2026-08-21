@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import type { CardEvent } from '@/features/tasks/types/Task'
-import type { SuggestedTaskDraft } from '@/features/calendar/types/calendar.types'
+import type { SuggestedTaskDraft } from '@/types/SuggestionTypes'
 
 const props = defineProps<{
   open: boolean,
@@ -81,7 +81,7 @@ watch(() => props.open, (newVal) => {
           Hủy
         </Button>
         <Button @click="handleSave" :disabled="!form.title.trim()">
-          {{ taskData ? 'Cập nhật' : 'Tạo thẻ' }} 
+          {{ taskData ? 'Cập nhật' : 'Tạo thẻ' }}
         </Button>
       </DialogFooter>
     </DialogContent>

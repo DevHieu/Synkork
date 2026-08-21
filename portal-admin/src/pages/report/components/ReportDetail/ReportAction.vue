@@ -95,7 +95,7 @@ const lockButtonLabel = computed(() => (props.report.reportType === 'USER' ? 'Kh
       <Button
         v-if="!isTargetLocked" variant="outline" size="sm"
         class="gap-1.5 shrink-0 border-destructive text-destructive hover:bg-destructive/10"
-        :disabled="checkingTarget || lockLoading || hasWarned" @click="emit('lock')"
+        :disabled="checkingTarget || lockLoading" @click="emit('lock')"
       >
         <Loader2 v-if="lockLoading" class="h-3.5 w-3.5 animate-spin" />
         <Lock v-else class="h-3.5 w-3.5" />

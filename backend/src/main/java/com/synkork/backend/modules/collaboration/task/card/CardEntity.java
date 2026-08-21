@@ -2,8 +2,8 @@ package com.synkork.backend.modules.collaboration.task.card;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 import org.hibernate.annotations.UuidGenerator;
@@ -59,7 +59,7 @@ public class CardEntity extends BaseEntity {
                 @Index(name = "idx_card_assignees_member_id", columnList = "room_member_id")
         }
     )
-    private List<RoomMemberEntity> assignees = new ArrayList<>();
+    private Set<RoomMemberEntity> assignees = new HashSet<>();
 
     private int position;
 
@@ -127,4 +127,17 @@ public class CardEntity extends BaseEntity {
 
     @Version
     private Integer version;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CardEntity that = (CardEntity) o;
+        return id != null && id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }
