@@ -92,8 +92,8 @@ const handleOpenSuggestion = async (messageId: string) => {
   if (suggestion.suggestionType === "NONE") return;
 
 
-  // Xóa các gợi ý đang hiển thị trên UI chat sau khi người dùng đã bấm nút xử lý gợi ý
-  messageStore.suggestionsByMessageId = {};
+  // Vô hiệu hóa riêng gợi ý đã chọn; gợi ý mới nhất của message khác vẫn còn dùng được.
+  delete messageStore.suggestionsByMessageId[messageId];
 
   suggestionData.value = suggestion;
   await nextTick();

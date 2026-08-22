@@ -29,7 +29,7 @@ public class OpenRouterClient {
     private static final Logger log = LoggerFactory.getLogger(OpenRouterClient.class);
 
     private static final int CONNECT_TIMEOUT_MS = 5_000;
-    private static final int READ_TIMEOUT_MS    = 60_000;
+    private static final int READ_TIMEOUT_MS    = 180_000;
 
     private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate;
