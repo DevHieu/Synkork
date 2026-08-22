@@ -256,9 +256,6 @@ Quy đổi ngày: hôm nay=%s | mai=%s | ngày mốt=%s
       </transcript>
       """;
 
-  // ── Meeting (Google AI Studio) ──
-  /** Model chuyển âm thanh cuộc họp thành văn bản. */
-  public static final String GOOGLE_AI_STUDIO_MODEL = "gemini-1.5-flash";
 
   /** Lệnh STT gửi kèm audio; không có tham số format. */
   public static final String MEETING_TRANSCRIPTION_INSTRUCTION =
