@@ -4,6 +4,7 @@ import { Pin, Trash2, Reply, Pen, Sparkles } from "lucide-vue-next";
 const emits = defineEmits(["reply", "edit", "delete", "pin", "suggest"]);
 
 const props = defineProps<{
+  isOwnMessage: boolean;
   fullAction: boolean;
   isPinned: boolean;
   showSuggestion: boolean;
@@ -33,7 +34,7 @@ const props = defineProps<{
         " :title="isPinned ? 'Bỏ ghim' : 'Ghim'" @click="$emit('pin')">
         <Pin class="w-4 h-4" :class="isPinned ? 'fill-yellow-400' : ''" />
       </button>
-      <button v-if="props.fullAction"
+      <button v-if="props.isOwnMessage"
         class="p-1.5 rounded hover:bg-foreground/10 text-white/70 hover:text-foreground transition-colors" title="Sửa"
         @click="$emit('edit')">
         <Pen class="w-4 h-4" />
