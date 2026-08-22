@@ -28,5 +28,8 @@ export const useRoomsStore = defineStore("rooms", {
       if (!state.currentRoom) return "FREE";
       return state.currentRoom.currentPlan;
     },
+    roomId: (state) => {
+      return state.currentRoom?.id || null;
+    },
   },
 });
