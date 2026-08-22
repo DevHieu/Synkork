@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.synkork.backend.common.utils.AuthUtils;
-import com.synkork.backend.modules.payment.service.VnpayPaymentService;
+import com.synkork.backend.modules.payment.service.VnpayService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,17 +14,17 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import com.synkork.backend.modules.payment.dto.PaymentRequest;
-import com.synkork.backend.modules.payment.service.PaymentService;
+import com.synkork.backend.modules.payment.service.MomoService;
 
 @RestController 
 @RequestMapping("/payment")
 public class PaymentController {
 
     @Autowired
-    private PaymentService paymentService;
+    private MomoService momoService;
 
     @Autowired
-    private VnpayPaymentService vnpayPaymentService;
+    private VnpayService vnpayService;
 
     @Value("${vnpay.redirect-url}")
     private String redirectUrl;
@@ -32,7 +32,7 @@ public class PaymentController {
     @PostMapping("/momo")
     public ResponseEntity<Map<String, Object>> createMomoPayment(@Valid @RequestBody PaymentRequest request) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        Map<String, Object> result = paymentService.createMomoPayment(
+        Map<String, Object> result = momoService.createMomoPayment(
                 request.getPlan(),
                 request.getBillingCycle(),
                 email
@@ -42,7 +42,7 @@ public class PaymentController {
 
     @PostMapping("/momo/callback")
     public ResponseEntity<String> handleMomoCallback(@RequestBody Map<String, Object> payload) {
-        paymentService.handleMomoCallback(payload);
+        momoService.handleMomoCallback(payload);
         return ResponseEntity.ok("OK");
     }
 
@@ -52,7 +52,7 @@ public class PaymentController {
             HttpServletRequest httpRequest) {
         String email = AuthUtils.getCurrentUsername();
         String clientIp = httpRequest.getRemoteAddr();
-        Map<String, Object> result = vnpayPaymentService.createVnPayPayment(
+        Map<String, Object> result = vnpayService.createVnPayPayment(
                 request.getPlan(),
                 request.getBillingCycle(),
                 email,
@@ -66,7 +66,7 @@ public class PaymentController {
         Map<String, String> params = new HashMap<>();
         request.getParameterMap().forEach((k, v) -> params.put(k, v[0]));
 
-        vnpayPaymentService.handleVnPayReturn(params);
+        vnpayService.handleVnPayReturn(params);
 
         return ResponseEntity.status(302).header("Location", redirectUrl).build();
     }
