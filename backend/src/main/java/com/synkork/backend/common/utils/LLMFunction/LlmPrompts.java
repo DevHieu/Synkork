@@ -12,7 +12,7 @@ public class LlmPrompts {
   /** Danh sách model dự phòng cho phát hiện event/task/note, thử theo thứ tự. */
   public static final List<String> CHAT_EVENT_MODELS =
           List.of(
-                  "google/gemma-4-26b-a4b-it:free",       // Ưu tiên 1: Tốc độ tốt nhất, bám sát chỉ thị định dạng JSON [6, 11, 13]
+                  "mistralai/mistral-nemo",               // Ưu tiên 1: Xử lý văn bản cho gợi ý chat
                   "google/gemma-4-31b-it:free",           // Ưu tiên 2: Độ thông minh cao hơn một chút, bám sát chỉ thị [7, 13]
                   "z-ai/glm-4.5-air:free",                // Ưu tiên 3: Dòng Air tối ưu độ trễ cực tốt cho production [6, 14]
                   "nvidia/nemotron-3-super-120b-a12b:free",// Ưu tiên 4: Khả năng suy luận mạnh mẽ hơn khi các bản nhẹ bị lỗi [6, 7]
@@ -184,7 +184,7 @@ Quy đổi ngày: hôm nay=%s | mai=%s | ngày mốt=%s
   /** Danh sách model dự phòng cho tóm tắt cuộc họp. */
   public static final List<String> MEETING_SUMMARY_MODELS =
           List.of(
-                  "google/gemma-4-26b-a4b-it:free",       // Ưu tiên 1: Tốc độ tốt nhất, bám sát chỉ thị định dạng JSON [6, 11, 13]
+                  "mistralai/mistral-nemo",       // Ưu tiên 1: Tốc độ tốt nhất, bám sát chỉ thị định dạng JSON [6, 11, 13]
                   "google/gemma-4-31b-it:free",           // Ưu tiên 2: Độ thông minh cao hơn một chút, bám sát chỉ thị [7, 13]
                   "z-ai/glm-4.5-air:free",                // Ưu tiên 3: Dòng Air tối ưu độ trễ cực tốt cho production [6, 14]
                   "nvidia/nemotron-3-super-120b-a12b:free",// Ưu tiên 4: Khả năng suy luận mạnh mẽ hơn khi các bản nhẹ bị lỗi [6, 7]
@@ -256,9 +256,6 @@ Quy đổi ngày: hôm nay=%s | mai=%s | ngày mốt=%s
       </transcript>
       """;
 
-  // ── Meeting (Google AI Studio) ──
-  /** Model chuyển âm thanh cuộc họp thành văn bản. */
-  public static final String GOOGLE_AI_STUDIO_MODEL = "gemini-1.5-flash";
 
   /** Lệnh STT gửi kèm audio; không có tham số format. */
   public static final String MEETING_TRANSCRIPTION_INSTRUCTION =
