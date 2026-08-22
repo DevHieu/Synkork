@@ -112,6 +112,11 @@ public class MeetingLlmService {
 
 
     public String summarizeMeeting(String transcript) {
+        if (transcript == null || transcript.isBlank()) {
+            log.info("Bỏ qua tóm tắt: transcript rỗng hoặc chỉ chứa khoảng trắng.");
+            return "{\"summary\":\"Nội dung không đủ để tóm tắt.\",\"keyPoints\":[],\"actionItems\":[]}";
+        }
+
         String prompt = LlmPrompts.MEETING_SUMMARY_PROMPT_TEMPLATE.formatted(transcript);
         return summarizeWithPrompt(prompt, LlmPrompts.MEETING_SUMMARY_MODELS);
     }
