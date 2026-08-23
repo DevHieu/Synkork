@@ -69,6 +69,7 @@ public class StatisticsService {
 
 
         WebSocketEventListener.onlineUserCounter = 0; // reset về lại 0
+        WebSocketEventListener.countedUsers.clear();  // reset danh sách đã đếm để ngày mới đếm lại từ đầu
 
         statisticsRepository.save(statistics);
     }
