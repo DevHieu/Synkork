@@ -5,8 +5,13 @@ import { getCookie, removeCookie } from "@/lib/cookies";
 
 let stompClient: Client | null = null;
 const subscriptions = new Map<string, StompSubscription>();
-const activeSubscriptions = new Map<string, { callback: (payload: any) => void; options?: { persistent?: boolean } }>();
+const activeSubscriptions = new Map<
+  string,
+  { callback: (payload: any) => void; options?: { persistent?: boolean } }
+>();
 let connectingPromise: Promise<void> | null = null;
+let isReconnecting = false;
+
 // Giữ lại các kênh cần sống lâu hơn vòng đời của từng space.
 const persistentDestinations = new Set<string>();
 
@@ -32,19 +37,18 @@ const createStompClient = (token: string, onConnected?: () => void): Client => {
     connectHeaders: {
       Authorization: `Bearer ${token}`,
     },
-    heartbeatIncoming: 10000, // mong nhận heartbeat từ server mỗi 10s
-    heartbeatOutgoing: 10000, // gửi heartbeat cho server mỗi 10s
-    reconnectDelay: 5000, // tự động reconnect sau 5s nếu mất kết nối
+    heartbeatIncoming: 10000,
+    heartbeatOutgoing: 10000,
+    reconnectDelay: 5000,
 
     onConnect: () => {
+      isReconnecting = false; // reconnect thành công, mở khoá lại
       onConnected?.();
-      // Khôi phục tất cả đăng ký sau khi kết nối lại
       activeSubscriptions.forEach(({ callback }, destination) => {
         doSubscribe(destination, callback);
       });
     },
     onWebSocketClose: async (event) => {
-      //bắt 401 và refresh token
       console.warn(`[Socket] Closed — code: ${event.code}`);
 
       const isUnauthorized =
@@ -53,20 +57,11 @@ const createStompClient = (token: string, onConnected?: () => void): Client => {
         (event.reason ?? "").toLowerCase().includes("unauthorized");
 
       if (isUnauthorized) {
-        removeCookie("accessToken");
-        try {
-          const freshToken = await getFreshToken();
-
-          stompClient = createStompClient(freshToken, onConnected);
-          stompClient.activate();
-        } catch {
-          window.location.href = "/auth";
-        }
+        await reconnectWithFreshToken(client, onConnected);
       }
     },
     onStompError: async (frame) => {
       const message = frame.headers["message"] ?? "";
-
       console.error("[STOMP Error]", message);
 
       const isAuthError =
@@ -74,21 +69,38 @@ const createStompClient = (token: string, onConnected?: () => void): Client => {
         message.toLowerCase().includes("unauthorized");
 
       if (isAuthError) {
-        removeCookie("accessToken");
-
-        try {
-          const freshToken = await getFreshToken();
-
-          stompClient = createStompClient(freshToken, onConnected);
-          stompClient.activate();
-        } catch {
-          window.location.href = "/auth";
-        }
+        await reconnectWithFreshToken(client, onConnected);
       }
     },
   });
 
   return client;
+};
+
+const reconnectWithFreshToken = async (
+  oldClient: Client,
+  onConnected?: () => void,
+) => {
+  if (isReconnecting) return; // đang có 1 lần reconnect chạy rồi, bỏ qua
+  isReconnecting = true;
+
+  removeCookie("accessToken");
+
+  // tắt hẳn client cũ trước, nếu ko nó vẫn tự reconnect theo reconnectDelay riêng
+  try {
+    await oldClient.deactivate();
+  } catch (e) {
+    console.warn("[Socket] Failed to deactivate old client", e);
+  }
+
+  try {
+    const freshToken = await getFreshToken();
+    stompClient = createStompClient(freshToken, onConnected);
+    stompClient.activate();
+  } catch {
+    isReconnecting = false;
+    window.location.href = "/auth";
+  }
 };
 
 export const socketService = {
@@ -146,7 +158,7 @@ export const socketService = {
     return {
       unsubscribe: () => {
         this.unsubscribeByDestination(destination);
-      }
+      },
     };
   },
 
