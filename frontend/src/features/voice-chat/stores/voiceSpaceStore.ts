@@ -13,8 +13,12 @@ import { useMemberService } from "@/features/members/services/roomMemberService"
 import { toast } from "vue-sonner";
 import { useSpaceComposable } from "@/features/spaces/composables/spaceComposable";
 import { useSpaceService } from "@/features/spaces/services/spaceService";
+import { useRoomsStore } from "@/features/rooms/stores/roomStore";
 
 export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
+  const roomStore = useRoomsStore();
+  const { roomId } = storeToRefs(useRoomsStore());
+
   const appID = Number(import.meta.env.VITE_ZEGO_APP_ID);
   const server = import.meta.env.VITE_ZEGO_SERVER_URL as string;
 
@@ -31,7 +35,6 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
   const remoteStreams = new Map<string, any>();
   const participants = ref<Map<string, Participant>>(new Map());
 
-  const currentRoomId = ref(router.currentRoute.value.params.roomId as string);
   const currentSpaceId = ref<string | null>(null);
   const videoOn = ref(false);
   const micOn = useLocalStorage("voice-mic-on", false);
@@ -93,7 +96,7 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     isJoining.value = true;
     if (isInRoom.value && currentSpaceId.value === spaceId) {
       isExpanded.value = true;
-      router.push(`/rooms/voice/${currentRoomId.value}/${spaceId}`);
+      router.push(`/rooms/voice/${roomId.value}/${spaceId}`);
       return;
     }
 
@@ -329,16 +332,16 @@ export const useVoiceSpaceStore = defineStore("voiceSpace", () => {
     },
   ) => {
     console.log("what the fack - voiceSpaceStore");
-    console.log(currentRoomId.value);
+    console.log(roomId.value);
 
-    if (!zegoState.zg || !currentRoomId.value) return;
+    if (!zegoState.zg || !roomId.value) return;
 
     const payload = {
       type: type,
       ...data,
     };
 
-    memberService.muteAudio(currentRoomId.value, userId, data);
+    memberService.muteAudio(roomId.value, userId, data);
     zego.media.roomMutedUserRequest(currentSpaceId.value!, userId, payload);
   };
 

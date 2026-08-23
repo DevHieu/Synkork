@@ -16,6 +16,9 @@ export function useChatSocketComposable() {
 
   const subscribeToChat = (spaceId: string) => {
     chatSocket.subscribeMessages(spaceId, (msg: Message) => {
+      // Tin nhắn mới vô hiệu hóa suggestion cũ, kể cả khi tin nhắn mới không có suggestion.
+      messageStore.suggestionsByMessageId = {};
+
       // Nếu đang jump mode thì không push tin mới vào (tránh lộn xộn)
       if (!isJumpMode.value) {
         messages.value = messages.value.filter(
@@ -86,8 +89,8 @@ export function useChatSocketComposable() {
     const subscription = chatSocket.subscribeSuggestions(
       currentUserId,
       (suggestion) => {
+        // Chỉ giữ gợi ý mới nhất; tin nhắn mới vô hiệu hóa gợi ý cũ.
         messageStore.suggestionsByMessageId = {
-          ...messageStore.suggestionsByMessageId,
           [suggestion.messageId]: suggestion,
         };
       },

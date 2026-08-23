@@ -30,7 +30,7 @@ public class AuthController {
     @Autowired
     VerificationService verificationService;
 
-    @GetMapping("/check-login")
+    @GetMapping("/check")
     public ResponseEntity<?> checkAuth() {
         return ResponseEntity.ok().build();
     }
