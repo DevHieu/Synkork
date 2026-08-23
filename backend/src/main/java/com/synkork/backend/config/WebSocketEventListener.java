@@ -29,9 +29,6 @@ public class WebSocketEventListener {
     @Autowired
     private FriendService friendService;
 
-    // Đếm số lượng user unique online trong ngày (tích lũy, reset mỗi ngày bởi StatisticsService)
-    public static long onlineUserCounter = 0;
-
     // Lưu lại các user online: userId -> Set<sessionId>
     // Dùng ConcurrentHashMap để thread-safe với nhiều connect/disconnect đồng thời
     // Set<sessionId> để hỗ trợ user mở nhiều tab cùng lúc
@@ -54,12 +51,10 @@ public class WebSocketEventListener {
                 this.notifyFriends(userId, true);
 
                 // Chỉ tăng counter nếu user chưa được đếm hôm nay (kể cả F5 disconnect rồi reconnect)
-                if (countedUsers.add(userId)) {
-                    onlineUserCounter++;
-                }
+                countedUsers.add(userId);
             }
         }
-        System.out.println("Số người online trong ngày: " + onlineUserCounter);
+        System.out.println("Số người online trong ngày: " + countedUsers.size());
     }
 
     @EventListener

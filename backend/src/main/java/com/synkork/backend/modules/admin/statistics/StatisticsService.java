@@ -50,7 +50,7 @@ public class StatisticsService {
         long newUsers = userRepository.countByRoleAndCreatedAtBetween(RoleEnum.USER, start, end);
         long newRooms = roomRepository.countByCreatedAtBetweenAndType(start, end, RoomTypeEnum.GROUP);
         long newSubscriptions = userSubscriptionRepository.countByCurrentTrueAndStartedAtBetween(start, end);
-        long userOnlines = WebSocketEventListener.onlineUserCounter;
+        long userOnlines = WebSocketEventListener.countedUsers.size();
 
         long totalUser = userRepository.countByRole(RoleEnum.USER);
         long totalRoom = roomRepository.countByType(RoomTypeEnum.GROUP);
@@ -68,7 +68,6 @@ public class StatisticsService {
                 .build();
 
 
-        WebSocketEventListener.onlineUserCounter = 0; // reset về lại 0
         WebSocketEventListener.countedUsers.clear();  // reset danh sách đã đếm để ngày mới đếm lại từ đầu
 
         statisticsRepository.save(statistics);
