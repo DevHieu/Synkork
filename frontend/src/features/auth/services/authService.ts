@@ -63,7 +63,7 @@ export function useAuthService() {
   };
 
   const checkIsLogin = async () => {
-    const res = await axiosClient.get("/api/auth/check-login");
+    const res = await axiosClient.get("/api/auth/check");
     return res.data;
   };
 

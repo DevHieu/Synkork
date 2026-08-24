@@ -11,13 +11,13 @@ import { userService } from '@/pages/users/services/userService'
 
 import { REASON_LABEL_MAP } from '../utils/report.utils.ts'
 import { LOCKED_STATUS } from '../utils/report.utils.ts'
-import DismissReason from './DismissReason.vue'
 
-import ReportAdminActions from '../components/ReportDetail/ReportAction.vue'
+import DismissReason from '../components/ReportDetail/DismissReason.vue'
+import ReportActions from '../components/ReportDetail/ReportAction.vue'
 import ReportBadges from '../components/ReportDetail/ReportBadges.vue'
-import ReportReasonCard from '../components/ReportDetail/ReportReason.vue'
-import ReportReporterCard from '../components/ReportDetail/Reporter.vue'
-import ReportTargetCard from '../components/ReportDetail/ReportTarget.vue'
+import ReportReason from '../components/ReportDetail/ReportReason.vue'
+import ReportReporter from '../components/ReportDetail/Reporter.vue'
+import ReportTarget from '../components/ReportDetail/ReportTarget.vue'
 import ReportEvidence from '../components/ReportDetail/ReportEvidence.vue'
 
 const props = defineProps<{
@@ -64,8 +64,6 @@ const isTargetLocked = computed(() =>
   !!targetStatus.value
   && targetStatus.value.toUpperCase() === LOCKED_STATUS[props.report.reportType],
 )
-
-const canResolve = computed(() => hasWarned.value || isTargetLocked.value)
 
 async function checkTargetStatus() {
   if (!targetId.value)
@@ -114,6 +112,7 @@ async function handleLockTarget() {
     }
     targetStatus.value = LOCKED_STATUS[props.report.reportType]
     emit('locked', { reportType: props.report.reportType, targetId: targetId.value })
+    emit('action', { id: props.report.id, status: 'RESOLVED' })
   }
   catch (error) {
     console.error('Lỗi khoá đối tượng:', error)
@@ -142,8 +141,8 @@ async function handleWarnTarget() {
       await roomService.warnRoom(targetId.value)
     }
     targetWarning.value += 1
-    
-    emit('action', { id: props.report.id, status: props.report.status, hasWarn: true })
+
+    emit('action', { id: props.report.id, status: 'RESOLVED', hasWarn: true })
   }
   catch (error) {
     console.error('Lỗi gửi cảnh cáo:', error)
@@ -200,7 +199,7 @@ watch(
 
         <Separator />
 
-        <ReportTargetCard
+        <ReportTarget
           :report="report"
           :checking-target="checkingTarget"
           :target-check-error="targetCheckError"
@@ -211,11 +210,11 @@ watch(
 
         <Separator />
 
-        <ReportReporterCard :report="report" />
+        <ReportReporter :report="report" />
 
         <Separator />
 
-        <ReportReasonCard :reason-label="reasonLabel" :description="report.description || ''" />
+        <ReportReason :reason-label="reasonLabel" :description="report.description || ''" />
 
         <Separator />
 
@@ -236,7 +235,7 @@ watch(
 
       <template v-if="report.status === 'PENDING' || report.status === 'REVIEWED'">
         <Separator class="my-4" />
-        <ReportAdminActions
+        <ReportActions
           :report="report"
           :target-warning="targetWarning"
           :checking-target="checkingTarget"
@@ -245,10 +244,8 @@ watch(
           :lock-loading="lockLoading"
           :is-target-locked="isTargetLocked"
           :has-warned="hasWarned"
-          :can-resolve="canResolve"
           @warn="handleWarnTarget"
           @lock="handleLockTarget"
-          @resolve="handleAction('RESOLVED')"
           @dismiss="isDismissDialogOpen = true"
           @review="handleAction('REVIEWED')"
         />

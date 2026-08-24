@@ -45,13 +45,6 @@ declare module 'vue-router/auto-routes' {
       { path: ParamValue<false> },
       | never
     >,
-    '/ai-talk/': RouteRecordInfo<
-      '/ai-talk/',
-      '/ai-talk',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
     '/auth': RouteRecordInfo<
       '/auth',
       '/auth',
@@ -94,13 +87,6 @@ declare module 'vue-router/auto-routes' {
     '/auth/verify-otp': RouteRecordInfo<
       '/auth/verify-otp',
       '/auth/verify-otp',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
-    '/billing/': RouteRecordInfo<
-      '/billing/',
-      '/billing',
       Record<never, never>,
       Record<never, never>,
       | never
@@ -257,34 +243,6 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
-    '/settings/account': RouteRecordInfo<
-      '/settings/account',
-      '/settings/account',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
-    '/settings/appearance': RouteRecordInfo<
-      '/settings/appearance',
-      '/settings/appearance',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
-    '/settings/display': RouteRecordInfo<
-      '/settings/display',
-      '/settings/display',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
-    '/settings/notifications': RouteRecordInfo<
-      '/settings/notifications',
-      '/settings/notifications',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
     '/subscriptions/': RouteRecordInfo<
       '/subscriptions/',
       '/subscriptions',
@@ -349,14 +307,6 @@ declare module 'vue-router/auto-routes' {
       pathParamNames:
         | 'path'
     }
-    'src/pages/ai-talk/index.vue': {
-      routes:
-        | '/ai-talk/'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
     'src/pages/auth.vue': {
       routes:
         | '/auth'
@@ -405,14 +355,6 @@ declare module 'vue-router/auto-routes' {
     'src/pages/auth/verify-otp.vue': {
       routes:
         | '/auth/verify-otp'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
-    'src/pages/billing/index.vue': {
-      routes:
-        | '/billing/'
       views:
         | never
       pathParamNames:
@@ -587,38 +529,6 @@ declare module 'vue-router/auto-routes' {
     'src/pages/settings/index.vue': {
       routes:
         | '/settings/'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
-    'src/pages/settings/account.vue': {
-      routes:
-        | '/settings/account'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
-    'src/pages/settings/appearance.vue': {
-      routes:
-        | '/settings/appearance'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
-    'src/pages/settings/display.vue': {
-      routes:
-        | '/settings/display'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
-    'src/pages/settings/notifications.vue': {
-      routes:
-        | '/settings/notifications'
       views:
         | never
       pathParamNames:

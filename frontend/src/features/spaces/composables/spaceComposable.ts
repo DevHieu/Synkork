@@ -154,7 +154,14 @@ export function useSpaceComposable() {
     try {
       _joiningDMSpaceId = spaceId;
       loading.value = true;
+
       useRoomMemberStore().clearMembers();
+      currentSpace.value = null;
+      chatSpaces.value = [];
+      voiceSpaces.value = [];
+      noteSpaces.value = [];
+      calendarSpaces.value = [];
+      taskSpaces.value = [];
 
       const space = await spaceService.getSpaceById(spaceId);
 
