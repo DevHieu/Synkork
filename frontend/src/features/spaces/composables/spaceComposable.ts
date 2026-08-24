@@ -166,6 +166,8 @@ export function useSpaceComposable() {
       // Tải lại Space theo ID mới rồi cập nhật route/currentSpace để mở đúng Personal Calendar.
       const space = await spaceService.getSpaceById(spaceId);
 
+      // Không hiểu tại sao hoạt động. Thứ tự 3 dòng này để im như này
+      currentSpace.value = null;
       await router.push(`${path}/${spaceId}`);
       currentSpace.value = space;
     } catch (error) {

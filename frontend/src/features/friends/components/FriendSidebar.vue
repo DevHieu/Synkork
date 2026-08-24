@@ -31,22 +31,10 @@ const jumpToDm = async (conversationId: string) => {
 };
 
 const jumpToPersonalRoom = async (type: "NOTE" | "CALENDAR") => {
-  // Dùng đúng ID của Personal Space; với Calendar, đây là calendarId cần để mở lịch cá nhân.
-  const spaceId = type === "NOTE"
-    ? userPersonalSpace.value.noteId
-    : userPersonalSpace.value.calendarId;
-  if (!spaceId) {
-    // Sau OAuth login, user info có thể chưa có ID Personal Space nên cần lấy lại dữ liệu mới nhất.
-    await userStore.getUserInfo();
-    const refreshedId = type === "NOTE"
-      ? userPersonalSpace.value.noteId
-      : userPersonalSpace.value.calendarId;
-    if (!refreshedId) return;
-    // Có ID hợp lệ mới tham gia Space và mở đúng màn hình Personal Calendar.
-    await spaceComposable.joinDMSpace(refreshedId, `/me/${type.toLowerCase()}`);
-    return;
-  }
-  await spaceComposable.joinDMSpace(spaceId, `/me/${type.toLowerCase()}`);
+  const { noteId, calendarId } = userPersonalSpace.value;
+  await spaceComposable.joinDMSpace(type === "NOTE" ? noteId : calendarId);
+  const path = type === "NOTE" ? `note/${noteId}` : `calendar/${calendarId}`;
+  router.push(`/me/${path}`);
 };
 </script>
 
