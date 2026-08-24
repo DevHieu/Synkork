@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -23,6 +24,9 @@ public interface SpaceRepository extends JpaRepository<SpaceEntity, UUID> {
     long countByRoom_Id(UUID roomId);
 
     long countByRoom_IdAndType(UUID roomId, SpaceTypeEnum type);
+
+    // Tìm lại Calendar Space trong Personal Room trước khi tạo mới, tránh phát sinh lịch cá nhân trùng.
+    Optional<SpaceEntity> findFirstByRoom_IdAndTypeOrderByCreatedAtAsc(UUID roomId, SpaceTypeEnum type);
 
     void deleteByStatus(SpaceStatusEnum spaceStatusEnum);
 

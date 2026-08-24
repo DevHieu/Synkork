@@ -47,6 +47,11 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
         if (existedUser != null) {
             existedUser.setProvider(ProviderEnum.GOOGLE);
+            // Sau OAuth login, bảo đảm Personal Calendar có ID để người dùng mở được lịch cá nhân.
+            Map<String, UUID> personalId = spaceService.createPersonalSpaces(existedUser);
+            existedUser.setPersonalNoteId(personalId.get("noteId"));
+            // Lưu ID Calendar vừa được tìm hoặc tạo để sử dụng ở các lần đăng nhập sau.
+            existedUser.setPersonalCalendarId(personalId.get("calendarId"));
             userService.updateUser(existedUser);
         } else {
             UserEntity newUser = new UserEntity();
@@ -61,9 +66,10 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
             existedUser = userService.create(newUser);
 
-            // Tạo phòng riêng
+            // Tạo hoặc khôi phục Personal Calendar sau lần đăng nhập OAuth đầu tiên.
             Map<String, UUID> personalId = spaceService.createPersonalSpaces(existedUser);
             existedUser.setPersonalNoteId(personalId.get("noteId"));
+            // Lưu ID Calendar để frontend có thể điều hướng đến lịch cá nhân.
             existedUser.setPersonalCalendarId(personalId.get("calendarId"));
 
             userService.updateUser(existedUser);

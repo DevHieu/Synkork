@@ -73,6 +73,7 @@ public class OpenRouterClient {
         Map<String, Object> requestBody = new HashMap<>(4);
         requestBody.put("model", model);
         requestBody.put("messages", messages);
+        requestBody.put("temperature", 0);
         if (jsonResponse) {
             requestBody.put("response_format", Map.of("type", "json_object"));
         }

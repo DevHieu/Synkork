@@ -256,37 +256,21 @@ Quy đổi ngày: hôm nay=%s | mai=%s | ngày mốt=%s
       </transcript>
       """;
 
-  // ── Meeting (Google AI Studio) ──
-  /** Model chuyển âm thanh cuộc họp thành văn bản. */
-  public static final String GOOGLE_AI_STUDIO_MODEL = "gemini-1.5-flash";
-
   /** Lệnh STT gửi kèm audio; không có tham số format. */
   public static final String MEETING_TRANSCRIPTION_INSTRUCTION =
 """
-Bạn là một chuyên gia gỡ băng (transcriber) chuyên nghiệp. Hãy chuyển đoạn dữ liệu thô từ âm thanh cuộc họp dưới đây thành văn bản tiếng Việt hoàn chỉnh với độ chính xác cao nhất.
+Bạn là bộ chuyển giọng nói thành văn bản. Chỉ ghi lại những từ thực sự nghe được từ audio đính kèm.
 
-Yêu cầu định dạng bắt buộc:
-1. Chỉ trả về văn bản thuần túy đã gỡ băng: Tuyệt đối KHÔNG kèm theo bất kỳ lời mở đầu, lời chào, lời dẫn dắt hay giải thích nào ở đầu và cuối phản hồi. Không sử dụng JSON, không dùng bullet points, không tự động tóm tắt nội dung.
-2. Ngắt đoạn hợp lý: Tự động xuống dòng khi nhận thấy có sự thay đổi người nói hoặc khi chuyển sang một ý mới rõ ràng.
+QUY TẮC BẮT BUỘC:
+1. Chỉ trả về transcript thuần túy; không JSON, không markdown, không lời dẫn, không tóm tắt.
+2. Giữ nguyên ngôn ngữ, thuật ngữ và ý nghĩa thực tế của lời nói.
+3. Không được suy đoán, hoàn thiện câu, tạo nội dung mẫu, hoặc dùng kiến thức ngoài audio.
+4. Nếu audio im lặng, chỉ có nhiễu, không giải mã được, hoặc không nghe rõ lời nói, trả về đúng duy nhất `__NO_SPEECH__`.
+5. Nếu chỉ nghe rõ một phần, chỉ ghi phần đó; không thay phần còn lại bằng nội dung bịa.
 
-Quy tắc xử lý ngôn ngữ:
-- Code-switching: Ghi nhận chính xác các thuật ngữ tiếng Anh được sử dụng xen kẽ trong câu tiếng Việt (ví dụ: "RAG", "fine-tuning", "prompt", "server"). Tuyệt đối không dịch ép sang tiếng Việt.
-- Clean Verbatim (Ghi chép gọn): Loại bỏ toàn bộ từ thừa (à, ừm, ờ, dạ, thì, mà, nhé), tiếng tặc lưỡi, hoặc từ lặp lại do nói vấp, nhằm giữ văn bản mạch lạc nhưng KHÔNG thay đổi ý nghĩa gốc của câu.
-- Dấu câu & Tên riêng: Chuẩn hóa viết hoa đầu câu, viết hoa tên riêng, tên dự án, thuật ngữ công nghệ và ngắt câu logic.
-- Đoạn nhiễu/Không thể nghe: Nếu có đoạn âm thanh bị ồn hoặc không thể nghe rõ chữ, tuyệt đối không tự bịa từ. Hãy điền tag [không nghe rõ].
+Hãy phân tích duy nhất audio được đính kèm trong request này. Không có transcript văn bản đầu vào nào khác.
 
-Ví dụ minh họa (Mẫu chuẩn đầu ra):
----
-Đầu vào thô: "à... ờ... hôm nay chúng ta sẽ bàn về việc... ừm... deploy mô hình LLM này lên... lên cái server của AWS nha mọi người. Thì... [tiếng ồn cực lớn]... sau đó chúng ta sẽ setup auto-scaling cho nó."
-Đầu ra mong muốn:
-Hôm nay chúng ta sẽ bàn về việc deploy mô hình LLM này lên server của AWS nha mọi người.
-[không nghe rõ] sau đó chúng ta sẽ setup auto-scaling cho nó.
----
+LƯU Ý CHỐNG HALLUCINATION: Prompt này không cung cấp chủ đề cuộc họp. Mọi chủ đề, câu, tên riêng và thuật ngữ trong kết quả phải đến trực tiếp từ audio. Nếu không có lời nói, kết quả bắt buộc là `__NO_SPEECH__`.
 
-Hãy thực hiện nhiệm vụ trên một cách nghiêm túc đối với đoạn dữ liệu cuộc họp nằm trong thẻ <raw_transcript> dưới đây:
-
-<raw_transcript>
-{INPUT}
-</raw_transcript>
-""";
+Kết quả:""";
 }

@@ -55,13 +55,20 @@ public class MeetingLlmService {
 
         log.info("[MeetingLlmService] Đang gọi OpenRouter để bóc băng ghi âm (model: {})", LlmPrompts.MODEL_TRANSCRIPTION);
 
-        return openRouterClient.chatCompletion(
+        String transcript = openRouterClient.chatCompletion(
                 LlmPrompts.REFERER_DEFAULT,
                 LlmPrompts.APP_TITLE,
                 LlmPrompts.MODEL_TRANSCRIPTION,
                 messages,
                 false // không bắt buộc JSON
         );
+        String normalized = transcript == null ? "" : transcript.trim();
+        if (normalized.equalsIgnoreCase("__NO_SPEECH__")
+                || normalized.equalsIgnoreCase("[không nghe rõ]")
+                || normalized.equalsIgnoreCase("không nghe rõ")) {
+            return "";
+        }
+        return transcript;
     }
 
 
