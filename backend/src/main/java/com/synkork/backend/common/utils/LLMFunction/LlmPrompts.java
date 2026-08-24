@@ -192,54 +192,98 @@ Quy đổi ngày: hôm nay=%s | mai=%s | ngày mốt=%s
                   "openrouter/free");                     // Ưu tiên 6: Chốt chặn cuối cùng phòng khi toàn bộ hệ thống trên quá tải [1]
 
 
-  /** Prompt tóm tắt transcript; nhận 1 tham số: transcript. */
+  /** Prompt tóm tắt cuộc họp; nhận 1 tham số: transcript. */
   public static final String MEETING_SUMMARY_PROMPT_TEMPLATE =
       """
-      Bạn là trợ lý chuyên tóm tắt nội dung lời nói. Hãy tóm tắt chính xác transcript được cung cấp, dù đó là cuộc họp, bài thuyết minh, bài hát, bài giảng hay câu chuyện.
-      Chỉ trả về duy nhất một khối JSON hợp lệ. Tuyệt đối KHÔNG sử dụng markdown (không dùng khối bao ```json), không thêm văn bản dẫn dắt hoặc giải thích ngoài JSON.
+      Bạn là một thư ký hành chính cấp cao. Nhiệm vụ của bạn là trích xuất dữ liệu và lập biên bản tóm tắt cuộc họp dựa trên đoạn hội thoại được cung cấp.
+      Chỉ trả về duy nhất một khối JSON hợp lệ. Tuyệt đối KHÔNG sử dụng markdown (không dùng khối bao ```json), không thêm bất kỳ văn bản dẫn dắt, giải thích hoặc chào hỏi nào ngoài khối JSON này.
 
-      Quy tắc bắt buộc:
-      1. Tính xác thực: Mọi thông tin trong summary, keyPoints và actionItems phải xuất phát từ transcript. Không suy diễn, bịa đặt hoặc dùng kiến thức bên ngoài.
-      2. Trường summary gồm 2-4 câu, nêu chủ đề và các ý chính quan trọng nhất của transcript.
-      3. Trường keyPoints liệt kê các luận điểm, sự kiện hoặc thông tin nổi bật; nếu transcript có nội dung thì phải cố gắng điền các ý chính.
-      4. Trường actionItems chỉ liệt kê việc cần làm được nói rõ trong transcript; nếu không có thì trả về mảng rỗng []. Không coi việc thiếu actionItems là lý do để bỏ qua tóm tắt.
-      5. Chỉ dùng summary "Nội dung không đủ để tóm tắt." khi transcript rỗng, chỉ có nhiễu/tiếng thử âm thanh, hoặc thực sự không có nội dung có nghĩa.
+      Quy tắc logic bắt buộc:
+      1. Tính xác thực (Grounding): Tất cả thông tin trong summary, keyPoints, và actionItems phải xuất phát 100%% từ nội dung thực tế trong transcript. Tuyệt đối không suy diễn, không tự ý thêm bối cảnh bên ngoài hoặc bịa đặt thông tin.
+      2. Định lượng: Trường 'summary' phải giới hạn nghiêm ngặt trong khoảng 2-4 câu, phản ánh chính xác mục đích và kết quả cốt lõi của cuộc họp.
+      3. Cơ chế Fallback: Nếu transcript quá ngắn (< 3 câu có nghĩa), chỉ chứa nội dung rác/nhiễu hoặc không có thông tin thảo luận nào giá trị:
+         - Điền vào trường 'summary' giá trị: "Nội dung không đủ để tóm tắt."
+         - Để trống các mảng 'keyPoints' và 'actionItems' (trả về mảng rỗng []).
 
       Cấu trúc JSON bắt buộc:
       {{
-        "reasoning": "Mô tả ngắn gọn căn cứ trong transcript (không hiển thị cho người dùng cuối).",
-        "summary": "Tóm tắt tổng quan nội dung trong 2-4 câu.",
+        "reasoning": "Phân tích từng bước về mục đích cuộc họp, các quyết định chính và người chịu trách nhiệm (bước suy luận ngầm, không hiển thị cho người dùng cuối).",
+        "summary": "Tóm tắt tổng quan nội dung (2-4 câu).",
         "keyPoints": [
-          "Ý chính hoặc thông tin nổi bật 1",
-          "Ý chính hoặc thông tin nổi bật 2"
+          "Điểm thảo luận hoặc quyết định quan trọng 1",
+          "Điểm thảo luận hoặc quyết định quan trọng 2"
         ],
         "actionItems": [
-          "[Tên người thực hiện nếu có] Việc cần làm được nêu trong transcript"
+          "[Tên người thực hiện nếu có] Việc cần làm 1",
+          "[Tên người thực hiện nếu có] Việc cần làm 2"
         ]
       }}
 
-      Hãy phân tích nghiêm túc transcript nằm trong thẻ <transcript> dưới đây:
+      Ví dụ minh họa 1 (Trường hợp cuộc họp hợp lệ):
+      ---
+      Đầu vào transcript: "Nam: Hôm nay chúng ta cần chốt hạn chót dự án RAG nhé. Lan sẽ phụ trách viết tài liệu hệ thống trước thứ Sáu tới. Lan: Ok, tôi đồng ý. Nam cũng cần bàn giao API cho đội frontend trước ngày mai đấy."
+      Đầu ra JSON:
+      {{
+        "reasoning": "Mục đích cuộc họp là chốt deadline dự án RAG. Quyết định: Lan viết tài liệu hệ thống, Nam bàn giao API frontend. Người thực hiện có tên rõ ràng.",
+        "summary": "Cuộc họp đã thống nhất các mốc thời gian quan trọng cho dự án RAG. Các thành viên đã nhận nhiệm vụ cụ thể để đảm bảo tiến độ triển khai hệ thống.",
+        "keyPoints": [
+          "Thống nhất các mốc thời gian deadline cho dự án RAG.",
+          "Lan và Nam phân chia công việc triển khai tài liệu và bàn giao API."
+        ],
+        "actionItems": [
+          "[Lan] Viết tài liệu hệ thống trước thứ Sáu tới.",
+          "[Nam] Bàn giao API cho đội frontend trước ngày mai."
+        ]
+      }}
+      ---
+
+      Ví dụ minh họa 2 (Trường hợp dữ liệu rác - kích hoạt Fallback):
+      ---
+      Đầu vào transcript: "Alo alo... nghe rõ không? ... Chắc mạng bị lag rồi... Ừ thế nhé."
+      Đầu ra JSON:
+      {{
+        "reasoning": "Đoạn hội thoại chỉ chứa các câu thử tín hiệu mạng và không có bất kỳ nội dung thảo luận hay quyết định nào được đưa ra.",
+        "summary": "Nội dung không đủ để tóm tắt.",
+        "keyPoints": [],
+        "actionItems": []
+      }}
+      ---
+
+      Hãy thực hiện nhiệm vụ trên một cách nghiêm túc đối với đoạn dữ liệu transcript nằm trong thẻ <transcript> dưới đây:
 
       <transcript>
       %s
       </transcript>
       """;
 
+
   /** Lệnh STT gửi kèm audio; không có tham số format. */
   public static final String MEETING_TRANSCRIPTION_INSTRUCTION =
 """
-Bạn là bộ chuyển giọng nói thành văn bản. Chỉ ghi lại những từ thực sự nghe được từ audio đính kèm.
+Bạn là một chuyên gia gỡ băng (transcriber) chuyên nghiệp. Hãy chuyển đoạn dữ liệu thô từ âm thanh cuộc họp dưới đây thành văn bản tiếng Việt hoàn chỉnh với độ chính xác cao nhất.
 
-QUY TẮC BẮT BUỘC:
-1. Chỉ trả về transcript thuần túy; không JSON, không markdown, không lời dẫn, không tóm tắt.
-2. Giữ nguyên ngôn ngữ, thuật ngữ và ý nghĩa thực tế của lời nói.
-3. Không được suy đoán, hoàn thiện câu, tạo nội dung mẫu, hoặc dùng kiến thức ngoài audio.
-4. Nếu audio im lặng, chỉ có nhiễu, không giải mã được, hoặc không nghe rõ lời nói, trả về đúng duy nhất `__NO_SPEECH__`.
-5. Nếu chỉ nghe rõ một phần, chỉ ghi phần đó; không thay phần còn lại bằng nội dung bịa.
+Yêu cầu định dạng bắt buộc:
+1. Chỉ trả về văn bản thuần túy đã gỡ băng: Tuyệt đối KHÔNG kèm theo bất kỳ lời mở đầu, lời chào, lời dẫn dắt hay giải thích nào ở đầu và cuối phản hồi. Không sử dụng JSON, không dùng bullet points, không tự động tóm tắt nội dung.
+2. Ngắt đoạn hợp lý: Tự động xuống dòng khi nhận thấy có sự thay đổi người nói hoặc khi chuyển sang một ý mới rõ ràng.
 
-Hãy phân tích duy nhất audio được đính kèm trong request này. Không có transcript văn bản đầu vào nào khác.
+Quy tắc xử lý ngôn ngữ:
+- Code-switching: Ghi nhận chính xác các thuật ngữ tiếng Anh được sử dụng xen kẽ trong câu tiếng Việt (ví dụ: "RAG", "fine-tuning", "prompt", "server"). Tuyệt đối không dịch ép sang tiếng Việt.
+- Clean Verbatim (Ghi chép gọn): Loại bỏ toàn bộ từ thừa (à, ừm, ờ, dạ, thì, mà, nhé), tiếng tặc lưỡi, hoặc từ lặp lại do nói vấp, nhằm giữ văn bản mạch lạc nhưng KHÔNG thay đổi ý nghĩa gốc của câu.
+- Dấu câu & Tên riêng: Chuẩn hóa viết hoa đầu câu, viết hoa tên riêng, tên dự án, thuật ngữ công nghệ và ngắt câu logic.
+- Đoạn nhiễu/Không thể nghe: Nếu có đoạn âm thanh bị ồn hoặc không thể nghe rõ chữ, tuyệt đối không tự bịa từ. Hãy điền tag [không nghe rõ].
 
-LƯU Ý CHỐNG HALLUCINATION: Prompt này không cung cấp chủ đề cuộc họp. Mọi chủ đề, câu, tên riêng và thuật ngữ trong kết quả phải đến trực tiếp từ audio. Nếu không có lời nói, kết quả bắt buộc là `__NO_SPEECH__`.
+Ví dụ minh họa (Mẫu chuẩn đầu ra):
+---
+Đầu vào thô: "à... ờ... hôm nay chúng ta sẽ bàn về việc... ừm... deploy mô hình LLM này lên... lên cái server của AWS nha mọi người. Thì... [tiếng ồn cực lớn]... sau đó chúng ta sẽ setup auto-scaling cho nó."
+Đầu ra mong muốn:
+Hôm nay chúng ta sẽ bàn về việc deploy mô hình LLM này lên server của AWS nha mọi người.
+[không nghe rõ] sau đó chúng ta sẽ setup auto-scaling cho nó.
+---
 
-Kết quả:""";
+Hãy thực hiện nhiệm vụ trên một cách nghiêm túc đối với đoạn dữ liệu cuộc họp nằm trong thẻ <raw_transcript> dưới đây:
+
+<raw_transcript>
+{INPUT}
+</raw_transcript>
+""";
 }
