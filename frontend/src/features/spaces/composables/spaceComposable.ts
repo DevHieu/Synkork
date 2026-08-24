@@ -154,7 +154,7 @@ export function useSpaceComposable() {
     try {
       _joiningDMSpaceId = spaceId;
       loading.value = true;
-      // Xóa state Space cũ trước khi tải Personal Calendar, tránh hiển thị dữ liệu của Space trước đó.
+
       useRoomMemberStore().clearMembers();
       currentSpace.value = null;
       chatSpaces.value = [];
@@ -163,7 +163,6 @@ export function useSpaceComposable() {
       calendarSpaces.value = [];
       taskSpaces.value = [];
 
-      // Tải lại Space theo ID mới rồi cập nhật route/currentSpace để mở đúng Personal Calendar.
       const space = await spaceService.getSpaceById(spaceId);
 
       // Không hiểu tại sao hoạt động. Thứ tự 3 dòng này để im như này
