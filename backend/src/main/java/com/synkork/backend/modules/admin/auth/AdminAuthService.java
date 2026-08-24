@@ -1,9 +1,13 @@
 
 package com.synkork.backend.modules.admin.auth;
 
+import com.synkork.backend.common.utils.AuthUtils;
+import com.synkork.backend.modules.admin.auth.dto.AdminChangePasswordRequest;
+import com.synkork.backend.modules.admin.auth.dto.AdminUpdateProfileRequest;
 import com.synkork.backend.modules.auth.dto.LoginRequest;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
+import com.synkork.backend.modules.user.dto.UserInfoDto;
 import com.synkork.backend.modules.user.enums.RoleEnum;
 import com.synkork.backend.modules.user.enums.UserStatusEnum;
 import com.synkork.backend.security.JwtService;
@@ -15,6 +19,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -29,6 +34,15 @@ public class AdminAuthService {
 
     @Autowired
     private JwtService jwtService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    private UserEntity getCurrentUser() {
+        String email = AuthUtils.getCurrentUsername();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng"));
+    }
 
     public boolean validateAccount(UserEntity user) {
         if (user.getRole() == RoleEnum.USER) {
@@ -65,5 +79,36 @@ public class AdminAuthService {
         } catch (BadCredentialsException e) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Mật khẩu sai. Vui lòng nhập lại!");
         }
+    }
+
+    public UserInfoDto updateProfile(AdminUpdateProfileRequest dto) {
+        UserEntity user = getCurrentUser();
+
+        String newUsername = dto.username().trim().toLowerCase();
+        userRepository.findByUsername(newUsername).ifPresent(existing -> {
+            if (!existing.getId().equals(user.getId())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Tên đăng nhập đã được sử dụng");
+            }
+        });
+
+        user.setUsername(newUsername);
+        user.setDisplayName(dto.displayName().trim());
+
+        return new UserInfoDto(userRepository.save(user));
+    }
+
+    public void changePassword(AdminChangePasswordRequest dto) {
+        UserEntity user = getCurrentUser();
+
+        if (user.getPassword() == null || user.getPassword().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tài khoản chưa có mật khẩu. Hãy dùng chức năng tạo mật khẩu.");
+        }
+
+        if (!passwordEncoder.matches(dto.currentPassword(), user.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mật khẩu hiện tại không đúng");
+        }
+
+        user.setPassword(passwordEncoder.encode(dto.newPassword()));
+        userRepository.save(user);
     }
 }

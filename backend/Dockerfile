@@ -17,6 +17,10 @@ FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
+# Set Timezone - HoChiMinh
+ENV TZ=Asia/Ho_Chi_Minh
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 # Copy jar từ build stage
 COPY --from=build /app/target/*.jar app.jar
 
