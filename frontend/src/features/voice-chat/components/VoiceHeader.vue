@@ -14,6 +14,12 @@ const isRecording = ref(false);
 let recorder: MediaRecorder | null = null;
 let chunks: Blob[] = [];
 
+const EMPTY_SUMMARY = JSON.stringify({
+  summary: "Nội dung không đủ để tóm tắt.",
+  keyPoints: [],
+  actionItems: [],
+});
+
 const route = useRoute();
 const voiceSpaceStore = useVoiceSpaceStore();
 const userStore = useUserStore();
@@ -94,12 +100,48 @@ const handleSummary = () => {
   recorder = new MediaRecorder(audioStream, { mimeType });
   chunks = [];
 
+  const audioContext = new AudioContext();
+  void audioContext.resume();
+  const analyser = audioContext.createAnalyser();
+  analyser.fftSize = 2048;
+  const source = audioContext.createMediaStreamSource(audioStream);
+  source.connect(analyser);
+  const samples = new Uint8Array(analyser.fftSize);
+  const speechSamples: number[] = [];
+  const detectSpeech = () => {
+    analyser.getByteTimeDomainData(samples);
+    let sum = 0;
+    for (const sample of samples) {
+      const normalized = (sample - 128) / 128;
+      sum += normalized * normalized;
+    }
+    speechSamples.push(Math.sqrt(sum / samples.length));
+  };
+  const speechTimer = window.setInterval(detectSpeech, 250);
+  const hasSpeech = () => speechSamples.some((rms) => rms > 0.03);
+  const stopAnalyser = async () => {
+    window.clearInterval(speechTimer);
+    source.disconnect();
+    await audioContext.close();
+  };
+
   recorder.ondataavailable = (e) => {
     if (e.data.size > 0) chunks.push(e.data);
   };
 
   // Gửi file ghi âm lên backend và hiển thị modal tóm tắt cuộc họp
   recorder.onstop = async () => {
+    await stopAnalyser();
+
+    if (!hasSpeech() || chunks.length === 0) {
+      meetingTranscript.value = "";
+      meetingSummaryJson.value = EMPTY_SUMMARY;
+      showSummaryModal.value = true;
+      isSummaryLoading.value = false;
+      toast.info("Không phát hiện lời nói trong bản ghi.");
+      return;
+    }
+
     const blob = new Blob(chunks, { type: audioType });
     const file = new File([blob], `meeting.${extension}`, { type: audioType });
 
