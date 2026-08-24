@@ -53,15 +53,34 @@ public class MeetingLlmService {
                 Map.of("role", "user", "content", contentArray)
         );
 
-        log.info("[MeetingLlmService] Đang gọi OpenRouter để bóc băng ghi âm (model: {})", LlmPrompts.MODEL_TRANSCRIPTION);
-
-        return openRouterClient.chatCompletion(
-                LlmPrompts.REFERER_DEFAULT,
-                LlmPrompts.APP_TITLE,
-                LlmPrompts.MODEL_TRANSCRIPTION,
-                messages,
-                false // không bắt buộc JSON
-        );
+        Exception lastException = null;
+        String transcript = null;
+        for (String model : LlmPrompts.MEETING_TRANSCRIPTION_MODELS) {
+            try {
+                log.info("[MeetingLlmService] Đang gọi OpenRouter để bóc băng ghi âm (model: {})", model);
+                transcript = openRouterClient.chatCompletion(
+                        LlmPrompts.REFERER_DEFAULT,
+                        LlmPrompts.APP_TITLE,
+                        model,
+                        messages,
+                        false // không bắt buộc JSON
+                );
+                break;
+            } catch (Exception e) {
+                lastException = e;
+                log.warn("Model transcription {} thất bại, thử model tiếp theo: {}", model, e.getMessage());
+            }
+        }
+        if (transcript == null && lastException != null) {
+            throw lastException;
+        }
+        String normalized = transcript == null ? "" : transcript.trim();
+        if (normalized.equalsIgnoreCase("__NO_SPEECH__")
+                || normalized.equalsIgnoreCase("[không nghe rõ]")
+                || normalized.equalsIgnoreCase("không nghe rõ")) {
+            return "";
+        }
+        return transcript;
     }
 
 
