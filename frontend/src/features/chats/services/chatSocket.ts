@@ -1,6 +1,6 @@
 import { socketService } from "@/services/socketService";
 import type { Message } from "@/features/chats/types/MessageTypes";
-import type { MessageEventSuggestion } from "@/features/calendar/types/calendar.types";
+import type { MessageEventSuggestion } from "@/types/SuggestionTypes";
 
 export const chatSocket = {
   // hủy subscription khi rời khỏi space để tránh nhận tin nhắn mấy phòng trước đó vào

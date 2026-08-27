@@ -14,7 +14,12 @@ import lombok.*;
 import java.util.List;
 
 @Entity
-@Table(name = "spaces")
+@Table(
+        name = "spaces",
+        indexes = {
+                @Index(name = "idx_spaces_room_id", columnList = "room_id")
+        }
+)
 @Getter
 @Setter
 @Builder

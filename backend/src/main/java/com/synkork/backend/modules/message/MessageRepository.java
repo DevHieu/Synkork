@@ -111,6 +111,10 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
     // Tìm với load máy cái tin nhắn khi nhấn lướt đến 1 cái tin nhắn trong Pinned
     @Query("""
                 SELECT m from MessageEntity m
+                JOIN FETCH m.sender rm
+                JOIN FETCH rm.user
+                JOIN FETCH m.space
+                LEFT JOIN FETCH m.replyTo
                 WHERE m.space.id = :spaceId
                   AND m.id < :messageId
                 ORDER BY m.id DESC
@@ -121,6 +125,10 @@ public interface MessageRepository extends JpaRepository<MessageEntity, UUID> {
 
     @Query("""
                 SELECT m from MessageEntity m
+                JOIN FETCH m.sender rm
+                JOIN FETCH rm.user
+                JOIN FETCH m.space
+                LEFT JOIN FETCH m.replyTo
                 WHERE m.space.id = :spaceId
                   AND m.id >= :messageId
                 ORDER BY m.id ASC

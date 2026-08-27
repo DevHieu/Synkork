@@ -26,7 +26,8 @@ public record ReportResponse(
         LocalDateTime createdAt,
         String evidenceUrl,
         String evidenceName,
-        String evidenceResourceType
+        String evidenceResourceType,
+        Boolean hasWarn
         ) {
     public ReportResponse(ReportEntity e) {
         this(
@@ -53,6 +54,7 @@ public record ReportResponse(
                 e.getCreatedAt(),
                 e.getEvidenceUrl(),
                 e.getEvidenceName(),
-                e.getEvidenceResourceType());
+                e.getEvidenceResourceType(),
+                e.getHasWarn());
     }
 }

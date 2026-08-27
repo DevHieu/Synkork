@@ -5,7 +5,7 @@ import { toast } from "vue-sonner";
 import { useSpaceService } from "@/features/spaces/services/spaceService";
 import { useRoomsStore } from "@/features/rooms/stores/roomStore.ts";
 import { storeToRefs } from "pinia";
-import type { CalendarChannelOption } from "@/features/calendar/types/calendar.types";
+import type { ChannelOption } from "@/types/SuggestionTypes";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,7 +22,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "update:open", value: boolean): void;
-  (e: "select", option: CalendarChannelOption, type: "CALENDAR" | "NOTE" | "TASK"): void;
+  (e: "select", option: ChannelOption, type: "CALENDAR" | "NOTE" | "TASK"): void;
 }>();
 
 const spaceService = useSpaceService();
@@ -39,7 +39,7 @@ const roomStore = useRoomsStore();
 const { currentRoom } = storeToRefs(roomStore);
 
 const loading = ref(false);
-const currentRoomChannels = ref<CalendarChannelOption[]>([]);
+const currentRoomChannels = ref<ChannelOption[]>([]);
 
 const title = computed(() => {
   switch (selectedType.value) {
@@ -101,7 +101,7 @@ const loadChannels = async () => {
             roomName: currentRoom.value!.name,
             spaceId: space.id,
             spaceName: space.name,
-          }) satisfies CalendarChannelOption,
+          }) satisfies ChannelOption,
       );
   } catch (error) {
     toast.error("Không thể tải danh sách kênh.");
@@ -111,7 +111,7 @@ const loadChannels = async () => {
   }
 };
 
-const handleSelect = (option: CalendarChannelOption) => {
+const handleSelect = (option: ChannelOption) => {
   emit("select", option, selectedType.value);
 };
 

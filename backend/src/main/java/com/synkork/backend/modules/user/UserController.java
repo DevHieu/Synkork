@@ -2,8 +2,8 @@ package com.synkork.backend.modules.user;
 
 import com.synkork.backend.common.dtos.FileUploaded;
 import com.synkork.backend.common.utils.FileService;
-import com.synkork.backend.modules.user.dto.ChangePasswordDto;
-import com.synkork.backend.modules.user.dto.UpdateprofileDto;
+import com.synkork.backend.modules.user.dto.ChangePasswordRequest;
+import com.synkork.backend.modules.user.dto.UpdateProfileRequest;
 import com.synkork.backend.modules.user.dto.UserInfoDto;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
@@ -67,7 +67,7 @@ public class UserController {
 
   // Cập nhật displayName / username
   @PatchMapping("/me")
-  public ResponseEntity<?> updateProfile(@RequestBody UpdateprofileDto dto) {
+  public ResponseEntity<?> updateProfile(@RequestBody UpdateProfileRequest dto) {
     try {
       UserInfoDto updated = userService.updateProfile(dto);
       return ResponseEntity.ok(updated);
@@ -78,7 +78,7 @@ public class UserController {
 
   // Đổi mật khẩu — tài khoản LOCAL đã có password
   @PatchMapping("/me/password")
-  public ResponseEntity<?> changePassword(@RequestBody ChangePasswordDto dto) {
+  public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest dto) {
     try {
       userService.changePassword(dto);
       return ResponseEntity.ok("Đổi mật khẩu thành công");

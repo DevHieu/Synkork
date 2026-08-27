@@ -60,6 +60,13 @@ momo:
   redirect-url: ${FRONTEND_URL:}/me/subscriptions
   ipn-url: ${SERVER_URL:}/api/payment/momo/callback
 
+vnpay:
+  tmn-code: ${VNP_TMN_CODE}
+  hash-secret: ${VNP_HASH_SECRET}
+  url: ${VNP_URL}
+  return-url: ${VNP_RETURN_URL}
+  redirect-url: ${FRONTEND_URL:}/me/subscriptions
+
 server:
   port: 8080
   servlet:

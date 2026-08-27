@@ -26,7 +26,8 @@ public final class ReportSpecification {
             if (Long.class != query.getResultType() && long.class != query.getResultType()) {
                 root.fetch("reporter", JoinType.LEFT);
                 root.fetch("targetUser", JoinType.LEFT);
-                root.fetch("targetRoom", JoinType.LEFT);
+                var targetRoomFetch = root.fetch("targetRoom", JoinType.LEFT);
+                targetRoomFetch.fetch("owner", JoinType.LEFT);
                 query.distinct(true);
             }
             

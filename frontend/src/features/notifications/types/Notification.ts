@@ -1,7 +1,7 @@
 
 export interface NotificationDTO {
   id: string
-  type: 'TASK' | 'FRIEND' | 'CALENDAR' | 'NOTE' | 'CHAT'
+  type: 'TASK' | 'FRIEND' | 'CALENDAR' | 'NOTE'
   refType:   'CARD_ASSIGNED' 
            | 'CARD_OVER_DUE'
            | 'CARD_DUE_SOON' 

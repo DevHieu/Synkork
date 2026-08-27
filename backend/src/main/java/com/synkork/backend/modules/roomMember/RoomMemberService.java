@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.synkork.backend.common.utils.PermissionService;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.RoomRepository;
-import com.synkork.backend.modules.roomMember.dto.ChangeAuthorityDTO;
+import com.synkork.backend.modules.roomMember.dto.ChangeAuthorityRequest;
 import com.synkork.backend.modules.roomMember.dto.ChatDisableRequest;
 import com.synkork.backend.modules.roomMember.dto.MuteRequest;
 import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
@@ -63,14 +63,14 @@ public class RoomMemberService {
                 .toList();
     }
 
-    public RoomMemberEntity addRoomMembers(String userId, String roomID, String role) {
+    public RoomMemberEntity addRoomMembers(UUID creatorId, String roomID, String role) {
         RoomMemberEntity roomMemberEntity = new RoomMemberEntity();
 
         RoomEntity room = roomRepository.findById(UUID.fromString(roomID))
                 .orElseThrow(() -> new RuntimeException("Room not found: " + roomID));
 
-        UserEntity user = userRepository.findById(UUID.fromString(userId))
-                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        UserEntity user = userRepository.findById(creatorId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + creatorId));
 
         roomMemberEntity.setRoom(room);
         roomMemberEntity.setUser(user);
@@ -87,7 +87,7 @@ public class RoomMemberService {
     }
 
     @Transactional
-    public List<RoomMemberEntity> changerAuthority(ChangeAuthorityDTO dto, UUID roomId, UUID requesterUserId) {
+    public List<RoomMemberEntity> changerAuthority(ChangeAuthorityRequest dto, UUID roomId, UUID requesterUserId) {
 
         PermissionService.requirePermission(roomId, requesterUserId, RoomMemberRoleEnum.OWNER, RoomMemberRoleEnum.ADMIN);
 

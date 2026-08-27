@@ -16,7 +16,18 @@ axiosClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = getCookie('accessToken')
     const url = config.url ?? ''
-    if (!url.includes('auth/')) {
+
+    const noAuthEndpoints = [
+      '/auth/login',
+      '/auth/register',
+      '/auth/reset-password-request',
+      '/auth/reset-password',
+      '/auth/refresh',
+    ]
+
+    const isNoAuthEndpoint = noAuthEndpoints.some(endpoint => url.includes(endpoint))
+
+    if (!isNoAuthEndpoint) {
       if (token) {
         config.headers = config.headers ?? {}
         config.headers.Authorization = `Bearer ${token}`

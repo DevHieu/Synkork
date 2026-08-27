@@ -12,7 +12,13 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "notifications")
+@Table(
+        name = "notifications",
+        indexes = {
+                @Index(name = "idx_notifications_user_read_created", columnList = "user_id, isRead, createdAt DESC"),
+                @Index(name = "idx_notifications_actor_id", columnList = "actor_id")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor

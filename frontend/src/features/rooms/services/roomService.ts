@@ -6,14 +6,9 @@ export function useRoomService() {
     return response.data;
   };
 
-  const createRoom = async (roomData: {
-    name: string;
-    ownerId: string;
-    imageFile?: File;
-  }) => {
+  const createRoom = async (roomData: { name: string; imageFile?: File }) => {
     const formData = new FormData();
     formData.append("name", roomData.name);
-    formData.append("ownerId", roomData.ownerId);
     if (roomData.imageFile) {
       formData.append("imageFile", roomData.imageFile);
     }

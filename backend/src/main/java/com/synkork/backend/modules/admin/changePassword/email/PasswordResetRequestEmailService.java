@@ -1,17 +1,15 @@
 package com.synkork.backend.modules.admin.changePassword.email;
 
 import com.synkork.backend.common.utils.EmailService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
 public class PasswordResetRequestEmailService {
 
-    private final EmailService emailService;
-
-    public PasswordResetRequestEmailService(EmailService emailService) {
-        this.emailService = emailService;
-    }
+    @Autowired
+    private EmailService emailService;
 
     @Async
     public void sendOtpEmail(String to, String otp) {

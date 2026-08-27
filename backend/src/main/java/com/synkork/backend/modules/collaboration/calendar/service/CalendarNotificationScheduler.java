@@ -2,15 +2,10 @@ package com.synkork.backend.modules.collaboration.calendar.service;
 
 import com.synkork.backend.modules.collaboration.calendar.entity.CalendarEventEntity;
 import com.synkork.backend.modules.collaboration.calendar.repository.CalendarEventRepository;
-import com.synkork.backend.modules.notification.NotificationService;
-import com.synkork.backend.modules.notification.enums.NotificationRefTypeEnum;
-import com.synkork.backend.modules.notification.enums.NotificationTypeEnum;
-import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -24,7 +19,6 @@ public class CalendarNotificationScheduler {
 
     private final CalendarEventRepository calendarEventRepository;
     private final CalendarEmailService calendarEmailService;
-    private final NotificationService notificationService;
 
 
     @Scheduled(cron = "0 * * * * *")

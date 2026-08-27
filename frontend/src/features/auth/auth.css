@@ -173,7 +173,7 @@
   font-weight: 700 !important;
   letter-spacing: 0.7px !important;
   text-transform: uppercase !important;
-  color: var(--primary-foreground) !important;
+  color: white !important;
   cursor: pointer !important;
   transition:
     opacity 0.2s,

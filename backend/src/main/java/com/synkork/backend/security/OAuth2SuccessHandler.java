@@ -47,6 +47,13 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
         if (existedUser != null) {
             existedUser.setProvider(ProviderEnum.GOOGLE);
+
+            if (existedUser.getPersonalNoteId() == null || existedUser.getPersonalCalendarId() == null) {
+                Map<String, UUID> personalId = spaceService.createPersonalSpaces(existedUser);
+                existedUser.setPersonalNoteId(personalId.get("noteId"));
+                existedUser.setPersonalCalendarId(personalId.get("calendarId"));
+            }
+
             userService.updateUser(existedUser);
         } else {
             UserEntity newUser = new UserEntity();

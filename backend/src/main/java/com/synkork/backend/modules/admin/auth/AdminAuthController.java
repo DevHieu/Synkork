@@ -1,10 +1,12 @@
 package com.synkork.backend.modules.admin.auth;
 
+import com.synkork.backend.modules.admin.auth.dto.AdminChangePasswordRequest;
+import com.synkork.backend.modules.admin.auth.dto.AdminUpdateProfileRequest;
 import com.synkork.backend.modules.admin.changePassword.PasswordResetRequestService;
-import com.synkork.backend.modules.admin.changePassword.enums.PasswordResetStatusEnum;
 import com.synkork.backend.modules.auth.dto.LoginRequest;
 import com.synkork.backend.modules.auth.dto.PasswordResetVerifyRequest;
 import com.synkork.backend.modules.auth.dto.ResetPasswordRequest;
+import com.synkork.backend.modules.user.dto.UserInfoDto;
 import com.synkork.backend.modules.verification.VerificationEntity;
 import com.synkork.backend.modules.verification.VerificationService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -15,9 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,24 +37,24 @@ public class AdminAuthController {
     private PasswordResetRequestService  passwordResetRequestService;
 
     @GetMapping("/check")
-public ResponseEntity<?> checkAuth() {
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    public ResponseEntity<?> checkAuth() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-    if (authentication == null || !authentication.isAuthenticated()) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
+        }
+
+        String username = authentication.getName();
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("username", username);
+        response.put("roles", authentication.getAuthorities()
+                .stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList()));
+
+        return ResponseEntity.ok(response);
     }
-
-    String username = authentication.getName();
-
-    Map<String, Object> response = new HashMap<>();
-    response.put("username", username);
-    response.put("roles", authentication.getAuthorities()
-            .stream()
-            .map(GrantedAuthority::getAuthority)
-            .collect(Collectors.toList()));
-
-    return ResponseEntity.ok(response);
-}
 
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
@@ -63,7 +63,7 @@ public ResponseEntity<?> checkAuth() {
     }
 
     @PostMapping("/reset-password-request")
-    public ResponseEntity<Map<String, String>> requestPasswordReset(@RequestBody ResetPasswordRequest request) {
+    public ResponseEntity<Map<String, String>> requestPasswordReset(@Valid @RequestBody ResetPasswordRequest request) {
         String verifyCode =  passwordResetRequestService.createRequest(request.email());
         return ResponseEntity.ok(Map.of("verifyCode", verifyCode));
     }
@@ -74,4 +74,17 @@ public ResponseEntity<?> checkAuth() {
         passwordResetRequestService.buildChangePasswordRequest(verify.getUser(), request.password());
         return ResponseEntity.ok(Map.of("message", "Xác thực và đổi mật khẩu tài khoản thành công"));
     }
+
+    @PatchMapping("/me")
+    public ResponseEntity<?> updateProfile(@Valid @RequestBody AdminUpdateProfileRequest dto) {
+        UserInfoDto updated = authService.updateProfile(dto);
+        return ResponseEntity.ok(updated);
+    }
+
+    @PatchMapping("/me/password")
+    public ResponseEntity<?> changePassword(@Valid @RequestBody AdminChangePasswordRequest dto) {
+        authService.changePassword(dto);
+        return ResponseEntity.ok(Map.of("message", "Đổi mật khẩu thành công"));
+    }
 }
+

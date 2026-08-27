@@ -11,7 +11,15 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "messages")
+@Table(
+        name = "messages",
+        indexes = {
+                @Index(name = "idx_messages_space_created", columnList = "space_id, createdAt DESC"),
+                @Index(name = "idx_messages_sender_id", columnList = "sender_id"),
+                @Index(name = "idx_messages_reply_to_id", columnList = "reply_to_id"),
+                @Index(name = "idx_messages_space_pinned", columnList = "space_id, pinned")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor

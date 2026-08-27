@@ -29,7 +29,7 @@ public class OpenRouterClient {
     private static final Logger log = LoggerFactory.getLogger(OpenRouterClient.class);
 
     private static final int CONNECT_TIMEOUT_MS = 5_000;
-    private static final int READ_TIMEOUT_MS    = 60_000;
+    private static final int READ_TIMEOUT_MS    = 180_000;
 
     private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate;
@@ -73,6 +73,7 @@ public class OpenRouterClient {
         Map<String, Object> requestBody = new HashMap<>(4);
         requestBody.put("model", model);
         requestBody.put("messages", messages);
+        requestBody.put("temperature", 0);
         if (jsonResponse) {
             requestBody.put("response_format", Map.of("type", "json_object"));
         }
@@ -96,7 +97,11 @@ public class OpenRouterClient {
                 ? objectMapper.readTree(responseBody)
                 : null;
         logUsage(model, root);
-        return extractContent(root);
+        String content = extractContent(root);
+        if (content.isBlank()) {
+            throw new IllegalStateException("OpenRouter returned empty content");
+        }
+        return content;
     }
 
     /**
@@ -105,8 +110,8 @@ public class OpenRouterClient {
     public String parseJsonOrFallback(String raw, String fallback) {
         if (raw == null || raw.isBlank()) return fallback;
         try {
-            objectMapper.readTree(raw.trim());
-            return raw.trim();
+            JsonNode json = objectMapper.readTree(raw.trim());
+            return json != null && json.isObject() ? raw.trim() : fallback;
         } catch (Exception e) {
             return fallback;
         }

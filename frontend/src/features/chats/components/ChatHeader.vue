@@ -9,7 +9,7 @@ import SearchBar from "./sub-components/SearchBar.vue";
 
 const props = defineProps<{
   spaceName: string;
-  spaceId: string;
+  spaceId: string | undefined;
   memberOpen: boolean;
   pinOpen: boolean;
   dmFriend: Friend | null;

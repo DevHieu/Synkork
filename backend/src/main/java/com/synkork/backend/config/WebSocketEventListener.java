@@ -8,17 +8,17 @@ import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Component;
-import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.messaging.SessionConnectEvent;
-import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
-// Lớp này lắng nghe các sự kiện kết nối và ngắt kết nối WebSocket (join out room)
+// Lớp này lắng nghe các sự kiện kết nối và ngắt kết nối WebSocket
 @Component
 public class WebSocketEventListener {
     private static final Logger logger = LoggerFactory.getLogger(WebSocketEventListener.class);
@@ -29,9 +29,16 @@ public class WebSocketEventListener {
     @Autowired
     private FriendService friendService;
 
+    // Đếm số lượng user unique online trong ngày (tích lũy, reset mỗi ngày bởi StatisticsService)
     public static long onlineUserCounter = 0;
-    // Lưu lại các user online
-    public static Map<String, String> onlineUsers = new HashMap<>();
+
+    // Lưu lại các user online: userId -> Set<sessionId>
+    // Dùng ConcurrentHashMap để thread-safe với nhiều connect/disconnect đồng thời
+    // Set<sessionId> để hỗ trợ user mở nhiều tab cùng lúc
+    public static Map<String, Set<String>> onlineUsers = new ConcurrentHashMap<>();
+
+    // Lưu các userId đã được đếm hôm nay — tránh đếm lại khi user F5 (disconnect rồi reconnect)
+    public static Set<String> countedUsers = ConcurrentHashMap.newKeySet();
 
     @EventListener
     public void handleWebSocketConnectListener(SessionConnectEvent event) {
@@ -39,13 +46,20 @@ public class WebSocketEventListener {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
         if (headerAccessor.getSessionAttributes() != null) {
             String userId = (String) headerAccessor.getSessionAttributes().get("userId");
+            String sessionId = headerAccessor.getSessionId();
             if (userId != null) {
-                onlineUsers.put(userId, headerAccessor.getSessionId());
-                onlineUserCounter++;
+                // Thêm sessionId vào Set của userId
+                onlineUsers.computeIfAbsent(userId, k -> ConcurrentHashMap.newKeySet()).add(sessionId);
 
                 this.notifyFriends(userId, true);
+
+                // Chỉ tăng counter nếu user chưa được đếm hôm nay (kể cả F5 disconnect rồi reconnect)
+                if (countedUsers.add(userId)) {
+                    onlineUserCounter++;
+                }
             }
         }
+        System.out.println("Số người online trong ngày: " + onlineUserCounter);
     }
 
     @EventListener
@@ -53,10 +67,18 @@ public class WebSocketEventListener {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
         if (headerAccessor.getSessionAttributes() != null) {
             String userId = (String) headerAccessor.getSessionAttributes().get("userId");
+            String sessionId = headerAccessor.getSessionId();
             if (userId != null) {
-                onlineUsers.remove(userId);
+                Set<String> sessions = onlineUsers.get(userId);
+                if (sessions != null) {
+                    sessions.remove(sessionId);
 
-                this.notifyFriends(userId, false);
+                    // Chỉ coi user là offline khi không còn session nào
+                    if (sessions.isEmpty()) {
+                        onlineUsers.remove(userId);
+                        this.notifyFriends(userId, false);
+                    }
+                }
             }
         }
     }

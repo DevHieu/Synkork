@@ -39,7 +39,7 @@ export const subscriptionService = {
   },
 
   async updatePlanPricing(payload: PlanPricingRequest) {
-    const res = await axiosClient.put('/api/payment/plan-pricing', payload)
+    const res = await axiosClient.put('/api/manage/plan-pricing', payload)
     return res.data
   },
 }

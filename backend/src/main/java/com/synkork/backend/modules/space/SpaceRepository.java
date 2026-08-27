@@ -1,6 +1,5 @@
 package com.synkork.backend.modules.space;
 
-import com.synkork.backend.modules.room.enums.RoomStatusEnum;
 import com.synkork.backend.modules.space.dto.SpaceDTO;
 import com.synkork.backend.modules.space.enums.SpaceStatusEnum;
 import com.synkork.backend.modules.space.enums.SpaceTypeEnum;
@@ -10,7 +9,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -24,9 +25,13 @@ public interface SpaceRepository extends JpaRepository<SpaceEntity, UUID> {
 
     long countByRoom_IdAndType(UUID roomId, SpaceTypeEnum type);
 
+    // Tìm lại Calendar Space trong Personal Room trước khi tạo mới, tránh phát sinh lịch cá nhân trùng.
+    Optional<SpaceEntity> findFirstByRoom_IdAndTypeOrderByCreatedAtAsc(UUID roomId, SpaceTypeEnum type);
+
     void deleteByStatus(SpaceStatusEnum spaceStatusEnum);
 
     List<SpaceEntity> findByRoomIdOrderByCreatedAtDesc(UUID roomId);
+
     List<SpaceEntity> findByRoomIdAndTypeAndStatusInOrderByCreatedAtDesc(UUID roomId, SpaceTypeEnum type, List<SpaceStatusEnum> statuses);
 
     @Modifying
@@ -38,8 +43,16 @@ public interface SpaceRepository extends JpaRepository<SpaceEntity, UUID> {
     void updatePendingSpaceStatusByRoom_OwnerId(@Param("newStatus") SpaceStatusEnum status, @Param("ownerId") UUID ownerId);
 
     @Modifying
-    @Query("UPDATE SpaceEntity s SET s.status = :newStatus WHERE s.status = :oldStatus")
-    void updateStatusByStatus(@Param("oldStatus") SpaceStatusEnum oldStatus, @Param("newStatus") SpaceStatusEnum newStatus);
+    @Query("""
+            UPDATE SpaceEntity s SET s.status = :newStatus 
+                        WHERE s.status = :oldStatus 
+                        AND s.room.owner IS NOT NULL 
+                        AND s.room.owner.id IN (SELECT u.id FROM UserEntity u WHERE u.planExpiresAt < :now)
+            """)
+    void lockExpiredOwnerSpaces(
+            @Param("oldStatus") SpaceStatusEnum oldStatus,
+            @Param("newStatus") SpaceStatusEnum newStatus,
+            @Param("now") LocalDateTime now);
 
     @Query("""
              SELECT (COUNT(s) > 0)

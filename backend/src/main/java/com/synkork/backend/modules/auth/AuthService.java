@@ -44,12 +44,13 @@ public class AuthService {
     private VerificationService verificationService;
 
     @Autowired
-    private EmailService emailService;
+    private AuthEmail authEmail;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
     @Autowired
     private UserService userService;
+
 
     public String login(LoginRequest request, HttpServletResponse response) {
         UserEntity user = userRepository.findByEmail(request.getUsername())
@@ -92,7 +93,7 @@ public class AuthService {
             if (existing.getStatus() == UserStatusEnum.NOT_VERIFIED) {
                 // Chưa verify → gửi lại email verify
                 VerificationEntity verify = verificationService.createVerify(request.getEmail(), VerifyTypeEnum.REGISTER);
-                emailService.sendVerificationEmail(request.getEmail(), verify.getId().toString());
+                authEmail.sendVerificationEmail(request.getEmail(), verify.getId().toString());
                 return;
             }
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email đã tồn tại");
@@ -109,7 +110,7 @@ public class AuthService {
         userRepository.save(newUser);
 
         VerificationEntity verify = verificationService.createVerify(newUser.getEmail(), VerifyTypeEnum.REGISTER);
-        emailService.sendVerificationEmail(newUser.getEmail(), verify.getId().toString());
+        authEmail.sendVerificationEmail(newUser.getEmail(), verify.getId().toString());
     }
 
     // return id để đưa cho frontend còn gửi lại lúc nhập OTP xong
@@ -127,7 +128,7 @@ public class AuthService {
         verificationService.deleteByUserAndType(user, VerifyTypeEnum.FORGOT_PASSWORD);
 
         VerificationEntity entity = verificationService.createVerifyWithOTP(user, VerifyTypeEnum.FORGOT_PASSWORD);
-        emailService.sendOTPEmail(entity.getUser().getEmail(), entity.getOtpCode());
+        authEmail.sendOTPEmail(entity.getUser().getEmail(), entity.getOtpCode());
     }
 
     public void resetPassword(PasswordResetVerifyRequest request) {
