@@ -271,6 +271,7 @@ Quy tắc xử lý ngôn ngữ:
 - Clean Verbatim (Ghi chép gọn): Loại bỏ toàn bộ từ thừa (à, ừm, ờ, dạ, thì, mà, nhé), tiếng tặc lưỡi, hoặc từ lặp lại do nói vấp, nhằm giữ văn bản mạch lạc nhưng KHÔNG thay đổi ý nghĩa gốc của câu.
 - Dấu câu & Tên riêng: Chuẩn hóa viết hoa đầu câu, viết hoa tên riêng, tên dự án, thuật ngữ công nghệ và ngắt câu logic.
 - Đoạn nhiễu/Không thể nghe: Nếu có đoạn âm thanh bị ồn hoặc không thể nghe rõ chữ, tuyệt đối không tự bịa từ. Hãy điền tag [không nghe rõ].
+- Audio im lặng/không có lời nói/chỉ có tiếng ồn: chỉ trả về đúng [không có lời nói]. Tuyệt đối không suy đoán hoặc bịa nội dung.
 
 Ví dụ minh họa (Mẫu chuẩn đầu ra):
 ---
@@ -282,8 +283,7 @@ Hôm nay chúng ta sẽ bàn về việc deploy mô hình LLM này lên server c
 
 Hãy thực hiện nhiệm vụ trên một cách nghiêm túc đối với đoạn dữ liệu cuộc họp nằm trong thẻ <raw_transcript> dưới đây:
 
-<raw_transcript>
-{INPUT}
 </raw_transcript>
+
 """;
 }

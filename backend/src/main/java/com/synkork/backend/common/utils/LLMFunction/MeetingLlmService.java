@@ -39,8 +39,14 @@ public class MeetingLlmService {
         byte[] bytes = audioFile.getBytes();
         String base64Audio = Base64.getEncoder().encodeToString(bytes);
 
-        // Mặc định ép sang 'mp3' để lừa JSON Schema Validation của OpenRouter
-        String format = "mp3";
+        String format = switch (audioFile.getContentType()) {
+            case "audio/mpeg" -> "mp3";
+            case "audio/mp4", "audio/x-m4a" -> "m4a";
+            case "audio/wav", "audio/x-wav" -> "wav";
+            case "audio/webm" -> "webm";
+            case "audio/ogg" -> "ogg";
+            default -> throw new IllegalArgumentException("Định dạng audio không được hỗ trợ.");
+        };
 
         List<Map<String, Object>> contentArray = List.of(
                 Map.of("type", "text", "text", LlmPrompts.MEETING_TRANSCRIPTION_INSTRUCTION),

@@ -91,7 +91,10 @@ public class VoiceSummaryController {
 
             // 2) Chuyển audio thành transcript, rồi tóm tắt transcript.
             String transcript = meetingService.transcribeAudio(file);
-            String summaryJson = meetingService.summarizeMeeting(transcript);
+            String summaryJson = transcript == null || transcript.isBlank()
+                    || transcript.trim().equalsIgnoreCase("[không có lời nói]")
+                    ? "{}"
+                    : meetingService.summarizeMeeting(transcript);
 
             // 3) Trả về đầy đủ payload dùng DTO sạch sẽ.
             VoiceSummaryResponse response = new VoiceSummaryResponse(
