@@ -235,6 +235,14 @@ public class CalendarEventService {
         if (!endDateTime.isAfter(startDateTime)) {
             throw new IllegalArgumentException("Thời gian kết thúc phải sau thời gian bắt đầu.");
         }
+
+        boolean isRecurring = request.getRecurrenceType() != null
+                && !RECURRENCE_NONE.equals(request.getRecurrenceType());
+        if (request.getEndDate() != null
+                && request.getEndDate().isAfter(request.getEventDate())
+                && isRecurring) {
+            throw new IllegalArgumentException("Không thể kết hợp sự kiện nhiều ngày và lặp lại.");
+        }
     }
 
     // Tạo event mới

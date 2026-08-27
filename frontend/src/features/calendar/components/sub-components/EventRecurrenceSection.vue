@@ -20,6 +20,7 @@ const props = defineProps<{
   initialType: string;
   initialEndDate?: string;
   eventDate: string;
+  disabled?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -84,6 +85,12 @@ watch([recurrenceType, recurrenceEndDate], () => {
 // Phản hồi: Đồng bộ khi dữ liệu bên ngoài thay đổi (ví dụ: khi mở lại dialog)
 watch(() => props.initialType, (val) => recurrenceType.value = val || "NONE");
 watch(() => props.initialEndDate, (val) => recurrenceEndDate.value = val);
+watch(() => props.disabled, (disabled) => {
+  if (disabled && recurrenceType.value !== "NONE") {
+    recurrenceType.value = "NONE";
+    recurrenceEndDate.value = undefined;
+  }
+});
 </script>
 
 <template>
@@ -91,7 +98,7 @@ watch(() => props.initialEndDate, (val) => recurrenceEndDate.value = val);
     <div>
       <label class="block text-[9px] font-sans font-semibold text-muted-foreground uppercase tracking-wider mb-3 cursor-default">CHẾ ĐỘ LẶP LẠI</label>
       <div class="grid grid-cols-5 gap-1.5 rounded-md border border-border/60 bg-muted/15 p-1.5">
-        <button v-for="opt in recurrenceOptions" :key="opt.val" type="button" @click="recurrenceType = opt.val" :class="[
+        <button v-for="opt in recurrenceOptions" :key="opt.val" type="button" :disabled="props.disabled" @click="recurrenceType = opt.val" :class="[
             'flex flex-col items-center gap-1 rounded-sm px-1 py-2.5 transition-all duration-200',
             recurrenceType === opt.val
               ? 'bg-primary text-primary-foreground shadow-sm'
