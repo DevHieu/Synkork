@@ -28,8 +28,8 @@ public class VoiceSummaryController {
     private static final long MAX_VOICE_FILE_SIZE = 20 * 1024 * 1024;
 
     private static final Set<String> ALLOWED_AUDIO_TYPES = Set.of(
-            "audio/mpeg", "audio/mp4", "audio/webm", "audio/wav",
-            "audio/x-wav", "audio/ogg", "audio/x-m4a"
+            "audio/mpeg", "audio/mp4", "audio/webm", "audio/webm;codecs=opus", "audio/wav",
+            "audio/x-wav", "audio/ogg", "audio/ogg;codecs=opus", "audio/x-m4a"
     );
 
     private final MeetingLlmService meetingService;
@@ -63,6 +63,7 @@ public class VoiceSummaryController {
             return ResponseEntity.status(403).body("Bạn không phải thành viên của phòng này.");
         }
 
+
         // Kiểm tra LLM service sẵn sàng
         if (!meetingService.isConfigured()) {
             return ResponseEntity.status(503).body("Dịch vụ AI tạm thời không khả dụng.");
@@ -73,13 +74,15 @@ public class VoiceSummaryController {
             return ResponseEntity.badRequest().body("File rỗng.");
         }
         if (file.getSize() > MAX_VOICE_FILE_SIZE) {
-            System.out.println("File quá lớn");
+            log.warn("Voice file too large: size={} roomId={}", file.getSize(), roomId);
             return ResponseEntity.badRequest()
                     .body("File vượt quá giới hạn " + (MAX_VOICE_FILE_SIZE / (1024 * 1024)) + "MB.");
         }
         String contentType = file.getContentType();
+        if (contentType != null) {
+            contentType = contentType.split(";", 2)[0].trim().toLowerCase();
+        }
         if (contentType == null || !ALLOWED_AUDIO_TYPES.contains(contentType)) {
-            System.out.println("Phải đúng chuẩn hỗ trợ");
             return ResponseEntity.badRequest()
                     .body("Loại file không được hỗ trợ. Chỉ chấp nhận: mp3, m4a, webm, wav, ogg.");
         }
@@ -111,11 +114,11 @@ public class VoiceSummaryController {
                 try {
                     fileService.deleteFile(uploaded.publicId(), uploaded.resourceType());
                 } catch (Exception cleanupEx) {
-                    System.out.println("Không thể dọn dẹp file orphaned publicId"+ uploaded.publicId()+ cleanupEx);
+                    log.warn("Không thể dọn dẹp file orphaned publicId={}", uploaded.publicId(), cleanupEx);
                 }
             }
-            System.out.println("Lỗi xử lý file voice cho room"+roomId+e );
-            return ResponseEntity.status(500).body("Lỗi xử lý file voice: " + e.getMessage());
+            log.error("Lỗi xử lý file voice cho room {}", roomId, e);
+            return ResponseEntity.status(500).body("Lỗi xử lý file voice.");
         }
     }
 }
