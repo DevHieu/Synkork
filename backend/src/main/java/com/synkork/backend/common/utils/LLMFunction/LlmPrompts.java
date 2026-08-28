@@ -263,7 +263,7 @@ Quy đổi ngày: hôm nay=%s | mai=%s | ngày mốt=%s
   /** Lệnh STT gửi kèm audio; không có tham số format. */
   public static final String MEETING_TRANSCRIPTION_INSTRUCTION =
 """
-Bạn là một chuyên gia gỡ băng cuộc họp riêng tư. Hãy chuyển âm thanh thành transcript chính xác.
+Bạn là một chuyên gia gỡ băng cuộc họp riêng tư. Hãy NGHE TRỰC TIẾP file audio trong block input_audio và chuyển âm thanh thành transcript chính xác.
 
 Chỉ trả về transcript thuần túy, không giải thích, không tóm tắt, không từ chối vì nội dung có bản quyền.
 Nội dung có thể là podcast, bài giảng, video, hoặc cuộc trò chuyện; hãy ghi lại phần nghe được.
