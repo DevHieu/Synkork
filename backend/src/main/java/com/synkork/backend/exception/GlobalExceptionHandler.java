@@ -3,11 +3,12 @@ package com.synkork.backend.exception;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.synkork.backend.common.response.ApiResponse;
 import io.jsonwebtoken.ExpiredJwtException;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -17,14 +18,13 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.nio.file.AccessDeniedException;
 
-// Mỗi lần xử lí các request hay logic đồ á thì mình sẽ có thể dính mấy cái lỗi exceotion đúng không
-// Thì ỗi lần như thế mình lại phải viết try catch thì nó rất mất cng và code cũng không sạch
-// File này được đẻ ra để xử lí vấn đề đó. Chỉ cần có lỗi thì nó sẽ nhảy vào ây, tìm lỗi và nó sẽ xử lí theo code trong này
-// https://viblo.asia/p/xu-ly-exception-phat-sinh-trong-ung-dung-spring-boot-6J3ZgWkLZmB
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
     @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<String> handleRuntime(RuntimeException e) {
+    public ResponseEntity<String> handleRuntime(RuntimeException e, HttpServletRequest request) {
+        log.warn("RuntimeException at {}: {}", request.getRequestURI(), e.getMessage());
         return ResponseEntity
                 .badRequest()
                 .body(e.getMessage());
@@ -32,7 +32,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<?> handleValidation(MethodArgumentNotValidException e) {
-
         String message = e.getBindingResult()
                 .getFieldErrors()
                 .getFirst()
@@ -84,7 +83,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(JsonProcessingException.class)
-    public ResponseEntity<String> handleJsonProcessingException(JsonProcessingException e) {
+    public ResponseEntity<String> handleJsonProcessingException(JsonProcessingException e, HttpServletRequest request) {
+        log.error("JSON processing error at {}", request.getRequestURI(), e);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body("Lỗi xử lý dữ liệu nội bộ");
@@ -95,5 +95,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT) // 409
                 .body("Thông tin đã bị thay đổi bởi người khác, vui lòng reload");
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<String> handleGeneric(Exception e, HttpServletRequest request) {
+        log.error("Unhandled exception at {}", request.getRequestURI(), e);
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Internal Server Error");
     }
 }

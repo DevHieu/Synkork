@@ -1,5 +1,4 @@
 .idea/
-skills/
 database/
 .pnpm-store/
 .claude
@@ -9,6 +8,4 @@ README.zh-CN.md
 README.vi.md
 README.en.md
 .agents/
-.antigravitycli/
 CLAUDE.md
-AGENTS.md

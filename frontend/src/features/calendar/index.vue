@@ -33,7 +33,7 @@ import {
   escapeHtml,
   resolveScheduleEvent,
 } from "@/features/calendar/utils/calendar-view.utils";
-import { createEvent as apiCreateEvent, deleteEvent as apiDeleteEvent, checkConflicts as apiCheckConflicts, summarizeAttachment as apiSummarizeAttachment } from "@/features/calendar/services/calendarService";
+import { createEvent as apiCreateEvent, deleteEvent as apiDeleteEvent, checkConflicts as apiCheckConflicts, summarizeAttachment as apiSummarizeAttachment, uploadEventAttachments } from "@/features/calendar/services/calendarService";
 
 // Store state
 const spaceStore = useSpaceStore();
@@ -469,9 +469,12 @@ const executeAddToPersonalCalendar = async () => {
       attachments: eventToCopy.attachments,
     }, ref(user.value.personalCalendarId), currentUserId);
 
-    await apiCreateEvent(payload);
+    const created = await apiCreateEvent(payload);
+    const files = extractNewFiles(eventToCopy);
+    if (files.length > 0) await uploadEventAttachments(created.data.id, files);
     notificationState.value.show = false;
     eventToCopyToPersonal.value = null;
+    await fetchEvents();
     showNotification("success", "THÀNH CÔNG", "Đã lưu sự kiện vào lịch cá nhân.");
   } catch (err: any) {
     showNotification("error", "LỖI", err.response?.data || "CÓ LỖI XẢY RA KHI LƯU VÀO LỊCH CÁ NHÂN!");

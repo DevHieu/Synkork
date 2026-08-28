@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { ref, watch, onUnmounted, computed, nextTick } from "vue";
 import { chatSocket } from "./services/chatSocket";
-import { useRoute } from "vue-router";
 import { useSpaceStore } from "@/features/spaces/stores/spaceStore.ts";
 import { useMessageStore } from "@/features/chats/stores/messageStore";
 import { useFriendStore } from "@/features/friends/stores/friendStore";
 import { storeToRefs } from "pinia";
 
-import type { MessageEventSuggestion } from "@/features/calendar/types/calendar.types";
+import type { MessageEventSuggestion } from "@/types/SuggestionTypes";
 import { useChatComposable } from "@/features/chats/composable/chat.composable.ts";
 import { useChatUtilsComposable } from "@/features/chats/composable/chat-utils.composable.ts";
 import { useChatSocketComposable } from "@/features/chats/composable/chat-socket.compsable.ts";
@@ -17,12 +16,11 @@ import MessageInput from "@/features/chats/components/MessageInput.vue";
 import PinPanel from "@/features/chats/components/PinPanel.vue";
 import MemberPanel from "@/features/chats/components/MemberPanel.vue";
 import SuggestionDialog from "@/features/chats/components/SuggestionDialog.vue";
-
-const route = useRoute();
-const spaceId = ref(route.params.spaceId as string);
+import { chatJoinedSpaceId } from "./utils/chat.utils";
 
 const spaceStore = useSpaceStore();
 const { currentSpace } = storeToRefs(spaceStore);
+const spaceId = currentSpace.value?.id;
 
 const messageStore = useMessageStore();
 const { messages, beforeHasMore, afterHasMore, replyingTo } =
@@ -36,7 +34,7 @@ const dmFriend = computed(() => {
   if (!isDM.value) return null;
   return (
     friendStore.friends.find(
-      (f) => f.conversationId === currentSpace.value?.id,
+      (f) => f.conversationId === spaceId,
     ) ?? null
   );
 });
@@ -65,24 +63,32 @@ const closeSidePanel = () => {
 };
 
 onUnmounted(() => {
-  if (spaceId.value) {
-    chatSocket.leaveSpace(spaceId.value);
+  if (chatJoinedSpaceId.value) {
+    chatSocket.leaveSpace(chatJoinedSpaceId.value);
   }
 });
 
-const joinSpace = async (id: string, previousId?: string) => {
+const joinSpace = async (id: string) => {
   if (!id) return;
-  if (previousId && previousId !== id) {
-    chatSocket.leaveSpace(previousId);
-  }
+  if (chatJoinedSpaceId.value === id) return; // đã join rồi
 
-  spaceId.value = id;
-  messageStore.clearAll();
+  console.trace("JOIN RUNNING");
+  if (chatJoinedSpaceId.value && chatJoinedSpaceId.value !== id) {
+    chatSocket.leaveSpace(chatJoinedSpaceId.value);
+  }
+  chatJoinedSpaceId.value = id;
+
+  await messageStore.clearAll();
   await chat.fetchMessages(id, null);
   chatUtils.scrollToBottom(id);
   chatRealtime.subscribeToChat(id);
   chat.fetchPinnedList(id, null);
 };
+
+watch(currentSpace, (space) => {
+  if (!space?.id) return;
+  joinSpace(space.id);
+}, { immediate: true });
 
 const handleOpenSuggestion = async (messageId: string) => {
   const suggestion = messageStore.suggestionsByMessageId[messageId];
@@ -92,18 +98,17 @@ const handleOpenSuggestion = async (messageId: string) => {
   if (suggestion.suggestionType === "NONE") return;
 
 
-  // Xóa các gợi ý đang hiển thị trên UI chat sau khi người dùng đã bấm nút xử lý gợi ý
-  messageStore.suggestionsByMessageId = {};
+  // Vô hiệu hóa riêng gợi ý đã chọn; gợi ý mới nhất của message khác vẫn còn dùng được.
+  delete messageStore.suggestionsByMessageId[messageId];
 
   suggestionData.value = suggestion;
   await nextTick();
   suggestionDialogOpen.value = true;
 };
 
-watch(currentSpace, (space, prevSpace) => {
+watch(currentSpace, (space) => {
   if (!space?.id) return;
-  if (space.id === prevSpace?.id) return; // không re-join nếu cùng space
-  joinSpace(space.id, prevSpace?.id ?? spaceId.value);
+  joinSpace(space.id);
 }, { immediate: true });
 </script>
 

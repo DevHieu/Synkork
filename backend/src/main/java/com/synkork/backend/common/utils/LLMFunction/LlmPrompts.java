@@ -12,8 +12,9 @@ public class LlmPrompts {
   /** Danh sách model dự phòng cho phát hiện event/task/note, thử theo thứ tự. */
   public static final List<String> CHAT_EVENT_MODELS =
           List.of(
-                  "google/gemma-4-26b-a4b-it:free",       // Ưu tiên 1: Tốc độ tốt nhất, bám sát chỉ thị định dạng JSON [6, 11, 13]
-                  "google/gemma-4-31b-it:free",           // Ưu tiên 2: Độ thông minh cao hơn một chút, bám sát chỉ thị [7, 13]
+                  "xiaomi/mimo-v2.5",             // Ưu tiên 1: Model đa phương thức, dùng cho xử lý text/audio.
+                  "qwen/qwen3.7-flash",       // Ưu tiên 2: Tốc độ tốt, bám sát chỉ thị định dạng JSON [6, 11, 13]
+                  "google/gemma-4-31b-it:free",           // Ưu tiên 3: Độ thông minh cao hơn một chút, bám sát chỉ thị [7, 13]
                   "z-ai/glm-4.5-air:free",                // Ưu tiên 3: Dòng Air tối ưu độ trễ cực tốt cho production [6, 14]
                   "nvidia/nemotron-3-super-120b-a12b:free",// Ưu tiên 4: Khả năng suy luận mạnh mẽ hơn khi các bản nhẹ bị lỗi [6, 7]
                   "nvidia/nemotron-3-ultra-550b-a55b:free",// Ưu tiên 5: Chỉ dùng khi thực sự cần xử lý ngữ cảnh cực kỳ phức tạp (chấp nhận chậm) [2, 6]
@@ -178,14 +179,18 @@ Quy đổi ngày: hôm nay=%s | mai=%s | ngày mốt=%s
 """;
 
   // Meeting (OpenRouter)
-  /** Model chuyển âm thanh cuộc họp thành văn bản (dùng OpenRouter, nếu cần). */
-  public static final String MODEL_TRANSCRIPTION = "google/gemini-2.5-flash-lite";
+  /** Danh sách model chuyển âm thanh thành văn bản, thử theo thứ tự. */
+  public static final List<String> MEETING_TRANSCRIPTION_MODELS =
+          List.of(
+                  "xiaomi/mimo-v2.5",
+                  "google/gemini-2.5-flash-lite");
 
   /** Danh sách model dự phòng cho tóm tắt cuộc họp. */
   public static final List<String> MEETING_SUMMARY_MODELS =
           List.of(
-                  "google/gemma-4-26b-a4b-it:free",       // Ưu tiên 1: Tốc độ tốt nhất, bám sát chỉ thị định dạng JSON [6, 11, 13]
-                  "google/gemma-4-31b-it:free",           // Ưu tiên 2: Độ thông minh cao hơn một chút, bám sát chỉ thị [7, 13]
+                  "xiaomi/mimo-v2.5",             // Ưu tiên 1: Model đa phương thức, dùng cho xử lý text/audio.
+                  "qwen/qwen3.7-flash",       // Ưu tiên 2: Tốc độ tốt, bám sát chỉ thị định dạng JSON [6, 11, 13]
+                  "google/gemma-4-31b-it:free",           // Ưu tiên 3: Độ thông minh cao hơn một chút, bám sát chỉ thị [7, 13]
                   "z-ai/glm-4.5-air:free",                // Ưu tiên 3: Dòng Air tối ưu độ trễ cực tốt cho production [6, 14]
                   "nvidia/nemotron-3-super-120b-a12b:free",// Ưu tiên 4: Khả năng suy luận mạnh mẽ hơn khi các bản nhẹ bị lỗi [6, 7]
                   "nvidia/nemotron-3-ultra-550b-a55b:free",// Ưu tiên 5: Chỉ dùng khi thực sự cần xử lý ngữ cảnh cực kỳ phức tạp (chấp nhận chậm) [2, 6]
@@ -256,9 +261,6 @@ Quy đổi ngày: hôm nay=%s | mai=%s | ngày mốt=%s
       </transcript>
       """;
 
-  // ── Meeting (Google AI Studio) ──
-  /** Model chuyển âm thanh cuộc họp thành văn bản. */
-  public static final String GOOGLE_AI_STUDIO_MODEL = "gemini-1.5-flash";
 
   /** Lệnh STT gửi kèm audio; không có tham số format. */
   public static final String MEETING_TRANSCRIPTION_INSTRUCTION =

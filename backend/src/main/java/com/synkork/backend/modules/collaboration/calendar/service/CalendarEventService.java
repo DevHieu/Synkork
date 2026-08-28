@@ -221,8 +221,8 @@ public class CalendarEventService {
         if (request.getEventDate() == null) {
             throw new IllegalArgumentException("Ngày diễn ra sự kiện không được để trống.");
         }
-        if (request.getStartTime() == null) {
-            throw new IllegalArgumentException("Thời gian bắt đầu không được để trống.");
+        if (request.getStartTime() == null || request.getEndTime() == null) {
+            throw new IllegalArgumentException("Thời gian bắt đầu và kết thúc không được để trống.");
         }
         LocalDate endDate = request.getEndDate() != null ? request.getEndDate() : request.getEventDate();
         boolean isOvernight = request.getEndTime().isBefore(request.getStartTime());
@@ -234,6 +234,14 @@ public class CalendarEventService {
 
         if (!endDateTime.isAfter(startDateTime)) {
             throw new IllegalArgumentException("Thời gian kết thúc phải sau thời gian bắt đầu.");
+        }
+
+        boolean isRecurring = request.getRecurrenceType() != null
+                && !RECURRENCE_NONE.equals(request.getRecurrenceType());
+        if (request.getEndDate() != null
+                && request.getEndDate().isAfter(request.getEventDate())
+                && isRecurring) {
+            throw new IllegalArgumentException("Không thể kết hợp sự kiện nhiều ngày và lặp lại.");
         }
     }
 
@@ -252,6 +260,9 @@ public class CalendarEventService {
 
         SpaceEntity space = spaceRepository.findById(spaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy không gian với ID: " + spaceId));
+        if (space.getType() != com.synkork.backend.modules.space.enums.SpaceTypeEnum.CALENDAR) {
+            throw new IllegalArgumentException("Space không phải Calendar");
+        }
 
         // Kiểm tra tạo chuỗi sự kiện liên tục theo ngày (Lịch liên tục Schedule)
         LocalDate endDate = eventRequest.getEndDate();
@@ -336,6 +347,9 @@ public class CalendarEventService {
 
         CalendarEventEntity calendarEvent = calendarEventRepository.findById(Objects.requireNonNull(eventId))
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sự kiện"));
+        if (calendarEvent.getSpace().getType() != com.synkork.backend.modules.space.enums.SpaceTypeEnum.CALENDAR) {
+            throw new IllegalArgumentException("Space không phải Calendar");
+        }
 
         // Optimistic Locking: reject stale version
         if (eventRequest.getVersion() != null && calendarEvent.getVersion() != null
@@ -616,6 +630,9 @@ public class CalendarEventService {
     public void deleteEvent(UUID eventId, UUID userId) {
         CalendarEventEntity entity = calendarEventRepository.findById(Objects.requireNonNull(eventId))
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sự kiện"));
+        if (entity.getSpace().getType() != com.synkork.backend.modules.space.enums.SpaceTypeEnum.CALENDAR) {
+            throw new IllegalArgumentException("Space không phải Calendar");
+        }
 
         boolean isCreator = entity.getCreatedBy().getId().equals(userId);
         boolean isMemberOfSpace = spaceService.checkUserAccess(entity.getSpace().getId(), userId);
@@ -651,42 +668,33 @@ public class CalendarEventService {
             throw new SecurityException("Không có quyền chỉnh sửa");
         }
         UserEntity uploader = userRepository.findById(userId).orElseThrow();
-        
-        List<EventAttachmentEntity> newAttachments = new ArrayList<>();
-        
-        for (MultipartFile file : files) {
-            // Use FileService
-            boolean isImage = file.getContentType() != null && file.getContentType().startsWith("image/");
-            FileUploaded uploaded = fileService.handleUpload(file, "calendar_events");
-                    
-            EventAttachmentEntity attachment = new EventAttachmentEntity();
-            attachment.setEvent(event);
-            attachment.setUploadedBy(uploader);
-            attachment.setFileName(uploaded.originalName());
-            attachment.setFileUrl(uploaded.url());
-            attachment.setFilePublicId(uploaded.publicId());
-            attachment.setResourceType(uploaded.resourceType());
-            attachment.setFileSizeKb((int)(file.getSize() / 1024));
-            
-            attachment.setType(isImage ? AttachmentTypeEnum.IMAGE : AttachmentTypeEnum.FILE);
-            
-            event.getAttachments().add(attachment);
-            newAttachments.add(attachment);
+        List<CalendarEventEntity> targets = event.isSchedule() && event.getScheduleId() != null
+                ? calendarEventRepository.findByScheduleId(event.getScheduleId())
+                : List.of(event);
+        List<CalendarEventAttachmentDTO> result = new ArrayList<>();
+
+        for (CalendarEventEntity target : targets) {
+            for (MultipartFile file : files) {
+                boolean isImage = file.getContentType() != null && file.getContentType().startsWith("image/");
+                FileUploaded uploaded = fileService.handleUpload(file, "calendar_events");
+                EventAttachmentEntity attachment = new EventAttachmentEntity();
+                attachment.setEvent(target);
+                attachment.setUploadedBy(uploader);
+                attachment.setFileName(uploaded.originalName());
+                attachment.setFileUrl(uploaded.url());
+                attachment.setFilePublicId(uploaded.publicId());
+                attachment.setResourceType(uploaded.resourceType());
+                attachment.setFileSizeKb((int) (file.getSize() / 1024));
+                attachment.setType(isImage ? AttachmentTypeEnum.IMAGE : AttachmentTypeEnum.FILE);
+                target.getAttachments().add(attachment);
+                if (target == event) result.add(new CalendarEventAttachmentDTO(attachment));
+            }
+            calendarEventRepository.save(target);
+            broadcastCalendarUpdate(target.getSpace().getId().toString(), "UPDATED", new CalendarEventDTO(target));
         }
-        
-        calendarEventRepository.save(event);
-        
-        CalendarEventDTO result = new CalendarEventDTO(event);
-        broadcastCalendarUpdate(event.getSpace().getId().toString(), "UPDATED", result);
-        
-        // Gửi mail thông báo đính kèm file sau khi upload hoàn tất
+
         calendarEmailService.sendEventNotificationEmail(event, event.getAttendees(), false);
-        
-        List<CalendarEventAttachmentDTO> resultList = new ArrayList<>();
-        for (EventAttachmentEntity att : newAttachments) {
-            resultList.add(new CalendarEventAttachmentDTO(att));
-        }
-        return resultList;
+        return result;
     }
 
 
