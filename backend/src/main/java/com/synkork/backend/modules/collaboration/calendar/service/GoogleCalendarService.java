@@ -1,13 +1,7 @@
 package com.synkork.backend.modules.collaboration.calendar.service;
 
-import com.google.api.client.auth.oauth2.AuthorizationCodeRequestUrl;
-import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.auth.oauth2.TokenResponse;
-import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
-import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.util.DateTime;
@@ -15,30 +9,30 @@ import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.CalendarScopes;
 import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventDateTime;
-import com.google.api.services.calendar.model.EventAttendee;
-import com.synkork.backend.modules.roomMember.RoomMemberEntity;
-import com.synkork.backend.common.utils.AuthUtils;
+import com.synkork.backend.modules.collaboration.calendar.dto.googleCalendar.GoogleCalendarEvent;
+import com.synkork.backend.modules.collaboration.calendar.dto.googleCalendar.GoogleCalendarEventsResponse;
 import com.synkork.backend.modules.collaboration.calendar.entity.CalendarEventEntity;
 import com.synkork.backend.modules.collaboration.calendar.enums.SyncStatus;
 import com.synkork.backend.modules.collaboration.calendar.repository.CalendarEventRepository;
+import com.synkork.backend.modules.collaboration.calendar.utils.GoogleCalendarUtils;
+import com.synkork.backend.modules.space.SpaceEntity;
+import com.synkork.backend.modules.space.SpaceService;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
 import com.synkork.backend.modules.user.enums.PlanEnum;
-import com.synkork.backend.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -47,6 +41,8 @@ public class GoogleCalendarService {
 
     private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
     private static final List<String> SCOPES = Collections.singletonList(CalendarScopes.CALENDAR_EVENTS);
+    private final SpaceService spaceService;
+    private final GoogleCalendarUtils googleCalendarUtils;
 
     @Value("${google.client.id:${GOOGLE_CLIENT_ID:}}")
     private String clientId;
@@ -54,15 +50,9 @@ public class GoogleCalendarService {
     @Value("${google.client.secret:${GOOGLE_CLIENT_SECRET:}}")
     private String clientSecret;
 
-    @Value("${server.url:${SERVER_URL:http://localhost:8080}}")
-    private String serverUrl;
-
     private final UserRepository userRepository;
     private final CalendarEventRepository calendarEventRepository;
-
-    private String getRedirectUri() {
-        return serverUrl + "/api/integrations/google-calendar/callback";
-    }
+    private final RestClient restClient = RestClient.create();
 
     private Calendar getCalendarClient(UserEntity user) throws Exception {
         if (user == null || user.getCurrentPlan() != PlanEnum.BUSINESS || user.getGoogleCalendarAccessToken() == null) {
@@ -109,6 +99,7 @@ public class GoogleCalendarService {
     }
 
     public void syncEventToGoogleAsync(UUID eventId) {
+        System.out.println("RUNNINGGG");
         CompletableFuture.runAsync(() -> syncEventToGoogle(eventId));
     }
 
@@ -118,6 +109,8 @@ public class GoogleCalendarService {
     }
 
     public void syncEventToGoogle(UUID eventId) {
+        System.out.println("SYNCING");
+
         CalendarEventEntity entity = calendarEventRepository.findById(eventId).orElse(null);
         if (entity == null) return;
 
@@ -152,20 +145,6 @@ public class GoogleCalendarService {
                     rrule.append(";UNTIL=").append(until);
                 }
                 event.setRecurrence(Collections.singletonList(rrule.toString()));
-            }
-
-            // 2. Đồng bộ Danh sách người tham gia (Attendees)
-            if (entity.getAttendees() != null && !entity.getAttendees().isEmpty()) {
-                List<EventAttendee> googleAttendees = entity.getAttendees().stream()
-                        .map(RoomMemberEntity::getUser)
-                        .filter(u -> u != null && u.getEmail() != null && !u.getEmail().isBlank())
-                        .map(u -> new EventAttendee()
-                                .setEmail(u.getEmail())
-                                .setDisplayName(u.getDisplayName() != null ? u.getDisplayName() : u.getUsername()))
-                        .collect(Collectors.toList());
-                if (!googleAttendees.isEmpty()) {
-                    event.setAttendees(googleAttendees);
-                }
             }
 
             if (entity.getGoogleEventId() != null) {
@@ -209,13 +188,90 @@ public class GoogleCalendarService {
     }
 
     public void syncOldEvents(UUID userId) {
+
+//        Idea như này:
+//        - Lấy hết lịch ở trong space personal của user
+//        - Lọc ra 2 mảng: Có googleToken và không có
+//                + Mảng có token thì dùng để check xem khi sync từ calendar thì cái lịch đã đc sync chưa
+//                + Mảng ko có thì dùng để sync ngược lên calendar
+//        Triển
+
         UserEntity user = userRepository.findById(userId).orElse(null);
+
         if (user == null || user.getCurrentPlan() != PlanEnum.BUSINESS) {
             return;
         }
-        List<CalendarEventEntity> oldEvents = calendarEventRepository.findByCreatedByIdAndGoogleEventIdIsNull(userId);
-        for (CalendarEventEntity event : oldEvents) {
+
+        // Lọc ra 2 array
+        List<CalendarEventEntity> events = calendarEventRepository.findByCreatedByIdAndSpaceId(user.getId(), user.getPersonalCalendarId());
+
+        // Chỗ này dùng Set để lúc search ở dưới nó nhanh hơn O^n
+        Set<String> eventsWithGoogleId = new HashSet<>();
+        List<CalendarEventEntity> eventsWithoutGoogleId = new ArrayList<>();
+
+        for (CalendarEventEntity event : events) {
+            if (event.getGoogleEventId() != null) {
+                eventsWithGoogleId.add(event.getGoogleEventId());
+            } else {
+                eventsWithoutGoogleId.add(event);
+            }
+        }
+
+        // lấy từ calendar qua trước đã
+        String oneMonthAgo = ZonedDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"))
+                .minusMonths(1)
+                .toInstant()
+                .toString();
+        GoogleCalendarEventsResponse calendarRes = this.getEventsFromCalendar(user.getGoogleCalendarAccessToken(), oneMonthAgo, null);
+
+        SpaceEntity personalCalendar = spaceService.getSpaceById(user.getPersonalCalendarId());
+        if (!calendarRes.items().isEmpty()) {
+            for (GoogleCalendarEvent googleEvent : calendarRes.items()) {
+                // Lịch nào có bên calendar mà chưa có bên này thì lưu
+                if (!eventsWithGoogleId.contains(googleEvent.id())) {
+                    CalendarEventEntity newEvent = googleCalendarUtils.mapGoogleEventToEntity(
+                            googleEvent,
+                            user,
+                            personalCalendar
+                    );
+
+                    calendarEventRepository.save(newEvent);
+                }
+            }
+        }
+
+        // Tạo qua bên calendar
+        for (CalendarEventEntity event : eventsWithoutGoogleId) {
             syncEventToGoogle(event.getId());
         }
+    }
+
+    public GoogleCalendarEventsResponse getEventsFromCalendar(
+            String accessToken,
+            String timeMin,
+            String timeMax
+    ) {
+        return restClient.get()
+                .uri(uriBuilder -> {
+                    uriBuilder
+                            .scheme("https")
+                            .host("www.googleapis.com")
+                            .path("/calendar/v3/calendars/primary/events")
+                            .queryParam("singleEvents", true)
+                            .queryParam("orderBy", "startTime");
+
+                    if (timeMin != null) {
+                        uriBuilder.queryParam("timeMin", timeMin);
+                    }
+
+                    if (timeMax != null) {
+                        uriBuilder.queryParam("timeMax", timeMax);
+                    }
+
+                    return uriBuilder.build();
+                })
+                .header("Authorization", "Bearer " + accessToken)
+                .retrieve()
+                .body(GoogleCalendarEventsResponse.class);
     }
 }
