@@ -109,7 +109,9 @@ public class RoomMemberController {
         UUID roomUUID = UUID.fromString(roomId);
         UUID requesterId = AuthUtils.getCurrentUserId();
 
-        roomMemberService.leaveRoom(roomUUID, requesterId);
+        UUID requesterMemberID = roomMemberService.leaveRoom(roomUUID, requesterId);
+
+        messagingTemplate.convertAndSend("/topic/room/" + roomId + "/members/kicked", requesterMemberID);
 
         return ResponseEntity.ok().build();
     }

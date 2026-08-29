@@ -74,6 +74,7 @@ public class IntegrationController {
             
             return new RedirectView(frontendUrl + redirectPath + "?sync=success");
         } catch (Exception e) {
+            e.printStackTrace();
             return new RedirectView(frontendUrl + "/me?sync=error");
         }
     }
