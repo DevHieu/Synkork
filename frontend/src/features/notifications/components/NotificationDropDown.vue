@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
-import { BellOff, Trash2, Loader2, Proportions } from 'lucide-vue-next'
+import { BellOff, Trash2, Loader2 } from 'lucide-vue-next'
 import { useNotificationStore } from '@/features/notifications/stores/notificationStore'
 import type { NotificationDTO } from '@/features/notifications/types/Notification'
 import { Badge } from '@/components/ui/badge'
@@ -157,7 +157,6 @@ async function handleClick(notification: NotificationDTO) {
           </div>
         </button>
 
-        <!-- Empty state -->
         <div
           v-if="notifications.length === 0"
           class="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2"

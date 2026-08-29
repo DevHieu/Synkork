@@ -66,8 +66,7 @@ public class CardEntity extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false, columnDefinition = "BINARY(16)")
     private RoomMemberEntity createdBy;
-
-    //thêm
+    
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
