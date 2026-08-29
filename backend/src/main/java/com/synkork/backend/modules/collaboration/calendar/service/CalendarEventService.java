@@ -249,8 +249,11 @@ public class CalendarEventService {
         }
     }
 
-    private void syncToGoogleCalendar(UUID eventId) {
-        applicationEventPublisher.publishEvent(new CalendarEventSyncRequestedEvent(eventId));
+    private void syncToGoogleCalendar(UUID eventId, UUID personalCalendarId, UUID requestSpaceId) {
+        // Cái space được request tới phải là personal thì mới sync
+        if (personalCalendarId != null && personalCalendarId.equals(requestSpaceId)) {
+            applicationEventPublisher.publishEvent(new CalendarEventSyncRequestedEvent(eventId));
+        }
     }
 
     // Tạo event mới
@@ -296,7 +299,7 @@ public class CalendarEventService {
         syncEventRelations(calendarEvent, eventRequest, creator);
 
         CalendarEventEntity savedEvent = calendarEventRepository.save(Objects.requireNonNull(calendarEvent));
-        this.syncToGoogleCalendar(savedEvent.getId());
+        this.syncToGoogleCalendar(savedEvent.getId(), creator.getPersonalCalendarId(), space.getId());
         
         CalendarEventDTO result = new CalendarEventDTO(savedEvent);
         broadcastCalendarUpdate(eventRequest.getSpaceId(), "CREATED", result);
@@ -332,7 +335,7 @@ public class CalendarEventService {
 
             CalendarEventEntity saved = calendarEventRepository.save(instance);
 
-            this.syncToGoogleCalendar(saved.getId());
+            this.syncToGoogleCalendar(saved.getId(), creator.getPersonalCalendarId(), space.getId());
 
             savedEvents.add(saved);
             current = current.plusDays(1);
@@ -371,7 +374,7 @@ public class CalendarEventService {
             throw new SecurityException("Bạn không có quyền chỉnh sửa sự kiện này! Vui lòng liên hệ đến người tạo sự kiện");
         }
 
-        UserEntity actor = userRepository.findById(userId)
+        UserEntity creator = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng với ID: " + userId));
 
         // Logic cập nhật nhóm sự kiện liên tục
@@ -381,12 +384,12 @@ public class CalendarEventService {
         boolean dateRangeChanged = !calendarEvent.getEventDate().equals(eventRequest.getEventDate()) || !currentEnd.equals(reqEnd);
 
         if (calendarEvent.isSchedule() && calendarEvent.getScheduleId() != null && dateRangeChanged) {
-            return regenerateScheduleGroup(calendarEvent, eventRequest, actor);
+            return regenerateScheduleGroup(calendarEvent, eventRequest, creator);
         }
 
         // Nếu sự kiện thuộc nhóm liên tục nhưng chỉ thay đổi giờ/nội dung -> Cập nhật toàn bộ sự kiện trong nhóm
         if (calendarEvent.isSchedule() && calendarEvent.getScheduleId() != null) {
-            return updateScheduleGroupTime(calendarEvent, eventRequest, actor);
+            return updateScheduleGroupTime(calendarEvent, eventRequest, creator);
         }
 
         // Kiểm tra nếu sự kiện đơn chuyển thành sự kiện kéo dài nhiều ngày
@@ -403,7 +406,7 @@ public class CalendarEventService {
 
             calendarEventRepository.delete(calendarEvent);
             calendarEventRepository.flush();
-            return createScheduleEvents(eventRequest, actor, calendarEvent.getSpace());
+            return createScheduleEvents(eventRequest, creator, calendarEvent.getSpace());
         }
 
         // Sự kiện đơn lẻ thông thường
@@ -413,14 +416,14 @@ public class CalendarEventService {
             calendarEvent.setEndDate(calendarEvent.getEventDate());
         }
         applyRelations(calendarEvent, eventRequest);
-        syncEventRelations(calendarEvent, eventRequest, actor);
+        syncEventRelations(calendarEvent, eventRequest, creator);
         
         List<RoomMemberEntity> addedAttendees = calendarEvent.getAttendees().stream()
                 .filter(a -> !oldAttendees.contains(a)).toList();
         
         CalendarEventEntity savedEvent = calendarEventRepository.save(Objects.requireNonNull(calendarEvent));
 
-        this.syncToGoogleCalendar(savedEvent.getId());
+        this.syncToGoogleCalendar(savedEvent.getId(), creator.getPersonalCalendarId(), UUID.fromString(eventRequest.getSpaceId()));
         
         CalendarEventDTO result = new CalendarEventDTO(savedEvent);
         broadcastCalendarUpdate(result.getSpaceId(), "UPDATED", result);
@@ -433,7 +436,7 @@ public class CalendarEventService {
     }
 
     // Tạo lại toàn bộ nhóm sự kiện liên tục khi thay đổi ngày
-    private CalendarEventDTO regenerateScheduleGroup(CalendarEventEntity existing, CalendarEventDTO request, UserEntity actor) {
+    private CalendarEventDTO regenerateScheduleGroup(CalendarEventEntity existing, CalendarEventDTO request, UserEntity creator) {
         UUID scheduleId = existing.getScheduleId();
         SpaceEntity space = existing.getSpace();
         String spaceIdStr = space.getId().toString();
@@ -453,24 +456,24 @@ public class CalendarEventService {
         boolean stillMultiDay = endDate != null && endDate.isAfter(request.getEventDate());
 
         if (stillMultiDay) {
-            return createScheduleEvents(request, actor, space);
+            return createScheduleEvents(request, creator, space);
         } else {
             // Thu hẹp về sự kiện trong 1 ngày
             request.setSchedule(false);
             request.setScheduleId(null);
             CalendarEventEntity single = new CalendarEventEntity();
             request.updateEntity(single);
-            single.setCreatedBy(actor);
+            single.setCreatedBy(creator);
             single.setSpace(space);
             if (single.getEndDate() == null) {
                 single.setEndDate(single.getEventDate());
             }
             applyRelations(single, request);
-            syncEventRelations(single, request, actor);
+            syncEventRelations(single, request, creator);
 
             CalendarEventEntity saved = calendarEventRepository.save(single);
 
-            this.syncToGoogleCalendar(saved.getId());
+            this.syncToGoogleCalendar(saved.getId(), creator.getPersonalCalendarId(), space.getId());
 
             CalendarEventDTO result = new CalendarEventDTO(saved);
             broadcastCalendarUpdate(spaceIdStr, "UPDATED", result);
@@ -479,7 +482,7 @@ public class CalendarEventService {
     }
 
     // Cập nhật giờ/nội dung cho tất cả sự kiện trong nhóm (không đổi ngày diễn ra của từng ô)
-    private CalendarEventDTO updateScheduleGroupTime(CalendarEventEntity triggering, CalendarEventDTO request, UserEntity actor) {
+    private CalendarEventDTO updateScheduleGroupTime(CalendarEventEntity triggering, CalendarEventDTO request, UserEntity creator) {
         UUID scheduleId = triggering.getScheduleId();
         List<CalendarEventEntity> group = calendarEventRepository.findByScheduleId(scheduleId);
         List<CalendarEventEntity> savedEvents = new ArrayList<>();
@@ -494,10 +497,10 @@ public class CalendarEventService {
             member.setSchedule(true);
             member.setScheduleId(scheduleId);
             applyRelations(member, request);
-            syncEventRelations(member, request, actor);
+            syncEventRelations(member, request, creator);
             CalendarEventEntity saved = calendarEventRepository.save(member);
 
-            this.syncToGoogleCalendar(saved.getId());
+            this.syncToGoogleCalendar(saved.getId(), creator.getPersonalCalendarId(), UUID.fromString(request.getSpaceId()));
 
             savedEvents.add(saved);
         }
