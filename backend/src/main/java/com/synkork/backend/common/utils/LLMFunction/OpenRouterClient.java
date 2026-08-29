@@ -97,7 +97,11 @@ public class OpenRouterClient {
                 ? objectMapper.readTree(responseBody)
                 : null;
         logUsage(model, root);
-        return extractContent(root);
+        String content = extractContent(root);
+        if (content.isBlank()) {
+            throw new IllegalStateException("OpenRouter returned empty content");
+        }
+        return content;
     }
 
     /**
@@ -106,8 +110,8 @@ public class OpenRouterClient {
     public String parseJsonOrFallback(String raw, String fallback) {
         if (raw == null || raw.isBlank()) return fallback;
         try {
-            objectMapper.readTree(raw.trim());
-            return raw.trim();
+            JsonNode json = objectMapper.readTree(raw.trim());
+            return json != null && json.isObject() ? raw.trim() : fallback;
         } catch (Exception e) {
             return fallback;
         }

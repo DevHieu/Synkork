@@ -31,7 +31,7 @@ public class JwtService {
         String roleString = role.toString();
 
         long duration = type.equals("ACCESS")
-                ? TimeUnit.MINUTES.toMillis(1) // Access key hết hạn sau 1 phút
+                ? TimeUnit.MINUTES.toMillis(15) // Access key hết hạn sau 15 phút
                 : TimeUnit.DAYS.toMillis(7); // Refresh key thì 7 ngày
 
         Date now = new Date();
