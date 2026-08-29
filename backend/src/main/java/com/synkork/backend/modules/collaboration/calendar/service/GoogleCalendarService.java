@@ -23,7 +23,10 @@ import com.synkork.backend.modules.user.enums.PlanEnum;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.web.client.RestClient;
 
 import java.time.LocalDate;
@@ -96,11 +99,6 @@ public class GoogleCalendarService {
         } catch (Exception e) {
             log.error("Failed to refresh token", e);
         }
-    }
-
-    public void syncEventToGoogleAsync(UUID eventId) {
-        System.out.println("RUNNINGGG");
-        CompletableFuture.runAsync(() -> syncEventToGoogle(eventId));
     }
 
     public void deleteEventFromGoogleAsync(CalendarEventEntity entity) {

@@ -1,5 +1,6 @@
 package com.synkork.backend.modules.collaboration.calendar.service;
 
+import com.synkork.backend.modules.collaboration.calendar.dto.googleCalendar.CalendarEventSyncRequestedEvent;
 import com.synkork.backend.modules.collaboration.calendar.entity.CalendarEventEntity;
 import com.synkork.backend.modules.collaboration.calendar.entity.EventAttachmentEntity;
 import com.synkork.backend.modules.collaboration.calendar.enums.AttachmentTypeEnum;
@@ -18,6 +19,7 @@ import com.synkork.backend.modules.collaboration.task.card.CardEntity;
 import com.synkork.backend.modules.collaboration.note.NoteRepository;
 import com.synkork.backend.modules.collaboration.note.NoteEntity;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -76,6 +78,8 @@ public class CalendarEventService {
 
     @Autowired
     private CalendarEmailService calendarEmailService;
+    @Autowired
+    private ApplicationEventPublisher applicationEventPublisher;
 
     private void broadcastCalendarUpdate(String spaceId, String action, CalendarEventDTO event) {
         Map<String, Object> payload = new HashMap<>();
@@ -245,6 +249,10 @@ public class CalendarEventService {
         }
     }
 
+    private void syncToGoogleCalendar(UUID eventId) {
+        applicationEventPublisher.publishEvent(new CalendarEventSyncRequestedEvent(eventId));
+    }
+
     // Tạo event mới
     @Transactional
     public CalendarEventDTO createEvent(CalendarEventDTO eventRequest, UUID creatorId) {
@@ -288,7 +296,7 @@ public class CalendarEventService {
         syncEventRelations(calendarEvent, eventRequest, creator);
 
         CalendarEventEntity savedEvent = calendarEventRepository.save(Objects.requireNonNull(calendarEvent));
-        googleCalendarService.syncEventToGoogleAsync(savedEvent.getId());
+        this.syncToGoogleCalendar(savedEvent.getId());
         
         CalendarEventDTO result = new CalendarEventDTO(savedEvent);
         broadcastCalendarUpdate(eventRequest.getSpaceId(), "CREATED", result);
@@ -323,7 +331,9 @@ public class CalendarEventService {
             syncEventRelations(instance, eventRequest, creator);
 
             CalendarEventEntity saved = calendarEventRepository.save(instance);
-            googleCalendarService.syncEventToGoogleAsync(saved.getId());
+
+            this.syncToGoogleCalendar(saved.getId());
+
             savedEvents.add(saved);
             current = current.plusDays(1);
         }
@@ -409,7 +419,8 @@ public class CalendarEventService {
                 .filter(a -> !oldAttendees.contains(a)).toList();
         
         CalendarEventEntity savedEvent = calendarEventRepository.save(Objects.requireNonNull(calendarEvent));
-        googleCalendarService.syncEventToGoogleAsync(savedEvent.getId());
+
+        this.syncToGoogleCalendar(savedEvent.getId());
         
         CalendarEventDTO result = new CalendarEventDTO(savedEvent);
         broadcastCalendarUpdate(result.getSpaceId(), "UPDATED", result);
@@ -458,7 +469,9 @@ public class CalendarEventService {
             syncEventRelations(single, request, actor);
 
             CalendarEventEntity saved = calendarEventRepository.save(single);
-            googleCalendarService.syncEventToGoogleAsync(saved.getId());
+
+            this.syncToGoogleCalendar(saved.getId());
+
             CalendarEventDTO result = new CalendarEventDTO(saved);
             broadcastCalendarUpdate(spaceIdStr, "UPDATED", result);
             return result;
@@ -483,7 +496,9 @@ public class CalendarEventService {
             applyRelations(member, request);
             syncEventRelations(member, request, actor);
             CalendarEventEntity saved = calendarEventRepository.save(member);
-            googleCalendarService.syncEventToGoogleAsync(saved.getId());
+
+            this.syncToGoogleCalendar(saved.getId());
+
             savedEvents.add(saved);
         }
 
