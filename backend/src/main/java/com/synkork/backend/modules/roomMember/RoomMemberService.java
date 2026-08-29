@@ -220,10 +220,12 @@ public class RoomMemberService {
     }
 
     @Transactional
-    public void leaveRoom(UUID roomUUID, UUID requesterId) {
+    public UUID leaveRoom(UUID roomUUID, UUID requesterId) {
         RoomMemberEntity member = this.getRoomMemberByRoomIdAndUserId(roomUUID, requesterId);
         member.setStatus(MemberStatusEnum.KICKED);
         roomMemberRepository.save(member);
+
+        return member.getId();
 
 //        roomMemberRepository.removeFromCardAssignees(member.getId());
 //        roomMemberRepository.removeFromCalendarEventRoomMembers(member.getId());

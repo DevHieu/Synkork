@@ -24,7 +24,6 @@ import com.synkork.backend.modules.roomMember.enums.MemberStatusEnum;
 import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
 import com.synkork.backend.modules.space.SpaceEntity;
 import com.synkork.backend.modules.space.SpaceRepository;
-import com.synkork.backend.modules.user.enums.RoleEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
@@ -248,7 +247,7 @@ public class AdminRoomService {
             }
 
             room.setOwner(newOwner);
-            ensureOwnerMember(room, newOwner);
+            ensureOwnerMember(room, newOwner, oldOwner);
             ownerChanged = true;
         }
 
@@ -256,8 +255,6 @@ public class AdminRoomService {
 
         if (ownerChanged) {
             if (oldOwner != null) {
-                roomMemberService.deleteMember(oldOwner.getId(), room.getId());
-
                 adminRoomEmailService.sendRoomOwnerTransferredFromEmail(
                         oldOwner.getEmail(),
                         oldOwner.getUsername(),
@@ -360,17 +357,22 @@ public class AdminRoomService {
         return new AdminRoomResponse(saved);
     }
 
-    private void ensureOwnerMember(RoomEntity room, UserEntity owner) {
-        roomMemberRepository.findByRoom_IdAndUser_Id(room.getId(), owner.getId())
+    private void ensureOwnerMember(RoomEntity room, UserEntity newOwner, UserEntity oldOwner) {
+        roomMemberRepository.findByRoom_IdAndUser_Id(room.getId(), newOwner.getId())
                 .ifPresentOrElse(member -> {
                     member.setStatus(MemberStatusEnum.ACTIVE);
                     member.setRole(RoomMemberRoleEnum.OWNER);
                     roomMemberRepository.save(member);
                 }, () -> roomMemberService.addRoomMembers(
-                        owner.getId(),
+                        newOwner.getId(),
                         room.getId().toString(),
                         RoomMemberRoleEnum.OWNER.name()
                 ));
+
+        // Đổi quyền của owner cũ về Member
+        RoomMemberEntity oldMember = roomMemberService.getRoomMemberByRoomIdAndUserId(room.getId(), oldOwner.getId());
+        oldMember.setRole(RoomMemberRoleEnum.MEMBER);
+        roomMemberRepository.save(oldMember);
     }
 
     private Map<String, Object> metadata(Object... keyValues) {
