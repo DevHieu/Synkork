@@ -1,5 +1,7 @@
 import { Client, type StompSubscription } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
+import { jwtDecode } from "jwt-decode";
+import { getCookie } from "@/lib/cookies";
 
 let stompClient: Client | null = null;
 const subscriptions = new Map<string, StompSubscription>();
@@ -26,10 +28,26 @@ const doSubscribe = (destination: string, callback: (payload: any) => void) => {
   subscriptions.set(destination, sub);
 };
 
+const getUserHeaders = (): Record<string, string> => {
+  const headers: Record<string, string> = {};
+  const token = getCookie("accessToken");
+  if (token) {
+    try {
+      const decoded = jwtDecode<{ sub?: string; userId?: string }>(token);
+      if (decoded.sub) headers["X-User-Email"] = decoded.sub;
+      if (decoded.userId) headers["X-User-Id"] = decoded.userId;
+    } catch (e) {
+      console.warn("[Socket] Failed to decode user headers from token:", e);
+    }
+  }
+  return headers;
+};
+
 const createStompClient = (onConnected?: () => void): Client => {
   const client = new Client({
     webSocketFactory: () =>
       new SockJS(`${import.meta.env.VITE_BACKEND_URL}/api/ws`),
+    connectHeaders: getUserHeaders(),
     heartbeatIncoming: 10000, // mong nhận heartbeat từ server mỗi 10s
     heartbeatOutgoing: 10000, // gửi heartbeat cho server mỗi 10s
     reconnectDelay: 5000, // tự động reconnect sau 5s nếu mất kết nối
@@ -46,7 +64,6 @@ const createStompClient = (onConnected?: () => void): Client => {
     },
     onStompError: (frame) => {
       const message = frame.headers["message"] ?? "";
-
       console.error("[STOMP Error]", message);
     },
   });
