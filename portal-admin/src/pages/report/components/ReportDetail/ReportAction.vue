@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AlertTriangle, CheckCircle2, Eye, Loader2, Lock, ShieldCheck, ShieldX, XCircle } from '@lucide/vue'
+import { AlertTriangle, Eye, Loader2, Lock, ShieldCheck, ShieldX, XCircle } from '@lucide/vue'
 import { computed } from 'vue'
 
 import type { Report } from '@/pages/report/types/Reports'
@@ -16,13 +16,11 @@ const props = defineProps<{
   lockLoading: boolean
   isTargetLocked: boolean
   hasWarned: boolean
-  canResolve: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'warn'): void
   (e: 'lock'): void
-  (e: 'resolve'): void
   (e: 'dismiss'): void
   (e: 'review'): void
 }>()
@@ -67,7 +65,7 @@ const lockButtonLabel = computed(() => (props.report.reportType === 'USER' ? 'Kh
       </Button>
     </div>
 
-    <!-- Khoá đối tượng -->
+    <!-- Khoá -->
     <div
       class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5"
       :class="isTargetLocked ? 'border-destructive/30 bg-destructive/5' : 'border-border bg-muted/30'"
@@ -107,19 +105,7 @@ const lockButtonLabel = computed(() => (props.report.reportType === 'USER' ? 'Kh
       </Badge>
     </div>
 
-    <!-- Nút hành động chính -->
     <div class="flex gap-2">
-      <Button
-        variant="default"
-        class="flex-1 gap-2"
-        :disabled="!canResolve"
-        :title="!canResolve ? 'Vui lòng cảnh cáo hoặc khoá đối tượng trước khi giải quyết' : ''"
-        @click="emit('resolve')"
-      >
-        <CheckCircle2 class="h-4 w-4" />
-        Giải quyết
-      </Button>
-
       <Button variant="destructive" class="flex-1 gap-2" :disabled="isTargetLocked || hasWarned" @click="emit('dismiss')">
         <XCircle class="h-4 w-4" />
         Bác bỏ
@@ -133,9 +119,5 @@ const lockButtonLabel = computed(() => (props.report.reportType === 'USER' ? 'Kh
         Đánh dấu đã xem
       </Button>
     </div>
-
-    <p v-if="!canResolve" class="text-[11px] text-amber-600 text-center">
-      ⚠ Cần cảnh cáo hoặc khoá đối tượng trước khi có thể giải quyết báo cáo
-    </p>
   </div>
 </template>

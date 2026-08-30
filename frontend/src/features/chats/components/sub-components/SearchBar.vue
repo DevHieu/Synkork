@@ -16,7 +16,7 @@ import { useChatComposable } from "../../composable/chat.composable";
 import { SEARCH_LIMIT } from "../../utils/chat.utils";
 
 const props = defineProps<{
-  spaceId: string;
+  spaceId: string | undefined;
 }>();
 
 const searchKeyword = ref("");
@@ -57,6 +57,8 @@ const handleSearch = async (val: string, reset = false) => {
 
   isSearching.value = true;
 
+  if (!props.spaceId) return
+
   const res = await chatApi.searchMessage(
     props.spaceId,
     val,
@@ -84,6 +86,7 @@ const clearSearch = () => {
 
 const jumpToMessage = async (messageId: string) => {
   close();
+  if (!props.spaceId) return
   await chat.jumpToMessage(props.spaceId, messageId);
 };
 </script>

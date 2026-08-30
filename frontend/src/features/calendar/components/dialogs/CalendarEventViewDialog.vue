@@ -342,37 +342,37 @@ const goToNoteSpace = async () => {
                 <p class="font-sans text-[9px] font-bold uppercase tracking-wider text-primary/80">
                   Thời gian hoạt động
                 </p>
-                <p class="font-sans text-xs font-bold text-primary mt-1.5 flex items-center gap-1.5">
+                <p class="font-sans text-xs font-bold text-primary mt-1.5 flex flex-wrap items-center gap-1.5">
                   <Clock3 class="h-3.5 w-3.5 text-primary" />
                   <span>{{ displayStartTime }} &rarr; {{ displayEndTime }}</span>
                 </p>
-                <p class="font-sans text-[9px] text-muted-foreground/80 mt-1">
+                <p class="font-sans text-[9px] text-muted-foreground/80 mt-1 break-words">
                   Múi giờ: {{ originalStartLabel }} - {{ originalEndLabel }}
                 </p>
                 <p v-if="continuationText"
-                  class="mt-1 font-sans text-[9px] font-medium text-warning-foreground bg-warning/10 px-2 py-0.5 rounded-sm inline-block uppercase tracking-wider">
+                  class="mt-1 max-w-full whitespace-normal break-words font-sans text-[9px] font-medium text-warning-foreground bg-warning/10 px-2 py-0.5 rounded-sm inline-block uppercase tracking-wider">
                   {{ continuationText }}
                 </p>
               </div>
 
-              <div class="pt-3 border-t border-primary/10 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <div>
-                  <p class="font-sans text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+              <div class="pt-3 border-t border-primary/10 grid grid-cols-2 gap-2">
+                <div class="min-w-0">
+                  <p class="font-sans text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80 break-words">
                     Ngày bắt đầu
                   </p>
-                  <p class="font-sans text-[11px] font-medium text-foreground mt-0.5">
+                  <p class="font-sans text-[11px] font-medium text-foreground mt-0.5 break-words">
                     {{ displayEventDate }}
                   </p>
                 </div>
-                <div>
-                  <p class="font-sans text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+                <div class="min-w-0">
+                  <p class="font-sans text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80 break-words">
                     Ngày kết thúc
                   </p>
-                  <p class="font-sans text-[11px] font-medium text-foreground mt-0.5">
+                  <p class="font-sans text-[11px] font-medium text-foreground mt-0.5 break-words">
                     {{ displayEndDate }}
                   </p>
                 </div>
-                <div>
+                <div class="min-w-0">
                   <p class="font-sans text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80">
                     Lặp lại
                   </p>
@@ -381,11 +381,11 @@ const goToNoteSpace = async () => {
                     {{ recurrenceLabel }}
                   </p>
                 </div>
-                <div v-if="event?.remindBeforeMinutes !== undefined && event?.remindBeforeMinutes !== null">
-                  <p class="font-sans text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+                <div v-if="event?.remindBeforeMinutes !== undefined && event?.remindBeforeMinutes !== null" class="min-w-0">
+                  <p class="font-sans text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80 break-words">
                     Nhắc nhở trước
                   </p>
-                  <p class="font-sans text-[11px] font-medium text-foreground mt-0.5">
+                  <p class="font-sans text-[11px] font-medium text-foreground mt-0.5 break-words">
                     {{ event.remindBeforeMinutes === 0 ? 'Khi sự kiện bắt đầu' : `${event.remindBeforeMinutes} phút` }}
                   </p>
                 </div>

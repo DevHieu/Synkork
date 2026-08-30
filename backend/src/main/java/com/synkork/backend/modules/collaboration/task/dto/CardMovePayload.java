@@ -12,6 +12,6 @@ import lombok.Data;
 public class CardMovePayload {
     private UUID targetColumnId;
     private UUID sourceColumnId;          // null nếu same-column
-    private List<CardDTO> targetCards;    // toàn bộ cards của cột đích
+    private List<CardDTO> targetCards;    // toàn bộ cards của cột target
     private List<CardDTO> sourceCards;    // toàn bộ cards của cột nguồn, null nếu same-column
 }

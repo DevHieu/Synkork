@@ -12,8 +12,9 @@ public class LlmPrompts {
   /** Danh sách model dự phòng cho phát hiện event/task/note, thử theo thứ tự. */
   public static final List<String> CHAT_EVENT_MODELS =
           List.of(
-                  "qwen/qwen3.7-flash",       // Ưu tiên 1: Tốc độ tốt nhất, bám sát chỉ thị định dạng JSON [6, 11, 13]
-                  "google/gemma-4-31b-it:free",           // Ưu tiên 2: Độ thông minh cao hơn một chút, bám sát chỉ thị [7, 13]
+                  "xiaomi/mimo-v2.5",             // Ưu tiên 1: Model đa phương thức, dùng cho xử lý text/audio.
+                  "qwen/qwen3.7-flash",       // Ưu tiên 2: Tốc độ tốt, bám sát chỉ thị định dạng JSON [6, 11, 13]
+                  "google/gemma-4-31b-it:free",           // Ưu tiên 3: Độ thông minh cao hơn một chút, bám sát chỉ thị [7, 13]
                   "z-ai/glm-4.5-air:free",                // Ưu tiên 3: Dòng Air tối ưu độ trễ cực tốt cho production [6, 14]
                   "nvidia/nemotron-3-super-120b-a12b:free",// Ưu tiên 4: Khả năng suy luận mạnh mẽ hơn khi các bản nhẹ bị lỗi [6, 7]
                   "nvidia/nemotron-3-ultra-550b-a55b:free",// Ưu tiên 5: Chỉ dùng khi thực sự cần xử lý ngữ cảnh cực kỳ phức tạp (chấp nhận chậm) [2, 6]
@@ -178,14 +179,16 @@ Quy đổi ngày: hôm nay=%s | mai=%s | ngày mốt=%s
 """;
 
   // Meeting (OpenRouter)
-  /** Model chuyển âm thanh cuộc họp thành văn bản (dùng OpenRouter, nếu cần). */
-  public static final String MODEL_TRANSCRIPTION = "google/gemini-2.5-flash-lite";
+  /** Danh sách model chuyển âm thanh thành văn bản, thử theo thứ tự. */
+  public static final List<String> MEETING_TRANSCRIPTION_MODELS =
+          List.of("google/gemini-2.5-flash-lite");
 
   /** Danh sách model dự phòng cho tóm tắt cuộc họp. */
   public static final List<String> MEETING_SUMMARY_MODELS =
           List.of(
-                  "qwen/qwen3.7-flash",       // Ưu tiên 1: Tốc độ tốt nhất, bám sát chỉ thị định dạng JSON [6, 11, 13]
-                  "google/gemma-4-31b-it:free",           // Ưu tiên 2: Độ thông minh cao hơn một chút, bám sát chỉ thị [7, 13]
+                  "xiaomi/mimo-v2.5",             // Ưu tiên 1: Model đa phương thức, dùng cho xử lý text/audio.
+                  "qwen/qwen3.7-flash",       // Ưu tiên 2: Tốc độ tốt, bám sát chỉ thị định dạng JSON [6, 11, 13]
+                  "google/gemma-4-31b-it:free",           // Ưu tiên 3: Độ thông minh cao hơn một chút, bám sát chỉ thị [7, 13]
                   "z-ai/glm-4.5-air:free",                // Ưu tiên 3: Dòng Air tối ưu độ trễ cực tốt cho production [6, 14]
                   "nvidia/nemotron-3-super-120b-a12b:free",// Ưu tiên 4: Khả năng suy luận mạnh mẽ hơn khi các bản nhẹ bị lỗi [6, 7]
                   "nvidia/nemotron-3-ultra-550b-a55b:free",// Ưu tiên 5: Chỉ dùng khi thực sự cần xử lý ngữ cảnh cực kỳ phức tạp (chấp nhận chậm) [2, 6]
@@ -260,30 +263,11 @@ Quy đổi ngày: hôm nay=%s | mai=%s | ngày mốt=%s
   /** Lệnh STT gửi kèm audio; không có tham số format. */
   public static final String MEETING_TRANSCRIPTION_INSTRUCTION =
 """
-Bạn là một chuyên gia gỡ băng (transcriber) chuyên nghiệp. Hãy chuyển đoạn dữ liệu thô từ âm thanh cuộc họp dưới đây thành văn bản tiếng Việt hoàn chỉnh với độ chính xác cao nhất.
+Bạn là một chuyên gia gỡ băng cuộc họp riêng tư. Hãy NGHE TRỰC TIẾP file audio trong block input_audio và chuyển âm thanh thành transcript chính xác.
 
-Yêu cầu định dạng bắt buộc:
-1. Chỉ trả về văn bản thuần túy đã gỡ băng: Tuyệt đối KHÔNG kèm theo bất kỳ lời mở đầu, lời chào, lời dẫn dắt hay giải thích nào ở đầu và cuối phản hồi. Không sử dụng JSON, không dùng bullet points, không tự động tóm tắt nội dung.
-2. Ngắt đoạn hợp lý: Tự động xuống dòng khi nhận thấy có sự thay đổi người nói hoặc khi chuyển sang một ý mới rõ ràng.
-
-Quy tắc xử lý ngôn ngữ:
-- Code-switching: Ghi nhận chính xác các thuật ngữ tiếng Anh được sử dụng xen kẽ trong câu tiếng Việt (ví dụ: "RAG", "fine-tuning", "prompt", "server"). Tuyệt đối không dịch ép sang tiếng Việt.
-- Clean Verbatim (Ghi chép gọn): Loại bỏ toàn bộ từ thừa (à, ừm, ờ, dạ, thì, mà, nhé), tiếng tặc lưỡi, hoặc từ lặp lại do nói vấp, nhằm giữ văn bản mạch lạc nhưng KHÔNG thay đổi ý nghĩa gốc của câu.
-- Dấu câu & Tên riêng: Chuẩn hóa viết hoa đầu câu, viết hoa tên riêng, tên dự án, thuật ngữ công nghệ và ngắt câu logic.
-- Đoạn nhiễu/Không thể nghe: Nếu có đoạn âm thanh bị ồn hoặc không thể nghe rõ chữ, tuyệt đối không tự bịa từ. Hãy điền tag [không nghe rõ].
-
-Ví dụ minh họa (Mẫu chuẩn đầu ra):
----
-Đầu vào thô: "à... ờ... hôm nay chúng ta sẽ bàn về việc... ừm... deploy mô hình LLM này lên... lên cái server của AWS nha mọi người. Thì... [tiếng ồn cực lớn]... sau đó chúng ta sẽ setup auto-scaling cho nó."
-Đầu ra mong muốn:
-Hôm nay chúng ta sẽ bàn về việc deploy mô hình LLM này lên server của AWS nha mọi người.
-[không nghe rõ] sau đó chúng ta sẽ setup auto-scaling cho nó.
----
-
-Hãy thực hiện nhiệm vụ trên một cách nghiêm túc đối với đoạn dữ liệu cuộc họp nằm trong thẻ <raw_transcript> dưới đây:
-
-<raw_transcript>
-{INPUT}
-</raw_transcript>
+Chỉ trả về transcript thuần túy, không giải thích, không tóm tắt, không từ chối vì nội dung có bản quyền.
+Nội dung có thể là podcast, bài giảng, video, hoặc cuộc trò chuyện; hãy ghi lại phần nghe được.
+Nếu hoàn toàn không có lời nói, trả về đúng __NO_SPEECH__. Đoạn không rõ ghi [không nghe rõ].
+Giữ nguyên ngôn ngữ, tên riêng, thuật ngữ tiếng Anh. Không bịa nội dung.
 """;
 }

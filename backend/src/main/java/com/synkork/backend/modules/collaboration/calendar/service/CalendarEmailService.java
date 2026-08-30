@@ -111,11 +111,12 @@ public class CalendarEmailService {
 
     private void sendNotification(boolean isReminder, UserEntity target, UserEntity actor, UUID eventId, UUID roomId, UUID spaceId) {
         NotificationRefTypeEnum refType = isReminder ? NotificationRefTypeEnum.EVENT_REMINDER : NotificationRefTypeEnum.EVENT_ASSIGNED;
-        notificationService.sendNotification(actor, target, eventId, roomId, spaceId, NotificationTypeEnum.CALENDAR, refType);
+        UserEntity checkActor =  isReminder ? null : actor;
+        notificationService.sendNotification(checkActor, target, eventId, roomId, spaceId, NotificationTypeEnum.CALENDAR, refType);
 
         // Gửi cho thằng tạo cái event này nữa
         if (isReminder) {
-            notificationService.sendNotification(actor, actor, eventId, roomId, spaceId, NotificationTypeEnum.CALENDAR, refType);
+            notificationService.sendNotification(checkActor, actor, eventId, roomId, spaceId, NotificationTypeEnum.CALENDAR, refType);
         }
     }
 }

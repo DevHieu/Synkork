@@ -103,7 +103,6 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
       >
         <div class="relative w-full rounded-xl overflow-hidden bg-black/60">
 
-          <!-- Header -->
           <div
             class="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-3"
             style="background: linear-gradient(to bottom, rgba(0,0,0,.65), transparent);"
@@ -150,7 +149,6 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
             </div>
           </div>
 
-          <!-- Media -->
           <div class="flex items-center justify-center p-2 pt-14 pb-4">
             <video
               v-if="isVideo"

@@ -53,15 +53,37 @@ public class MeetingLlmService {
                 Map.of("role", "user", "content", contentArray)
         );
 
-        log.info("[MeetingLlmService] Đang gọi OpenRouter để bóc băng ghi âm (model: {})", LlmPrompts.MODEL_TRANSCRIPTION);
-
-        return openRouterClient.chatCompletion(
-                LlmPrompts.REFERER_DEFAULT,
-                LlmPrompts.APP_TITLE,
-                LlmPrompts.MODEL_TRANSCRIPTION,
-                messages,
-                false // không bắt buộc JSON
-        );
+        Exception lastException = null;
+        String transcript = null;
+        for (String model : LlmPrompts.MEETING_TRANSCRIPTION_MODELS) {
+            try {
+                log.info("[MeetingLlmService] Đang gọi OpenRouter để bóc băng ghi âm (model: {})", model);
+                transcript = openRouterClient.chatCompletion(
+                        LlmPrompts.REFERER_DEFAULT,
+                        LlmPrompts.APP_TITLE,
+                        model,
+                        messages,
+                        false // không bắt buộc JSON
+                );
+                break;
+            } catch (Exception e) {
+                lastException = e;
+                log.warn("Model transcription {} thất bại, thử model tiếp theo: {}", model, e.getMessage());
+            }
+        }
+        if (transcript == null && lastException != null) {
+            throw lastException;
+        }
+        String normalized = transcript == null ? "" : transcript.trim();
+        if (normalized.equalsIgnoreCase("__NO_SPEECH__")
+                || normalized.equalsIgnoreCase("[không nghe rõ]")
+                || normalized.equalsIgnoreCase("không nghe rõ")) {
+            return "";
+        }
+        if (normalized.isBlank()) {
+            throw new IllegalStateException("LLM Trả về transcript rỗng hoặc chỉ chứa khoảng trắng.");
+        }
+        return normalized;
     }
 
 
@@ -96,7 +118,12 @@ public class MeetingLlmService {
                         messages,
                         true
                 );
-                return openRouterClient.parseJsonOrFallback(raw, "{}");
+                String parsed = openRouterClient.parseJsonOrFallback(raw, null);
+                if (parsed != null && !parsed.isBlank()) {
+                    return parsed;
+                }
+                lastException = new IllegalStateException("LLM returned invalid JSON object");
+                log.warn("Model {} trả về JSON không hợp lệ, thử model dự phòng tiếp theo", model);
             } catch (RestClientException e) {
                 lastException = e;
                 log.warn("Model {} thất bại, thử model dự phòng tiếp theo: {}", model, e.getMessage());
@@ -107,7 +134,7 @@ public class MeetingLlmService {
         }
 
         log.error("Tất cả các model đều thất bại", lastException);
-        return "{}";
+        return "{\"summary\":\"Không thể tạo tóm tắt lúc này.\",\"keyPoints\":[],\"actionItems\":[]}";
     }
 
 
@@ -116,9 +143,21 @@ public class MeetingLlmService {
             log.info("Bỏ qua tóm tắt: transcript rỗng hoặc chỉ chứa khoảng trắng.");
             return "{\"summary\":\"Nội dung không đủ để tóm tắt.\",\"keyPoints\":[],\"actionItems\":[]}";
         }
+        if (isProviderRefusal(transcript)) {
+            return "{\"summary\":\"Nội dung có bản quyền nên sẽ không xử lí được.\",\"keyPoints\":[],\"actionItems\":[]}";
+        }
 
         String prompt = LlmPrompts.MEETING_SUMMARY_PROMPT_TEMPLATE.formatted(transcript);
         return summarizeWithPrompt(prompt, LlmPrompts.MEETING_SUMMARY_MODELS);
+    }
+
+    private boolean isProviderRefusal(String transcript) {
+        String normalized = transcript.toLowerCase();
+        return normalized.contains("bản quyền")
+                || normalized.contains("copyright")
+                || normalized.contains("không thể thực hiện yêu cầu")
+                || normalized.contains("i can't")
+                || normalized.contains("i cannot");
     }
 
     public String summarizeGeneric(String content,  List<String> models) {
