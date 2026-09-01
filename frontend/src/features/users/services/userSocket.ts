@@ -45,7 +45,7 @@ export const userSocket = {
       "/user/queue/room/members/invited",
       async () => {
         await roomComposable.fetchRooms();
-        toast.info("Bạn vừa được gia nhập vào 1 room mới");
+        // toast.info("Bạn vừa được gia nhập vào 1 room mới");
       },
       { persistent: true },
     );
