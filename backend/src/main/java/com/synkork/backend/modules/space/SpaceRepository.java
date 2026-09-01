@@ -60,7 +60,7 @@ public interface SpaceRepository extends JpaRepository<SpaceEntity, UUID> {
              LEFT JOIN RoomMemberEntity rm ON s.room.id = rm.room.id
              WHERE s.id = :spaceId
              AND (
-                 rm.user.id = :userId
+                 (rm.user.id = :userId AND rm.status = com.synkork.backend.modules.roomMember.enums.MemberStatusEnum.ACTIVE)
                 OR s.room.owner.id = :userId
             )
             """)
