@@ -126,6 +126,24 @@ function handleOpenUserAction(user: User) {
   showActionDialog.value = true
 }
 
+const hasActiveFilter = computed(() =>
+  !!keyword.value
+  || selectedStatus.value !== 'ALL'
+  || selectedPlan.value !== 'ALL'
+  || minWarning.value !== undefined
+  || maxWarning.value !== undefined
+  || dateRange.value !== null,
+)
+
+function clearFilters() {
+  keyword.value = ''
+  selectedStatus.value = 'ALL'
+  selectedPlan.value = 'ALL'
+  minWarning.value = undefined
+  maxWarning.value = undefined
+  dateRange.value = defaultDateRange()
+}
+
 async function handleConfirmUserAction(reason: string) {
   if (!actionTarget.value)
     return
@@ -342,6 +360,17 @@ const isLockingUser = computed(() => isUserActive(actionTarget.value))
       <div>
         <DateRangePicker v-model="dateRange" />
       </div>
+
+      <UiButton
+        v-if="hasActiveFilter"
+        variant="ghost"
+        size="sm"
+        class="h-9 gap-1.5 text-sm text-muted-foreground"
+        @click="clearFilters"
+      >
+        <X class="h-3.5 w-3.5" />
+        Xóa bộ lọc
+      </UiButton>
     </div>
 
     <div class="relative rounded-md border border-neutral-200 dark:border-neutral-800">
