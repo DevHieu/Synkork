@@ -3,7 +3,7 @@ import { ref, computed, onMounted, watch } from "vue"
 import { Sun, Moon, Monitor, Check, RotateCcw } from "lucide-vue-next"
 import { toast } from "vue-sonner"
 import { useUserStore } from "@/features/users/stores/userStore";
-import { useThemeStore } from "@/stores/themeStore" // Nhớ trỏ đúng đường dẫn file store của bạn
+import { useThemeStore } from "@/stores/themeStore" 
 import { storeToRefs } from "pinia"
 
 type ThemeId = string
@@ -103,8 +103,6 @@ const resetDefaults = () => {
 }
 
 onMounted(() => {
-  // Ghi chú: Nếu bạn chưa gọi themeStore.init() ở App.vue thì nên gọi ở đây
-  // themeStore.init() 
   selectedTheme.value = localStorage.getItem("synkork_theme_id") ?? "default"
   applyToDom(selectedTheme.value)
 })
