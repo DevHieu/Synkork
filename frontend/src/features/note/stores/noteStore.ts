@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { toast } from 'vue-sonner'
 import type { Note, NoteRequest } from '@/features/note/types/NoteType'
 
 export interface ConflictInfo {
@@ -51,7 +52,12 @@ export const useNoteStore = defineStore('notes', () => {
   function setCurrentSpaceId(id: string | null) { currentSpaceId.value = id }
   function setLoading(value: boolean) { loading.value = value }
   function setLoadingArchived(value: boolean) { loadingArchived.value = value }
-  function setError(msg: string | null) { error.value = msg }
+  function setError(msg: string | null) {
+    error.value = msg
+    if (msg) {
+      toast.error(msg)
+    }
+  }
   function setConflict(c: ConflictInfo | null) { conflict.value = c }
   function clearConflict() { conflict.value = null }
 
