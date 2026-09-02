@@ -73,7 +73,13 @@ export const resolveScheduleEvent = (
     }
   }
 
-  const attendees = group.flatMap((item) => item.attendees ?? []);
+  const attendees = [
+    ...new Map(
+      group
+        .flatMap((item) => item.attendees ?? [])
+        .map((attendee) => [attendee.memberId, attendee]),
+    ).values(),
+  ];
   const attendeeIds = group.flatMap((item) => item.attendeeIds ?? []);
 
   return {

@@ -14,6 +14,12 @@ const isRecording = ref(false);
 let recorder: MediaRecorder | null = null;
 let chunks: Blob[] = [];
 
+const EMPTY_SUMMARY = JSON.stringify({
+  summary: "Nội dung không đủ để tóm tắt.",
+  keyPoints: [],
+  actionItems: [],
+});
+
 const route = useRoute();
 const voiceSpaceStore = useVoiceSpaceStore();
 const userStore = useUserStore();
@@ -35,29 +41,28 @@ const handleTestFileUpload = async (event: Event) => {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
   if (!file) return;
+
   showSummaryModal.value = true;
   isSummaryLoading.value = true;
   meetingTranscript.value = "";
   meetingSummaryJson.value = "{}";
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("roomId", (route.params.roomId as string) || "00000000-0000-0000-0000-000000000000");
   try {
     const response = await axiosClient.post("/api/public/voice-summary/test-upload", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-      timeout: 180000, // 3 phút 
+      timeout: 180000,
     });
     const data = response.data;
-    meetingTranscript.value = data.transcript;
-    meetingSummaryJson.value = data.summaryJson;
-    toast.success("Xử lý file test thành công!");
-  } catch (error) {
+    meetingTranscript.value = data.transcript ?? "";
+    meetingSummaryJson.value = data.summaryJson ?? EMPTY_SUMMARY;
+    toast.success("Đã tạo tóm tắt từ file test.");
+  } catch (error: any) {
     console.error("Lỗi khi test tóm tắt cuộc họp:", error);
-    toast.error("Gửi file test thất bại hoặc lỗi xử lý AI.");
+    toast.error(error.response?.data || "Gửi file test thất bại hoặc lỗi xử lý AI.");
     showSummaryModal.value = false;
   } finally {
     isSummaryLoading.value = false;
-    target.value = ""; // Reset input
+    target.value = "";
   }
 };
 
@@ -74,16 +79,50 @@ const handleSummary = () => {
     return;
   }
 
-  const tracks = voiceSpaceStore.getAudioTracks();
+  const tracks = voiceSpaceStore.getAudioTracks().filter((track) => track.readyState === "live");
   if (tracks.length === 0) {
-    alert("Chưa có audio nào trong phòng!");
+    toast.error("Không có audio đang hoạt động trong phòng.");
     return;
   }
 
   // Truyền tracks vào đây chứ không để rỗng
   const audioStream = new MediaStream(tracks);
-  recorder = new MediaRecorder(audioStream, { mimeType: "audio/webm" });
+  const mimeType = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"]
+    .find((type) => MediaRecorder.isTypeSupported(type));
+  if (!mimeType) {
+    toast.error("Trình duyệt không hỗ trợ định dạng ghi âm.");
+    return;
+  }
+  const audioType = mimeType.split(";", 1)[0];
+  const extension = audioType === "audio/mp4" ? "m4a" : "webm";
+
+  recorder = new MediaRecorder(audioStream, { mimeType });
   chunks = [];
+
+  const audioContext = new AudioContext();
+  void audioContext.resume();
+  const analyser = audioContext.createAnalyser();
+  analyser.fftSize = 2048;
+  const source = audioContext.createMediaStreamSource(audioStream);
+  source.connect(analyser);
+  const samples = new Uint8Array(analyser.fftSize);
+  const speechSamples: number[] = [];
+  const detectSpeech = () => {
+    analyser.getByteTimeDomainData(samples);
+    let sum = 0;
+    for (const sample of samples) {
+      const normalized = (sample - 128) / 128;
+      sum += normalized * normalized;
+    }
+    speechSamples.push(Math.sqrt(sum / samples.length));
+  };
+  const speechTimer = window.setInterval(detectSpeech, 250);
+  const hasSpeech = () => speechSamples.some((rms) => rms > 0.03);
+  const stopAnalyser = async () => {
+    window.clearInterval(speechTimer);
+    source.disconnect();
+    await audioContext.close();
+  };
 
   recorder.ondataavailable = (e) => {
     if (e.data.size > 0) chunks.push(e.data);
@@ -91,37 +130,60 @@ const handleSummary = () => {
 
   // Gửi file ghi âm lên backend và hiển thị modal tóm tắt cuộc họp
   recorder.onstop = async () => {
-    const blob = new Blob(chunks, { type: "audio/webm" });
-    const file = new File([blob], "meeting.webm", { type: "audio/webm" });
+    await stopAnalyser();
+
+    if (!hasSpeech() || chunks.length === 0) {
+      meetingTranscript.value = "";
+      meetingSummaryJson.value = EMPTY_SUMMARY;
+      showSummaryModal.value = true;
+      isSummaryLoading.value = false;
+      toast.info("Không phát hiện lời nói trong bản ghi.");
+      audioStream.getTracks().forEach((track) => track.stop());
+      return;
+    }
+
+    const blob = new Blob(chunks, { type: audioType });
+    const file = new File([blob], `meeting.${extension}`, { type: audioType });
 
     showSummaryModal.value = true;
     isSummaryLoading.value = true;
     meetingTranscript.value = "";
     meetingSummaryJson.value = "{}";
 
+    const roomId = route.params.roomId;
+    if (typeof roomId !== "string" || !roomId) {
+      toast.error("Không xác định được phòng họp.");
+      showSummaryModal.value = false;
+      isSummaryLoading.value = false;
+      audioStream.getTracks().forEach((track) => track.stop());
+      return;
+    }
+
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("roomId", route.params.roomId as string);
+    formData.append("roomId", roomId);
 
     try {
       const response = await axiosClient.post("/api/collaboration/voice-summary/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        timeout: 60000,
-        // t set timeout 60s, vì file ghi âm có thể khá dài, nên cần thời gian xử lý lâu hơn - AI TỰ GỢI Ý =))))
+        timeout: 180000,
       });
 
       // Nhận dữ liệu phản hồi từ backend
       const data = response.data;
-      meetingTranscript.value = data.transcript;
-      meetingSummaryJson.value = data.summaryJson;
-    } catch (error) {
-      console.error("Lỗi khi xử lý tóm tắt cuộc họp:", error);
-      toast.error("Gửi file ghi âm cuộc họp thất bại hoặc bị lỗi AI.");
+      meetingTranscript.value = data.transcript ?? "";
+      meetingSummaryJson.value = data.summaryJson ?? EMPTY_SUMMARY;
+      toast.success("Đã tạo tóm tắt cuộc họp.");
+    } catch (error: any) {
+      console.error("Lỗi khi xử lý tóm tắt cuộc họp:", {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+      });
+      toast.error(error.response?.data || "Gửi file ghi âm cuộc họp thất bại hoặc bị lỗi AI.");
       showSummaryModal.value = false;
     } finally {
       isSummaryLoading.value = false;
+      audioStream.getTracks().forEach((track) => track.stop());
     }
   };
 
@@ -156,7 +218,6 @@ const handleSummary = () => {
       </div> -->
 
     <div class="flex items-center gap-2">
-      <!-- Test upload button -->
       <input v-if="isBusinessPlan" type="file" ref="testFileInput" class="hidden" accept="audio/*"
         @change="handleTestFileUpload" />
       <button v-if="isBusinessPlan" @click="triggerTestUpload"

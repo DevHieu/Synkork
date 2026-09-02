@@ -1,11 +1,15 @@
 import { Client, type StompSubscription } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
-import { getFreshToken } from "@/features/auth/utils/auth";
-import { getCookie, removeCookie } from "@/lib/cookies";
+import { jwtDecode } from "jwt-decode";
+import { getCookie } from "@/lib/cookies";
+import { chatJoinedSpaceId } from "@/features/chats/utils/chat.utils";
 
 let stompClient: Client | null = null;
 const subscriptions = new Map<string, StompSubscription>();
-const activeSubscriptions = new Map<string, { callback: (payload: any) => void; options?: { persistent?: boolean } }>();
+const activeSubscriptions = new Map<
+  string,
+  { callback: (payload: any) => void; options?: { persistent?: boolean } }
+>();
 let connectingPromise: Promise<void> | null = null;
 // Giữ lại các kênh cần sống lâu hơn vòng đời của từng space.
 const persistentDestinations = new Set<string>();
@@ -25,13 +29,26 @@ const doSubscribe = (destination: string, callback: (payload: any) => void) => {
   subscriptions.set(destination, sub);
 };
 
-const createStompClient = (token: string, onConnected?: () => void): Client => {
+const getUserHeaders = (): Record<string, string> => {
+  const headers: Record<string, string> = {};
+  const token = getCookie("accessToken");
+  if (token) {
+    try {
+      const decoded = jwtDecode<{ sub?: string; userId?: string }>(token);
+      if (decoded.sub) headers["X-User-Email"] = decoded.sub;
+      if (decoded.userId) headers["X-User-Id"] = decoded.userId;
+    } catch (e) {
+      console.warn("[Socket] Failed to decode user headers from token:", e);
+    }
+  }
+  return headers;
+};
+
+const createStompClient = (onConnected?: () => void): Client => {
   const client = new Client({
     webSocketFactory: () =>
       new SockJS(`${import.meta.env.VITE_BACKEND_URL}/api/ws`),
-    connectHeaders: {
-      Authorization: `Bearer ${token}`,
-    },
+    connectHeaders: getUserHeaders(),
     heartbeatIncoming: 10000, // mong nhận heartbeat từ server mỗi 10s
     heartbeatOutgoing: 10000, // gửi heartbeat cho server mỗi 10s
     reconnectDelay: 5000, // tự động reconnect sau 5s nếu mất kết nối
@@ -43,48 +60,12 @@ const createStompClient = (token: string, onConnected?: () => void): Client => {
         doSubscribe(destination, callback);
       });
     },
-    onWebSocketClose: async (event) => {
-      //bắt 401 và refresh token
+    onWebSocketClose: (event) => {
       console.warn(`[Socket] Closed — code: ${event.code}`);
-
-      const isUnauthorized =
-        event.code === 4001 ||
-        event.code === 1002 ||
-        (event.reason ?? "").toLowerCase().includes("unauthorized");
-
-      if (isUnauthorized) {
-        removeCookie("accessToken");
-        try {
-          const freshToken = await getFreshToken();
-
-          stompClient = createStompClient(freshToken, onConnected);
-          stompClient.activate();
-        } catch {
-          window.location.href = "/auth";
-        }
-      }
     },
-    onStompError: async (frame) => {
+    onStompError: (frame) => {
       const message = frame.headers["message"] ?? "";
-
       console.error("[STOMP Error]", message);
-
-      const isAuthError =
-        message.includes("JWT validation failed") ||
-        message.toLowerCase().includes("unauthorized");
-
-      if (isAuthError) {
-        removeCookie("accessToken");
-
-        try {
-          const freshToken = await getFreshToken();
-
-          stompClient = createStompClient(freshToken, onConnected);
-          stompClient.activate();
-        } catch {
-          window.location.href = "/auth";
-        }
-      }
     },
   });
 
@@ -98,19 +79,8 @@ export const socketService = {
     // Nếu đang connecting rồi thì chờ cái đó, không tạo mới
     if (connectingPromise) return connectingPromise;
 
-    connectingPromise = new Promise<void>(async (resolve, reject) => {
-      let token = getCookie("accessToken");
-      if (!token) {
-        try {
-          token = await getFreshToken();
-        } catch {
-          window.location.href = "/auth";
-          reject();
-          return;
-        }
-      }
-
-      stompClient = createStompClient(token, () => {
+    connectingPromise = new Promise<void>((resolve) => {
+      stompClient = createStompClient(() => {
         connectingPromise = null;
         resolve();
       });
@@ -146,7 +116,7 @@ export const socketService = {
     return {
       unsubscribe: () => {
         this.unsubscribeByDestination(destination);
-      }
+      },
     };
   },
 
@@ -161,6 +131,7 @@ export const socketService = {
         activeSubscriptions.delete(destination);
       }
     });
+    chatJoinedSpaceId.value = null;
   },
 
   unsubscribeAllForce() {
@@ -168,6 +139,7 @@ export const socketService = {
     subscriptions.clear();
     activeSubscriptions.clear();
     persistentDestinations.clear();
+    chatJoinedSpaceId.value = null;
   },
 
   unsubscribeByDestination(destination: string) {

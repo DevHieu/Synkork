@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import type { Room } from "@/features/rooms/types/Room";
 import router from "@/routers";
 import { toast } from "vue-sonner";
+import { socketService } from "@/services/socketService";
 
 export const useRoomsStore = defineStore("rooms", {
   state: () => ({
@@ -18,6 +19,8 @@ export const useRoomsStore = defineStore("rooms", {
         toast.error("Phòng đã bị xóa");
       }
 
+      socketService.unsubscribeAll();
+
       this.rooms = this.rooms.filter((room) => room.id !== roomId);
     },
   },
@@ -27,6 +30,9 @@ export const useRoomsStore = defineStore("rooms", {
     roomPlan: (state) => {
       if (!state.currentRoom) return "FREE";
       return state.currentRoom.currentPlan;
+    },
+    roomId: (state) => {
+      return state.currentRoom?.id || null;
     },
   },
 });

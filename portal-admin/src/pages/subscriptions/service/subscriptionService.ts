@@ -34,7 +34,7 @@ export const subscriptionService = {
   },
 
   async getPlanPricings() {
-    const res = await axiosClient.get('/api/manage/plan-pricing')
+    const res = await axiosClient.get('/api/payment/plan-pricing')
     return res.data
   },
 

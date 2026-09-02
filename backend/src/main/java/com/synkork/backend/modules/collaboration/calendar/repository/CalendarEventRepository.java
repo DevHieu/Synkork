@@ -37,7 +37,9 @@ public interface CalendarEventRepository extends JpaRepository<CalendarEventEnti
     @Query("SELECT e FROM CalendarEventEntity e WHERE e.eventDate >= :date OR (e.recurrenceType IS NOT NULL AND e.recurrenceType != 'NONE')")
     List<CalendarEventEntity> findUpcomingOrRecurringEvents(@Param("date") LocalDate date);
 
-    List<CalendarEventEntity> findByCreatedByIdAndGoogleEventIdIsNull(UUID createdById);
+    List<CalendarEventEntity> findByCreatedByIdAndSpaceId(UUID createdById, UUID spaceId);
+
+    List<CalendarEventEntity> findByCreatedByIdAndSpaceIdAndGoogleEventIdIsNull(UUID createdById, UUID spaceId);
 
     // pick group
     @EntityGraph(attributePaths = {"space", "createdBy", "callRoomSpace", "attendees", "attendees.user"})

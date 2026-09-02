@@ -4,17 +4,17 @@ import {
   X, Pin, Bell, Palette, BellPlus
 } from 'lucide-vue-next'
 import type { Note, NoteRequest } from '@/features/note/types/NoteType'
-import type { SuggestedNoteDraft } from '@/types/CalendarSuggestion'
-import { useNoteStore } from '@/features/note/stores/noteStore'
+import type { SuggestedNoteDraft } from '@/types/SuggestionTypes'
 import { useNoteActions } from '@/features/note/composable/UseNoteActions'
 import DateTimePicker from '@/components/DateTimePicker.vue'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899']
 
 const QUICK_REMINDERS = [
   { label: '30 phút', minutes: 30 },
-  { label: '1 giờ',   minutes: 60 },
-  { label: '3 giờ',   minutes: 180 },
+  { label: '1 giờ', minutes: 60 },
+  { label: '3 giờ', minutes: 180 },
   { label: 'Tối nay', minutes: -1 },   // special case – xem setQuickReminder
   { label: 'Ngày mai', minutes: 1440 },
 ]
@@ -22,11 +22,10 @@ const QUICK_REMINDERS = [
 const props = defineProps<{ spaceId: string; open: boolean; note?: Note | null; draft?: SuggestedNoteDraft | null }>()
 const emit = defineEmits<{ close: [] }>()
 
-const store = useNoteStore()
 const actions = useNoteActions()
 
-const isEdit      = ref(false)
-const submitting  = ref(false)
+const isEdit = ref(false)
+const submitting = ref(false)
 const showReminder = ref(false)
 const customDatetime = ref('')   // dạng "YYYY-MM-DDTHH:mm" — định dạng DateTimePicker cần
 
@@ -58,7 +57,7 @@ function setQuickReminder(minutes: number) {
     d = new Date(Date.now() + minutes * 60 * 1000)
   }
   form.value.reminderAt = d.toISOString()
-  customDatetime.value  = toLocalDateTimeString(d)
+  customDatetime.value = toLocalDateTimeString(d)
 }
 
 function isQuickSelected(minutes: number): boolean {
@@ -84,7 +83,7 @@ function onCustomDatetimeChange(value: string) {
 
 function clearReminder() {
   form.value.reminderAt = null
-  customDatetime.value  = ''
+  customDatetime.value = ''
 }
 
 function formatReminder(iso: string) {
@@ -105,12 +104,12 @@ function syncFormFromProps() {
     isEdit.value = true
     const reminder = props.note.reminderAt ? new Date(props.note.reminderAt) : null
     form.value = {
-      title:      props.note.title,
-      note:       props.note.note || '',
-      color:      props.note.color || '',
-      pinned:     props.note.pinned,
+      title: props.note.title,
+      note: props.note.note || '',
+      color: props.note.color || '',
+      pinned: props.note.pinned,
       reminderAt: reminder ? reminder.toISOString() : null,
-      version:    props.note.version,
+      version: props.note.version,
     }
     customDatetime.value = reminder ? toLocalDateTimeString(reminder) : ''
     if (reminder) showReminder.value = true
@@ -120,10 +119,10 @@ function syncFormFromProps() {
   if (props.draft) {
     isEdit.value = false
     form.value = {
-      title:      props.draft.title,
-      note:       props.draft.note || '',
-      color:      props.draft.color || '',
-      pinned:     props.draft.pinned || false,
+      title: props.draft.title,
+      note: props.draft.note || '',
+      color: props.draft.color || '',
+      pinned: props.draft.pinned || false,
       reminderAt: null,
     }
     customDatetime.value = ''
@@ -131,7 +130,7 @@ function syncFormFromProps() {
   }
 
   isEdit.value = false
-  form.value   = { title: '', note: '', color: '', pinned: false, reminderAt: null }
+  form.value = { title: '', note: '', color: '', pinned: false, reminderAt: null }
   customDatetime.value = ''
 }
 
@@ -146,12 +145,12 @@ async function handleSubmit() {
   submitting.value = true
   try {
     const data: NoteRequest = {
-      title:      form.value.title.trim(),
-      note:       form.value.note?.trim() ?? '',
-      color:      form.value.color || '',
-      pinned:     form.value.pinned ?? false,
+      title: form.value.title.trim(),
+      note: form.value.note?.trim() ?? '',
+      color: form.value.color || '',
+      pinned: form.value.pinned ?? false,
       reminderAt: form.value.reminderAt ?? null,
-      version:    form.value.version,
+      version: form.value.version,
     }
 
     if (props.note?.id) {
@@ -194,28 +193,6 @@ async function handleSubmit() {
               <textarea v-model="form.note" placeholder="Nội dung ghi chú..." rows="5"
                 class="w-full bg-transparent border rounded-lg p-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none transition-colors" />
 
-              <!-- Toolbar -->
-              <div class="flex items-center border rounded-lg px-2 py-1.5 bg-muted/30 gap-0.5">
-                <!-- Palette -->
-                <button type="button"
-                  class="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                  title="Màu sắc">
-                  <Palette :size="16" />
-                </button>
-                <!-- Reminder toggle -->
-                <button type="button"
-                  @click="showReminder = !showReminder"
-                  :class="[
-                    'p-1.5 rounded transition-colors',
-                    showReminder || form.reminderAt
-                      ? 'bg-teal-100 text-teal-600 dark:bg-teal-900/40 dark:text-teal-400'
-                      : 'hover:bg-muted text-muted-foreground hover:text-foreground'
-                  ]"
-                  title="Nhắc nhở">
-                  <BellPlus :size="16" />
-                </button>
-              </div>
-
               <!-- ── REMINDER PANEL ── -->
               <Transition name="reminder">
                 <div v-if="showReminder" class="border rounded-lg p-3 bg-muted/20 space-y-2.5">
@@ -226,37 +203,24 @@ async function handleSubmit() {
 
                   <!-- Quick options -->
                   <div class="flex flex-wrap gap-1.5">
-                    <button
-                      v-for="opt in QUICK_REMINDERS"
-                      :key="opt.label"
-                      type="button"
-                      @click="setQuickReminder(opt.minutes)"
-                      :class="[
+                    <button v-for="opt in QUICK_REMINDERS" :key="opt.label" type="button"
+                      @click="setQuickReminder(opt.minutes)" :class="[
                         'px-2.5 py-1 text-xs rounded-md border transition-colors',
                         isQuickSelected(opt.minutes)
                           ? 'bg-teal-600 text-white border-teal-600'
                           : 'bg-background hover:bg-muted border-border text-foreground'
-                      ]"
-                    >
+                      ]">
                       {{ opt.label }}
                     </button>
                   </div>
 
                   <!-- Custom datetime -->
                   <div class="flex items-center gap-2">
-                    <DateTimePicker
-                      :value="customDatetime"
-                      :on-change="onCustomDatetimeChange"
-                      placeholder="Chọn ngày giờ..."
-                      class="flex-1 text-xs"
-                    />
-                    <button
-                      v-if="form.reminderAt"
-                      type="button"
-                      @click="clearReminder"
+                    <DateTimePicker :value="customDatetime" :on-change="onCustomDatetimeChange"
+                      placeholder="Chọn ngày giờ..." class="flex-1 text-xs" />
+                    <button v-if="form.reminderAt" type="button" @click="clearReminder"
                       class="p-1.5 rounded-md border hover:bg-destructive/10 text-destructive transition-colors"
-                      title="Xóa nhắc nhở"
-                    >
+                      title="Xóa nhắc nhở">
                       <X :size="14" />
                     </button>
                   </div>
@@ -289,7 +253,8 @@ async function handleSubmit() {
             <!-- Actions -->
             <div class="flex items-center justify-between mt-5">
               <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
-                <input type="checkbox" v-model="form.pinned" class="rounded" />
+                <Checkbox id="allow-edit-all" v-model="form.pinned" type="checkbox"
+                  class="h-3.5 w-3.5 cursor-pointer rounded-sm border-border/60 text-primary focus:ring-primary" />
                 <Pin :size="14" /> Ghim
               </label>
               <div class="flex gap-2">
@@ -315,6 +280,7 @@ async function handleSubmit() {
 .dialog-leave-active {
   transition: opacity 0.2s ease;
 }
+
 .dialog-enter-from,
 .dialog-leave-to {
   opacity: 0;
@@ -326,6 +292,7 @@ async function handleSubmit() {
   max-height: 200px;
   overflow: hidden;
 }
+
 .reminder-enter-from,
 .reminder-leave-to {
   opacity: 0;

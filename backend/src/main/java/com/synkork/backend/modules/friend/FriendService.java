@@ -31,27 +31,6 @@ public class FriendService {
 
     @Autowired NotificationService notificationService;
 
-    // Gửi lời mời kết bạn
-    public void sendRequest(UUID senderId, UUID receiverId, String message) {
-        UserEntity sender = userRepo.findById(senderId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người gửi"));
-        UserEntity receiver = userRepo.findById(receiverId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người nhận"));
-
-        if (requestRepo.findBySenderAndReceiver(sender, receiver).isPresent()) {
-            throw new RuntimeException("Đã gửi lời mời trước đó");
-        }
-
-
-
-        FriendRequestEntity req = new FriendRequestEntity();
-        req.setSender(sender);
-        req.setReceiver(receiver);
-        req.setStatus(FriendRequestStatus.PENDING);
-        req.setMessage(message);
-        requestRepo.save(req);
-    }
-
     // Chấp nhận lời mời
     @Transactional
     public List<String> acceptRequest(UUID requestId) {
@@ -155,9 +134,16 @@ public class FriendService {
             throw new RuntimeException("Hai bạn đã là bạn bè rồi");
         }
 
-        // Chỉ chặn nếu đang có request PENDING — không chặn nếu đã bị reject/cancel (đã xóa)
+        // Kiểm tra A đã gửi B chưa
         requestRepo.findBySenderAndReceiver(sender, receiver).ifPresent(r -> {
             throw new RuntimeException("Bạn đã gửi lời mời cho người này rồi");
+        });
+
+        // Kiểm tra B đã gửi A chưa
+        requestRepo.findBySenderAndReceiver(receiver, sender).ifPresent(r -> {
+            throw new RuntimeException(
+                    "Người này đã gửi lời mời kết bạn cho bạn. Hãy vào mục lời mời để chấp nhận."
+            );
         });
 
         FriendRequestEntity req = new FriendRequestEntity();

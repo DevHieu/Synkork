@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -23,6 +24,9 @@ public interface SpaceRepository extends JpaRepository<SpaceEntity, UUID> {
     long countByRoom_Id(UUID roomId);
 
     long countByRoom_IdAndType(UUID roomId, SpaceTypeEnum type);
+
+    // Tìm lại Calendar Space trong Personal Room trước khi tạo mới, tránh phát sinh lịch cá nhân trùng.
+    Optional<SpaceEntity> findFirstByRoom_IdAndTypeOrderByCreatedAtAsc(UUID roomId, SpaceTypeEnum type);
 
     void deleteByStatus(SpaceStatusEnum spaceStatusEnum);
 
@@ -56,7 +60,7 @@ public interface SpaceRepository extends JpaRepository<SpaceEntity, UUID> {
              LEFT JOIN RoomMemberEntity rm ON s.room.id = rm.room.id
              WHERE s.id = :spaceId
              AND (
-                 rm.user.id = :userId
+                 (rm.user.id = :userId AND rm.status = com.synkork.backend.modules.roomMember.enums.MemberStatusEnum.ACTIVE)
                 OR s.room.owner.id = :userId
             )
             """)

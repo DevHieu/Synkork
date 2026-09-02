@@ -12,7 +12,7 @@ services:
       ADMIN_PORTAL_URL: ${ADMIN_PORTAL_URL}
       SERVER_URL: ${SERVER_URL}
 
-      DB_URL: jdbc:mysql://mysql:3306/${DB_NAME}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_URL: jjdbc:mysql://mysql:3306/${DB_NAME}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh
       DB_NAME: ${DB_NAME}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
@@ -37,6 +37,11 @@ services:
       MOMO_ACCESS_KEY: ${MOMO_ACCESS_KEY}
       MOMO_SECRET_KEY: ${MOMO_SECRET_KEY}
 
+      VNP_TMN_CODE: ${VNP_TMN_CODE}
+      VNP_HASH_SECRET: ${VNP_HASH_SECRET}
+      VNP_URL: ${VNP_URL}
+      VNP_RETURN_URL: ${VNP_RETURN_URL}
+
     depends_on:
       mysql:
         condition: service_healthy
@@ -46,6 +51,7 @@ services:
     restart: unless-stopped
 
     environment:
+      TZ: Asia/Ho_Chi_Minh
       MYSQL_DATABASE: ${DB_NAME}
       MYSQL_USER: ${DB_USERNAME}
       MYSQL_PASSWORD: ${DB_PASSWORD}
