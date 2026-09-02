@@ -39,6 +39,10 @@ const MESSAGES: Record<string, Record<NotificationContext, string>> = {
     dropdown: "vừa gắn bạn vào một sự kiện",
     toast: "Bạn vừa được gắn vào một sự kiện",
   },
+  MEMBER_INVITED: {
+    dropdown: "đã mời bạn tham gia một phòng",
+    toast: "Bạn đã được mời tham gia một phòng",
+  },
 };
 
 const DEFAULT_MESSAGE: Record<NotificationContext, string> = {

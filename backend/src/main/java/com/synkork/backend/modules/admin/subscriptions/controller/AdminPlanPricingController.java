@@ -1,9 +1,9 @@
 package com.synkork.backend.modules.admin.subscriptions.controller;
 
+import com.synkork.backend.modules.admin.subscriptions.service.AdminPlanPricingService;
 import com.synkork.backend.modules.payment.dto.PlanPricingRequest;
 import com.synkork.backend.modules.payment.dto.PlanPricingResponse;
 import com.synkork.backend.modules.payment.enums.BillingCycleEnum;
-import com.synkork.backend.modules.payment.service.PlanPricingService;
 import com.synkork.backend.modules.user.enums.PlanEnum;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +17,7 @@ import java.util.List;
 public class AdminPlanPricingController {
 
     @Autowired
-    private PlanPricingService planPricingService;
+    private AdminPlanPricingService planPricingService;
 
     @GetMapping("/history")
     public ResponseEntity<List<PlanPricingResponse>> getPricingHistory(
