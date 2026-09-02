@@ -17,6 +17,9 @@ import java.util.UUID;
         name = "friends",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {"user_id", "friend_id"})
+        },
+        indexes = {
+                @Index(name = "idx_friends_friend_id", columnList = "friend_id")
         }
 )
 @Getter @Setter

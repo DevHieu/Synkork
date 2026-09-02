@@ -7,7 +7,6 @@ import com.synkork.backend.modules.collaboration.task.column.ColumnRepository;
 import com.synkork.backend.modules.message.MessageRepository;
 import com.synkork.backend.modules.room.RoomEntity;
 import com.synkork.backend.modules.room.RoomRepository;
-import com.synkork.backend.modules.room.dto.CreateRoomDto;
 import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import com.synkork.backend.modules.space.dto.CreateSpaceRequest;
 import com.synkork.backend.modules.space.dto.SpaceDTO;
@@ -98,8 +97,12 @@ public class SpaceService {
         SpaceEntity space = spaceRepository.findById(spaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Space not found"));
 
-        this.deleteItem(space.getId(), space.getType());
+        // Personal Calendar cần tồn tại lâu dài nên không cho phép xóa Personal Space.
+        if (space.getRoom().getType() == RoomTypeEnum.PERSONAL) {
+            throw new IllegalArgumentException("Không thể xóa space cá nhân");
+        }
 
+        this.deleteItem(space.getId(), space.getType());
         spaceRepository.delete(space);
     }
 
@@ -117,37 +120,55 @@ public class SpaceService {
         }
     }
 
-    public SpaceDTO getSpaceById(UUID spaceId) {
-        SpaceEntity space = spaceRepository.findById(spaceId)
+    public SpaceEntity getSpaceById(UUID spaceId) {
+        return spaceRepository.findById(spaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Space not found"));
 
-        return new SpaceDTO(space);
     }
 
+    // Tìm/tạo Personal Room và Calendar trong một transaction để không lưu trạng thái dở dang.
+    @Transactional
     public Map<String, UUID> createPersonalSpaces(UserEntity user) {
-        RoomEntity roomEntity = roomRepository.save(
-                RoomEntity.builder().owner(user).type(RoomTypeEnum.PERSONAL).build());
+        SpaceEntity note = findPersonalSpace(user.getPersonalNoteId(), SpaceTypeEnum.NOTE);
+        SpaceEntity calendar = findPersonalSpace(user.getPersonalCalendarId(), SpaceTypeEnum.CALENDAR);
 
-        UUID noteId;
-        if (user.getPersonalNoteId() == null) {
-            noteId = spaceRepository.save(
-                    SpaceEntity.builder().room(roomEntity).name("").type(SpaceTypeEnum.NOTE).isRestricted(true).build()).getId();
-        } else {
-            noteId = user.getPersonalNoteId();
+        RoomEntity roomEntity = note != null ? note.getRoom() : calendar != null ? calendar.getRoom() : null;
+        if (roomEntity == null || roomEntity.getType() != RoomTypeEnum.PERSONAL) {
+            roomEntity = roomRepository.findFirstByOwnerIdAndType(user.getId(), RoomTypeEnum.PERSONAL)
+                    .orElseGet(() -> roomRepository.save(RoomEntity.builder().owner(user).type(RoomTypeEnum.PERSONAL).build()));
         }
 
-        UUID calendarId;
-        if (user.getPersonalCalendarId() == null) {
-            calendarId = spaceRepository.save(
-                    SpaceEntity.builder().room(roomEntity).name("").type(SpaceTypeEnum.CALENDAR).build()).getId();
-        } else {
-            calendarId = user.getPersonalCalendarId();
+        if (note == null || !note.getRoom().getId().equals(roomEntity.getId())) {
+            note = spaceRepository.findFirstByRoom_IdAndTypeOrderByCreatedAtAsc(roomEntity.getId(), SpaceTypeEnum.NOTE)
+                    .orElse(null);
+        }
+        if (note == null) {
+            note = spaceRepository.save(SpaceEntity.builder().room(roomEntity).name("")
+                    .type(SpaceTypeEnum.NOTE).isRestricted(true).build());
         }
 
-        return Map.of(
-                "roomId", roomEntity.getId(),
-                "noteId", noteId,
-                "calendarId", calendarId);
+        if (calendar == null || !calendar.getRoom().getId().equals(roomEntity.getId())) {
+            calendar = spaceRepository.findFirstByRoom_IdAndTypeOrderByCreatedAtAsc(roomEntity.getId(), SpaceTypeEnum.CALENDAR)
+                    .orElse(null);
+        }
+        if (calendar == null) {
+            calendar = spaceRepository.save(SpaceEntity.builder().room(roomEntity).name("")
+                    .type(SpaceTypeEnum.CALENDAR).build());
+        }
+
+        // Lưu lại ID Calendar để các lần đăng nhập sau mở đúng Personal Calendar đã có.
+        user.setPersonalNoteId(note.getId());
+        user.setPersonalCalendarId(calendar.getId());
+        userRepository.save(user);
+        return Map.of("roomId", roomEntity.getId(), "noteId", note.getId(), "calendarId", calendar.getId());
+    }
+
+    // Chỉ dùng ID nếu nó trỏ đúng loại Space; tránh lấy nhầm Space khi khôi phục Personal Calendar.
+    private SpaceEntity findPersonalSpace(UUID spaceId, SpaceTypeEnum type) {
+        if (spaceId == null) return null;
+        return spaceRepository.findById(spaceId)
+                .filter(space -> space.getType() == type)
+                .orElse(null);
     }
 
     public boolean checkUserAccess(UUID spaceId, UUID currentUserId) {

@@ -1,6 +1,6 @@
 package com.synkork.backend.modules.payment.repository;
 
-import com.synkork.backend.modules.payment.entity.UserSubscriptionEntity; 
+import com.synkork.backend.modules.payment.entity.UserSubscriptionEntity;
 import com.synkork.backend.modules.user.enums.PlanEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -16,13 +16,15 @@ import java.util.UUID;
 public interface UserSubscriptionRepository 
         extends JpaRepository<UserSubscriptionEntity, UUID>, JpaSpecificationExecutor<UserSubscriptionEntity> {
 
-
-    Optional<UserSubscriptionEntity>
-    findByUserIdAndCurrentTrue(UUID userId);
+    Optional<UserSubscriptionEntity> findByUserIdAndCurrentTrue(UUID userId);
 
     Optional<UserSubscriptionEntity> findByInvoiceId(UUID invoiceId);
 
-    long countByStartedAtBetween(LocalDateTime start, LocalDateTime end);
+    long countByCurrentTrue();
+
+    long countByCurrentTrueAndStartedAtBetween(LocalDateTime dateFrom, LocalDateTime dateTo);
+
+    long countByCurrentTrueAndStartedAtLessThanEqual(LocalDateTime dateTo);
 
     long countByPlan(PlanEnum plan);
 

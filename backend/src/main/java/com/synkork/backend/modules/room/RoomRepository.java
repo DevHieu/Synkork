@@ -18,6 +18,9 @@ import java.util.UUID;
 public interface RoomRepository extends JpaRepository<RoomEntity, UUID> {
     List<RoomEntity> findAllByOwnerId(UUID userId);
 
+    // Tái sử dụng Personal Room hiện có khi khởi tạo Personal Calendar, tránh tạo Room trùng cho cùng người dùng.
+    Optional<RoomEntity> findFirstByOwnerIdAndType(UUID userId, RoomTypeEnum type);
+
     @Query("SELECT r FROM RoomEntity r JOIN r.roomMembers roomMembers WHERE roomMembers.user.id = :userId AND r.type = 'GROUP' AND r.status IN ('OPEN', 'PENDING_REMOVAL') AND roomMembers.status = 'ACTIVE' ORDER BY roomMembers.joinedAt DESC")
     List<RoomEntity> findRoomMembersJoined(@Param("userId") UUID userId);
 
@@ -27,7 +30,7 @@ public interface RoomRepository extends JpaRepository<RoomEntity, UUID> {
     Optional<RoomEntity> findByInviteCode(String inviteCode);
 
     List<RoomEntity> findAllByStatusAndUpdatedAtBefore(RoomStatusEnum status, LocalDateTime updatedAtBefore);
- 
+
     List<RoomEntity> findByOwnerIdAndTypeAndStatusInOrderByCreatedAtDesc(
             UUID ownerId,
             RoomTypeEnum type,
@@ -43,6 +46,14 @@ public interface RoomRepository extends JpaRepository<RoomEntity, UUID> {
     void updatePendingRoomStatusByOwnerId(@Param("newStatus") RoomStatusEnum status, @Param("ownerId") UUID ownerId);
 
     @Modifying
-    @Query("UPDATE RoomEntity r SET r.status = :newStatus WHERE r.status = :oldStatus")
-    void updateStatusByStatus(@Param("oldStatus") RoomStatusEnum oldStatus, @Param("newStatus") RoomStatusEnum newStatus);
+    @Query("""
+            UPDATE RoomEntity r SET r.status = :newStatus
+                        WHERE r.status = :oldStatus 
+                        AND r.owner IS NOT NULL
+                        AND r.owner.id IN (SELECT u.id FROM UserEntity u WHERE u.planExpiresAt < :now)
+            """)
+    void lockExpiredOwnerRooms(
+            @Param("oldStatus") RoomStatusEnum oldStatus,
+            @Param("newStatus") RoomStatusEnum newStatus,
+            @Param("now") LocalDateTime now);
 }

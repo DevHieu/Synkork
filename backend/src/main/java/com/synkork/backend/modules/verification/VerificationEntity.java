@@ -43,9 +43,13 @@ public class VerificationEntity {
         if (id == null) {
             id = UUID.randomUUID();
         }
+
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
-            expiredAt = LocalDateTime.now().plusMinutes(5); // 5 phuts hết hạn
+        }
+
+        if (expiredAt == null) {
+            expiredAt = createdAt.plusMinutes(5);
         }
     }
 }

@@ -22,6 +22,9 @@ public class PermissionService {
 
     // Overload 1: Đã có entity
     public static void requirePermission(RoomMemberEntity member, RoomMemberRoleEnum... allowedRoles) {
+        if (member.getStatus() != com.synkork.backend.modules.roomMember.enums.MemberStatusEnum.ACTIVE) {
+            throw new RuntimeException("Không có quyền");
+        }
         boolean hasPermission = Arrays.stream(allowedRoles)
                 .anyMatch(role -> role == member.getRole());
         if (!hasPermission) {

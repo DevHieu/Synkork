@@ -6,8 +6,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.synkork.backend.modules.admin.rooms.AdminRoomRepository;
+import com.synkork.backend.modules.admin.rooms.AdminRoomService;
 import com.synkork.backend.modules.admin.statistics.dtos.*;
+import com.synkork.backend.modules.admin.users.AdminUserService;
 import com.synkork.backend.modules.admin.utils.AdminUtils;
+import com.synkork.backend.modules.payment.repository.UserSubscriptionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -23,7 +26,13 @@ import com.synkork.backend.modules.user.enums.RoleEnum;
 public class StatisticsService {
 
     @Autowired
+    private AdminUserService  adminUserService;
+
+    @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private AdminRoomService adminRoomService;
 
     @Autowired
     private AdminRoomRepository roomRepository;
@@ -32,7 +41,7 @@ public class StatisticsService {
     private StatisticsRepository statisticsRepository;
 
     @Autowired
-    private InvoiceRepository invoiceRepository;
+    private UserSubscriptionRepository userSubscriptionRepository;
 
     public void createStatistics() {
         LocalDateTime start = LocalDate.now().atStartOfDay();
@@ -40,12 +49,12 @@ public class StatisticsService {
 
         long newUsers = userRepository.countByRoleAndCreatedAtBetween(RoleEnum.USER, start, end);
         long newRooms = roomRepository.countByCreatedAtBetweenAndType(start, end, RoomTypeEnum.GROUP);
-        long newSubscriptions = invoiceRepository.countByStatusAndPaidAtBetween(InvoiceStatusEnum.PAID, start, end);
-        long userOnlines = WebSocketEventListener.onlineUserCounter;
+        long newSubscriptions = userSubscriptionRepository.countByCurrentTrueAndStartedAtBetween(start, end);
+        long userOnlines = WebSocketEventListener.countedUsers.size();
 
         long totalUser = userRepository.countByRole(RoleEnum.USER);
         long totalRoom = roomRepository.countByType(RoomTypeEnum.GROUP);
-        long totalSubscriptions = invoiceRepository.countByStatus(InvoiceStatusEnum.PAID);
+        long totalSubscriptions = userSubscriptionRepository.countByCurrentTrue();
 
         StatisticsEntity statistics = StatisticsEntity.builder()
                 .createdAt(start)
@@ -58,7 +67,8 @@ public class StatisticsService {
                 .totalSubscriptions(totalSubscriptions)
                 .build();
 
-        WebSocketEventListener.onlineUserCounter = 0; // reset về lại 0
+
+        WebSocketEventListener.countedUsers.clear();  // reset danh sách đã đếm để ngày mới đếm lại từ đầu
 
         statisticsRepository.save(statistics);
     }
@@ -88,8 +98,8 @@ public class StatisticsService {
                 ? roomRepository.countByTypeAndCreatedAtBetween(RoomTypeEnum.GROUP, dateFrom, dateTo)
                 : roomRepository.countByType(RoomTypeEnum.GROUP);
         long totalSubscriptions = hasRange
-                ? invoiceRepository.countByStatusAndCreatedAtBetween(InvoiceStatusEnum.PAID, dateFrom, dateTo)
-                : invoiceRepository.countByStatus(InvoiceStatusEnum.PAID);
+                ? userSubscriptionRepository.countByCurrentTrueAndStartedAtBetween(dateFrom, dateTo)
+                : userSubscriptionRepository.countByCurrentTrue();
         long userOnlines = WebSocketEventListener.onlineUsers.size();
 
         double userGrowth = 0;
@@ -98,21 +108,11 @@ public class StatisticsService {
         double onlineGrowth = 0;
 
         if (hasRange) {
-            Duration periodLength = Duration.between(dateFrom, dateTo);
-            LocalDateTime previousFrom = dateFrom.minus(periodLength);
-            LocalDateTime previousTo = dateFrom;
-
-            userGrowth = AdminUtils.calcGrowth(
-                    totalUser,
-                    userRepository.countByRoleAndCreatedAtBetween(RoleEnum.USER, previousFrom, previousTo)
-            );
-            roomGrowth =AdminUtils.calcGrowth(
-                    totalRoom,
-                    roomRepository.countByTypeAndCreatedAtBetween(RoomTypeEnum.GROUP, previousFrom, previousTo)
-            );
+            userGrowth = adminUserService.calculateUserGrowth(dateFrom, dateTo, null);
+            roomGrowth = adminRoomService.calculateRoomGrowth(dateFrom, dateTo, null);
             subscriptionGrowth =AdminUtils.calcGrowth(
-                    totalSubscriptions,
-                    invoiceRepository.countByStatusAndCreatedAtBetween(InvoiceStatusEnum.PAID, previousFrom, previousTo)
+                    userSubscriptionRepository.countByCurrentTrueAndStartedAtLessThanEqual(dateTo),
+                    userSubscriptionRepository.countByCurrentTrueAndStartedAtLessThanEqual(dateFrom)
             );
         }
 

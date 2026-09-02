@@ -42,7 +42,6 @@ const handleCreate = async () => {
   try {
     await roomComposable.createRoom({
       name: roomName.value.trim(),
-      ownerId: "",
       imageFile: avatarFile.value ?? undefined,
     });
     emit("done");

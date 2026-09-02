@@ -5,7 +5,7 @@ import { computed, h, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import type { TableColumn } from '@/components/base-table.vue'
-import type { Report, ReportFilterParams, ReportReason, ReportSeverity, ReportStatus, ReportType } from '@/pages/report/types/Reports.ts'
+import type { Report, ReportFilterParams, ReportSeverity, ReportStatus, ReportType, UpdateReportStatusPayload } from '@/pages/report/types/Reports.ts'
 
 import ConfirmDialog from '@/components/confirm-dialog.vue'
 import DateRangePicker from '@/components/date-range-picker.vue'
@@ -18,7 +18,7 @@ import { defaultDateRange, formatTimestamp, formatToISODateTime } from '@/utils/
 
 import ReportDetail from './components/ReportDetail.vue'
 import { deleteReport, getReports, updateReportStatus } from './service/reportService'
-import { REASON_LABEL_MAP, SEVERITY_CONFIG } from './utils/report.utils.ts'
+import { REASON_LABEL_MAP, SEVERITY_CONFIG, STATUS_CONFIG, TYPE_CONFIG } from './utils/report.utils.ts'
 
 const route = useRoute()
 const keywordParam = (route.query.keyword as string) ?? ''
@@ -83,11 +83,6 @@ async function fetchReports() {
   }
 }
 
-const typeLabelMap: Record<string, string> = {
-  USER: 'Người dùng',
-  ROOM: 'Phòng',
-}
-
 function renderSeverity(severity: string) {
   const config = SEVERITY_CONFIG[severity as keyof typeof SEVERITY_CONFIG]
   return h(Badge, { variant: 'outline', class: config ? `px-3 ${config.class}` : '' }, () => config?.label ?? severity)
@@ -119,19 +114,22 @@ function handleOpenDeleteReport(report: Report) {
   isDeleteDialogOpen.value = true
 }
 
-async function handleUpdateReportStatus({ id, status, note }: { id: string, status: ReportStatus, note?: string }) {
+async function handleUpdateReportStatus({ id, status, note, hasWarn }: UpdateReportStatusPayload) {
   try {
     loading.value = true
-    await updateReportStatus(id, status, note)
+    await updateReportStatus(id, status, note, hasWarn)
 
     const item = pagedData.value.find(r => r.id === id)
     if (item) {
       item.status = status
+      if (hasWarn) item.hasWarn = true
     }
     if (selectedReport.value?.id === id) {
-      selectedReport.value = { ...selectedReport.value, status }
+      selectedReport.value = { ...selectedReport.value, status, ...(hasWarn ? { hasWarn: true } : {}) }
     }
-    isDetailOpen.value = false
+    if (status === 'RESOLVED' || status === 'DISMISSED') {
+      isDetailOpen.value = false
+    }
   }
   catch (error) {
     console.error('Lỗi cập nhật:', error)
@@ -160,28 +158,7 @@ async function handleDeleteReport() {
 }
 
 function renderStatus(status: string) {
-  const config = {
-    PENDING: {
-      label: 'Chờ xử lý',
-      class:
-        'border-amber-300 bg-amber-50 px-3 text-amber-700 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300',
-    },
-    REVIEWED: {
-      label: 'Đang xem xét',
-      class:
-        'border-blue-300 bg-blue-50 px-3 text-blue-700 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-300',
-    },
-    RESOLVED: {
-      label: 'Đã giải quyết',
-      class:
-        'border-emerald-300 bg-emerald-50 px-3 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
-    },
-    DISMISSED: {
-      label: 'Đã bác bỏ',
-      class:
-        'border-red-300 bg-red-50 px-3 text-red-700 dark:border-red-700 dark:bg-red-950 dark:text-red-300',
-    },
-  }[status]
+  const config = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG]
 
   return h(
     Badge,
@@ -201,7 +178,7 @@ const columns = computed<TableColumn<Report>[]>(() => [
     accessor: 'reportType',
     minWidth: 110,
     render: row =>
-      h(Badge, { variant: row.reportType === 'USER' ? 'outline' : 'secondary' }, () => typeLabelMap[row.reportType] ?? row.reportType),
+      h(Badge, { variant: row.reportType === 'USER' ? 'outline' : 'secondary' }, () => TYPE_CONFIG[row.reportType as keyof typeof TYPE_CONFIG]?.label ?? row.reportType),
   },
   {
     header: 'Lý do',

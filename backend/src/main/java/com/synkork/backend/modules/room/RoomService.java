@@ -4,15 +4,17 @@ import com.synkork.backend.common.dtos.FileUploaded;
 import com.synkork.backend.common.utils.AuthUtils;
 import com.synkork.backend.common.utils.FileService;
 import com.synkork.backend.common.utils.PermissionService;
-import com.synkork.backend.modules.room.dto.CreateRoomDto;
+import com.synkork.backend.modules.notification.NotificationService;
+import com.synkork.backend.modules.notification.enums.NotificationRefTypeEnum;
+import com.synkork.backend.modules.notification.enums.NotificationTypeEnum;
+import com.synkork.backend.modules.room.dto.CreateRoomRequest;
 import com.synkork.backend.modules.room.dto.RoomDto;
 import com.synkork.backend.modules.room.dto.RoomReviewResponse;
-import com.synkork.backend.modules.room.dto.UpdateRoomDto;
+import com.synkork.backend.modules.room.dto.UpdateRoomRequest;
 import com.synkork.backend.modules.room.enums.RoomStatusEnum;
 import com.synkork.backend.modules.room.enums.RoomTypeEnum;
 import com.synkork.backend.modules.roomMember.RoomMemberEntity;
 import com.synkork.backend.modules.roomMember.RoomMemberRepository;
-import com.synkork.backend.modules.roomMember.RoomMemberService;
 import com.synkork.backend.modules.roomMember.dto.RoomMemberDto;
 import com.synkork.backend.modules.roomMember.enums.MemberStatusEnum;
 import com.synkork.backend.modules.roomMember.enums.RoomMemberRoleEnum;
@@ -22,7 +24,6 @@ import com.synkork.backend.modules.space.dto.CreateSpaceRequest;
 import com.synkork.backend.common.utils.PlanLimitUtils;
 import com.synkork.backend.modules.user.UserEntity;
 import com.synkork.backend.modules.user.UserRepository;
-import com.synkork.backend.modules.user.enums.PlanEnum;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
@@ -54,6 +55,8 @@ public class RoomService {
 
     @Autowired
     private SpaceService spaceService;
+    @Autowired
+    private NotificationService notificationService;
 
     private String generateInviteCode() {
         String chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -88,10 +91,10 @@ public class RoomService {
                 .build();
     }
 
-    public RoomEntity createRoom(CreateRoomDto roomData) {
-        if (roomData.ownerId() != null) {
-            UUID ownerId = UUID.fromString(roomData.ownerId());
-            UserEntity owner = userRepository.findById(ownerId)
+    public RoomEntity createRoom(CreateRoomRequest roomData, UUID creatorId) {
+
+        if (creatorId != null) {
+            UserEntity owner = userRepository.findById(creatorId)
                     .orElseThrow(() -> new RuntimeException("User không tồn tại"));
 
             // Check xem owner được chọn có quá số lượng phòng theo gói hay không
@@ -110,15 +113,14 @@ public class RoomService {
             roomEntity.setAvatarId(avatar.publicId());
         }
 
-        if (roomData.ownerId() != null) {
-            UUID ownerId = UUID.fromString(roomData.ownerId());
-            roomEntity.setOwner(userRepository.getReferenceById(ownerId));
+        if (creatorId != null) {
+            roomEntity.setOwner(userRepository.getReferenceById(creatorId));
         }
 
         return roomRepository.save(roomEntity);
     }
 
-    public RoomEntity updateRoom(UUID roomId, UpdateRoomDto roomData) {
+    public RoomEntity updateRoom(UUID roomId, UpdateRoomRequest roomData) {
 
         UUID requesterId = AuthUtils.getCurrentUserId();
         PermissionService.requirePermission(roomId, requesterId, RoomMemberRoleEnum.OWNER, RoomMemberRoleEnum.ADMIN);
@@ -144,7 +146,7 @@ public class RoomService {
         return roomRepository.save(room);
     }
 
-    public RoomDto joinRoom(String code, UUID userId) {
+    public RoomEntity joinRoom(String code, UUID userId) {
         RoomEntity room = roomRepository.findByInviteCode(code)
                 .orElseThrow(() -> new RuntimeException("Link mời không tồn tại"));
 
@@ -157,7 +159,7 @@ public class RoomService {
                 member.setStatus(MemberStatusEnum.ACTIVE);
                 roomMemberRepository.save(member);
 
-                return new RoomDto(room);
+                return room;
             } else {
                 throw new RuntimeException("Bạn đã là thành viên của phòng này");
             }
@@ -177,7 +179,7 @@ public class RoomService {
 
         messagingTemplate.convertAndSend("/topic/room/" + room.getId() + "/members/joined", dto);
 
-        return new RoomDto(room);
+        return room;
     }
 
     // Reset invite code
@@ -224,6 +226,9 @@ public class RoomService {
 
         Optional<RoomMemberEntity> alreadyMember = roomMemberRepository.findByRoom_IdAndUser_Id(room.getId(), friendId);
 
+        UserEntity friend = userRepository.findById(friendId)
+                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+
         // Check xem mmber đã trong phòng? Đã trong phòng thì statsu là gì
         if (alreadyMember.isPresent()) {
             RoomMemberEntity member = alreadyMember.get();
@@ -236,15 +241,13 @@ public class RoomService {
                 messagingTemplate.convertAndSend("/topic/room/" + room.getId() + "/members/joined", dto);
 
                 messagingTemplate.convertAndSendToUser(member.getUser().getEmail(), "/queue/room/members/invited", "Đã thêm mới vào phòng");
+                notificationService.sendNotification(null, friend, null, roomId, null, NotificationTypeEnum.MEMBER, NotificationRefTypeEnum.MEMBER_INVITED);
 
                 return dto;
             } else {
                 throw new RuntimeException("Người này đã ở trong phòng");
             }
         }
-
-        UserEntity friend = userRepository.findById(friendId)
-                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
 
         RoomMemberEntity member = RoomMemberEntity.builder()
                 .room(room)
@@ -253,7 +256,9 @@ public class RoomService {
                 .build();
 
         RoomMemberDto dto = new RoomMemberDto(roomMemberRepository.save(member));
+
         messagingTemplate.convertAndSend("/topic/room/" + room.getId() + "/members/joined", dto);
+        notificationService.sendNotification(null, friend, null, roomId, null, NotificationTypeEnum.MEMBER, NotificationRefTypeEnum.MEMBER_INVITED);
 
         return dto;
     }

@@ -110,14 +110,23 @@ public class AdminReportService {
         ReportEntity report = adminReportRepository.findById(reportId)
                 .orElseThrow(() -> new RuntimeException("Report không tồn tại: " + reportId));
 
-        ReportStatusEnums newStatus = request.status();
-
         if (report.getStatus() == ReportStatusEnums.RESOLVED
                 || report.getStatus() == ReportStatusEnums.DISMISSED) {
             throw new RuntimeException("Report này đã được xử lý xong, không thể thay đổi trạng thái");
         }
 
+        ReportStatusEnums newStatus = request.status();
+
+        if(Boolean.TRUE.equals(request.hasWarn())) {
+                report.setHasWarn(true);
+        }
+
+        if (newStatus == ReportStatusEnums.DISMISSED && (Boolean.TRUE.equals(report.getHasWarn()) || Boolean.TRUE.equals(request.hasWarn()))) {
+                throw new RuntimeException("Đã cảnh cáo đối tượng, không thể bác bỏ báo cáo này");
+        }
+
         report.setStatus(newStatus);
+        
         ReportEntity savedReport = adminReportRepository.save(report);
 
         if (newStatus == ReportStatusEnums.RESOLVED || newStatus == ReportStatusEnums.DISMISSED) {

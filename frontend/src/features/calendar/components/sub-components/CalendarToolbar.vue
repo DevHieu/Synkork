@@ -14,6 +14,7 @@ import axiosClient from "@/lib/axiosClient";
 import { useUserStore } from "@/features/users/stores/userStore";
 import PremiumFeatureDialog from "@/components/dialog/PremiumFeatureDialog.vue";
 import CalendarNotificationDialog from "../dialogs/CalendarNotificationDialog.vue";
+import { useSpaceStore } from "@/features/spaces/stores/spaceStore.ts";
 
 const props = defineProps<{
   currentSpaceName?: string;
@@ -36,6 +37,7 @@ const showPremiumDialog = ref(false);
 const showConfirmDialog = ref(false);
 const route = useRoute();
 const userStore = useUserStore();
+const spaceStore = useSpaceStore();
 
 onMounted(() => {
   userStore.getUserInfo();
@@ -45,6 +47,8 @@ onMounted(() => {
 // 1. User ở gói FREE hoặc TEAM -> Nút hiển thị để click mở dialog Nâng cấp gói Business
 // 2. User ở gói BUSINESS -> Chỉ hiển thị khi chưa kết nối, tự động ẩn khi đã kết nối
 const isConnectButtonVisible = computed(() => {
+  console.log("isConnectButtonVisible", spaceStore.isPersonalSpace);
+  if (!spaceStore.isPersonalSpace) return false; // Không hiển thị nút kết nối Google Calendar trong Room Space
   if (userStore.userPlan !== "BUSINESS") return true;
   return !userStore.isGoogleCalendarConnected;
 });

@@ -2,14 +2,14 @@
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useSpaceStore } from "@/features/spaces/stores/spaceStore.ts";
 import { useUserStore } from "@/features/users/stores/userStore";
-import { useSuggestionStore } from "@/features/calendar/stores/calendarStore";
+import { useSuggestionStore } from "@/stores/suggestionStore";
 import { useRoomMemberStore } from '@/features/members/stores/roomMemberStore'
 import { storeToRefs } from "pinia";
 import { useCalendarDate } from "@/features/calendar/composable/useCalendarDate";
 import { useCalendarEvents } from "@/features/calendar/composable/useCalendarEvents";
 import { useCalendarRealtime } from "@/features/calendar/composable/useCalendarRealtime";
-import type { CalendarEvent } from "@/types/CalendarEvent";
-import type { SuggestedEventDraft } from "@/types/CalendarSuggestion";
+import type { CalendarEvent } from "@/features/calendar/types/calendar.types";
+import type { SuggestedEventDraft } from "@/types/SuggestionTypes";
 import dayjs from "dayjs";
 
 import CalendarMonthView from "@/features/calendar/components/views/CalendarMonthView.vue";
@@ -33,7 +33,7 @@ import {
   escapeHtml,
   resolveScheduleEvent,
 } from "@/features/calendar/utils/calendar-view.utils";
-import { createEvent as apiCreateEvent, deleteEvent as apiDeleteEvent, checkConflicts as apiCheckConflicts, summarizeAttachment as apiSummarizeAttachment } from "@/features/calendar/services/calendarService";
+import { createEvent as apiCreateEvent, deleteEvent as apiDeleteEvent, checkConflicts as apiCheckConflicts, summarizeAttachment as apiSummarizeAttachment, uploadEventAttachments } from "@/features/calendar/services/calendarService";
 
 // Store state
 const spaceStore = useSpaceStore();
@@ -104,6 +104,7 @@ const initialFormData = ref<EventFormData>({
   recurrenceType: "NONE",
   recurrenceEndDate: undefined,
   allowEditAll: false,
+  attendeeIds: [],
   attendees: [],
   attachments: [],
   callRoomSpaceId: undefined,
@@ -468,9 +469,12 @@ const executeAddToPersonalCalendar = async () => {
       attachments: eventToCopy.attachments,
     }, ref(user.value.personalCalendarId), currentUserId);
 
-    await apiCreateEvent(payload);
+    const created = await apiCreateEvent(payload);
+    const files = extractNewFiles(eventToCopy);
+    if (files.length > 0) await uploadEventAttachments(created.data.id, files);
     notificationState.value.show = false;
     eventToCopyToPersonal.value = null;
+    await fetchEvents();
     showNotification("success", "THÀNH CÔNG", "Đã lưu sự kiện vào lịch cá nhân.");
   } catch (err: any) {
     showNotification("error", "LỖI", err.response?.data || "CÓ LỖI XẢY RA KHI LƯU VÀO LỊCH CÁ NHÂN!");

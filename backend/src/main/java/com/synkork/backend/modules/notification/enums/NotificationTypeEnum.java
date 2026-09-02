@@ -1,5 +1,5 @@
 package com.synkork.backend.modules.notification.enums;
 
 public enum NotificationTypeEnum {
-    FRIEND, CALENDAR, TASK, NOTE, CHAT, SUBSCRIPTION
+    FRIEND, CALENDAR, TASK, NOTE, MEMBER
 }

@@ -4,8 +4,7 @@ import type {
   SuggestedEventDraft,
   SuggestedNoteDraft,
   SuggestedTaskDraft,
-} from "@/types/CalendarSuggestion";
-
+} from "./../types/SuggestionTypes";
 const DEFAULT_EVENT_TITLE = "Sự kiện từ tin nhắn";
 const DEFAULT_MORNING_START = "07:00";
 const DEFAULT_MORNING_END = "12:00";
@@ -83,8 +82,12 @@ export function buildSuggestedNoteDraft(
 ): SuggestedNoteDraft {
   // Chuẩn hóa dữ liệu note để nhét thẳng vào NoteDialog hiện có.
   return {
-    title: suggestion.noteTitle?.trim() || suggestion.title?.trim() || "Ghi chú từ tin nhắn",
-    note: suggestion.noteContent?.trim() || suggestion.description?.trim() || "",
+    title:
+      suggestion.noteTitle?.trim() ||
+      suggestion.title?.trim() ||
+      "Ghi chú từ tin nhắn",
+    note:
+      suggestion.noteContent?.trim() || suggestion.description?.trim() || "",
     color: suggestion.noteColor?.trim() || "",
     pinned: suggestion.notePinned ?? false,
   };
@@ -95,8 +98,14 @@ export function buildSuggestedTaskDraft(
 ): SuggestedTaskDraft {
   // Chuẩn hóa dữ liệu task để nhét thẳng vào CardFormDialog hiện có.
   return {
-    title: suggestion.taskTitle?.trim() || suggestion.title?.trim() || "Công việc từ tin nhắn",
-    description: suggestion.taskDescription?.trim() || suggestion.description?.trim() || "",
+    title:
+      suggestion.taskTitle?.trim() ||
+      suggestion.title?.trim() ||
+      "Công việc từ tin nhắn",
+    description:
+      suggestion.taskDescription?.trim() ||
+      suggestion.description?.trim() ||
+      "",
     columnName: suggestion.taskColumnName?.trim() || "",
     dueDate: suggestion.taskDueDate?.trim() || null,
   };

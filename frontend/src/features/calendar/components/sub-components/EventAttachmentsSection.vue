@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import { X } from "lucide-vue-next";
-import type { CalendarEventAttachment } from "@/types/CalendarEvent";
+import type { CalendarEventAttachment } from "@/features/calendar/types/calendar.types";
 
 export interface Attachment extends CalendarEventAttachment {
   file?: File;

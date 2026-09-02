@@ -3,11 +3,11 @@ package com.synkork.backend.modules.collaboration.task.card;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.synkork.backend.modules.collaboration.task.utils.TaskEmail;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import com.synkork.backend.common.utils.EmailService;
 import com.synkork.backend.modules.collaboration.task.card.enums.CardStatus;
 import com.synkork.backend.modules.notification.NotificationService;
 import com.synkork.backend.modules.notification.enums.NotificationRefTypeEnum;
@@ -25,12 +25,12 @@ public class CardDeadlineScheduler {
     private CardRepository cardRepository;
 
     @Autowired
-    private EmailService emailService;
+    private TaskEmail taskEmail;
 
     @Autowired
     private NotificationService notificationService;
 
-    @Scheduled(fixedRate = 5000)
+    @Scheduled(fixedRate = 60000)
     @Transactional
     public void checkDeadline() {
 
@@ -89,11 +89,11 @@ public class CardDeadlineScheduler {
         }
 
         if (!overdueCards.isEmpty()) {
-            emailService.sendOverdueSummaryMail(overdueCards);
+            taskEmail.sendOverdueSummaryMail(overdueCards);
         }
 
         if (!dueSoonCards.isEmpty()) {
-            emailService.sendDueSoonSummaryMail(dueSoonCards);
+            taskEmail.sendDueSoonSummaryMail(dueSoonCards);
         }
 
         cardRepository.saveAll(cards);

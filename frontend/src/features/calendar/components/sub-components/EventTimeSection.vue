@@ -22,6 +22,7 @@ const props = defineProps<{
   initialStartTime: string;
   initialEndTime: string;
   show: boolean;
+  disableMultiDay?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -65,6 +66,10 @@ const isStartDateOpen = ref(false);
 const isEndDateOpen = ref(false);
 watch(dateValue, () => { isStartDateOpen.value = false; });
 watch(endDateValue, () => { isEndDateOpen.value = false; });
+
+watch(() => props.disableMultiDay, (disabled) => {
+  if (disabled) endDate.value = eventDate.value;
+});
 
 // Time selector helpers
 const {
@@ -120,8 +125,8 @@ watch(startAmPm, (newAmPm) => {
 // Điều chỉnh endTime nếu <= startTime (chỉ áp dụng khi sự kiện ở CÙNG NGÀY)
 watch([startHour, startMinute, startAmPm, endHour, endMinute, endAmPm, eventDate, endDate], () => {
   if (eventDate.value === endDate.value) {
-    const start = formatTime(startHour.value, startMinute.value, startAmPm.value, timeFormat.value);
-    const currentEnd = formatTime(endHour.value, endMinute.value, endAmPm.value, timeFormat.value);
+    const start = formatTime(startHour.value, startMinute.value, "24h", "24h");
+    const currentEnd = formatTime(endHour.value, endMinute.value, "24h", "24h");
     const adjustedEnd = adjustEndTimeIfNeeded(start, currentEnd);
     
     if (adjustedEnd !== currentEnd) {
@@ -198,6 +203,7 @@ watch(timeFormat, (newFormat) => {
             <Button
               variant="outline"
               type="button"
+              :disabled="props.disableMultiDay"
               :class="cn(
                 'w-full h-10 justify-start text-left font-sans font-normal rounded-md border border-border/60 bg-background px-3.5 text-sm text-foreground hover:bg-muted/10',
                 !endDate && 'text-muted-foreground'

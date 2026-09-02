@@ -15,7 +15,6 @@ import { useTaskAction } from '../composables/task-api.ts'
 import { getAvatarColor, getInitials } from '@/features/tasks/utils/avatar'
 import { formattedDate, checkDueSoon, checkOverdue } from '@/features/tasks/utils/task-date'
 import { useVersionConflict } from '../composables/version-conflict.ts'
-import { useCardDetail } from '../composables/card-detail.ts'
 
 const spaceStore = useSpaceStore();
 const { currentSpace } = storeToRefs(spaceStore);

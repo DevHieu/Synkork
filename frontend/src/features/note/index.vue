@@ -191,8 +191,7 @@ async function handleReminderConfirm(reminderAt: string | null) {
 </script>
 
 <template>
-  <div class="min-h-screen background">
-    <div class="min-h-screen background">
+  <div class="h-full flex flex-col overflow-y-auto background">
 
       <!-- HEADER -->
       <header class="sticky top-0 z-40 border-b background/95 backdrop-blur">
@@ -253,7 +252,7 @@ async function handleReminderConfirm(reminderAt: string | null) {
       </header>
 
       <!-- MAIN -->
-      <main class="max-w-6xl mx-auto px-4 py-6">
+      <main class="max-w-6xl w-full mx-auto px-4 py-6 flex-1">
 
         <div v-if="store.loading && store.notes.length === 0" class="text-center py-20">
           <Loader2 class="animate-spin mx-auto" />
@@ -336,6 +335,5 @@ async function handleReminderConfirm(reminderAt: string | null) {
 
       <ConflictDialog :space-id="spaceId" />
 
-    </div>
   </div>
 </template>

@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import type { CalendarEvent } from "@/types/CalendarEvent";
+import type { CalendarEvent } from "@/features/calendar/types/calendar.types";
 import type { EventFormData } from "@/features/calendar/composable/useEventForm";
 
 export const createInitialFormData = (
@@ -15,6 +15,7 @@ export const createInitialFormData = (
   recurrenceType: "NONE",
   recurrenceEndDate: undefined,
   allowEditAll: false,
+  attendeeIds: [],
   attendees: [],
   attachments: [],
   callRoomSpaceId: undefined,
@@ -72,10 +73,21 @@ export const resolveScheduleEvent = (
     }
   }
 
+  const attendees = [
+    ...new Map(
+      group
+        .flatMap((item) => item.attendees ?? [])
+        .map((attendee) => [attendee.memberId, attendee]),
+    ).values(),
+  ];
+  const attendeeIds = group.flatMap((item) => item.attendeeIds ?? []);
+
   return {
     ...event,
     eventDate: minDate || event.eventDate,
     endDate: maxDate || event.endDate || event.eventDate,
+    attendees: attendees.length ? attendees : event.attendees,
+    attendeeIds: attendeeIds.length ? [...new Set(attendeeIds)] : event.attendeeIds,
   };
 };
 

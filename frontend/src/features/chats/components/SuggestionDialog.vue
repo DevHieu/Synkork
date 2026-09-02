@@ -3,16 +3,16 @@ import { nextTick, ref, watch } from "vue";
 import ChooseSpaceDialog from "./sub-components/ChooseSpaceDialog.vue";
 import NoteDialog from "@/features/note/components/dialog/NoteDialog.vue";
 import type {
-  CalendarChannelOption,
+  ChannelOption,
   MessageEventSuggestion,
   SuggestedNoteDraft,
   SuggestedTaskDraft,
-} from "@/types/CalendarSuggestion";
+} from "@/types/SuggestionTypes";
 import { buildSuggestedEventDraft, buildSuggestedNoteDraft, buildSuggestedTaskDraft } from "@/utils/calendarSuggestion";
 import ColumnListDialog from "@/features/tasks/components/dialog/ColumnListDialog.vue";
 import CardFormDialog from "@/features/tasks/components/dialog/CardFormDialog.vue";
 
-import { useSuggestionStore } from "@/features/calendar/stores/calendarStore";
+import { useSuggestionStore } from "@/stores/suggestionStore.ts";
 import { useTaskAction } from "@/features/tasks/composables/task-api.ts";
 import { useSpaceComposable } from "@/features/spaces/composables/spaceComposable.ts";
 
@@ -86,7 +86,7 @@ watch(
 );
 
 const handleSelectSuggestionChannel = async (
-  option: CalendarChannelOption,
+  option: ChannelOption,
   chosenType: "CALENDAR" | "NOTE" | "TASK",
 ) => {
   const suggestion = props.messageInfo;

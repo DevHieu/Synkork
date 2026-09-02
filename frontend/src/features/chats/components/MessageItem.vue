@@ -12,7 +12,7 @@ import { useUserStore } from "@/features/users/stores/userStore";
 import { storeToRefs } from "pinia";
 import DeleteConfirmDialog from "@/components/dialog/DeleteConfirmDialog.vue";
 import UserInfoPopover from "@/components/dialog/UserInfoPopover.vue";
-import type { MessageEventSuggestion } from "@/types/CalendarSuggestion";
+import type { MessageEventSuggestion } from "@/types/SuggestionTypes.ts";
 import { chatService } from "../services/chatService.ts";
 import { useRoomMemberStore } from "@/features/members/stores/roomMemberStore";
 import { useRoomsStore } from "@/features/rooms/stores/roomStore.ts";
@@ -50,8 +50,9 @@ const senderNameColor = computed(() => {
   }
 });
 
+const isOwnMessage = computed(() => props.message.sender?.username === user.value?.username);
 const isFullAction = computed(
-  () => canManage.value || props.message.sender?.username === user.value?.username,
+  () => canManage.value || isOwnMessage.value,
 );
 const isEditing = ref(false);
 const editElement = ref<Message | null>(null)
@@ -293,10 +294,10 @@ const parsedContent = computed(() => {
       ? 'opacity-100'
       : 'opacity-0 group-hover:opacity-100'
       ">
-      <MessageActions v-if="!isEditing && !props.message.deleted" :fullAction="isFullAction"
-        :isPinned="props.message.pinned" :showSuggestion="shouldHighlightSuggestion" :suggestionLabel="suggestionLabel"
-        @reply="handleReply" @edit="handleEdit" @delete="isDeleteOpen = true" @pin="handlePin"
-        @suggest="handleSuggestion" />
+      <MessageActions v-if="!isEditing && !props.message.deleted" :isOwnMessage="isOwnMessage"
+        :fullAction="isFullAction" :isPinned="props.message.pinned" :showSuggestion="shouldHighlightSuggestion"
+        :suggestionLabel="suggestionLabel" @reply="handleReply" @edit="handleEdit" @delete="isDeleteOpen = true"
+        @pin="handlePin" @suggest="handleSuggestion" />
     </div>
   </div>
 

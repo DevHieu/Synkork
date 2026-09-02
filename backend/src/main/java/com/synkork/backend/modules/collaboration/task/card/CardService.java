@@ -1,6 +1,7 @@
 package com.synkork.backend.modules.collaboration.task.card;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -68,7 +69,7 @@ public class CardService {
                         .orElseThrow(() -> new RuntimeException("User không phải member của room này")));
 
         if (req.assigneeIds() != null && !req.assigneeIds().isEmpty()) {
-            List<RoomMemberEntity> assignees = roomMemberRepository.findAllById(req.assigneeIds());
+            Set<RoomMemberEntity> assignees = new HashSet<>(roomMemberRepository.findAllById(req.assigneeIds()));
             card.setAssignees(assignees);
         }
 
@@ -78,7 +79,9 @@ public class CardService {
         return new CardDTO(savedCard);
     }
 
+    @Transactional
     public CardDTO updateCard(UUID cardId, CardRequest req) {
+        System.out.println("Card version: " + req.version());
         CardEntity card = findCardById(cardId);
 
         checkVersion(card, req.version());
@@ -102,26 +105,24 @@ public class CardService {
                     .map(RoomMemberEntity::getId)
                     .collect(Collectors.toSet());
 
-            List<RoomMemberEntity> newAssignees = roomMemberRepository.findAllById(req.assigneeIds());
+            Set<RoomMemberEntity> newAssignees = new HashSet<>(roomMemberRepository.findAllById(req.assigneeIds()));
 
-            // Tìm người mới được assign (có trong new nhưng không có trong old)
+            // Tìm người mới được assign
             List<RoomMemberEntity> justAssigned = newAssignees.stream()
                     .filter(member -> !oldAssigneeIds.contains(member.getId()))
                     .toList();
 
             card.setAssignees(newAssignees);
-            CardEntity updatedCard = cardRepository.save(card);
+            CardEntity updatedCard = cardRepository.saveAndFlush(card);
 
             // Gửi notification cho từng người mới được assign
             if (!justAssigned.isEmpty()) {
-                // Lấy actor từ SecurityContext ngay tại đây
                 UserPrinciple principal = (UserPrinciple) SecurityContextHolder
                         .getContext().getAuthentication().getPrincipal();
                 UserEntity actor = userRepository.findByEmail(principal.getUsername())
                         .orElseThrow(() -> new RuntimeException("Actor không tồn tại"));
 
                 for (RoomMemberEntity member : justAssigned) {
-                    // Bỏ qua nếu actor tự assign cho chính mình
                     if (member.getUser().getId().equals(actor.getId()))
                         continue;
 

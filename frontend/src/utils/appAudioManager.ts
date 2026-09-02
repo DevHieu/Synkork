@@ -77,7 +77,8 @@ class AppAudioManager {
     el.autoplay = true;
     el.srcObject = mediaStream;
     el.style.display = "none";
-    document.body.appendChild(el);
+    const audioPlayers = document.getElementById("audio-players");
+    (audioPlayers ?? document.body).appendChild(el);
     this.audioElements.set(streamId, el);
 
     // Áp output device hiện tại

@@ -28,63 +28,6 @@ public class PlanPricingService {
                 .toList();
     }
 
-    public List<PlanPricingResponse> getPricingHistory(PlanEnum plan, BillingCycleEnum billingCycle) {
-        return planPricingRepository.findByPlanAndBillingCycleOrderByCreatedAtDesc(plan, billingCycle)
-                .stream()
-                .map(this::toDto)
-                .toList();
-    }
-
-    @Transactional
-    public PlanPricingResponse changePrice(PlanPricingRequest request) {
-        validateDiscount(request);
-        BigDecimal discountAmount = calculateDiscountAmount(
-                request.getAmount(),
-                request.getDiscountType(),
-                request.getDiscountValue()
-        );
-
-        planPricingRepository
-                .findByPlanAndBillingCycleAndActiveTrue(request.getPlan(), request.getBillingCycle())
-                .ifPresent(oldPricing -> {
-                    oldPricing.setActive(false);
-                    planPricingRepository.save(oldPricing);
-                });
-
-        PlanPricingEntity newPricing = PlanPricingEntity.builder()
-                .plan(request.getPlan())
-                .billingCycle(request.getBillingCycle())
-                .amount(request.getAmount())
-                .discountType(request.getDiscountType())
-                .discountValue(request.getDiscountType() == null ? null : request.getDiscountValue())
-                .discountAmount(discountAmount)
-                .active(true)
-                .build();
-
-        return toDto(planPricingRepository.save(newPricing));
-    }
-
-    private void validateDiscount(PlanPricingRequest request) {
-        DiscountTypeEnum discountType = request.getDiscountType();
-        BigDecimal discountValue = request.getDiscountValue();
-
-        if (discountType == null) {
-            if (discountValue != null && discountValue.compareTo(BigDecimal.ZERO) > 0) {
-                throw new IllegalArgumentException("discountType không được để trống khi có discountValue");
-            }
-            return;
-        }
-
-        if (discountValue == null) {
-            throw new IllegalArgumentException("discountValue không được để trống khi có discountType");
-        }
-
-        if (discountType == DiscountTypeEnum.PERCENTAGE
-                && discountValue.compareTo(BigDecimal.valueOf(100)) > 0) {
-            throw new IllegalArgumentException("discountValue không được vượt quá 100 khi giảm theo phần trăm");
-        }
-    }
-
     private BigDecimal calculateDiscountAmount(BigDecimal amount, DiscountTypeEnum discountType, BigDecimal discountValue) {
         if (discountType == null || discountValue == null) {
             return BigDecimal.ZERO;

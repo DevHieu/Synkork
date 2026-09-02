@@ -12,5 +12,7 @@ public enum NotificationRefTypeEnum {
     CARD_DUE_SOON,
     CARD_OVER_DUE,
 
-    NOTE_REMINDER
+    NOTE_REMINDER,
+
+    MEMBER_INVITED
 }

@@ -11,6 +11,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -65,16 +66,25 @@ const {
 } = useEventForm(props.initialData, props.isEditing);
 
 // Các hàm xử lý cập nhật dữ liệu từ component con
+const isRecurring = computed(() => formData.value.recurrenceType !== "NONE");
+const isMultiDay = computed(() => formData.value.endDate > formData.value.eventDate);
+
 const onTimeChange = (data: { eventDate: string; endDate: string; startTime: string; endTime: string }) => {
   formData.value.eventDate = data.eventDate;
   formData.value.endDate = data.endDate;
   formData.value.startTime = data.startTime;
   formData.value.endTime = data.endTime;
+
+  if (data.endDate > data.eventDate) {
+    formData.value.recurrenceType = "NONE";
+    formData.value.recurrenceEndDate = undefined;
+  }
 };
 
 const onRecurrenceChange = (data: { recurrenceType: string; recurrenceEndDate?: string }) => {
   formData.value.recurrenceType = data.recurrenceType;
   formData.value.recurrenceEndDate = data.recurrenceEndDate;
+  if (data.recurrenceType !== "NONE") formData.value.endDate = formData.value.eventDate;
 };
 
 const onAttendeesChange = (list: string[]) => {
@@ -132,11 +142,14 @@ const handleSubmit = (): void => {
         <div class="flex items-center gap-2">
           <div class="inline-flex items-center gap-2 rounded-sm border border-primary/10 bg-primary/5 px-2.5 py-1">
             <component :is="isEditing ? Pencil : CalendarPlus2" class="text-primary h-4 w-4" />
-            <h2 class="text-xs font-sans font-bold text-primary uppercase tracking-wider">
+            <DialogTitle class="text-xs font-sans font-bold text-primary uppercase tracking-wider">
               {{ isEditing ? "Chỉnh sửa sự kiện" : "Thêm sự kiện mới" }}
-            </h2>
+            </DialogTitle>
           </div>
         </div>
+        <DialogDescription class="sr-only">
+          Biểu mẫu tạo hoặc chỉnh sửa sự kiện lịch
+        </DialogDescription>
       </DialogHeader>
 
       <form @submit.prevent="handleSubmit" class="flex flex-col flex-1 min-h-0 overflow-hidden">
@@ -171,7 +184,7 @@ const handleSubmit = (): void => {
             <div class="space-y-1.5">
               <Label class="text-[10px] font-sans font-bold text-muted-foreground uppercase tracking-wider">Thời gian sự
                 kiện</Label>
-              <EventTimeSection :show="show" :initial-date="initialData.eventDate"
+              <EventTimeSection :show="show" :disable-multi-day="isRecurring" :initial-date="initialData.eventDate"
                 :initial-end-date="initialData.endDate" :initial-start-time="initialData.startTime"
                 :initial-end-time="initialData.endTime" @change="onTimeChange" />
             </div>
@@ -181,7 +194,7 @@ const handleSubmit = (): void => {
               <div class="space-y-1.5">
                 <Label class="text-[10px] font-sans font-bold text-muted-foreground uppercase tracking-wider">Chế độ lặp
                   lại</Label>
-                <EventRecurrenceSection :initial-type="initialData.recurrenceType || 'NONE'"
+                <EventRecurrenceSection :disabled="isMultiDay" :initial-type="initialData.recurrenceType || 'NONE'"
                   :initial-end-date="initialData.recurrenceEndDate" :event-date="formData.eventDate"
                   @change="onRecurrenceChange" />
               </div>
@@ -227,7 +240,7 @@ const handleSubmit = (): void => {
             <div class="space-y-1.5">
               <Label class="text-[10px] font-sans font-bold text-muted-foreground uppercase tracking-wider">Tệp đính
                 kèm</Label>
-              <EventAttachmentsSection :show="show" :initial-attachments="initialData.attachments"
+              <EventAttachmentsSection :show="show" :initial-attachments="formData.attachments"
                 @change="onAttachmentsChange" />
             </div>
 

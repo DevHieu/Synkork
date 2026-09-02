@@ -17,7 +17,7 @@ import {
   CalendarPlus,
   Sparkles,
 } from "lucide-vue-next";
-import type { CalendarEvent } from "@/types/CalendarEvent";
+import type { CalendarEvent } from "@/features/calendar/types/calendar.types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useVoiceSpaceStore } from "@/features/voice-chat/stores/voiceSpaceStore";
@@ -120,12 +121,12 @@ const displayEndTime = computed(() =>
 );
 const originalStartLabel = computed(() =>
   props.event
-    ? formatDateTimeLabel(props.event.originalStartDateTime, props.event.eventDate, props.event.startTime)
+    ? formatDateTimeLabel(props.event.originalStartDateTime, props.event.displayDate || props.event.eventDate, props.event.startTime)
     : "",
 );
 const originalEndLabel = computed(() =>
   props.event
-    ? formatDateTimeLabel(props.event.originalEndDateTime, props.event.endDate || props.event.eventDate, props.event.endTime)
+    ? formatDateTimeLabel(props.event.originalEndDateTime, props.event.endDate || props.event.displayDate || props.event.eventDate, props.event.endTime)
     : "",
 );
 const continuationText = computed(() =>
@@ -210,10 +211,10 @@ const goToNoteSpace = async () => {
             <DialogTitle class="font-sans text-lg font-bold text-foreground leading-tight break-words">
               {{ event?.title }}
             </DialogTitle>
-            <p class="font-sans text-[11px] text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
+            <DialogDescription class="font-sans text-[11px] text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
               <CalendarDays class="h-3.5 w-3.5 text-muted-foreground/75" />
               {{ formattedEventDate }}
-            </p>
+            </DialogDescription>
           </div>
         </div>
       </DialogHeader>
@@ -341,43 +342,51 @@ const goToNoteSpace = async () => {
                 <p class="font-sans text-[9px] font-bold uppercase tracking-wider text-primary/80">
                   Thời gian hoạt động
                 </p>
-                <p class="font-sans text-xs font-bold text-primary mt-1.5 flex items-center gap-1.5">
+                <p class="font-sans text-xs font-bold text-primary mt-1.5 flex flex-wrap items-center gap-1.5">
                   <Clock3 class="h-3.5 w-3.5 text-primary" />
                   <span>{{ displayStartTime }} &rarr; {{ displayEndTime }}</span>
                 </p>
-                <p class="font-sans text-[9px] text-muted-foreground/80 mt-1">
+                <p class="font-sans text-[9px] text-muted-foreground/80 mt-1 break-words">
                   Múi giờ: {{ originalStartLabel }} - {{ originalEndLabel }}
                 </p>
                 <p v-if="continuationText"
-                  class="mt-1 font-sans text-[9px] font-medium text-warning-foreground bg-warning/10 px-2 py-0.5 rounded-sm inline-block uppercase tracking-wider">
+                  class="mt-1 max-w-full whitespace-normal break-words font-sans text-[9px] font-medium text-warning-foreground bg-warning/10 px-2 py-0.5 rounded-sm inline-block uppercase tracking-wider">
                   {{ continuationText }}
                 </p>
               </div>
 
-              <div class="pt-3 border-t border-primary/10 grid grid-cols-3 gap-2">
-                <div>
-                  <p class="font-sans text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+              <div class="pt-3 border-t border-primary/10 grid grid-cols-2 gap-2">
+                <div class="min-w-0">
+                  <p class="font-sans text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80 break-words">
                     Ngày bắt đầu
                   </p>
-                  <p class="font-sans text-[11px] font-medium text-foreground mt-0.5">
+                  <p class="font-sans text-[11px] font-medium text-foreground mt-0.5 break-words">
                     {{ displayEventDate }}
                   </p>
                 </div>
-                <div>
-                  <p class="font-sans text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+                <div class="min-w-0">
+                  <p class="font-sans text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80 break-words">
                     Ngày kết thúc
                   </p>
-                  <p class="font-sans text-[11px] font-medium text-foreground mt-0.5">
+                  <p class="font-sans text-[11px] font-medium text-foreground mt-0.5 break-words">
                     {{ displayEndDate }}
                   </p>
                 </div>
-                <div class="col-span-1">
+                <div class="min-w-0">
                   <p class="font-sans text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80">
                     Lặp lại
                   </p>
                   <p class="font-sans text-[11px] font-medium text-foreground mt-0.5 break-words"
                     :title="recurrenceLabel">
                     {{ recurrenceLabel }}
+                  </p>
+                </div>
+                <div v-if="event?.remindBeforeMinutes !== undefined && event?.remindBeforeMinutes !== null" class="min-w-0">
+                  <p class="font-sans text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/80 break-words">
+                    Nhắc nhở trước
+                  </p>
+                  <p class="font-sans text-[11px] font-medium text-foreground mt-0.5 break-words">
+                    {{ event.remindBeforeMinutes === 0 ? 'Khi sự kiện bắt đầu' : `${event.remindBeforeMinutes} phút` }}
                   </p>
                 </div>
               </div>

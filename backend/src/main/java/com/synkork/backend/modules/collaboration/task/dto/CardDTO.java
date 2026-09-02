@@ -16,24 +16,17 @@ public class CardDTO {
     private String title;
     private String description;
     private int position;
-
     private UUID spaceId;
     private UUID columnId;
-
     private List<MemberSummaryDTO> assignees;
-
     private MemberSummaryDTO createdBy;
-    
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime dueDate;
-
     private Boolean isArchived;
     private LocalDateTime archivedAt;
-
     private Integer version;
-
     private Boolean completed;
     private LocalDateTime completedAt;
 
@@ -44,24 +37,17 @@ public class CardDTO {
         this.position = e.getPosition();
         this.spaceId = e.getColumn().getSpace().getId();
         this.columnId = e.getColumn().getId();
-
         this.assignees = e.getAssignees().stream()
                 .map(MemberSummaryDTO::new)
                 .collect(Collectors.toList());
-
         if (e.getCreatedBy() != null) {
             this.createdBy = new MemberSummaryDTO(e.getCreatedBy());
         }
-
         this.createdAt = e.getCreatedAt();
-
         this.dueDate = e.getDueDate();
-        
         this.isArchived = e.getArchived();
         this.archivedAt = e.getArchivedAt();
-
         this.version = e.getVersion();
-
         this.completed = e.getCompleted();
         this.completedAt = e.getCompletedAt();
     }

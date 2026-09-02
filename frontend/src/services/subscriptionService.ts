@@ -1,7 +1,10 @@
 import axiosClient from "@/lib/axiosClient";
 
-export const createPaymentLink = async (data: { plan: string; billingCycle: string }) => {
-  const res = await axiosClient.post("/api/payment/momo", {
+export const createPaymentLink = async (data: {
+  plan: string;
+  billingCycle: string;
+}) => {
+  const res = await axiosClient.post("/api/payment/vnpay", {
     plan: data.plan.toUpperCase(),
     billingCycle: data.billingCycle,
   });
@@ -20,7 +23,7 @@ export interface PlanPricingItem {
   active: boolean;
   createdAt: string;
 }
- 
+
 /**
  * Lấy bảng giá hiện tại (public API, không cần token).
  * GET /api/payment/plan-pricing
