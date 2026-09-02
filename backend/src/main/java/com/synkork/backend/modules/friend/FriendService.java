@@ -134,16 +134,16 @@ public class FriendService {
             throw new RuntimeException("Hai bạn đã là bạn bè rồi");
         }
 
+        // Kiểm tra A đã gửi B chưa
+        requestRepo.findBySenderAndReceiver(sender, receiver).ifPresent(r -> {
+            throw new RuntimeException("Bạn đã gửi lời mời cho người này rồi");
+        });
+
         // Kiểm tra B đã gửi A chưa
         requestRepo.findBySenderAndReceiver(receiver, sender).ifPresent(r -> {
             throw new RuntimeException(
                     "Người này đã gửi lời mời kết bạn cho bạn. Hãy vào mục lời mời để chấp nhận."
             );
-        });
-
-        // Chỉ chặn nếu đang có request PENDING — không chặn nếu đã bị reject/cancel (đã xóa)
-        requestRepo.findBySenderAndReceiver(sender, receiver).ifPresent(r -> {
-            throw new RuntimeException("Bạn đã gửi lời mời cho người này rồi");
         });
 
         FriendRequestEntity req = new FriendRequestEntity();
