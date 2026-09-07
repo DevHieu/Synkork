@@ -2,6 +2,7 @@ import { Client, type StompSubscription } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import { jwtDecode } from "jwt-decode";
 import { getCookie } from "@/lib/cookies";
+import { chatJoinedSpaceId } from "@/features/chats/utils/chat.utils";
 
 let stompClient: Client | null = null;
 const subscriptions = new Map<string, StompSubscription>();
@@ -130,6 +131,7 @@ export const socketService = {
         activeSubscriptions.delete(destination);
       }
     });
+    chatJoinedSpaceId.value = null;
   },
 
   unsubscribeAllForce() {
@@ -137,6 +139,7 @@ export const socketService = {
     subscriptions.clear();
     activeSubscriptions.clear();
     persistentDestinations.clear();
+    chatJoinedSpaceId.value = null;
   },
 
   unsubscribeByDestination(destination: string) {

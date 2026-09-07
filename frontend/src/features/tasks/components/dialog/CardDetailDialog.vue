@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon, UserPlus, Archive, AlignLeft, CreditCard, X, Check, AlertCircle, Clock } from "lucide-vue-next";
+import { UserPlus, Archive, AlignLeft, CreditCard, X, Check, AlertCircle, Clock } from "lucide-vue-next";
 import type { CardEvent } from "@/features/tasks/types/Task";
 import { useRoomMemberStore } from '@/features/members/stores/roomMemberStore'
 import { useCardDetail } from "../../composables/card-detail";

@@ -66,6 +66,7 @@ onUnmounted(() => {
   if (chatJoinedSpaceId.value) {
     chatSocket.leaveSpace(chatJoinedSpaceId.value);
   }
+  chatJoinedSpaceId.value = null;
 });
 
 const joinSpace = async (id: string) => {
@@ -105,11 +106,6 @@ const handleOpenSuggestion = async (messageId: string) => {
   await nextTick();
   suggestionDialogOpen.value = true;
 };
-
-watch(currentSpace, (space) => {
-  if (!space?.id) return;
-  joinSpace(space.id);
-}, { immediate: true });
 </script>
 
 <template>

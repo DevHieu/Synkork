@@ -4,7 +4,6 @@ import com.synkork.backend.modules.report.enums.ReportReasonEnums;
 import jakarta.validation.constraints.NotNull;
 
 public record ReportRequestDto(
-
         @NotNull(message = "Id đối tượng bị tố cáo không được bỏ trống")
         String targetId,
 

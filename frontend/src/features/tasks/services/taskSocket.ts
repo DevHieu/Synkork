@@ -150,50 +150,22 @@ export const taskSocket = {
   },
 
   leaveSpace(spaceId: string) {
-    socketService.unsubscribeByDestination(
-      `/topic/space/${spaceId}/card/update`,
-    );
-    socketService.unsubscribeByDestination(
-      `/topic/space/${spaceId}/card/create`,
-    );
-    socketService.unsubscribeByDestination(
-      `/topic/space/${spaceId}/card/delete`,
-    );
+    socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/update`);
+    socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/create`);
+    socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/delete`);
     socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/move`);
-    socketService.unsubscribeByDestination(
-      `/topic/space/${spaceId}/card/archive`,
-    );
-    socketService.unsubscribeByDestination(
-      `/topic/space/${spaceId}/card/unarchive`,
-    );
-    socketService.unsubscribeByDestination(
-      `/topic/space/${spaceId}/card/deleteAllArchived`,
-    );
-    socketService.unsubscribeByDestination(
-      `/topic/space/${spaceId}/card/complete`,
-    );
+    socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/archive`);
+    socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/unarchive`);
+    socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/deleteAllArchived`);
+    socketService.unsubscribeByDestination(`/topic/space/${spaceId}/card/complete`);
 
-    socketService.unsubscribeByDestination(
-      `/topic/space/${spaceId}/column/update`,
-    );
-    socketService.unsubscribeByDestination(
-      `/topic/space/${spaceId}/column/create`,
-    );
-    socketService.unsubscribeByDestination(
-      `/topic/space/${spaceId}/column/delete`,
-    );
-    socketService.unsubscribeByDestination(
-      `/topic/space/${spaceId}/column/move`,
-    );
-    socketService.unsubscribeByDestination(
-      `/topic/space/${spaceId}/column/archive`,
-    );
-    socketService.unsubscribeByDestination(
-      `/topic/space/${spaceId}/column/unarchive`,
-    );
-    socketService.unsubscribeByDestination(
-      `/topic/space/${spaceId}/column/deleteAllArchived`,
-    );
+    socketService.unsubscribeByDestination(`/topic/space/${spaceId}/column/update`);
+    socketService.unsubscribeByDestination(`/topic/space/${spaceId}/column/create`);
+    socketService.unsubscribeByDestination(`/topic/space/${spaceId}/column/delete`);
+    socketService.unsubscribeByDestination(`/topic/space/${spaceId}/column/move`);
+    socketService.unsubscribeByDestination(`/topic/space/${spaceId}/column/archive`);
+    socketService.unsubscribeByDestination(`/topic/space/${spaceId}/column/unarchive`);
+    socketService.unsubscribeByDestination(`/topic/space/${spaceId}/column/deleteAllArchived`);
 
     subscribedColumns.clear();
   },

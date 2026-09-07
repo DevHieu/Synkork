@@ -5,7 +5,7 @@ import { useNoteStore } from '@/features/note/stores/noteStore.ts'
 import { useNoteActions } from '@/features/note/composable/UseNoteActions'
 import { useUserStore } from '@/features/users/stores/userStore'
 import { GridLayout, GridItem } from 'vue3-grid-layout-next'
-import { NotebookPen, Plus, Search, X, Pin, Loader2, AlertCircle, Hash, Archive } from 'lucide-vue-next'
+import { NotebookPen, Plus, Search, X, Pin, Loader2, Hash, Archive } from 'lucide-vue-next'
 
 import NoteCard from '@/features/note/components/NoteCard.vue'
 import NoteDialog from '@/features/note/components/dialog/NoteDialog.vue'
@@ -191,8 +191,7 @@ async function handleReminderConfirm(reminderAt: string | null) {
 </script>
 
 <template>
-  <div class="min-h-screen background">
-    <div class="min-h-screen background">
+  <div class="h-full flex flex-col overflow-y-auto background">
 
       <!-- HEADER -->
       <header class="sticky top-0 z-40 border-b background/95 backdrop-blur">
@@ -253,15 +252,10 @@ async function handleReminderConfirm(reminderAt: string | null) {
       </header>
 
       <!-- MAIN -->
-      <main class="max-w-6xl mx-auto px-4 py-6">
+      <main class="max-w-6xl w-full mx-auto px-4 py-6 flex-1">
 
         <div v-if="store.loading && store.notes.length === 0" class="text-center py-20">
           <Loader2 class="animate-spin mx-auto" />
-        </div>
-
-        <div v-else-if="store.error && !store.error.includes('vị trí')" class="text-center py-20">
-          <AlertCircle class="mx-auto mb-3" />
-          <p>{{ store.error }}</p>
         </div>
 
         <template v-else>
@@ -336,6 +330,5 @@ async function handleReminderConfirm(reminderAt: string | null) {
 
       <ConflictDialog :space-id="spaceId" />
 
-    </div>
   </div>
 </template>

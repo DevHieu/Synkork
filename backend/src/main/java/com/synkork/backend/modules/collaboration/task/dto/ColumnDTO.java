@@ -22,18 +22,16 @@ public class ColumnDTO {
     private LocalDateTime archivedAt;
     private Integer version;
 
-    public ColumnDTO(ColumnEntity e){
+    public ColumnDTO(ColumnEntity e) {
         this.id = e.getId();
-        this.name = e.getName();    
+        this.name = e.getName();
         this.position = e.getPosition();
         this.spaceId = e.getSpace().getId();
         this.cards = e.getCards().stream()
-            .filter(card ->
-        !Boolean.TRUE.equals(card.getArchived())
-    )
-            .sorted(Comparator.comparingInt(CardEntity::getPosition))
-            .map(CardDTO::new)
-            .collect(Collectors.toList());
+                .filter(card -> !Boolean.TRUE.equals(card.getArchived()))
+                .sorted(Comparator.comparingInt(CardEntity::getPosition))
+                .map(CardDTO::new)
+                .collect(Collectors.toList());
         this.archived = e.getArchived();
         this.archivedAt = e.getArchivedAt();
         this.version = e.getVersion();

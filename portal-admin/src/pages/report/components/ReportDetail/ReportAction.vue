@@ -65,7 +65,7 @@ const lockButtonLabel = computed(() => (props.report.reportType === 'USER' ? 'Kh
       </Button>
     </div>
 
-    <!-- Khoá đối tượng -->
+    <!-- Khoá -->
     <div
       class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5"
       :class="isTargetLocked ? 'border-destructive/30 bg-destructive/5' : 'border-border bg-muted/30'"
@@ -105,7 +105,6 @@ const lockButtonLabel = computed(() => (props.report.reportType === 'USER' ? 'Kh
       </Badge>
     </div>
 
-    <!-- Nút hành động chính -->
     <div class="flex gap-2">
       <Button variant="destructive" class="flex-1 gap-2" :disabled="isTargetLocked || hasWarned" @click="emit('dismiss')">
         <XCircle class="h-4 w-4" />

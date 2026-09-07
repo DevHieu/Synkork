@@ -124,9 +124,9 @@ public class RoomController {
         UserPrinciple userPrinciple = (UserPrinciple) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         // trả về subscribe cho socket làm trong service
-        RoomDto room = roomService.joinRoom(code, userPrinciple.getId());
-        
-        return ResponseEntity.ok(room);
+        RoomEntity room = roomService.joinRoom(code, userPrinciple.getId());
+
+        return ResponseEntity.ok(new RoomDto(room));
     }
 
     @PostMapping("/{roomId}/invites/reset")

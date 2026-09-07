@@ -58,7 +58,7 @@ const form = ref<{
   email: '',
   status: 'ACTIVE',
   plan: 'FREE',
-  role: 'user',
+  role: 'USER',
 })
 
 const displayUser = computed(() => userDetail.value || props.user || null)

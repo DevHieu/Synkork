@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import type { Room } from "@/features/rooms/types/Room";
 import router from "@/routers";
 import { toast } from "vue-sonner";
+import { socketService } from "@/services/socketService";
 
 export const useRoomsStore = defineStore("rooms", {
   state: () => ({
@@ -17,6 +18,8 @@ export const useRoomsStore = defineStore("rooms", {
         router.push("/me");
         toast.error("Phòng đã bị xóa");
       }
+
+      socketService.unsubscribeAll();
 
       this.rooms = this.rooms.filter((room) => room.id !== roomId);
     },

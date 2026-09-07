@@ -4,40 +4,44 @@ type NotificationContext = "dropdown" | "toast";
 
 const MESSAGES: Record<string, Record<NotificationContext, string>> = {
   CARD_ASSIGNED: {
-    dropdown: "Vừa assign bạn vào một task",
-    toast: "Bạn vừa được assign vào một task",
+    dropdown: "vừa gắn bạn vào một task",
+    toast: "Bạn vừa được gắn vào một task",
   },
   CARD_DUE_SOON: {
-    dropdown: "Nhắc bạn: task sắp đến hạn",
+    dropdown: "Nhắc bạn: Task của bạn sắp đến hạn",
     toast: "Nhắc nhở: Task của bạn sắp đến hạn",
   },
   CARD_OVER_DUE: {
-    dropdown: "Nhắc bạn: task đã quá hạn",
+    dropdown: "Nhắc bạn: Task của bạn đã quá hạn",
     toast: "Nhắc nhở: Task của bạn đã quá hạn",
   },
   FRIEND_REQUEST: {
-    dropdown: "Đã gửi cho bạn lời mời kết bạn",
+    dropdown: "đã gửi cho bạn lời mời kết bạn",
     toast: "Bạn có lời mời kết bạn mới",
   },
   FRIEND_REJECT: {
-    dropdown: "Đã từ chối lời mời kết bạn của bạn",
+    dropdown: "đã từ chối lời mời kết bạn của bạn",
     toast: "Lời mời kết bạn của bạn đã bị từ chối",
   },
   FRIEND_ACCEPT: {
-    dropdown: "Đã chấp nhận lời mời kết bạn của bạn",
+    dropdown: "đã chấp nhận lời mời kết bạn của bạn",
     toast: "Lời mời kết bạn của bạn đã được chấp nhận",
   },
   NOTE_REMINDER: {
-    dropdown: "Nhắc bạn: ghi chú sắp đến hạn",
+    dropdown: "Nhắc bạn: Ghi chú sắp đến hạn",
     toast: "Nhắc nhở: Ghi chú sắp đến hạn",
   },
   EVENT_REMINDER: {
-    dropdown: "Nhắc bạn: sự kiện sắp diễn ra",
+    dropdown: "Nhắc bạn: Sự kiện sắp diễn ra",
     toast: "Nhắc nhở: Sự kiện sắp diễn ra",
   },
   EVENT_ASSIGNED: {
-    dropdown: "Vừa assign bạn vào một sự kiện",
-    toast: "Bạn vừa được assign vào một sự kiện",
+    dropdown: "vừa gắn bạn vào một sự kiện",
+    toast: "Bạn vừa được gắn vào một sự kiện",
+  },
+  MEMBER_INVITED: {
+    dropdown: "đã mời bạn tham gia một phòng",
+    toast: "Bạn đã được mời tham gia một phòng",
   },
 };
 
@@ -56,8 +60,6 @@ export function notificationMessage(
 export function getNotificationPath(n: NotificationDTO) {
   if (n.type === "FRIEND") return "/me/friends";
 
-  // if (!n.roomId || !n.spaceId) return null
-
   switch (n.type) {
     case "TASK":
       return `/rooms/task/${n.roomId}/${n.spaceId}`;
@@ -67,9 +69,6 @@ export function getNotificationPath(n: NotificationDTO) {
 
     case "CALENDAR":
       return `/rooms/calendar/${n.roomId}/${n.spaceId}`;
-
-    case "CHAT":
-      return `/rooms/chat/${n.roomId}/${n.spaceId}`;
 
     default:
       return null;
