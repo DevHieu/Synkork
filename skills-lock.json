@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "skills": {
+    "code-explanation": {
+      "source": "nickcrew/claude-cortex",
+      "sourceType": "github",
+      "skillPath": "skills/code-explanation/SKILL.md",
+      "computedHash": "d3712f327245062a82d8fbb1656aaae9d866a0e54e2e41f0138a08e0534cfc37"
+    },
+    "color-contrast-auditor": {
+      "source": "curiositech/some_claude_skills",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/color-contrast-auditor/SKILL.md",
+      "computedHash": "30d8350a1f5b410bbb7fb85f8b71aca3ffec98d183d2c1a54775003ed3efab15"
+    },
+    "connector-googlecalendar": {
+      "source": "caffeinelabs/skills",
+      "sourceType": "github",
+      "skillPath": "skills/connector-googlecalendar/SKILL.md",
+      "computedHash": "7c5e41c168eb3e123a45386499f6390eb6b5dcaa00084822175f5e5eacd3bc34"
+    },
+    "documentation": {
+      "source": "anthropics/knowledge-work-plugins",
+      "sourceType": "github",
+      "skillPath": "engineering/skills/documentation/SKILL.md",
+      "computedHash": "43947d80ab634432362a076657eb225212760adbe731c0829a92709aeb842666"
+    },
+    "pr-walkthrough": {
+      "source": "warpdotdev/common-skills",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/pr-walkthrough/SKILL.md",
+      "computedHash": "d9282c5284e6ef9e8332bd790b57e6f3dbb1569fbef260d2874ec29cd340b661"
+    },
+    "spring-validation": {
+      "source": "claude-dev-suite/claude-dev-suite",
+      "sourceType": "github",
+      "skillPath": "skills/backend-frameworks/spring-validation/SKILL.md",
+      "computedHash": "d979d145cf2ce52b86aa5a61e52202d8cf7bfa6acdea2bc04eb6dbba4eb1551d"
+    },
+    "vue-best-practices": {
+      "source": "vuejs-ai/skills",
+      "sourceType": "github",
+      "skillPath": "skills/vue-best-practices/SKILL.md",
+      "computedHash": "21132f6c11c765bd11d0d6ad081122dd858630073e2123b651e58f17b399b131"
+    }
+  }
+}

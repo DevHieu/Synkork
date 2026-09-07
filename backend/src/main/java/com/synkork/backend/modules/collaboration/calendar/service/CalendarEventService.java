@@ -77,47 +77,15 @@ public class CalendarEventService {
     @Autowired
     private CalendarEmailService calendarEmailService;
 
+    // ==========================================
+    // 1. CÁC HÀM UTILS / HELPER / VALIDATION
+    // ==========================================
+
     private void broadcastCalendarUpdate(String spaceId, String action, CalendarEventDTO event) {
         Map<String, Object> payload = new HashMap<>();
         payload.put("action", action);
         payload.put("event", event);
         messagingTemplate.convertAndSend("/topic/space/" + spaceId + "/calendar", payload);
-    }
-
-    // Lấy tất cả event theo spaceId
-    public List<CalendarEventDTO> getEventsBySpaceId(UUID spaceId) {
-        List<CalendarEventEntity> events = calendarEventRepository.findBySpaceId(spaceId);
-        List<CalendarEventDTO> result = new ArrayList<>();
-        for (CalendarEventEntity event : events) {
-            result.add(new CalendarEventDTO(event));
-        }
-        return result;
-    }
-
-    // Danh sách sự kiện trong khoảng thời gian
-    public List<CalendarEventDTO> getEventsByDateRange(UUID spaceId, LocalDate start, LocalDate end) {
-        if (start == null || end == null) {
-            throw new IllegalArgumentException("Start date and end date must not be null");
-        }
-        if (end.isBefore(start)) {
-            throw new IllegalArgumentException("Start date must be before or equal to end date");
-        }
-        if (ChronoUnit.YEARS.between(start, end) > 1) {
-            throw new IllegalArgumentException("Khoảng thời gian tìm kiếm không được vượt quá 1 năm.");
-        }
-        List<CalendarEventEntity> targetEvents = calendarEventRepository
-                .findBySpaceIdAndEventDateLessThanEqual(Objects.requireNonNull(spaceId, "SpaceID null"), end);
-        List<CalendarEventDTO> expandedResults = new ArrayList<>();
-
-        for (CalendarEventEntity event : targetEvents) {
-            if (isNonRecurring(event)) {
-                addIfInRange(expandedResults, event, start, end);
-            } else {
-                expandedResults.addAll(expandRecurringEvent(event, start, end));
-            }
-        }
-
-        return expandedResults;
     }
 
     private boolean isNonRecurring(CalendarEventEntity event) {
@@ -187,11 +155,6 @@ public class CalendarEventService {
         return null;
     }
 
-    // Lấy sự kiện theo ngày cụ thể (bao gồm lịch lặp)
-    public List<CalendarEventDTO> getEventsByDate(UUID spaceId, LocalDate date) {
-        return getEventsByDateRange(spaceId, date, date);
-    }
-
     private void validateEventTime(CalendarEventDTO eventRequest) {
         LocalDate today = LocalDate.now();
         LocalTime now = LocalTime.now();
@@ -229,6 +192,7 @@ public class CalendarEventService {
         if (isOvernight && endDate.equals(request.getEventDate())) {
             endDate = request.getEventDate().plusDays(1);
         }
+
         java.time.LocalDateTime startDateTime = java.time.LocalDateTime.of(request.getEventDate(), request.getStartTime());
         java.time.LocalDateTime endDateTime = java.time.LocalDateTime.of(endDate, request.getEndTime());
 
@@ -244,6 +208,47 @@ public class CalendarEventService {
             throw new IllegalArgumentException("Không thể kết hợp sự kiện nhiều ngày và lặp lại.");
         }
     }
+
+    private boolean hasPermissionToEdit(CalendarEventEntity event, UUID userId) {
+        boolean isMemberOfSpace = spaceService.checkUserAccess(event.getSpace().getId(), userId);
+        if (!isMemberOfSpace) {
+            return false;
+        }
+        boolean isCreator = event.getCreatedBy().getId().equals(userId);
+        return isCreator || event.isAllowEditAll();
+    }
+
+    // Thiết lập mối liên kết (phòng họp, công việc, ghi chú)
+    private void applyRelations(CalendarEventEntity calendarEvent, CalendarEventDTO eventRequest) {
+        if (eventRequest.getCallRoomSpaceId() != null && !eventRequest.getCallRoomSpaceId().isEmpty()) {
+            UUID callRoomSpaceId = UUID.fromString(eventRequest.getCallRoomSpaceId());
+            SpaceEntity callRoomSpace = spaceRepository.findById(callRoomSpaceId)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phòng họp/không gian với ID: " + callRoomSpaceId));
+            calendarEvent.setCallRoomSpace(callRoomSpace);
+        } else {
+            calendarEvent.setCallRoomSpace(null);
+        }
+        if (eventRequest.getTaskId() != null && !eventRequest.getTaskId().isEmpty()) {
+            UUID taskId = UUID.fromString(eventRequest.getTaskId());
+            CardEntity task = cardRepository.findById(taskId)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy task với ID: " + taskId));
+            calendarEvent.setTask(task);
+        } else {
+            calendarEvent.setTask(null);
+        }
+        if (eventRequest.getNoteId() != null && !eventRequest.getNoteId().isEmpty()) {
+            UUID noteId = UUID.fromString(eventRequest.getNoteId());
+            NoteEntity note = noteRepository.findById(noteId)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy note với ID: " + noteId));
+            calendarEvent.setNote(note);
+        } else {
+            calendarEvent.setNote(null);
+        }
+    }
+
+    // ==========================================
+    // 2. CRUD EVENT & NHÓM SCHEDULE
+    // ==========================================
 
     // Tạo event mới
     @Transactional
@@ -279,24 +284,25 @@ public class CalendarEventService {
         calendarEvent.setSpace(space);
         calendarEvent.setSchedule(false);
         calendarEvent.setScheduleId(null);
-        
+
         boolean isOvernight = calendarEvent.getEndTime().isBefore(calendarEvent.getStartTime());
         if (calendarEvent.getEndDate() == null || calendarEvent.getEndDate().equals(calendarEvent.getEventDate())) {
             calendarEvent.setEndDate(isOvernight ? calendarEvent.getEventDate().plusDays(1) : calendarEvent.getEventDate());
         }
+
         applyRelations(calendarEvent, eventRequest);
         syncEventRelations(calendarEvent, eventRequest, creator);
 
         CalendarEventEntity savedEvent = calendarEventRepository.save(Objects.requireNonNull(calendarEvent));
         googleCalendarService.syncEventToGoogleAsync(savedEvent.getId());
-        
+
         CalendarEventDTO result = new CalendarEventDTO(savedEvent);
         broadcastCalendarUpdate(eventRequest.getSpaceId(), "CREATED", result);
 
         if (!savedEvent.getAttendees().isEmpty()) {
             calendarEmailService.sendEventNotificationEmail(savedEvent, savedEvent.getAttendees(), false);
         }
-        
+
         return result;
     }
 
@@ -333,7 +339,7 @@ public class CalendarEventService {
             CalendarEventDTO dto = new CalendarEventDTO(saved);
             broadcastCalendarUpdate(eventRequest.getSpaceId(), "CREATED", dto);
         }
-        
+
         if (!savedEvents.isEmpty() && !savedEvents.get(0).getAttendees().isEmpty()) {
             calendarEmailService.sendEventNotificationEmail(savedEvents.get(0), savedEvents.get(0).getAttendees(), false);
         }
@@ -386,7 +392,7 @@ public class CalendarEventService {
             // Xóa sự kiện đơn cũ và tạo nhóm sự kiện liên tục mới
             String spaceIdStr = calendarEvent.getSpace().getId().toString();
             googleCalendarService.deleteEventFromGoogle(calendarEvent);
-            
+
             // Broadcast DELETED for the old single event
             CalendarEventDTO deletedDto = new CalendarEventDTO(calendarEvent);
             broadcastCalendarUpdate(spaceIdStr, "DELETED", deletedDto);
@@ -404,20 +410,20 @@ public class CalendarEventService {
         }
         applyRelations(calendarEvent, eventRequest);
         syncEventRelations(calendarEvent, eventRequest, actor);
-        
+
         List<RoomMemberEntity> addedAttendees = calendarEvent.getAttendees().stream()
                 .filter(a -> !oldAttendees.contains(a)).toList();
-        
+
         CalendarEventEntity savedEvent = calendarEventRepository.save(Objects.requireNonNull(calendarEvent));
         googleCalendarService.syncEventToGoogleAsync(savedEvent.getId());
-        
+
         CalendarEventDTO result = new CalendarEventDTO(savedEvent);
         broadcastCalendarUpdate(result.getSpaceId(), "UPDATED", result);
 
         if (!addedAttendees.isEmpty()) {
             calendarEmailService.sendEventNotificationEmail(savedEvent, addedAttendees, false);
         }
-        
+
         return result;
     }
 
@@ -491,46 +497,47 @@ public class CalendarEventService {
             CalendarEventDTO dto = new CalendarEventDTO(saved);
             broadcastCalendarUpdate(dto.getSpaceId(), "UPDATED", dto);
         }
-        
+
         return new CalendarEventDTO(savedEvents.get(0));
     }
 
-    // Thiết lập mối liên kết (phòng họp, công việc, ghi chú)
-    private void applyRelations(CalendarEventEntity calendarEvent, CalendarEventDTO eventRequest) {
-        if (eventRequest.getCallRoomSpaceId() != null && !eventRequest.getCallRoomSpaceId().isEmpty()) {
-            UUID callRoomSpaceId = UUID.fromString(eventRequest.getCallRoomSpaceId());
-            SpaceEntity callRoomSpace = spaceRepository.findById(callRoomSpaceId)
-                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phòng họp/không gian với ID: " + callRoomSpaceId));
-            calendarEvent.setCallRoomSpace(callRoomSpace);
-        } else {
-            calendarEvent.setCallRoomSpace(null);
+    // Xóa sự kiện (chỉ dành cho người tạo, hỗ trợ xóa toàn bộ nhóm sự kiện liên tục)
+    @Transactional
+    public void deleteEvent(UUID eventId, UUID userId) {
+        CalendarEventEntity entity = calendarEventRepository.findById(Objects.requireNonNull(eventId))
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sự kiện"));
+        if (entity.getSpace().getType() != com.synkork.backend.modules.space.enums.SpaceTypeEnum.CALENDAR) {
+            throw new IllegalArgumentException("Space không phải Calendar");
         }
-        if (eventRequest.getTaskId() != null && !eventRequest.getTaskId().isEmpty()) {
-            UUID taskId = UUID.fromString(eventRequest.getTaskId());
-            CardEntity task = cardRepository.findById(taskId)
-                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy task với ID: " + taskId));
-            calendarEvent.setTask(task);
-        } else {
-            calendarEvent.setTask(null);
+
+        boolean isCreator = entity.getCreatedBy().getId().equals(userId);
+        boolean isMemberOfSpace = spaceService.checkUserAccess(entity.getSpace().getId(), userId);
+        if (!isCreator || !isMemberOfSpace) {
+            throw new SecurityException("Bạn không có quyền xóa sự kiện này");
         }
-        if (eventRequest.getNoteId() != null && !eventRequest.getNoteId().isEmpty()) {
-            UUID noteId = UUID.fromString(eventRequest.getNoteId());
-            NoteEntity note = noteRepository.findById(noteId)
-                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy note với ID: " + noteId));
-            calendarEvent.setNote(note);
+
+        String spaceIdStr = entity.getSpace().getId().toString();
+
+        // Nếu là sự kiện liên tục, xóa toàn bộ các sự kiện trong nhóm
+        if (entity.isSchedule() && entity.getScheduleId() != null) {
+            List<CalendarEventEntity> group = calendarEventRepository.findByScheduleId(entity.getScheduleId());
+            for (CalendarEventEntity member : group) {
+                CalendarEventDTO dto = new CalendarEventDTO(member);
+                googleCalendarService.deleteEventFromGoogleAsync(member);
+                broadcastCalendarUpdate(spaceIdStr, "DELETED", dto);
+            }
+            calendarEventRepository.deleteByScheduleId(entity.getScheduleId());
         } else {
-            calendarEvent.setNote(null);
+            CalendarEventDTO deletedDto = new CalendarEventDTO(entity);
+            googleCalendarService.deleteEventFromGoogleAsync(entity);
+            calendarEventRepository.delete(entity);
+            broadcastCalendarUpdate(spaceIdStr, "DELETED", deletedDto);
         }
     }
 
-    private boolean hasPermissionToEdit(CalendarEventEntity event, UUID userId) {
-        boolean isMemberOfSpace = spaceService.checkUserAccess(event.getSpace().getId(), userId);
-        if (!isMemberOfSpace) {
-            return false;
-        }
-        boolean isCreator = event.getCreatedBy().getId().equals(userId);
-        return isCreator || event.isAllowEditAll();
-    }
+    // ==========================================
+    // 3. ATTENDEES & ATTACHMENTS
+    // ==========================================
 
     private void syncEventRelations(CalendarEventEntity event, CalendarEventDTO request, UserEntity actor) {
         event.replaceAttendees(buildAttendees(event, request.getAttendeeIds()));
@@ -625,41 +632,6 @@ public class CalendarEventService {
         return value == null || value.trim().isEmpty();
     }
 
-    // Xóa sự kiện (chỉ dành cho người tạo, hỗ trợ xóa toàn bộ nhóm sự kiện liên tục)
-    @Transactional
-    public void deleteEvent(UUID eventId, UUID userId) {
-        CalendarEventEntity entity = calendarEventRepository.findById(Objects.requireNonNull(eventId))
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sự kiện"));
-        if (entity.getSpace().getType() != com.synkork.backend.modules.space.enums.SpaceTypeEnum.CALENDAR) {
-            throw new IllegalArgumentException("Space không phải Calendar");
-        }
-
-        boolean isCreator = entity.getCreatedBy().getId().equals(userId);
-        boolean isMemberOfSpace = spaceService.checkUserAccess(entity.getSpace().getId(), userId);
-        if (!isCreator || !isMemberOfSpace) {
-            throw new SecurityException("Bạn không có quyền xóa sự kiện này");
-        }
-
-        String spaceIdStr = entity.getSpace().getId().toString();
-
-        // Nếu là sự kiện liên tục, xóa toàn bộ các sự kiện trong nhóm
-        if (entity.isSchedule() && entity.getScheduleId() != null) {
-            List<CalendarEventEntity> group = calendarEventRepository.findByScheduleId(entity.getScheduleId());
-            for (CalendarEventEntity member : group) {
-                CalendarEventDTO dto = new CalendarEventDTO(member);
-                googleCalendarService.deleteEventFromGoogleAsync(member);
-                broadcastCalendarUpdate(spaceIdStr, "DELETED", dto);
-            }
-            calendarEventRepository.deleteByScheduleId(entity.getScheduleId());
-        } else {
-            CalendarEventDTO deletedDto = new CalendarEventDTO(entity);
-            googleCalendarService.deleteEventFromGoogleAsync(entity);
-            calendarEventRepository.delete(entity);
-            broadcastCalendarUpdate(spaceIdStr, "DELETED", deletedDto);
-        }
-    }
-
-
     @Transactional
     public List<CalendarEventAttachmentDTO> uploadAttachments(UUID eventId, List<MultipartFile> files, UUID userId) {
         CalendarEventEntity event = calendarEventRepository.findById(Objects.requireNonNull(eventId))
@@ -697,17 +669,16 @@ public class CalendarEventService {
         return result;
     }
 
-
     @Transactional(readOnly = true)
     public String summarizeAttachment(UUID eventId, UUID attachmentId, UUID userId) {
         CalendarEventEntity event = calendarEventRepository.findById(Objects.requireNonNull(eventId))
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sự kiện"));
-                
+
         EventAttachmentEntity target = event.getAttachments().stream()
                 .filter(a -> a.getId() != null && a.getId().equals(attachmentId))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đính kèm"));
-                
+
         return tikaFileService.convertClondinaryToString(target.getFileUrl());
     }
 
@@ -718,23 +689,68 @@ public class CalendarEventService {
         if (!hasPermissionToEdit(event, userId)) {
             throw new SecurityException("Không có quyền chỉnh sửa");
         }
-        
+
         Optional<EventAttachmentEntity> target = event.getAttachments().stream()
                 .filter(a -> a.getId() != null && a.getId().equals(attachmentId))
                 .findFirst();
-                
+
         if (target.isPresent()) {
             EventAttachmentEntity attachment = target.get();
             event.getAttachments().remove(attachment);
             calendarEventRepository.save(event);
-            
+
             if (attachment.getFilePublicId() != null && attachment.getResourceType() != null) {
                 fileService.deleteFile(attachment.getFilePublicId(), attachment.getResourceType());
             }
-            
+
             CalendarEventDTO result = new CalendarEventDTO(event);
             broadcastCalendarUpdate(event.getSpace().getId().toString(), "UPDATED", result);
         }
+    }
+
+    // ==========================================
+    // 4. TRUY VẤN SỰ KIỆN & KIỂM TRA TRÙNG LỊCH
+    // ==========================================
+
+    // Lấy tất cả event theo spaceId
+    public List<CalendarEventDTO> getEventsBySpaceId(UUID spaceId) {
+        List<CalendarEventEntity> events = calendarEventRepository.findBySpaceId(spaceId);
+        List<CalendarEventDTO> result = new ArrayList<>();
+        for (CalendarEventEntity event : events) {
+            result.add(new CalendarEventDTO(event));
+        }
+        return result;
+    }
+
+    // Danh sách sự kiện trong khoảng thời gian
+    public List<CalendarEventDTO> getEventsByDateRange(UUID spaceId, LocalDate start, LocalDate end) {
+        if (start == null || end == null) {
+            throw new IllegalArgumentException("Start date and end date must not be null");
+        }
+        if (end.isBefore(start)) {
+            throw new IllegalArgumentException("Start date must be before or equal to end date");
+        }
+        if (ChronoUnit.YEARS.between(start, end) > 1) {
+            throw new IllegalArgumentException("Khoảng thời gian tìm kiếm không được vượt quá 1 năm.");
+        }
+        List<CalendarEventEntity> targetEvents = calendarEventRepository
+                .findBySpaceIdAndEventDateLessThanEqual(Objects.requireNonNull(spaceId, "SpaceID null"), end);
+        List<CalendarEventDTO> expandedResults = new ArrayList<>();
+
+        for (CalendarEventEntity event : targetEvents) {
+            if (isNonRecurring(event)) {
+                addIfInRange(expandedResults, event, start, end);
+            } else {
+                expandedResults.addAll(expandRecurringEvent(event, start, end));
+            }
+        }
+
+        return expandedResults;
+    }
+
+    // Lấy sự kiện theo ngày cụ thể (bao gồm lịch lặp)
+    public List<CalendarEventDTO> getEventsByDate(UUID spaceId, LocalDate date) {
+        return getEventsByDateRange(spaceId, date, date);
     }
 
     // Kiểm tra sự kiện trùng giờ
