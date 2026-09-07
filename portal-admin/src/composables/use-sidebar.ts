@@ -1,11 +1,8 @@
 import {
   BadgeHelpIcon,
-  BellDotIcon,
   CreditCardIcon,
   LayoutDashboardIcon,
   MonitorCog,
-  PaletteIcon,
-  PictureInPicture2Icon,
   ServerIcon,
   SettingsIcon,
   ShieldAlert,
@@ -13,7 +10,6 @@ import {
   UserRoundKey,
   UsersIcon,
   WalletCards,
-  WrenchIcon,
 } from '@lucide/vue'
 
 import type { NavGroup } from '@/components/app-sidebar/types'
@@ -21,10 +17,7 @@ import type { NavGroup } from '@/components/app-sidebar/types'
 export function useSidebar() {
   const settingsNavItems = [
     { title: 'Hồ sơ', url: '/settings/', icon: UserIcon },
-    { title: 'Tài khoản', url: '/settings/account', icon: WrenchIcon },
-    { title: 'Giao diện', url: '/settings/appearance', icon: PaletteIcon },
-    { title: 'Thông báo', url: '/settings/notifications', icon: BellDotIcon },
-    { title: 'Hiển thị', url: '/settings/display', icon: PictureInPicture2Icon },
+    { title: 'Trung tâm trợ giúp', url: '/help-center', icon: BadgeHelpIcon },
   ]
 
   const navData = ref<NavGroup[]>([
@@ -49,7 +42,6 @@ export function useSidebar() {
       title: 'Khác',
       items: [
         { title: 'Cài đặt', items: settingsNavItems, icon: SettingsIcon },
-        { title: 'Trung tâm trợ giúp', url: '/help-center', icon: BadgeHelpIcon },
       ],
     },
   ])

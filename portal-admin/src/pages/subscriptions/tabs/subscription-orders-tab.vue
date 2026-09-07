@@ -350,7 +350,7 @@ const columns = computed<TableColumn<Invoice>[]>(() => [
         @click="clearFilters"
       >
         <X class="h-3.5 w-3.5" />
-        Clear filters
+        Xóa bộ lọc
       </UiButton>
     </div>
 

@@ -23,7 +23,7 @@ import Avatar from "@/components/ui/avatar/Avatar.vue"
 import AvatarImage from "@/components/ui/avatar/AvatarImage.vue"
 import AvatarFallback from "@/components/ui/avatar/AvatarFallback.vue"
 import { Flag } from 'lucide-vue-next'
-import type { User } from "@/types/User"
+import type { User } from "@/features/users/types/User"
 import type { Room } from "@/features/rooms/types/Room"
 import { createRoomReport, createUserReport } from '@/features/reports/services/reportService'
 import type { ReportReason, ReportRequest } from '@/features/reports/types/Report'
@@ -243,7 +243,6 @@ watch(() => props.open, (newVal) => {
 
           <input ref="fileInput" type="file" accept="image/*,video/*" class="hidden" @change="handleFileChange" />
 
-          <!-- Đã có file: hiển thị preview lớn hơn, kèm tên/dung lượng, hover để đổi file -->
           <div v-if="evidenceFile"
             class="relative flex items-center gap-3 p-2 rounded-md border border-border bg-muted/50 group">
             <div class="relative w-16 h-16 shrink-0 rounded-md overflow-hidden bg-background">
@@ -274,7 +273,6 @@ watch(() => props.open, (newVal) => {
             </button>
           </div>
 
-          <!-- Chưa có file: khu vực chọn / kéo-thả -->
           <button v-else type="button" @click="openFilePicker" @dragover="handleDragOver" @dragleave="handleDragLeave"
             @drop="handleDrop"
             class="relative w-full h-24 rounded-md border border-dashed flex flex-col items-center justify-center gap-1 text-muted-foreground transition-colors"

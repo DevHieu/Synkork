@@ -29,15 +29,35 @@ export const SEVERITY_CONFIG: Record<ReportSeverity, { label: string, class: str
 }
 
 export const STATUS_CONFIG = {
-  PENDING: { label: 'Chờ xử lý', variant: 'secondary' as const, icon: Clock },
-  REVIEWED: { label: 'Đang xem xét', variant: 'outline' as const, icon: Eye },
-  RESOLVED: { label: 'Đã giải quyết', variant: 'default' as const, icon: CheckCircle2 },
-  DISMISSED: { label: 'Đã bác bỏ', variant: 'destructive' as const, icon: XCircle },
+  PENDING: {
+    label: 'Chờ xử lý',
+    variant: 'secondary' as const,
+    icon: Clock,
+    class: 'border-amber-300 bg-amber-50 px-3 text-amber-700 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300',
+  },
+  REVIEWED: {
+    label: 'Đang xem xét',
+    variant: 'outline' as const,
+    icon: Eye,
+    class: 'border-blue-300 bg-blue-50 px-3 text-blue-700 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-300',
+  },
+  RESOLVED: {
+    label: 'Đã giải quyết',
+    variant: 'default' as const,
+    icon: CheckCircle2,
+    class: 'border-emerald-300 bg-emerald-50 px-3 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
+  },
+  DISMISSED: {
+    label: 'Đã bác bỏ',
+    variant: 'destructive' as const,
+    icon: XCircle,
+    class: 'border-red-300 bg-red-50 px-3 text-red-700 dark:border-red-700 dark:bg-red-950 dark:text-red-300',
+  },
 }
 
 export const TYPE_CONFIG = {
-  USER: { label: 'Báo cáo người dùng', icon: User },
-  ROOM: { label: 'Báo cáo phòng', icon: Home },
+  USER: { label: 'Người dùng', icon: User },
+  ROOM: { label: 'Phòng', icon: Home },
 }
 
 export const LOCKED_STATUS = { USER: 'BANNED', ROOM: 'LOCKED' } as const

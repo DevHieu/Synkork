@@ -1,9 +1,10 @@
 <script lang="ts" setup>
+import { LogOutIcon } from '@lucide/vue';
 import { storeToRefs } from 'pinia';
 import Button from '../ui/button/Button.vue';
-import { sidebarData } from './data/sidebar-data'
-import NavTeam from './nav-team.vue'
 import NavFooter from './nav-footer.vue';
+import NavTeam from './nav-team.vue'
+import { sidebarData } from './data/sidebar-data'
 
 const {logout} = useAuth()
 
@@ -39,9 +40,22 @@ const visibleNavMain = computed(() => {
     </UiSidebarContent>
     
     <UiSidebarFooter>
-      <Button class="cursor-pointer" variant="destructive" @click="() => {
-        logout()
-      }">Log out</Button>
+      <UiSidebarMenu>
+        <UiSidebarMenuItem>
+          <UiSidebarMenuButton tooltip="Đăng xuất" as-child>
+            <Button
+              class="w-full cursor-pointer justify-center group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center overflow-hidden"
+              variant="destructive"
+              @click="() => {
+                logout()
+              }"
+            >
+              <LogOutIcon class="size-4 shrink-0" />
+              <span class="group-data-[collapsible=icon]:hidden truncate">Đăng xuất</span>
+            </Button>
+          </UiSidebarMenuButton>
+        </UiSidebarMenuItem>
+      </UiSidebarMenu>
     </UiSidebarFooter>
     <UiSidebarRail />
   </UiSidebar>

@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import com.synkork.backend.common.utils.EmailService;
 import com.synkork.backend.modules.collaboration.task.card.enums.CardStatus;
 import com.synkork.backend.modules.notification.NotificationService;
 import com.synkork.backend.modules.notification.enums.NotificationRefTypeEnum;

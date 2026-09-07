@@ -6,12 +6,13 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 
 import com.synkork.backend.modules.notification.enums.NotificationRefTypeEnum;
 import com.synkork.backend.modules.notification.enums.NotificationTypeEnum;
 import com.synkork.backend.modules.user.UserEntity;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -23,6 +24,7 @@ public class NotificationService {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
     
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void sendNotification(UserEntity actor, UserEntity target, UUID id, UUID roomId, UUID spaceId, NotificationTypeEnum type, NotificationRefTypeEnum refType) {
         NotificationEntity noti = NotificationEntity.builder()
                 .user(target)

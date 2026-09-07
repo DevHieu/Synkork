@@ -176,14 +176,4 @@ export const subscribeToSpace = async (spaceId: string) => {
     });
   });
 
-  taskSocket.subscribeCardUncomplete(spaceId, (c) => {
-    console.log("Card uncompleted: ", c);
-    taskStore.columns.forEach((col) => {
-      const i = col.cards.findIndex((card) => card.id === c.id);
-
-      if (i !== -1) {
-        col.cards[i] = c;
-      }
-    });
-  });
 };

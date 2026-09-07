@@ -7,6 +7,7 @@ import type { Note, NoteRequest } from '@/features/note/types/NoteType'
 import type { SuggestedNoteDraft } from '@/types/SuggestionTypes'
 import { useNoteActions } from '@/features/note/composable/UseNoteActions'
 import DateTimePicker from '@/components/DateTimePicker.vue'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899']
 
@@ -192,25 +193,6 @@ async function handleSubmit() {
               <textarea v-model="form.note" placeholder="Nội dung ghi chú..." rows="5"
                 class="w-full bg-transparent border rounded-lg p-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none transition-colors" />
 
-              <!-- Toolbar -->
-              <div class="flex items-center border rounded-lg px-2 py-1.5 bg-muted/30 gap-0.5">
-                <!-- Palette -->
-                <button type="button"
-                  class="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                  title="Màu sắc">
-                  <Palette :size="16" />
-                </button>
-                <!-- Reminder toggle -->
-                <button type="button" @click="showReminder = !showReminder" :class="[
-                  'p-1.5 rounded transition-colors',
-                  showReminder || form.reminderAt
-                    ? 'bg-teal-100 text-teal-600 dark:bg-teal-900/40 dark:text-teal-400'
-                    : 'hover:bg-muted text-muted-foreground hover:text-foreground'
-                ]" title="Nhắc nhở">
-                  <BellPlus :size="16" />
-                </button>
-              </div>
-
               <!-- ── REMINDER PANEL ── -->
               <Transition name="reminder">
                 <div v-if="showReminder" class="border rounded-lg p-3 bg-muted/20 space-y-2.5">
@@ -271,7 +253,8 @@ async function handleSubmit() {
             <!-- Actions -->
             <div class="flex items-center justify-between mt-5">
               <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
-                <input type="checkbox" v-model="form.pinned" class="rounded" />
+                <Checkbox id="allow-edit-all" v-model="form.pinned" type="checkbox"
+                  class="h-3.5 w-3.5 cursor-pointer rounded-sm border-border/60 text-primary focus:ring-primary" />
                 <Pin :size="14" /> Ghim
               </label>
               <div class="flex gap-2">

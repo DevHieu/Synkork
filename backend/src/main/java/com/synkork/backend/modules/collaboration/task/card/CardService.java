@@ -107,7 +107,7 @@ public class CardService {
 
             Set<RoomMemberEntity> newAssignees = new HashSet<>(roomMemberRepository.findAllById(req.assigneeIds()));
 
-            // Tìm người mới được assign (có trong new nhưng không có trong old)
+            // Tìm người mới được assign
             List<RoomMemberEntity> justAssigned = newAssignees.stream()
                     .filter(member -> !oldAssigneeIds.contains(member.getId()))
                     .toList();
@@ -117,14 +117,12 @@ public class CardService {
 
             // Gửi notification cho từng người mới được assign
             if (!justAssigned.isEmpty()) {
-                // Lấy actor từ SecurityContext ngay tại đây
                 UserPrinciple principal = (UserPrinciple) SecurityContextHolder
                         .getContext().getAuthentication().getPrincipal();
                 UserEntity actor = userRepository.findByEmail(principal.getUsername())
                         .orElseThrow(() -> new RuntimeException("Actor không tồn tại"));
 
                 for (RoomMemberEntity member : justAssigned) {
-                    // Bỏ qua nếu actor tự assign cho chính mình
                     if (member.getUser().getId().equals(actor.getId()))
                         continue;
 

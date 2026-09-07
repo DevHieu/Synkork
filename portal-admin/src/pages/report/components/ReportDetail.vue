@@ -9,8 +9,7 @@ import { Separator } from '@/components/ui/separator'
 import { roomService } from '@/pages/rooms/service/roomService'
 import { userService } from '@/pages/users/services/userService'
 
-import { REASON_LABEL_MAP } from '../utils/report.utils.ts'
-import { LOCKED_STATUS } from '../utils/report.utils.ts'
+import { LOCKED_STATUS, REASON_LABEL_MAP, STATUS_CONFIG } from '../utils/report.utils.ts'
 
 import DismissReason from '../components/ReportDetail/DismissReason.vue'
 import ReportActions from '../components/ReportDetail/ReportAction.vue'
@@ -36,12 +35,7 @@ const isOpen = computed({
   set: val => emit('update:open', val),
 })
 
-const statusLabel = computed(() => ({
-  PENDING: 'Chờ xử lý',
-  REVIEWED: 'Đang xem xét',
-  RESOLVED: 'Đã giải quyết',
-  DISMISSED: 'Đã bác bỏ',
-}[props.report.status]))
+const statusLabel = computed(() => STATUS_CONFIG[props.report.status]?.label ?? props.report.status)
 
 const targetId = computed(() =>
   props.report.reportType === 'USER'

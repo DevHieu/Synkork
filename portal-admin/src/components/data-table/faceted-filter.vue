@@ -110,7 +110,7 @@ const filterFunction = (list: DataTableFacetedFilter['options'], term: string) =
                 class="justify-center text-center"
                 @select="column?.setFilterValue(undefined)"
               >
-                Clear filters
+                Xóa bộ lọc
               </UiCommandItem>
             </UiCommandGroup>
           </template>

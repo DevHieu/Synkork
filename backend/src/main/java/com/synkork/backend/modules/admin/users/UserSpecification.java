@@ -15,7 +15,7 @@ public class UserSpecification {
             List<Predicate> predicates = new ArrayList<>();
 
             if (hasText(request.search())) {
-                String keyword = "%" + request.search().trim().toLowerCase() + "%";
+                String keyword = "%" + request.search().trim() + "%";
                 predicates.add(cb.or(
                         cb.like(cb.lower(root.get("username")), keyword),
                         cb.like(cb.lower(root.get("email")), keyword)

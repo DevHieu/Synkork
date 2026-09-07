@@ -5,13 +5,10 @@ export interface CardEvent {
   columnId: string
   position: number
   createdAt?: string
-  
   createdBy: MemberSummary 
   assignees: MemberSummary[]
   dueDate?: string | undefined
-  
   version: number | undefined
-
   completed?: boolean
 }
 
@@ -37,10 +34,10 @@ export interface MemberSummary {
 }
 
 export interface SpaceMemberDTO {
-    id: string
-    name: string
-    avatarUrl: string | null
-    role: string
+  id: string
+  name: string
+  avatarUrl: string | null
+  role: string
 }
 
 export interface ColumnEvent {
@@ -48,7 +45,6 @@ export interface ColumnEvent {
   name: string
   position: number
   cards: CardEvent[]
-
   version: number
 }
 
@@ -73,7 +69,6 @@ export interface TaskMoveEvent {
   }
 }
 
-// Thêm type
 export interface CardMovePayload {
     targetColumnId: string
     sourceColumnId: string | null

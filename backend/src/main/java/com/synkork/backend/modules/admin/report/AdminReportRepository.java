@@ -27,10 +27,7 @@ public interface AdminReportRepository extends JpaRepository<ReportEntity, UUID>
             LocalDateTime to
     );
 
-    /**
-     * Aggregate daily report counts by type within a date range.
-     * Returns rows of [date, userCount, roomCount].
-     */
+    //thống kê số lượng báo cáo theo từng ngày
     @Query("""
         SELECT
             CAST(r.createdAt AS LocalDate) AS date,
@@ -47,6 +44,7 @@ public interface AdminReportRepository extends JpaRepository<ReportEntity, UUID>
             @Param("to") LocalDateTime to
     );
 
+    //thống kê theo lý do 
     @Query("""
         SELECT new com.synkork.backend.modules.admin.statistics.dtos.ReportReasonStatsResponse(
             r.reason,

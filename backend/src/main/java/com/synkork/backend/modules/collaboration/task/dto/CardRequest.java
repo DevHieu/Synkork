@@ -12,12 +12,9 @@ public record CardRequest(
         String description,
         UUID userId,
         List<UUID> assigneeIds,
-
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
         LocalDateTime dueDate,
-
         Integer version,
-
         Boolean completed
 ) {
 }
