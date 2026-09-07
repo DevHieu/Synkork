@@ -11,6 +11,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import com.synkork.backend.modules.collaboration.calendar.enums.SyncStatus;
+import org.hibernate.annotations.OptimisticLock;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -84,12 +85,18 @@ public class CalendarEventEntity extends BaseEntity {
     private UserEntity createdBy;
 
     // Google Calendar Sync Fields
+    // OptimisticLock để ở đây giúp khi update mấy trường này thì version không bị tăng lên (vì update phần này là luồng chạy bên dưới, âm thầm á)
+    @OptimisticLock(excluded = true)
     private String googleEventId;
+
+    @OptimisticLock(excluded = true)
     private String googleCalendarId = "primary";
-    
+
+    @OptimisticLock(excluded = true)
     @Enumerated(EnumType.STRING)
     private SyncStatus syncStatus = SyncStatus.PENDING;
-    
+
+    @OptimisticLock(excluded = true)
     private LocalDateTime lastSyncedAt;
 
     @ManyToMany(fetch = FetchType.LAZY)

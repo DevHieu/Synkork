@@ -32,7 +32,7 @@ public class SpaceController {
 
     @GetMapping("/{spaceId}")
     public ResponseEntity<SpaceDTO> getSpaceById(@PathVariable UUID spaceId) {
-        return ResponseEntity.ok(spaceService.getSpaceById(spaceId));
+        return ResponseEntity.ok(new SpaceDTO(spaceService.getSpaceById(spaceId)));
     }
 
     @PostMapping

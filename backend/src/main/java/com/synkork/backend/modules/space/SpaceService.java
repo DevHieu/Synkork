@@ -120,11 +120,10 @@ public class SpaceService {
         }
     }
 
-    public SpaceDTO getSpaceById(UUID spaceId) {
-        SpaceEntity space = spaceRepository.findById(spaceId)
+    public SpaceEntity getSpaceById(UUID spaceId) {
+        return spaceRepository.findById(spaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Space not found"));
 
-        return new SpaceDTO(space);
     }
 
     // Tìm/tạo Personal Room và Calendar trong một transaction để không lưu trạng thái dở dang.

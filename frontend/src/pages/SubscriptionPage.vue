@@ -73,6 +73,7 @@ const planMeta = [
       { text: "Giới hạn file 50MB", included: true },
       { text: "Theme Ombre & Tùy chỉnh", included: true },
       { text: "AI tạo nhanh lịch/note/task từ tin nhắn", included: true },
+      { text: "AI tóm tắt tài liệu", included: true },
       { text: "AI tóm tắt cuộc họp", included: true },
       { text: "Google Calendar", included: true },
     ],
