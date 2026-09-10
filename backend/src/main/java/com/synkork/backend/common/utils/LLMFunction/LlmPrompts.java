@@ -157,11 +157,6 @@ public class LlmPrompts {
             "taskDueDate": null
           }
           === END EXAMPLES ===
-    
-          Hãy thực hiện phân tích và phân loại đầu vào dưới đây:
-    
-          <reference_date>%s</reference_date>
-          <message>%s</message>
           """;
 
   /**
@@ -209,7 +204,7 @@ Quy đổi ngày: hôm nay=%s | mai=%s | ngày mốt=%s
          - Để trống các mảng 'keyPoints' và 'actionItems' (trả về mảng rỗng []).
 
       Cấu trúc JSON bắt buộc:
-      {{
+      {
         "reasoning": "Phân tích từng bước về mục đích cuộc họp, các quyết định chính và người chịu trách nhiệm (bước suy luận ngầm, không hiển thị cho người dùng cuối).",
         "summary": "Tóm tắt tổng quan nội dung (2-4 câu).",
         "keyPoints": [
@@ -220,13 +215,13 @@ Quy đổi ngày: hôm nay=%s | mai=%s | ngày mốt=%s
           "[Tên người thực hiện nếu có] Việc cần làm 1",
           "[Tên người thực hiện nếu có] Việc cần làm 2"
         ]
-      }}
+      }
 
       Ví dụ minh họa 1 (Trường hợp cuộc họp hợp lệ):
       ---
       Đầu vào transcript: "Nam: Hôm nay chúng ta cần chốt hạn chót dự án RAG nhé. Lan sẽ phụ trách viết tài liệu hệ thống trước thứ Sáu tới. Lan: Ok, tôi đồng ý. Nam cũng cần bàn giao API cho đội frontend trước ngày mai đấy."
       Đầu ra JSON:
-      {{
+      {
         "reasoning": "Mục đích cuộc họp là chốt deadline dự án RAG. Quyết định: Lan viết tài liệu hệ thống, Nam bàn giao API frontend. Người thực hiện có tên rõ ràng.",
         "summary": "Cuộc họp đã thống nhất các mốc thời gian quan trọng cho dự án RAG. Các thành viên đã nhận nhiệm vụ cụ thể để đảm bảo tiến độ triển khai hệ thống.",
         "keyPoints": [
@@ -237,19 +232,19 @@ Quy đổi ngày: hôm nay=%s | mai=%s | ngày mốt=%s
           "[Lan] Viết tài liệu hệ thống trước thứ Sáu tới.",
           "[Nam] Bàn giao API cho đội frontend trước ngày mai."
         ]
-      }}
+      }
       ---
 
       Ví dụ minh họa 2 (Trường hợp dữ liệu rác - kích hoạt Fallback):
       ---
       Đầu vào transcript: "Alo alo... nghe rõ không? ... Chắc mạng bị lag rồi... Ừ thế nhé."
       Đầu ra JSON:
-      {{
+      {
         "reasoning": "Đoạn hội thoại chỉ chứa các câu thử tín hiệu mạng và không có bất kỳ nội dung thảo luận hay quyết định nào được đưa ra.",
         "summary": "Nội dung không đủ để tóm tắt.",
         "keyPoints": [],
         "actionItems": []
-      }}
+      }
       ---
 
       Hãy thực hiện nhiệm vụ trên một cách nghiêm túc đối với đoạn dữ liệu transcript nằm trong thẻ <transcript> dưới đây:

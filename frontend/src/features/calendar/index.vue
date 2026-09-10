@@ -174,7 +174,7 @@ const openSuggestedCreateDialog = (draft: SuggestedEventDraft) => {
     title: draft.title,
     description: draft.description,
     eventDate: draft.eventDate,
-    endDate: draft.eventDate,
+    endDate: draft.endDate || draft.eventDate,
     startTime: draft.startTime,
     endTime: draft.endTime,
     allowEditAll: draft.allowEditAll,

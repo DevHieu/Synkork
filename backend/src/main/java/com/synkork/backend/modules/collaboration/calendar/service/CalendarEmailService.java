@@ -40,14 +40,28 @@ public class CalendarEmailService {
         List<RoomMemberEntity> attendeeList = (recipients != null && !recipients.isEmpty()) ? recipients : targetEvent.getAttendees();
         if (attendeeList == null || attendeeList.isEmpty()) return;
 
+        SpaceEntity space = targetEvent.getSpace();
+        UUID roomId = space.getRoom().getId();
+        UUID spaceId = space.getId();
+        UserEntity creator = targetEvent.getCreatedBy();
+        boolean creatorNotified = false;
+
         for (RoomMemberEntity attendee : attendeeList) {
             if (attendee.getUser() == null || attendee.getUser().getEmail() == null) continue;
 
             EventEmailInformation info = eventUtils.buildEventEmailInformation(targetEvent, attendee, isReminder);
             this.sendEmailDirect(info);
 
-            SpaceEntity space = targetEvent.getSpace();
-            this.sendNotification(isReminder, attendee.getUser(), targetEvent.getCreatedBy(), targetEvent.getId(), space.getRoom().getId(), space.getId());
+            if (creator != null && attendee.getUser().getId().equals(creator.getId())) {
+                creatorNotified = true;
+            }
+
+            this.sendNotification(isReminder, attendee.getUser(), creator, targetEvent.getId(), roomId, spaceId);
+        }
+
+        // Gửi nhắc nhở cho người tạo đúng 1 lần nếu chưa nằm trong danh sách người tham gia
+        if (isReminder && creator != null && !creatorNotified) {
+            this.sendNotification(true, creator, null, targetEvent.getId(), roomId, spaceId);
         }
     }
 
@@ -110,13 +124,9 @@ public class CalendarEmailService {
     }
 
     private void sendNotification(boolean isReminder, UserEntity target, UserEntity actor, UUID eventId, UUID roomId, UUID spaceId) {
+        if (target == null) return;
         NotificationRefTypeEnum refType = isReminder ? NotificationRefTypeEnum.EVENT_REMINDER : NotificationRefTypeEnum.EVENT_ASSIGNED;
-        UserEntity checkActor =  isReminder ? null : actor;
+        UserEntity checkActor = isReminder ? null : actor;
         notificationService.sendNotification(checkActor, target, eventId, roomId, spaceId, NotificationTypeEnum.CALENDAR, refType);
-
-        // Gửi cho thằng tạo cái event này nữa
-        if (isReminder) {
-            notificationService.sendNotification(checkActor, actor, eventId, roomId, spaceId, NotificationTypeEnum.CALENDAR, refType);
-        }
     }
 }

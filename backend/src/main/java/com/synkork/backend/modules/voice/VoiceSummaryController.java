@@ -28,8 +28,8 @@ public class VoiceSummaryController {
     private static final long MAX_VOICE_FILE_SIZE = 20 * 1024 * 1024;
 
     private static final Set<String> ALLOWED_AUDIO_TYPES = Set.of(
-            "audio/mpeg", "audio/mp4", "audio/webm", "audio/webm;codecs=opus", "audio/wav",
-            "audio/x-wav", "audio/ogg", "audio/ogg;codecs=opus", "audio/x-m4a"
+            "audio/mpeg", "audio/mp3", "audio/mp4", "audio/webm", "video/webm", "audio/webm;codecs=opus", "audio/wav",
+            "audio/x-wav", "audio/ogg", "audio/ogg;codecs=opus", "audio/x-m4a", "audio/m4a"
     );
 
     private final MeetingLlmService meetingService;

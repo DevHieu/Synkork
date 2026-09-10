@@ -19,17 +19,35 @@
       "skillPath": "skills/connector-googlecalendar/SKILL.md",
       "computedHash": "7c5e41c168eb3e123a45386499f6390eb6b5dcaa00084822175f5e5eacd3bc34"
     },
+    "create-readme": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/create-readme/SKILL.md",
+      "computedHash": "d0ece1b2164ce1376e4ab6e98d6ac079df3a2a94f5f02224362b6a1ce2516ae9"
+    },
     "documentation": {
       "source": "anthropics/knowledge-work-plugins",
       "sourceType": "github",
       "skillPath": "engineering/skills/documentation/SKILL.md",
       "computedHash": "43947d80ab634432362a076657eb225212760adbe731c0829a92709aeb842666"
     },
+    "linkedin-profile-optimizer": {
+      "source": "paramchoudhary/resumeskills",
+      "sourceType": "github",
+      "skillPath": "skills/linkedin-profile-optimizer/SKILL.md",
+      "computedHash": "fb2aaf9ce1a1bcae1fd44f3d04db9a76eb98394a017ffdcd4ca4b8d947efdc29"
+    },
     "pr-walkthrough": {
       "source": "warpdotdev/common-skills",
       "sourceType": "github",
       "skillPath": ".agents/skills/pr-walkthrough/SKILL.md",
       "computedHash": "d9282c5284e6ef9e8332bd790b57e6f3dbb1569fbef260d2874ec29cd340b661"
+    },
+    "resume-bullet-writer": {
+      "source": "paramchoudhary/resumeskills",
+      "sourceType": "github",
+      "skillPath": "skills/resume-bullet-writer/SKILL.md",
+      "computedHash": "11ebdcc68f04e474db16c52b134b21c0f71f065913ffcbb8176004311cd412f7"
     },
     "spring-validation": {
       "source": "claude-dev-suite/claude-dev-suite",

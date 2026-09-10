@@ -139,7 +139,7 @@ public class AdminInvoiceService {
         }
 
         InvoiceEntity saved = invoiceRepository.save(invoice);
-        if (saved.getStatus() == InvoiceStatusEnum.PAID) {
+        if (previousStatus != InvoiceStatusEnum.PAID && saved.getStatus() == InvoiceStatusEnum.PAID) {
             PlanEnum targetPlan = saved.getPlan() != null ? saved.getPlan() : saved.getUser().getCurrentPlan();
             activateSubscriptionFromInvoice(saved.getUser(), saved, targetPlan, resolveBillingCycle(saved.getBillingCycle()));
         }
@@ -223,12 +223,13 @@ public class AdminInvoiceService {
     }
 
     private void createLog(InvoiceEntity entity, LogActionEnum action, InvoiceStatusEnum previousStatus) {
+        String email = entity.getUser() != null ? entity.getUser().getEmail() : "N/A";
         BuildLog log = BuildLog.builder()
                 .action(action)
                 .entityType(LogEntityTypeEnum.SUBSCRIPTION)
                 .entityId(entity.getId().toString())
-                .entityName(entity.getUser().getEmail()) // dùng email làm name cho dễ đọc trong audit log
-                .description(AuthUtils.getCurrentUsername() + " đã thực hiện " + action.name() + " hóa đơn của " + entity.getUser().getEmail())
+                .entityName(email)
+                .description(AuthUtils.getCurrentUsername() + " đã thực hiện " + action.name() + " hóa đơn của " + email)
                 .metadata(createInvoiceMetadata(entity, previousStatus))
                 .build();
 
@@ -237,9 +238,10 @@ public class AdminInvoiceService {
 
     private String createInvoiceMetadata(InvoiceEntity entity, InvoiceStatusEnum previousStatus) {
         try {
+            String email = entity.getUser() != null ? entity.getUser().getEmail() : "N/A";
             Map<String, Object> metadata = new HashMap<>();
             metadata.put("invoiceId", entity.getId().toString());
-            metadata.put("userEmail", entity.getUser().getEmail());
+            metadata.put("userEmail", email);
             metadata.put("amount", entity.getAmount().toString());
             metadata.put("paymentMethod", entity.getPaymentMethod() != null ? entity.getPaymentMethod().name() : null);
             metadata.put("transactionId", entity.getTransactionId());

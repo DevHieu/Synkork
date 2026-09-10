@@ -89,15 +89,22 @@ public class MeetingLlmService {
 
     private String audioFormat(MultipartFile audioFile) {
         String contentType = audioFile.getContentType();
-        if (contentType == null || !contentType.startsWith("audio/")) {
-            throw new IllegalArgumentException("Định dạng audio không hợp lệ.");
+        if (contentType != null) {
+            contentType = contentType.split(";", 2)[0].trim().toLowerCase();
         }
-        contentType = contentType.split(";", 2)[0].trim().toLowerCase();
+        if (contentType == null || contentType.isBlank()) {
+            String fileName = audioFile.getOriginalFilename() != null ? audioFile.getOriginalFilename().toLowerCase() : "";
+            if (fileName.endsWith(".mp3")) contentType = "audio/mp3";
+            else if (fileName.endsWith(".webm")) contentType = "audio/webm";
+            else if (fileName.endsWith(".wav")) contentType = "audio/wav";
+            else if (fileName.endsWith(".m4a")) contentType = "audio/m4a";
+            else if (fileName.endsWith(".ogg")) contentType = "audio/ogg";
+        }
 
-        return switch (contentType) {
-            case "audio/webm" -> "webm";
-            case "audio/mpeg" -> "mp3";
-            case "audio/mp4", "audio/x-m4a" -> "m4a";
+        return switch (contentType != null ? contentType : "") {
+            case "audio/webm", "video/webm" -> "webm";
+            case "audio/mpeg", "audio/mp3" -> "mp3";
+            case "audio/mp4", "audio/x-m4a", "audio/m4a" -> "m4a";
             case "audio/wav", "audio/x-wav" -> "wav";
             case "audio/ogg" -> "ogg";
             default -> throw new IllegalArgumentException("Định dạng audio chưa được hỗ trợ: " + contentType);

@@ -4,10 +4,9 @@ database/
 .claude
 
 docs/
-README.zh-CN.md
-README.vi.md
-README.en.md
 .agents/
-CLAUDE.md
+.~lock.*
+~$*
+
 CALENDAR.md
 

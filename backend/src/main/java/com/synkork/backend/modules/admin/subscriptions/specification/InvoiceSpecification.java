@@ -19,18 +19,18 @@ public class InvoiceSpecification {
     public static Specification<InvoiceEntity> filter(InvoiceFilterRequest filter) {
         return (root, query, cb) -> {
 
-            if (Long.class != query.getResultType() && long.class != query.getResultType()) {
-                root.fetch("user", JoinType.LEFT);
-            }
-
-            List<Predicate> predicates = new ArrayList<>();
+            boolean isCountQuery = Long.class == query.getResultType() || long.class == query.getResultType();
             Join<InvoiceEntity, UserEntity> userJoin = null;
 
-            if (hasText(filter.search())) {
+            if (!isCountQuery) {
+                userJoin = (Join<InvoiceEntity, UserEntity>) (Join<?, ?>) root.fetch("user", JoinType.LEFT);
+            } else if (hasText(filter.search())) {
                 userJoin = root.join("user", JoinType.LEFT);
             }
 
-            if (hasText(filter.search())) {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (hasText(filter.search()) && userJoin != null) {
                 String rawSearch = filter.search().trim();
                 String keyword = "%" + rawSearch.toLowerCase() + "%";
 

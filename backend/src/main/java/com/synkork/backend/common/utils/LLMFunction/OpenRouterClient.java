@@ -105,13 +105,31 @@ public class OpenRouterClient {
     }
 
     /**
-     * Kiểm tra rawJson có phải JSON hợp lệ không; nếu không trả về fallback.
+     * Kiểm tra rawJson có phải JSON hợp lệ không (hỗ trợ bóc tách markdown code block và thinking tags); nếu không trả về fallback.
      */
     public String parseJsonOrFallback(String raw, String fallback) {
         if (raw == null || raw.isBlank()) return fallback;
+        String cleaned = raw.trim();
+
+        // Bóc tách markdown code fence nếu có (vd: ```json { ... } ```)
+        if (cleaned.startsWith("```")) {
+            int firstNewline = cleaned.indexOf('\n');
+            int lastBackticks = cleaned.lastIndexOf("```");
+            if (firstNewline != -1 && lastBackticks > firstNewline) {
+                cleaned = cleaned.substring(firstNewline + 1, lastBackticks).trim();
+            }
+        }
+
+        // Trích xuất JSON object {...} nếu model chèn thêm text dẫn giải hoặc thẻ suy luận
+        int firstBrace = cleaned.indexOf('{');
+        int lastBrace = cleaned.lastIndexOf('}');
+        if (firstBrace != -1 && lastBrace > firstBrace) {
+            cleaned = cleaned.substring(firstBrace, lastBrace + 1).trim();
+        }
+
         try {
-            JsonNode json = objectMapper.readTree(raw.trim());
-            return json != null && json.isObject() ? raw.trim() : fallback;
+            JsonNode json = objectMapper.readTree(cleaned);
+            return json != null && json.isObject() ? cleaned : fallback;
         } catch (Exception e) {
             return fallback;
         }

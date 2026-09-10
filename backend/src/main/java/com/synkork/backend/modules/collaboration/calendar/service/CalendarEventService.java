@@ -483,7 +483,7 @@ public class CalendarEventService {
             throw new IllegalArgumentException("Space không phải Calendar");
         }
 
-        boolean isCreator = entity.getCreatedBy().getId().equals(userId);
+        boolean isCreator = entity.getCreatedBy() != null && entity.getCreatedBy().getId().equals(userId);
         boolean isMemberOfSpace = spaceService.checkUserAccess(entity.getSpace().getId(), userId);
         if (!isCreator || !isMemberOfSpace) {
             throw new SecurityException("Bạn không có quyền xóa sự kiện này");
@@ -505,6 +505,44 @@ public class CalendarEventService {
             googleCalendarService.deleteEventFromGoogleAsync(entity);
             calendarEventRepository.delete(entity);
             broadcastCalendarUpdate(spaceIdStr, "DELETED", deletedDto);
+        }
+    }
+
+    // Kiểm tra quyền chỉnh sửa sự kiện: người tạo hoặc sự kiện cho phép mọi người sửa
+    private boolean hasPermissionToEdit(CalendarEventEntity event, UUID userId) {
+        boolean isMemberOfSpace = spaceService.checkUserAccess(event.getSpace().getId(), userId);
+        if (!isMemberOfSpace) {
+            return false;
+        }
+        boolean isCreator = event.getCreatedBy() != null && event.getCreatedBy().getId().equals(userId);
+        return isCreator || event.isAllowEditAll();
+    }
+
+    // Thiết lập mối liên kết (phòng họp, công việc, ghi chú)
+    private void applyRelations(CalendarEventEntity calendarEvent, CalendarEventDTO eventRequest) {
+        if (eventRequest.getCallRoomSpaceId() != null && !eventRequest.getCallRoomSpaceId().trim().isEmpty()) {
+            UUID callRoomSpaceId = UUID.fromString(eventRequest.getCallRoomSpaceId().trim());
+            SpaceEntity callRoomSpace = spaceRepository.findById(callRoomSpaceId)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phòng họp/không gian với ID: " + callRoomSpaceId));
+            calendarEvent.setCallRoomSpace(callRoomSpace);
+        } else {
+            calendarEvent.setCallRoomSpace(null);
+        }
+        if (eventRequest.getTaskId() != null && !eventRequest.getTaskId().trim().isEmpty()) {
+            UUID taskId = UUID.fromString(eventRequest.getTaskId().trim());
+            CardEntity task = cardRepository.findById(taskId)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy task với ID: " + taskId));
+            calendarEvent.setTask(task);
+        } else {
+            calendarEvent.setTask(null);
+        }
+        if (eventRequest.getNoteId() != null && !eventRequest.getNoteId().trim().isEmpty()) {
+            UUID noteId = UUID.fromString(eventRequest.getNoteId().trim());
+            NoteEntity note = noteRepository.findById(noteId)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy note với ID: " + noteId));
+            calendarEvent.setNote(note);
+        } else {
+            calendarEvent.setNote(null);
         }
     }
 
@@ -739,6 +777,9 @@ public class CalendarEventService {
 
         for (CalendarEventDTO event : rangeEvents) {
             if (excludeEventId != null && event.getId().equals(excludeEventId)) {
+                continue;
+            }
+            if (event.getStartTime() == null || event.getEndTime() == null) {
                 continue;
             }
             LocalDate evStart = event.getEventDate();

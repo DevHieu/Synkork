@@ -27,6 +27,7 @@ export interface SuggestedEventDraft {
   title: string;
   description: string;
   eventDate: string;
+  endDate?: string;
   startTime: string;
   endTime: string;
   allowEditAll: boolean;

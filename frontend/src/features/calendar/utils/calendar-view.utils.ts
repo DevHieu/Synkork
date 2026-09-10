@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import type { CalendarEvent } from "@/features/calendar/types/calendar.types";
 import type { EventFormData } from "@/features/calendar/composable/useEventForm";
+import { displayTime } from "@/features/calendar/utils/calendar-display.utils";
 
 export const createInitialFormData = (
   overrides: Partial<EventFormData> = {},
@@ -91,8 +92,8 @@ export const resolveScheduleEvent = (
   };
 };
 
-export const escapeHtml = (value: string) =>
-  value
+export const escapeHtml = (value?: string) =>
+  (value || "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -104,7 +105,7 @@ export const buildConflictMessage = (conflicts: CalendarEvent[]) => {
     .slice(0, 4)
     .map(
       (event) =>
-        `<li class="break-all"><span class="text-foreground font-bold break-all">${escapeHtml(event.title)}</span> (${event.startTime.substring(0, 5)} - ${event.endTime.substring(0, 5)})</li>`,
+        `<li class="break-all"><span class="text-foreground font-bold break-all">${escapeHtml(event.title || "(Không có tiêu đề)")}</span> (${displayTime(event.startTime)} - ${displayTime(event.endTime)})</li>`,
     )
     .join("");
   const moreCount = conflicts.length - 4;

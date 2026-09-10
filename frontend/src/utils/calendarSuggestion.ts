@@ -67,10 +67,16 @@ export function buildSuggestedEventDraft(
     endTime = addHoursAndClamp(startTime, 4);
   }
 
+  const isOvernight = endTime && startTime && endTime < startTime;
+  const normalizedEndDate = isOvernight
+    ? dayjs(normalizedEventDate).add(1, "day").format("YYYY-MM-DD")
+    : normalizedEventDate;
+
   return {
     title: suggestion.title?.trim() || DEFAULT_EVENT_TITLE,
     description: suggestion.description?.trim() || "",
     eventDate: normalizedEventDate,
+    endDate: normalizedEndDate,
     startTime,
     endTime: endTime || DEFAULT_MORNING_END,
     allowEditAll: false,

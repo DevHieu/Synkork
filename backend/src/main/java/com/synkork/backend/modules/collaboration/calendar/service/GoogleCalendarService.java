@@ -200,6 +200,16 @@ public class GoogleCalendarService {
             return;
         }
 
+        // Auto refresh token nếu đã hết hạn hoặc sắp hết hạn
+        if (user.getGoogleCalendarAccessTokenExpiresAt() != null &&
+                LocalDateTime.now().isAfter(user.getGoogleCalendarAccessTokenExpiresAt().minusMinutes(5))) {
+            refreshToken(user);
+        }
+
+        if (user.getGoogleCalendarAccessToken() == null) {
+            return;
+        }
+
         // Lọc ra 2 array
         List<CalendarEventEntity> events = calendarEventRepository.findByCreatedByIdAndSpaceId(user.getId(), user.getPersonalCalendarId());
 
@@ -223,7 +233,7 @@ public class GoogleCalendarService {
         GoogleCalendarEventsResponse calendarRes = this.getEventsFromCalendar(user.getGoogleCalendarAccessToken(), oneMonthAgo, null);
 
         SpaceEntity personalCalendar = spaceService.getSpaceById(user.getPersonalCalendarId());
-        if (!calendarRes.items().isEmpty()) {
+        if (calendarRes != null && calendarRes.items() != null && !calendarRes.items().isEmpty()) {
             for (GoogleCalendarEvent googleEvent : calendarRes.items()) {
                 // Lịch nào có bên calendar mà chưa có bên này thì lưu
                 if (!eventsWithGoogleId.contains(googleEvent.id())) {
